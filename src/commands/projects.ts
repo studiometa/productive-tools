@@ -36,9 +36,8 @@ async function projectsList(
     const api = new ProductiveApi();
     const filter: Record<string, string> = {};
 
-    if (!options.archived) {
-      filter.archived = 'false';
-    }
+    // Note: The Productive API doesn't support 'archived' filter on projects endpoint
+    // To filter archived projects, use --archived flag which removes the default filter
 
     const response = await api.getProjects({
       page: parseInt(String(options.page || options.p || '1')),

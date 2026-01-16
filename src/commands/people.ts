@@ -36,9 +36,8 @@ async function peopleList(
     const api = new ProductiveApi();
     const filter: Record<string, string> = {};
 
-    if (!options.all) {
-      filter.active = 'true';
-    }
+    // Note: The Productive API doesn't support 'active' filter on people endpoint
+    // All people are returned by default
 
     const response = await api.getPeople({
       page: parseInt(String(options.page || options.p || '1')),

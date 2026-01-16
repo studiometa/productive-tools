@@ -36,11 +36,8 @@ async function tasksList(
     const api = new ProductiveApi();
     const filter: Record<string, string> = {};
 
-    if (options.completed) {
-      filter.completed = 'true';
-    } else if (!options.all) {
-      filter.completed = 'false';
-    }
+    // Note: The Productive API doesn't support 'completed' filter on tasks endpoint
+    // All tasks are returned by default
 
     if (options.project) {
       filter.project_id = String(options.project);
