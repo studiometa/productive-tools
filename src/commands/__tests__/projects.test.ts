@@ -60,7 +60,7 @@ describe('projects command', () => {
       expect(mockApi.getProjects).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
-        filter: { archived: 'false' },
+        filter: {},
         sort: '',
       });
       expect(consoleLogSpy).toHaveBeenCalled();
@@ -159,7 +159,7 @@ describe('projects command', () => {
       expect(mockApi.getProjects).toHaveBeenCalledWith({
         page: 2,
         perPage: 50,
-        filter: { archived: 'false' },
+        filter: {},
         sort: 'name',
       });
     });

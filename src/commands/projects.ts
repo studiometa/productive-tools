@@ -33,7 +33,7 @@ async function projectsList(
   spinner.start();
 
   try {
-    const api = new ProductiveApi();
+    const api = new ProductiveApi(options);
     const filter: Record<string, string> = {};
 
     // Note: The Productive API doesn't support 'archived' filter on projects endpoint
@@ -117,7 +117,7 @@ async function projectsGet(
   spinner.start();
 
   try {
-    const api = new ProductiveApi();
+    const api = new ProductiveApi(options);
     const response = await api.getProject(id);
     const project = response.data;
 

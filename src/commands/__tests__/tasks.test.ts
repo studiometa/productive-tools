@@ -62,7 +62,7 @@ describe('tasks command', () => {
       expect(mockApi.getTasks).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
-        filter: { completed: 'false' },
+        filter: {},
         sort: '',
       });
       expect(consoleLogSpy).toHaveBeenCalled();
@@ -97,7 +97,7 @@ describe('tasks command', () => {
       expect(mockApi.getTasks).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
-        filter: { completed: 'true' },
+        filter: {},
         sort: '',
       });
     });
@@ -141,7 +141,7 @@ describe('tasks command', () => {
       expect(mockApi.getTasks).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
-        filter: { completed: 'false', project_id: '123' },
+        filter: { project_id: '123' },
         sort: '',
       });
     });
@@ -166,7 +166,7 @@ describe('tasks command', () => {
       expect(mockApi.getTasks).toHaveBeenCalledWith({
         page: 2,
         perPage: 50,
-        filter: { completed: 'false' },
+        filter: {},
         sort: 'due_date',
       });
     });

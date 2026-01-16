@@ -60,7 +60,7 @@ describe('people command', () => {
       expect(mockApi.getPeople).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
-        filter: { active: 'true' },
+        filter: {},
         sort: '',
       });
       expect(consoleLogSpy).toHaveBeenCalled();
@@ -159,7 +159,7 @@ describe('people command', () => {
       expect(mockApi.getPeople).toHaveBeenCalledWith({
         page: 2,
         perPage: 50,
-        filter: { active: 'true' },
+        filter: {},
         sort: 'last_name',
       });
     });

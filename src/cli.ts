@@ -60,11 +60,22 @@ ${colors.bold('OPTIONS:')}
   -h, --help          Show help
   -v, --version       Show version
 
+${colors.bold('AUTHENTICATION OPTIONS:')}
+  --token <token>     API token (overrides config and env)
+  --api-token <token> Alternative API token flag
+  --org-id <id>       Organization ID (overrides config and env)
+  --organization-id <id>  Alternative organization ID flag
+  --user-id <id>      User ID (overrides config and env)
+  --base-url <url>    API base URL (optional)
+
 ${colors.bold('EXAMPLES:')}
-  # Configure
+  # Configure via CLI
   productive config set apiToken YOUR_TOKEN
   productive config set organizationId YOUR_ORG_ID
   productive config set userId YOUR_USER_ID
+
+  # Or pass credentials directly
+  productive projects list --token YOUR_TOKEN --org-id YOUR_ORG_ID
 
   # List projects (human-friendly)
   productive projects list
@@ -72,11 +83,23 @@ ${colors.bold('EXAMPLES:')}
   # List projects (JSON for AI agents)
   productive projects list --format json
 
-  # Create time entry
-  productive time add --service 123 --time 480 --note "Work"
+  # Create time entry with inline credentials
+  productive time add \\
+    --token YOUR_TOKEN \\
+    --org-id YOUR_ORG_ID \\
+    --user-id YOUR_USER_ID \\
+    --service 123 \\
+    --time 480 \\
+    --note "Work"
 
   # List time entries for date range
   productive time list --from 2024-01-01 --to 2024-01-31
+
+${colors.bold('CREDENTIAL PRIORITY:')}
+  Credentials are loaded in this order (highest to lowest priority):
+  1. CLI arguments (--token, --org-id, --user-id)
+  2. Environment variables (PRODUCTIVE_API_TOKEN, PRODUCTIVE_ORG_ID, etc.)
+  3. Config file (~/.config/productive-cli/config.json)
 
 ${colors.bold('ENVIRONMENT VARIABLES:')}
   PRODUCTIVE_API_TOKEN      API token

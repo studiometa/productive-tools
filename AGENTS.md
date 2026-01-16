@@ -1,0 +1,526 @@
+# AI Agents & Automation Guide
+
+Complete guide for integrating @studiometa/productive-cli into AI agents, automation workflows, CI/CD pipelines, and other programmatic tools.
+
+> **For human users:** See [README.md](./README.md) for general usage documentation.
+
+## Quick Start for AI Agents
+
+```bash
+# Option 1: Pass credentials directly via CLI args (recommended for one-off commands)
+npx @studiometa/productive-cli projects list \
+  --token "your-api-token" \
+  --org-id "your-organization-id" \
+  --format json
+
+# Option 2: Use environment variables (recommended for scripts)
+export PRODUCTIVE_API_TOKEN="your-api-token"
+export PRODUCTIVE_ORG_ID="your-organization-id"
+export PRODUCTIVE_USER_ID="your-user-id"
+
+npx @studiometa/productive-cli projects list --format json
+
+# Parse response and use data
+project_id=$(echo "$response" | jq -r '.data[0].id')
+```
+
+## Key Features for AI Agents
+
+### 1. Structured JSON Output
+
+All commands support `--format json` which returns predictable, parseable data structures:
+
+```bash
+productive projects list --format json
+productive time list --format json
+productive tasks list --format json
+```
+
+**Response Structure:**
+```json
+{
+  "data": [...],           // Array of resources
+  "meta": {                // Metadata (pagination, etc.)
+    "page": 1,
+    "per_page": 100,
+    "total": 358
+  }
+}
+```
+
+### 2. Consistent Error Handling
+
+Errors are returned as structured JSON when using `--format json`:
+
+```json
+{
+  "error": "ProductiveApiError",
+  "message": "API request failed: 401 Unauthorized",
+  "statusCode": 401
+}
+```
+
+**Exit Codes:**
+- `0` - Success
+- `1` - Error (API error, validation error, etc.)
+
+### 3. Non-Interactive Commands
+
+All commands are fully non-interactive and suitable for automation:
+
+- No prompts or interactive inputs
+- All parameters via CLI flags or environment variables
+- Deterministic output format
+- Silent execution (only output requested data)
+
+### 4. Flexible Authentication
+
+Three ways to provide credentials, with clear priority:
+
+**Priority Order:**
+1. **CLI Arguments** (highest) - `--token`, `--org-id`, `--user-id`
+2. **Environment Variables** (middle) - `PRODUCTIVE_API_TOKEN`, `PRODUCTIVE_ORG_ID`, `PRODUCTIVE_USER_ID`
+3. **Config File** (lowest) - `~/.config/productive-cli/config.json`
+
+```bash
+# CLI arguments (best for one-off commands, override everything)
+productive projects list --token "token" --org-id "org-id"
+
+# Environment variables (best for scripts and CI/CD)
+export PRODUCTIVE_API_TOKEN="token"
+export PRODUCTIVE_ORG_ID="org-id"
+export PRODUCTIVE_USER_ID="user-id"
+export PRODUCTIVE_BASE_URL="https://api.productive.io/api/v2"  # Optional
+
+# Config file (best for local development)
+productive config set apiToken "token"
+productive config set organizationId "org-id"
+```
+
+## Common AI Agent Workflows
+
+### Workflow 1: Time Entry Automation
+
+```bash
+#!/bin/bash
+
+# Credentials passed as arguments
+TOKEN="your-api-token"
+ORG_ID="your-org-id"
+USER_ID="your-user-id"
+
+# List today's tasks
+tasks=$(productive tasks list --token "$TOKEN" --org-id "$ORG_ID" --format json)
+
+# Get first active task
+task_id=$(echo "$tasks" | jq -r '.data[0].id')
+service_id=$(echo "$tasks" | jq -r '.data[0].relationships.service.data.id')
+
+# Create time entry for 8 hours
+result=$(productive time add \
+  --token "$TOKEN" \
+  --org-id "$ORG_ID" \
+  --user-id "$USER_ID" \
+  --service "$service_id" \
+  --date $(date +%Y-%m-%d) \
+  --time 480 \
+  --note "Automated time entry from AI agent" \
+  --format json)
+
+# Check result
+if [ $? -eq 0 ]; then
+  entry_id=$(echo "$result" | jq -r '.id')
+  echo "Created time entry: $entry_id"
+else
+  echo "Failed: $(echo "$result" | jq -r '.message')"
+  exit 1
+fi
+```
+
+### Workflow 2: Project Status Report
+
+```bash
+#!/bin/bash
+
+# Get all active projects
+projects=$(productive projects list --format json)
+
+# For each project, get time entries
+echo "$projects" | jq -r '.data[] | .id' | while read project_id; do
+  time_entries=$(productive time list \
+    --project "$project_id" \
+    --from $(date -d "7 days ago" +%Y-%m-%d) \
+    --to $(date +%Y-%m-%d) \
+    --format json)
+  
+  # Calculate total hours
+  total_minutes=$(echo "$time_entries" | jq '[.data[].time_minutes] | add')
+  total_hours=$(echo "scale=2; $total_minutes / 60" | bc)
+  
+  # Get project name
+  project_name=$(echo "$projects" | jq -r ".data[] | select(.id==\"$project_id\") | .name")
+  
+  echo "$project_name: ${total_hours}h this week"
+done
+```
+
+### Workflow 3: Bulk Time Entry Creation
+
+```bash
+#!/bin/bash
+
+# Read time entries from a file
+cat time_entries.json | jq -c '.[]' | while read entry; do
+  service_id=$(echo "$entry" | jq -r '.service_id')
+  date=$(echo "$entry" | jq -r '.date')
+  time=$(echo "$entry" | jq -r '.time')
+  note=$(echo "$entry" | jq -r '.note')
+  
+  productive time add \
+    --service "$service_id" \
+    --date "$date" \
+    --time "$time" \
+    --note "$note" \
+    --format json
+  
+  # Rate limiting
+  sleep 0.5
+done
+```
+
+## API Client Library
+
+For more complex integrations, use the Node.js library:
+
+```typescript
+import { ProductiveApi, setConfig } from '@studiometa/productive-cli';
+
+// Configure
+setConfig('apiToken', process.env.PRODUCTIVE_API_TOKEN);
+setConfig('organizationId', process.env.PRODUCTIVE_ORG_ID);
+setConfig('userId', process.env.PRODUCTIVE_USER_ID);
+
+// Initialize API client
+const api = new ProductiveApi();
+
+// Async/await pattern
+async function automateTimeTracking() {
+  try {
+    // Get active projects
+    const projects = await api.getProjects({
+      page: 1,
+      perPage: 100,
+      filter: {},
+    });
+
+    // Get services for first project
+    const projectId = projects.data[0].id;
+    const services = await api.getServices({
+      filter: { project_id: projectId },
+    });
+
+    // Create time entry
+    const timeEntry = await api.createTimeEntry({
+      person_id: process.env.PRODUCTIVE_USER_ID!,
+      service_id: services.data[0].id,
+      date: new Date().toISOString().split('T')[0],
+      time: 480, // 8 hours
+      note: 'Automated entry',
+    });
+
+    console.log('Created time entry:', timeEntry.data.id);
+  } catch (error) {
+    if (error instanceof ProductiveApiError) {
+      console.error('API Error:', error.message, error.statusCode);
+    } else {
+      console.error('Unexpected error:', error);
+    }
+  }
+}
+
+automateTimeTracking();
+```
+
+## Response Schemas
+
+### Projects List Response
+
+```typescript
+{
+  "data": [
+    {
+      "id": "123456",
+      "name": "Project Name",
+      "project_number": "PRJ-001",
+      "archived": false,
+      "budget": 50000.00,
+      "created_at": "2024-01-01T10:00:00Z",
+      "updated_at": "2024-01-01T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "per_page": 100,
+    "total": 358
+  }
+}
+```
+
+### Time Entries List Response
+
+```typescript
+{
+  "data": [
+    {
+      "id": "131776640",
+      "date": "2024-01-16",
+      "time_minutes": 480,
+      "time_hours": "8.00",
+      "note": "Development work",
+      "person_id": "500521",
+      "service_id": "6028361",
+      "project_id": "777332",
+      "created_at": "2024-01-16T10:00:00Z",
+      "updated_at": "2024-01-16T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "total_pages": 8345,
+    "total_count": 41725,
+    "page_size": 100,
+    "max_page_size": 200
+  }
+}
+```
+
+### Time Entry Creation Response
+
+```typescript
+{
+  "status": "success",
+  "id": "131776640",
+  "date": "2024-01-16",
+  "time_minutes": 480,
+  "time_hours": "8.00",
+  "note": "Development work"
+}
+```
+
+### Error Response
+
+```typescript
+{
+  "error": "ProductiveApiError",
+  "message": "API request failed: 401 Unauthorized",
+  "statusCode": 401,
+  "response": "{\"errors\":[...]}"  // Raw API error response
+}
+```
+
+## Pagination Handling
+
+For large datasets, use pagination:
+
+```bash
+# Page 1
+productive projects list --page 1 --size 100 --format json
+
+# Page 2
+productive projects list --page 2 --size 100 --format json
+
+# Calculate total pages from meta.total_pages
+```
+
+**Programmatic Pagination:**
+
+```typescript
+const api = new ProductiveApi();
+let page = 1;
+let allProjects = [];
+
+while (true) {
+  const response = await api.getProjects({ page, perPage: 100 });
+  allProjects.push(...response.data);
+  
+  if (page >= response.meta.total_pages) break;
+  page++;
+}
+
+console.log(`Fetched ${allProjects.length} projects`);
+```
+
+## Rate Limiting
+
+The Productive.io API has rate limits. Best practices:
+
+1. **Respect Rate Limits** - Add delays between requests
+2. **Batch Requests** - Request 100-200 items per page (max)
+3. **Cache Results** - Store and reuse data when possible
+4. **Handle 429 Errors** - Implement exponential backoff
+
+```typescript
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error instanceof ProductiveApiError && error.statusCode === 429) {
+        const delay = Math.pow(2, i) * 1000; // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
+// Usage
+const projects = await withRetry(() => api.getProjects());
+```
+
+## Security Best Practices
+
+1. **Never Log Tokens** - Keep API tokens out of logs and outputs
+2. **Use Environment Variables** - Never hardcode credentials
+3. **Rotate Tokens Regularly** - Update tokens periodically
+4. **Limit Token Permissions** - Use read-only tokens when possible
+5. **Secure Storage** - Encrypt tokens in persistent storage
+
+```bash
+# Good: Environment variables
+export PRODUCTIVE_API_TOKEN="$(cat /secure/path/token.txt)"
+
+# Bad: Hardcoded in scripts
+PRODUCTIVE_API_TOKEN="abc123..."  # Don't do this!
+```
+
+## Debugging
+
+Enable debug output:
+
+```bash
+# Verbose output
+DEBUG=productive:* productive projects list
+```
+
+Check exit codes:
+
+```bash
+productive projects list
+echo "Exit code: $?"  # 0 = success, 1 = error
+```
+
+Validate configuration:
+
+```bash
+productive config validate --format json
+```
+
+## Example: Complete AI Agent Integration
+
+```typescript
+#!/usr/bin/env node
+import { ProductiveApi, setConfig, ProductiveApiError } from '@studiometa/productive-cli';
+
+// Configuration
+setConfig('apiToken', process.env.PRODUCTIVE_API_TOKEN!);
+setConfig('organizationId', process.env.PRODUCTIVE_ORG_ID!);
+setConfig('userId', process.env.PRODUCTIVE_USER_ID!);
+
+const api = new ProductiveApi();
+
+interface DailyReport {
+  date: string;
+  totalHours: number;
+  projects: Array<{
+    name: string;
+    hours: number;
+  }>;
+}
+
+async function generateDailyReport(date: string): Promise<DailyReport> {
+  try {
+    // Get time entries for the date
+    const timeEntries = await api.getTimeEntries({
+      filter: {
+        after: date,
+        before: date,
+        person_id: process.env.PRODUCTIVE_USER_ID!,
+      },
+      perPage: 200,
+    });
+
+    // Get all projects
+    const projects = await api.getProjects({ perPage: 200 });
+    const projectMap = new Map(projects.data.map(p => [p.id, p.attributes.name]));
+
+    // Aggregate by project
+    const projectHours = new Map<string, number>();
+    let totalMinutes = 0;
+
+    for (const entry of timeEntries.data) {
+      const projectId = entry.relationships?.project?.data?.id;
+      if (!projectId) continue;
+
+      const minutes = entry.attributes.time;
+      totalMinutes += minutes;
+
+      const current = projectHours.get(projectId) || 0;
+      projectHours.set(projectId, current + minutes);
+    }
+
+    // Format report
+    return {
+      date,
+      totalHours: totalMinutes / 60,
+      projects: Array.from(projectHours.entries()).map(([id, minutes]) => ({
+        name: projectMap.get(id) || 'Unknown Project',
+        hours: minutes / 60,
+      })),
+    };
+  } catch (error) {
+    if (error instanceof ProductiveApiError) {
+      console.error(`API Error (${error.statusCode}): ${error.message}`);
+      process.exit(1);
+    }
+    throw error;
+  }
+}
+
+// Run
+const today = new Date().toISOString().split('T')[0];
+const report = await generateDailyReport(today);
+
+console.log(JSON.stringify(report, null, 2));
+```
+
+## Testing AI Integrations
+
+Test your integration with mock data:
+
+```typescript
+import { vi } from 'vitest';
+import type { ProductiveApi } from '@studiometa/productive-cli';
+
+// Mock the API
+vi.mock('@studiometa/productive-cli', () => ({
+  ProductiveApi: vi.fn(() => ({
+    getProjects: vi.fn().mockResolvedValue({
+      data: [{ id: '1', attributes: { name: 'Test Project' } }],
+      meta: { page: 1, total: 1 },
+    }),
+  })),
+}));
+```
+
+## Support
+
+- 📖 [API Documentation](https://developer.productive.io/)
+- 🐛 [Report Issues](https://github.com/studiometa/productive-cli/issues)
+- 💬 [Discussions](https://github.com/studiometa/productive-cli/discussions)
+
+## License
+
+MIT © [Studio Meta](https://www.studiometa.fr/)

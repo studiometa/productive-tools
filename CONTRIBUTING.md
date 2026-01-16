@@ -206,7 +206,7 @@ describe('yourCommand', () => {
 - Update README.md with new features
 - Add JSDoc comments for public APIs
 - Update CHANGELOG.md
-- Update AI_AGENT_GUIDE.md if relevant for AI agents
+- Update AGENTS.md if relevant for AI agents
 
 ## Commit Messages
 

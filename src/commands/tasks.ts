@@ -33,7 +33,7 @@ async function tasksList(
   spinner.start();
 
   try {
-    const api = new ProductiveApi();
+    const api = new ProductiveApi(options);
     const filter: Record<string, string> = {};
 
     // Note: The Productive API doesn't support 'completed' filter on tasks endpoint
@@ -117,7 +117,7 @@ async function tasksGet(
   spinner.start();
 
   try {
-    const api = new ProductiveApi();
+    const api = new ProductiveApi(options);
     const response = await api.getTask(id);
     const task = response.data;
 

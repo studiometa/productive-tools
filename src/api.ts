@@ -35,18 +35,18 @@ export class ProductiveApi {
   private apiToken: string;
   private organizationId: string;
 
-  constructor() {
-    const config = getConfig();
+  constructor(options?: Record<string, string | boolean>) {
+    const config = getConfig(options);
     
     if (!config.apiToken) {
       throw new ProductiveApiError(
-        'API token not configured. Set via: productive config set apiToken <token> or PRODUCTIVE_API_TOKEN env var'
+        'API token not configured. Set via: --token <token>, productive config set apiToken <token>, or PRODUCTIVE_API_TOKEN env var'
       );
     }
     
     if (!config.organizationId) {
       throw new ProductiveApiError(
-        'Organization ID not configured. Set via: productive config set organizationId <id> or PRODUCTIVE_ORG_ID env var'
+        'Organization ID not configured. Set via: --org-id <id>, productive config set organizationId <id>, or PRODUCTIVE_ORG_ID env var'
       );
     }
 

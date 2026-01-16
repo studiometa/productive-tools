@@ -30,7 +30,7 @@ async function budgetsList(
   spinner.start();
 
   try {
-    const api = new ProductiveApi();
+    const api = new ProductiveApi(options);
     const filter: Record<string, string> = {};
 
     if (options.project) {

@@ -130,7 +130,7 @@ npx @studiometa/productive-cli
 ## 📚 Documentation
 
 1. **README.md** - Main documentation
-2. **AI_AGENT_GUIDE.md** - Detailed guide for AI agents
+2. **AGENTS.md** - Detailed guide for AI agents and automation
 3. **CONTRIBUTING.md** - Contribution guidelines
 4. **CHANGELOG.md** - Version history
 5. **PROJECT_STRUCTURE.md** - Architecture overview

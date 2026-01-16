@@ -44,7 +44,7 @@ async function timeList(
   spinner.start();
 
   try {
-    const api = new ProductiveApi();
+    const api = new ProductiveApi(options);
     const filter: Record<string, string> = {};
 
     if (options.from) filter.after = String(options.from);
@@ -138,7 +138,7 @@ async function timeGet(
   spinner.start();
 
   try {
-    const api = new ProductiveApi();
+    const api = new ProductiveApi(options);
     const response = await api.getTimeEntry(id);
     const entry = response.data;
 
@@ -206,7 +206,7 @@ async function timeAdd(
 
     const date = String(options.date || new Date().toISOString().split('T')[0]);
 
-    const api = new ProductiveApi();
+    const api = new ProductiveApi(options);
     const response = await api.createTimeEntry({
       person_id: personId,
       service_id: String(options.service),
@@ -272,7 +272,7 @@ async function timeUpdate(
       process.exit(1);
     }
 
-    const api = new ProductiveApi();
+    const api = new ProductiveApi(options);
     const response = await api.updateTimeEntry(id, data);
 
     spinner.succeed();
@@ -304,7 +304,7 @@ async function timeDelete(
   spinner.start();
 
   try {
-    const api = new ProductiveApi();
+    const api = new ProductiveApi(options);
     await api.deleteTimeEntry(id);
 
     spinner.succeed();

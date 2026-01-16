@@ -33,7 +33,7 @@ async function peopleList(
   spinner.start();
 
   try {
-    const api = new ProductiveApi();
+    const api = new ProductiveApi(options);
     const filter: Record<string, string> = {};
 
     // Note: The Productive API doesn't support 'active' filter on people endpoint
@@ -109,7 +109,7 @@ async function peopleGet(
   spinner.start();
 
   try {
-    const api = new ProductiveApi();
+    const api = new ProductiveApi(options);
     const response = await api.getPerson(id);
     const person = response.data;
 

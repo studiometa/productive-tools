@@ -3,12 +3,33 @@ import type { ProductiveConfig } from './types.js';
 
 const config = new ConfigStore<ProductiveConfig>('productive-cli');
 
-export function getConfig(): ProductiveConfig {
+/**
+ * Get configuration from multiple sources with priority:
+ * 1. CLI arguments (highest priority)
+ * 2. Environment variables
+ * 3. Config file (lowest priority)
+ */
+export function getConfig(cliOptions?: Record<string, string | boolean>): ProductiveConfig {
   return {
-    apiToken: config.get('apiToken') || process.env.PRODUCTIVE_API_TOKEN,
-    organizationId: config.get('organizationId') || process.env.PRODUCTIVE_ORG_ID,
-    userId: config.get('userId') || process.env.PRODUCTIVE_USER_ID,
-    baseUrl: config.get('baseUrl') || process.env.PRODUCTIVE_BASE_URL || 'https://api.productive.io/api/v2',
+    apiToken: 
+      (cliOptions?.['api-token'] as string) ||
+      (cliOptions?.token as string) ||
+      config.get('apiToken') || 
+      process.env.PRODUCTIVE_API_TOKEN,
+    organizationId: 
+      (cliOptions?.['org-id'] as string) ||
+      (cliOptions?.['organization-id'] as string) ||
+      config.get('organizationId') || 
+      process.env.PRODUCTIVE_ORG_ID,
+    userId: 
+      (cliOptions?.['user-id'] as string) ||
+      config.get('userId') || 
+      process.env.PRODUCTIVE_USER_ID,
+    baseUrl: 
+      (cliOptions?.['base-url'] as string) ||
+      config.get('baseUrl') || 
+      process.env.PRODUCTIVE_BASE_URL || 
+      'https://api.productive.io/api/v2',
   };
 }
 

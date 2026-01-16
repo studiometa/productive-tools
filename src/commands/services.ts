@@ -30,7 +30,7 @@ async function servicesList(
   spinner.start();
 
   try {
-    const api = new ProductiveApi();
+    const api = new ProductiveApi(options);
     const response = await api.getServices({
       page: parseInt(String(options.page || options.p || '1')),
       perPage: parseInt(String(options.size || options.s || '100')),
