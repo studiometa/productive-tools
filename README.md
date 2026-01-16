@@ -1,5 +1,10 @@
 # @studiometa/productive-cli
 
+[![CI](https://github.com/studiometa/productive-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/studiometa/productive-cli/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/studiometa/productive-cli/branch/main/graph/badge.svg)](https://codecov.io/gh/studiometa/productive-cli)
+[![npm version](https://badge.fury.io/js/@studiometa%2Fproductive-cli.svg)](https://www.npmjs.com/package/@studiometa/productive-cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A powerful CLI tool for interacting with the Productive.io API, optimized for both AI agents and human users.
 
 ## ✨ Features
