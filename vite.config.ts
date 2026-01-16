@@ -29,7 +29,24 @@ export default defineConfig({
     environment: 'node',
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'json-summary', 'html', 'lcov'],
+      exclude: [
+        'node_modules/**',
+        'dist/**',
+        'src/cli.ts', // CLI entry point, tested manually
+        'src/index.ts', // Entry point export file
+        'src/types.ts', // Type definitions only
+        'scripts/**',
+        '**/*.test.ts',
+        '**/__tests__/**',
+        '*.config.ts',
+      ],
+      thresholds: {
+        statements: 70,
+        branches: 85,
+        functions: 70,
+        lines: 70,
+      },
     },
   },
 });
