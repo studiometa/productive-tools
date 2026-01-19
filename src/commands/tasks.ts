@@ -1,7 +1,21 @@
 import { ProductiveApi, ProductiveApiError } from '../api.js';
 import { OutputFormatter, createSpinner } from '../output.js';
+import { getConfig } from '../config.js';
 import { colors } from '../utils/colors.js';
 import type { OutputFormat } from '../types.js';
+
+function parseFilters(filterString: string): Record<string, string> {
+  const filters: Record<string, string> = {};
+  if (!filterString) return filters;
+  
+  filterString.split(',').forEach((pair) => {
+    const [key, value] = pair.split('=');
+    if (key && value) {
+      filters[key.trim()] = value.trim();
+    }
+  });
+  return filters;
+}
 
 export function showTasksHelp(subcommand?: string): void {
   if (subcommand === 'list' || subcommand === 'ls') {
@@ -12,7 +26,10 @@ ${colors.bold('USAGE:')}
   productive tasks list [options]
 
 ${colors.bold('OPTIONS:')}
+  --mine              Filter by configured user ID (assignee)
+  --person <id>       Filter by assignee person ID
   --project <id>      Filter by project ID
+  --filter <filters>  Generic filters (comma-separated key=value pairs)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
   --sort <field>      Sort by field (prefix with - for descending)
@@ -20,8 +37,9 @@ ${colors.bold('OPTIONS:')}
 
 ${colors.bold('EXAMPLES:')}
   productive tasks list
+  productive tasks list --mine
   productive tasks list --project 12345
-  productive tasks list --format json -s 50
+  productive tasks list --filter assignee_id=123,status=1
 `);
   } else if (subcommand === 'get') {
     console.log(`
@@ -97,12 +115,21 @@ async function tasksList(
   spinner.start();
 
   try {
+    const config = getConfig();
     const api = new ProductiveApi(options);
     const filter: Record<string, string> = {};
 
-    // Note: The Productive API doesn't support 'completed' filter on tasks endpoint
-    // All tasks are returned by default
+    // Parse generic filters first
+    if (options.filter) {
+      Object.assign(filter, parseFilters(String(options.filter)));
+    }
 
+    // Specific filter options (override generic filters)
+    if (options.mine && config.userId) {
+      filter.assignee_id = config.userId;
+    } else if (options.person) {
+      filter.assignee_id = String(options.person);
+    }
     if (options.project) {
       filter.project_id = String(options.project);
     }

@@ -93,6 +93,7 @@ describe('services command', () => {
       expect(mockApi.getServices).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
+        filter: {},
       });
     });
 
@@ -115,6 +116,7 @@ describe('services command', () => {
       expect(mockApi.getServices).toHaveBeenCalledWith({
         page: 2,
         perPage: 50,
+        filter: {},
       });
     });
 

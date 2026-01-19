@@ -3,6 +3,19 @@ import { OutputFormatter, createSpinner } from '../output.js';
 import { colors } from '../utils/colors.js';
 import type { OutputFormat } from '../types.js';
 
+function parseFilters(filterString: string): Record<string, string> {
+  const filters: Record<string, string> = {};
+  if (!filterString) return filters;
+  
+  filterString.split(',').forEach((pair) => {
+    const [key, value] = pair.split('=');
+    if (key && value) {
+      filters[key.trim()] = value.trim();
+    }
+  });
+  return filters;
+}
+
 export function showPeopleHelp(subcommand?: string): void {
   if (subcommand === 'list' || subcommand === 'ls') {
     console.log(`
@@ -12,6 +25,8 @@ ${colors.bold('USAGE:')}
   productive people list [options]
 
 ${colors.bold('OPTIONS:')}
+  --company <id>      Filter by company ID
+  --filter <filters>  Generic filters (comma-separated key=value pairs)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
   --sort <field>      Sort by field (prefix with - for descending)
@@ -19,8 +34,9 @@ ${colors.bold('OPTIONS:')}
 
 ${colors.bold('EXAMPLES:')}
   productive people list
-  productive people list --format json
-  productive people list -p 2 -s 50
+  productive people list --company 12345
+  productive people list --filter active=true
+  productive people list --format json -p 2 -s 50
 `);
   } else if (subcommand === 'get') {
     console.log(`
@@ -98,8 +114,15 @@ async function peopleList(
     const api = new ProductiveApi(options);
     const filter: Record<string, string> = {};
 
-    // Note: The Productive API doesn't support 'active' filter on people endpoint
-    // All people are returned by default
+    // Parse generic filters first
+    if (options.filter) {
+      Object.assign(filter, parseFilters(String(options.filter)));
+    }
+
+    // Specific filter options (override generic filters)
+    if (options.company) {
+      filter.company_id = String(options.company);
+    }
 
     const response = await api.getPeople({
       page: parseInt(String(options.page || options.p || '1')),

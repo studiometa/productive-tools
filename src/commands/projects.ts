@@ -3,6 +3,19 @@ import { OutputFormatter, createSpinner } from '../output.js';
 import { colors } from '../utils/colors.js';
 import type { OutputFormat } from '../types.js';
 
+function parseFilters(filterString: string): Record<string, string> {
+  const filters: Record<string, string> = {};
+  if (!filterString) return filters;
+  
+  filterString.split(',').forEach((pair) => {
+    const [key, value] = pair.split('=');
+    if (key && value) {
+      filters[key.trim()] = value.trim();
+    }
+  });
+  return filters;
+}
+
 export function showProjectsHelp(subcommand?: string): void {
   if (subcommand === 'list' || subcommand === 'ls') {
     console.log(`
@@ -12,6 +25,8 @@ ${colors.bold('USAGE:')}
   productive projects list [options]
 
 ${colors.bold('OPTIONS:')}
+  --company <id>      Filter by company ID
+  --filter <filters>  Generic filters (comma-separated key=value pairs)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
   --sort <field>      Sort by field (prefix with - for descending)
@@ -19,8 +34,9 @@ ${colors.bold('OPTIONS:')}
 
 ${colors.bold('EXAMPLES:')}
   productive projects list
+  productive projects list --company 12345
+  productive projects list --filter archived=false
   productive projects list --format json
-  productive projects list -p 2 -s 50
   productive projects list --sort -created_at
 `);
   } else if (subcommand === 'get') {
@@ -102,8 +118,15 @@ async function projectsList(
     const api = new ProductiveApi(options);
     const filter: Record<string, string> = {};
 
-    // Note: The Productive API doesn't support 'archived' filter on projects endpoint
-    // To filter archived projects, use --archived flag which removes the default filter
+    // Parse generic filters first
+    if (options.filter) {
+      Object.assign(filter, parseFilters(String(options.filter)));
+    }
+
+    // Specific filter options (override generic filters)
+    if (options.company) {
+      filter.company_id = String(options.company);
+    }
 
     const response = await api.getProjects({
       page: parseInt(String(options.page || options.p || '1')),

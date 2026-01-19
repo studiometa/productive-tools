@@ -15,8 +15,10 @@ ${colors.bold('USAGE:')}
 ${colors.bold('OPTIONS:')}
   --from <date>       Filter entries after this date (YYYY-MM-DD)
   --to <date>         Filter entries before this date (YYYY-MM-DD)
+  --mine              Filter by configured user ID (shortcut for --person)
   --person <id>       Filter by person ID
   --project <id>      Filter by project ID
+  --filter <filters>  Generic filters (comma-separated key=value pairs)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
   --sort <field>      Sort by field (prefix with - for descending)
@@ -24,8 +26,10 @@ ${colors.bold('OPTIONS:')}
 
 ${colors.bold('EXAMPLES:')}
   productive time list --from 2024-01-01 --to 2024-01-31
+  productive time list --mine --from 2024-01-01
   productive time list --person 12345 --format json
   productive time list --project 67890 -s 50
+  productive time list --filter service_id=123,project_id=456
 `);
   } else if (subcommand === 'get') {
     console.log(`
@@ -171,6 +175,19 @@ export async function handleTimeCommand(
   }
 }
 
+function parseFilters(filterString: string): Record<string, string> {
+  const filters: Record<string, string> = {};
+  if (!filterString) return filters;
+  
+  filterString.split(',').forEach((pair) => {
+    const [key, value] = pair.split('=');
+    if (key && value) {
+      filters[key.trim()] = value.trim();
+    }
+  });
+  return filters;
+}
+
 async function timeList(
   options: Record<string, string | boolean>,
   formatter: OutputFormatter
@@ -179,12 +196,23 @@ async function timeList(
   spinner.start();
 
   try {
+    const config = getConfig();
     const api = new ProductiveApi(options);
     const filter: Record<string, string> = {};
 
+    // Parse generic filters first
+    if (options.filter) {
+      Object.assign(filter, parseFilters(String(options.filter)));
+    }
+
+    // Specific filter options (override generic filters)
     if (options.from) filter.after = String(options.from);
     if (options.to) filter.before = String(options.to);
-    if (options.person) filter.person_id = String(options.person);
+    if (options.mine && config.userId) {
+      filter.person_id = config.userId;
+    } else if (options.person) {
+      filter.person_id = String(options.person);
+    }
     if (options.project) filter.project_id = String(options.project);
 
     const response = await api.getTimeEntries({

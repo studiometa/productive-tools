@@ -3,6 +3,19 @@ import { OutputFormatter, createSpinner } from '../output.js';
 import { colors } from '../utils/colors.js';
 import type { OutputFormat } from '../types.js';
 
+function parseFilters(filterString: string): Record<string, string> {
+  const filters: Record<string, string> = {};
+  if (!filterString) return filters;
+  
+  filterString.split(',').forEach((pair) => {
+    const [key, value] = pair.split('=');
+    if (key && value) {
+      filters[key.trim()] = value.trim();
+    }
+  });
+  return filters;
+}
+
 export function showServicesHelp(subcommand?: string): void {
   if (subcommand === 'list' || subcommand === 'ls') {
     console.log(`
@@ -12,14 +25,18 @@ ${colors.bold('USAGE:')}
   productive services list [options]
 
 ${colors.bold('OPTIONS:')}
+  --project <id>      Filter by project ID
+  --deal <id>         Filter by deal ID
+  --filter <filters>  Generic filters (comma-separated key=value pairs)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
   -f, --format <fmt>  Output format: json, human, csv, table
 
 ${colors.bold('EXAMPLES:')}
   productive services list
-  productive services list --format json
-  productive services list -p 2 -s 50
+  productive services list --project 12345
+  productive services list --filter deal_id=67890
+  productive services list --format json -p 2 -s 50
 `);
   } else {
     console.log(`
@@ -77,9 +94,25 @@ async function servicesList(
 
   try {
     const api = new ProductiveApi(options);
+    const filter: Record<string, string> = {};
+
+    // Parse generic filters first
+    if (options.filter) {
+      Object.assign(filter, parseFilters(String(options.filter)));
+    }
+
+    // Specific filter options (override generic filters)
+    if (options.project) {
+      filter.project_id = String(options.project);
+    }
+    if (options.deal) {
+      filter.deal_id = String(options.deal);
+    }
+
     const response = await api.getServices({
       page: parseInt(String(options.page || options.p || '1')),
       perPage: parseInt(String(options.size || options.s || '100')),
+      filter,
     });
 
     spinner.succeed();

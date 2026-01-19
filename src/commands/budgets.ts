@@ -3,6 +3,19 @@ import { OutputFormatter, createSpinner } from '../output.js';
 import { colors } from '../utils/colors.js';
 import type { OutputFormat } from '../types.js';
 
+function parseFilters(filterString: string): Record<string, string> {
+  const filters: Record<string, string> = {};
+  if (!filterString) return filters;
+  
+  filterString.split(',').forEach((pair) => {
+    const [key, value] = pair.split('=');
+    if (key && value) {
+      filters[key.trim()] = value.trim();
+    }
+  });
+  return filters;
+}
+
 export function showBudgetsHelp(subcommand?: string): void {
   if (subcommand === 'list' || subcommand === 'ls') {
     console.log(`
@@ -13,6 +26,8 @@ ${colors.bold('USAGE:')}
 
 ${colors.bold('OPTIONS:')}
   --project <id>      Filter by project ID
+  --company <id>      Filter by company ID
+  --filter <filters>  Generic filters (comma-separated key=value pairs)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
   -f, --format <fmt>  Output format: json, human, csv, table
@@ -20,7 +35,8 @@ ${colors.bold('OPTIONS:')}
 ${colors.bold('EXAMPLES:')}
   productive budgets list
   productive budgets list --project 12345
-  productive budgets list --format json
+  productive budgets list --company 67890
+  productive budgets list --filter status=1
 `);
   } else {
     console.log(`
@@ -77,8 +93,17 @@ async function budgetsList(
     const api = new ProductiveApi(options);
     const filter: Record<string, string> = {};
 
+    // Parse generic filters first
+    if (options.filter) {
+      Object.assign(filter, parseFilters(String(options.filter)));
+    }
+
+    // Specific filter options (override generic filters)
     if (options.project) {
       filter.project_id = String(options.project);
+    }
+    if (options.company) {
+      filter.company_id = String(options.company);
     }
 
     const response = await api.getBudgets({
