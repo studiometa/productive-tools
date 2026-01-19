@@ -2,6 +2,7 @@ import { ProductiveApi, ProductiveApiError } from '../api.js';
 import { OutputFormatter, createSpinner } from '../output.js';
 import { getConfig } from '../config.js';
 import { colors } from '../utils/colors.js';
+import { parseDate, parseDateRange } from '../utils/date.js';
 import type { OutputFormat } from '../types.js';
 
 export function showTimeHelp(subcommand?: string): void {
@@ -13,8 +14,9 @@ ${colors.bold('USAGE:')}
   productive time list [options]
 
 ${colors.bold('OPTIONS:')}
-  --from <date>       Filter entries after this date (YYYY-MM-DD)
-  --to <date>         Filter entries before this date (YYYY-MM-DD)
+  --date <date>       Filter by date (single day or range shortcut)
+  --from <date>       Filter entries after this date
+  --to <date>         Filter entries before this date
   --mine              Filter by configured user ID (shortcut for --person)
   --person <id>       Filter by person ID
   --project <id>      Filter by project ID
@@ -24,11 +26,19 @@ ${colors.bold('OPTIONS:')}
   --sort <field>      Sort by field (prefix with - for descending)
   -f, --format <fmt>  Output format: json, human, csv, table
 
+${colors.bold('DATE FORMATS:')}
+  ISO format:         2024-01-15
+  Keywords:           today, yesterday, tomorrow
+  Relative:           "2 days ago", "1 week ago", "3 months ago"
+  Ranges:             "this week", "last week", "this month", "last month"
+
 ${colors.bold('EXAMPLES:')}
+  productive time list --date today
+  productive time list --date yesterday --mine
+  productive time list --date "last week"
+  productive time list --date "this month" --project 123
+  productive time list --from "3 days ago" --to today
   productive time list --from 2024-01-01 --to 2024-01-31
-  productive time list --mine --from 2024-01-01
-  productive time list --person 12345 --format json
-  productive time list --project 67890 -s 50
   productive time list --filter service_id=123,project_id=456
 `);
   } else if (subcommand === 'get') {
@@ -205,9 +215,25 @@ async function timeList(
       Object.assign(filter, parseFilters(String(options.filter)));
     }
 
-    // Specific filter options (override generic filters)
-    if (options.from) filter.after = String(options.from);
-    if (options.to) filter.before = String(options.to);
+    // Date filtering with smart parsing
+    if (options.date) {
+      const range = parseDateRange(String(options.date));
+      if (range) {
+        filter.after = range.from;
+        filter.before = range.to;
+      }
+    }
+    // --from and --to override --date
+    if (options.from) {
+      const parsed = parseDate(String(options.from));
+      if (parsed) filter.after = parsed;
+    }
+    if (options.to) {
+      const parsed = parseDate(String(options.to));
+      if (parsed) filter.before = parsed;
+    }
+
+    // Person filtering
     if (options.mine && config.userId) {
       filter.person_id = config.userId;
     } else if (options.person) {
