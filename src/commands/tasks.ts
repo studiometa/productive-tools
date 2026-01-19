@@ -3,6 +3,70 @@ import { OutputFormatter, createSpinner } from '../output.js';
 import { colors } from '../utils/colors.js';
 import type { OutputFormat } from '../types.js';
 
+export function showTasksHelp(subcommand?: string): void {
+  if (subcommand === 'list' || subcommand === 'ls') {
+    console.log(`
+${colors.bold('productive tasks list')} - List tasks
+
+${colors.bold('USAGE:')}
+  productive tasks list [options]
+
+${colors.bold('OPTIONS:')}
+  --project <id>      Filter by project ID
+  -p, --page <num>    Page number (default: 1)
+  -s, --size <num>    Page size (default: 100)
+  --sort <field>      Sort by field (prefix with - for descending)
+  -f, --format <fmt>  Output format: json, human, csv, table
+
+${colors.bold('EXAMPLES:')}
+  productive tasks list
+  productive tasks list --project 12345
+  productive tasks list --format json -s 50
+`);
+  } else if (subcommand === 'get') {
+    console.log(`
+${colors.bold('productive tasks get')} - Get task details
+
+${colors.bold('USAGE:')}
+  productive tasks get <id>
+
+${colors.bold('ARGUMENTS:')}
+  <id>                Task ID (required)
+
+${colors.bold('OPTIONS:')}
+  -f, --format <fmt>  Output format: json, human
+
+${colors.bold('EXAMPLES:')}
+  productive tasks get 12345
+  productive tasks get 12345 --format json
+`);
+  } else {
+    console.log(`
+${colors.bold('productive tasks')} - Manage tasks
+
+${colors.bold('USAGE:')}
+  productive tasks <subcommand> [options]
+
+${colors.bold('SUBCOMMANDS:')}
+  list, ls            List tasks
+  get <id>            Get task details
+
+${colors.bold('COMMON OPTIONS:')}
+  -f, --format <fmt>  Output format: json, human, csv, table
+  -p, --page <num>    Page number for pagination
+  -s, --size <num>    Page size (default: 100)
+  -h, --help          Show help for a subcommand
+
+${colors.bold('EXAMPLES:')}
+  productive tasks list
+  productive tasks list --project 12345
+  productive tasks get 67890
+
+Run ${colors.cyan('productive tasks <subcommand> --help')} for subcommand details.
+`);
+  }
+}
+
 export async function handleTasksCommand(
   subcommand: string,
   args: string[],

@@ -55,7 +55,8 @@ export function parseArgs(argv: string[] = process.argv.slice(2)): ParsedArgs {
       }
     } else {
       // Positional argument or command
-      if (command.length === 0 && !arg.includes('/')) {
+      // First two non-option args are command and subcommand
+      if (command.length < 2 && !arg.includes('/')) {
         command.push(arg);
       } else {
         positional.push(arg);

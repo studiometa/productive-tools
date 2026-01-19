@@ -35,11 +35,15 @@ describe('ProductiveApi', () => {
 
   it('should throw error if apiToken not configured', () => {
     clearConfig();
+    delete process.env.PRODUCTIVE_API_TOKEN;
+    delete process.env.PRODUCTIVE_ORG_ID;
     expect(() => new ProductiveApi()).toThrow('API token not configured');
   });
 
   it('should throw error if organizationId not configured', () => {
     clearConfig();
+    delete process.env.PRODUCTIVE_API_TOKEN;
+    delete process.env.PRODUCTIVE_ORG_ID;
     setConfig('apiToken', 'test-token');
     expect(() => new ProductiveApi()).toThrow('Organization ID not configured');
   });

@@ -2,15 +2,15 @@
 
 import { parseArgs } from './utils/args.js';
 import { colors, setColorEnabled } from './utils/colors.js';
-import { handleConfigCommand } from './commands/config.js';
-import { handleProjectsCommand } from './commands/projects.js';
-import { handleTimeCommand } from './commands/time.js';
-import { handleTasksCommand } from './commands/tasks.js';
-import { handlePeopleCommand } from './commands/people.js';
-import { handleServicesCommand } from './commands/services.js';
-import { handleBudgetsCommand } from './commands/budgets.js';
+import { handleConfigCommand, showConfigHelp } from './commands/config.js';
+import { handleProjectsCommand, showProjectsHelp } from './commands/projects.js';
+import { handleTimeCommand, showTimeHelp } from './commands/time.js';
+import { handleTasksCommand, showTasksHelp } from './commands/tasks.js';
+import { handlePeopleCommand, showPeopleHelp } from './commands/people.js';
+import { handleServicesCommand, showServicesHelp } from './commands/services.js';
+import { handleBudgetsCommand, showBudgetsHelp } from './commands/budgets.js';
 
-const VERSION = '0.1.0';
+const VERSION = '0.1.1';
 
 function showHelp(): void {
   console.log(`
@@ -124,8 +124,14 @@ ${colors.bold('LEARN MORE:')}
 async function main(): Promise<void> {
   const { command, options, positional } = parseArgs();
 
-  // Handle global flags
-  if (options.help || options.h) {
+  // Get command and subcommand
+  const [mainCommand, subcommand] = command;
+
+  // Check for help flag
+  const wantsHelp = options.help !== undefined || options.h !== undefined;
+
+  // Handle global flags (only show global help if no command specified)
+  if (wantsHelp && !mainCommand) {
     showHelp();
     process.exit(0);
   }
@@ -139,9 +145,6 @@ async function main(): Promise<void> {
     setColorEnabled(false);
   }
 
-  // Get command and subcommand
-  const [mainCommand, subcommand] = command;
-
   if (!mainCommand) {
     showHelp();
     process.exit(0);
@@ -151,33 +154,61 @@ async function main(): Promise<void> {
   try {
     switch (mainCommand) {
       case 'config':
+        if (wantsHelp) {
+          showConfigHelp(subcommand);
+          process.exit(0);
+        }
         handleConfigCommand(subcommand || 'get', positional, options);
         break;
 
       case 'projects':
       case 'p':
+        if (wantsHelp) {
+          showProjectsHelp(subcommand);
+          process.exit(0);
+        }
         await handleProjectsCommand(subcommand || 'list', positional, options);
         break;
 
       case 'time':
       case 't':
+        if (wantsHelp) {
+          showTimeHelp(subcommand);
+          process.exit(0);
+        }
         await handleTimeCommand(subcommand || 'list', positional, options);
         break;
 
       case 'tasks':
+        if (wantsHelp) {
+          showTasksHelp(subcommand);
+          process.exit(0);
+        }
         await handleTasksCommand(subcommand || 'list', positional, options);
         break;
 
       case 'people':
+        if (wantsHelp) {
+          showPeopleHelp(subcommand);
+          process.exit(0);
+        }
         await handlePeopleCommand(subcommand || 'list', positional, options);
         break;
 
       case 'services':
       case 'svc':
+        if (wantsHelp) {
+          showServicesHelp(subcommand);
+          process.exit(0);
+        }
         await handleServicesCommand(subcommand || 'list', positional, options);
         break;
 
       case 'budgets':
+        if (wantsHelp) {
+          showBudgetsHelp(subcommand);
+          process.exit(0);
+        }
         await handleBudgetsCommand(subcommand || 'list', positional, options);
         break;
 

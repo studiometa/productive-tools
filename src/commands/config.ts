@@ -1,7 +1,122 @@
-import { getConfig, setConfig, clearConfig, showConfig, validateConfig } from '../config.js';
+import { getConfig, setConfig, clearConfig, validateConfig } from '../config.js';
 import { OutputFormatter } from '../output.js';
 import { colors } from '../utils/colors.js';
 import type { OutputFormat } from '../types.js';
+
+export function showConfigHelp(subcommand?: string): void {
+  if (subcommand === 'set') {
+    console.log(`
+${colors.bold('productive config set')} - Set a configuration value
+
+${colors.bold('USAGE:')}
+  productive config set <key> <value>
+
+${colors.bold('ARGUMENTS:')}
+  <key>               Configuration key (required)
+  <value>             Configuration value (required)
+
+${colors.bold('VALID KEYS:')}
+  apiToken            Productive API token
+  organizationId      Your organization ID
+  userId              Your user ID
+  baseUrl             API base URL (optional, has default)
+
+${colors.bold('EXAMPLES:')}
+  productive config set apiToken YOUR_API_TOKEN
+  productive config set organizationId 12345
+  productive config set userId 67890
+`);
+  } else if (subcommand === 'get') {
+    console.log(`
+${colors.bold('productive config get')} - Get configuration value(s)
+
+${colors.bold('USAGE:')}
+  productive config get [key]
+
+${colors.bold('ARGUMENTS:')}
+  [key]               Configuration key (optional, shows all if omitted)
+
+${colors.bold('OPTIONS:')}
+  --no-mask           Show full API token (not masked)
+  -f, --format <fmt>  Output format: json, human
+
+${colors.bold('VALID KEYS:')}
+  apiToken            Productive API token
+  organizationId      Your organization ID
+  userId              Your user ID
+  baseUrl             API base URL
+
+${colors.bold('EXAMPLES:')}
+  productive config get
+  productive config get apiToken
+  productive config get --format json
+  productive config get apiToken --no-mask
+`);
+  } else if (subcommand === 'validate') {
+    console.log(`
+${colors.bold('productive config validate')} - Validate configuration
+
+${colors.bold('USAGE:')}
+  productive config validate
+
+${colors.bold('OPTIONS:')}
+  -f, --format <fmt>  Output format: json, human
+
+${colors.bold('DESCRIPTION:')}
+  Checks if required configuration values are set:
+  - apiToken
+  - organizationId
+
+${colors.bold('EXAMPLES:')}
+  productive config validate
+  productive config validate --format json
+`);
+  } else if (subcommand === 'clear') {
+    console.log(`
+${colors.bold('productive config clear')} - Clear all configuration
+
+${colors.bold('USAGE:')}
+  productive config clear
+
+${colors.bold('DESCRIPTION:')}
+  Removes all stored configuration values from the config file.
+
+${colors.bold('EXAMPLES:')}
+  productive config clear
+`);
+  } else {
+    console.log(`
+${colors.bold('productive config')} - Manage CLI configuration
+
+${colors.bold('USAGE:')}
+  productive config <subcommand> [options]
+
+${colors.bold('SUBCOMMANDS:')}
+  set <key> <val>     Set a configuration value
+  get [key]           Get configuration value(s)
+  validate            Validate configuration
+  clear               Clear all configuration
+
+${colors.bold('CONFIGURATION KEYS:')}
+  apiToken            Productive API token
+  organizationId      Your organization ID
+  userId              Your user ID
+  baseUrl             API base URL (optional)
+
+${colors.bold('CONFIG FILE LOCATION:')}
+  Linux:   ~/.config/productive-cli/config.json
+  macOS:   ~/Library/Application Support/productive-cli/config.json
+  Windows: %APPDATA%\\productive-cli\\config.json
+
+${colors.bold('EXAMPLES:')}
+  productive config set apiToken YOUR_TOKEN
+  productive config get
+  productive config validate
+
+Run ${colors.cyan('productive config <subcommand> --help')} for subcommand details.
+`);
+  }
+}
 
 export function handleConfigCommand(
   subcommand: string,

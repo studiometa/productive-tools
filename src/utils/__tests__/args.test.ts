@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { parseArgs, getOption, hasFlag } from '../args.js';
 
 describe('parseArgs', () => {
-  it('should parse command', () => {
+  it('should parse command and subcommand', () => {
     const result = parseArgs(['projects', 'list']);
-    expect(result.command).toEqual(['projects']);
-    expect(result.positional).toEqual(['list']);
+    expect(result.command).toEqual(['projects', 'list']);
+    expect(result.positional).toEqual([]);
   });
 
   it('should parse long options with equals', () => {
@@ -42,8 +42,8 @@ describe('parseArgs', () => {
 
   it('should parse positional arguments', () => {
     const result = parseArgs(['projects', 'get', '123']);
-    expect(result.command).toEqual(['projects']);
-    expect(result.positional).toEqual(['get', '123']);
+    expect(result.command).toEqual(['projects', 'get']);
+    expect(result.positional).toEqual(['123']);
   });
 
   it('should parse mixed arguments', () => {
@@ -56,8 +56,8 @@ describe('parseArgs', () => {
       '2',
       '-v',
     ]);
-    expect(result.command).toEqual(['time']);
-    expect(result.positional).toEqual(['list']);
+    expect(result.command).toEqual(['time', 'list']);
+    expect(result.positional).toEqual([]);
     expect(result.options.format).toBe('json');
     expect(result.options.page).toBe('2');
     expect(result.options.v).toBe(true);
