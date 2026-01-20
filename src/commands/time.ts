@@ -3,6 +3,8 @@ import { OutputFormatter, createSpinner } from '../output.js';
 import { getConfig } from '../config.js';
 import { colors } from '../utils/colors.js';
 import { parseDate, parseDateRange } from '../utils/date.js';
+import { stripHtml, link } from '../utils/html.js';
+import { timeEntriesUrl } from '../utils/productive-links.js';
 import type { OutputFormat } from '../types.js';
 
 export function showTimeHelp(subcommand?: string): void {
@@ -281,13 +283,20 @@ async function timeList(
       response.data.forEach((entry) => {
         const hours = Math.floor(entry.attributes.time / 60);
         const minutes = entry.attributes.time % 60;
-        const duration = `${hours}h ${minutes}m`;
+        const duration = colors.green(`${hours}h ${minutes.toString().padStart(2, '0')}m`);
         totalMinutes += entry.attributes.time;
 
-        console.log(colors.bold(`${entry.attributes.date} - ${duration}`));
-        console.log(colors.dim(`  ID: ${entry.id}`));
+        const dateUrl = timeEntriesUrl(entry.attributes.date);
+        const dateDisplay = dateUrl 
+          ? link(colors.bold(entry.attributes.date), dateUrl)
+          : colors.bold(entry.attributes.date);
+        
+        console.log(`${dateDisplay}  ${duration}  ${colors.dim(`#${entry.id}`)}`);
         if (entry.attributes.note) {
-          console.log(colors.dim(`  Note: ${entry.attributes.note}`));
+          const note = stripHtml(entry.attributes.note);
+          if (note) {
+            console.log(`  ${colors.dim(note)}`);
+          }
         }
         console.log();
       });
@@ -295,7 +304,7 @@ async function timeList(
       if (response.data.length > 0) {
         const totalHours = Math.floor(totalMinutes / 60);
         const totalMins = totalMinutes % 60;
-        console.log(colors.cyan(`Total: ${totalHours}h ${totalMins}m`));
+        console.log(colors.bold(colors.cyan(`Total: ${totalHours}h ${totalMins.toString().padStart(2, '0')}m`)));
       }
 
       if (response.meta?.total) {
@@ -351,11 +360,14 @@ async function timeGet(
       const minutes = entry.attributes.time % 60;
       console.log(colors.bold('Time Entry'));
       console.log(colors.dim('─'.repeat(50)));
-      console.log(colors.cyan('ID:'), entry.id);
-      console.log(colors.cyan('Date:'), entry.attributes.date);
-      console.log(colors.cyan('Duration:'), `${hours}h ${minutes}m (${entry.attributes.time} minutes)`);
+      console.log(`${colors.cyan('ID:')}       ${entry.id}`);
+      console.log(`${colors.cyan('Date:')}     ${entry.attributes.date}`);
+      console.log(`${colors.cyan('Duration:')} ${colors.green(`${hours}h ${minutes.toString().padStart(2, '0')}m`)} ${colors.dim(`(${entry.attributes.time} minutes)`)}`);
       if (entry.attributes.note) {
-        console.log(colors.cyan('Note:'), entry.attributes.note);
+        const note = stripHtml(entry.attributes.note);
+        if (note) {
+          console.log(`${colors.cyan('Note:')}     ${note}`);
+        }
       }
     }
   } catch (error) {
