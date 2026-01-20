@@ -34,7 +34,7 @@ describe('tasks command', () => {
   });
 
   describe('list command', () => {
-    it('should list incomplete tasks by default', async () => {
+    it('should list open tasks by default', async () => {
       const mockTasks = {
         data: [
           {
@@ -62,14 +62,14 @@ describe('tasks command', () => {
       expect(mockApi.getTasks).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
-        filter: {},
+        filter: { status: '1' },
         sort: '',
       });
       expect(consoleLogSpy).toHaveBeenCalled();
       expect(processExitSpy).not.toHaveBeenCalled();
     });
 
-    it('should list completed tasks with --completed flag', async () => {
+    it('should list completed tasks with --status completed', async () => {
       const mockTasks = {
         data: [
           {
@@ -92,17 +92,17 @@ describe('tasks command', () => {
       };
       vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
 
-      await handleTasksCommand('list', [], { completed: true });
+      await handleTasksCommand('list', [], { status: 'completed' });
 
       expect(mockApi.getTasks).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
-        filter: {},
+        filter: { status: '2' },
         sort: '',
       });
     });
 
-    it('should list all tasks with --all flag', async () => {
+    it('should list all tasks with --status all', async () => {
       const mockTasks = {
         data: [],
         meta: { total: 0 },
@@ -113,7 +113,7 @@ describe('tasks command', () => {
       };
       vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
 
-      await handleTasksCommand('list', [], { all: true });
+      await handleTasksCommand('list', [], { status: 'all' });
 
       expect(mockApi.getTasks).toHaveBeenCalledWith({
         page: 1,
@@ -141,7 +141,7 @@ describe('tasks command', () => {
       expect(mockApi.getTasks).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
-        filter: { project_id: '123' },
+        filter: { project_id: '123', status: '1' },
         sort: '',
       });
     });
@@ -166,7 +166,7 @@ describe('tasks command', () => {
       expect(mockApi.getTasks).toHaveBeenCalledWith({
         page: 2,
         perPage: 50,
-        filter: {},
+        filter: { status: '1' },
         sort: 'due_date',
       });
     });

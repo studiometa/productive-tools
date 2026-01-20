@@ -2,6 +2,8 @@ import { ProductiveApi, ProductiveApiError } from '../api.js';
 import { OutputFormatter, createSpinner } from '../output.js';
 import { getConfig } from '../config.js';
 import { colors } from '../utils/colors.js';
+import { stripHtml, truncate } from '../utils/html.js';
+import { linkedId } from '../utils/productive-links.js';
 import type { OutputFormat } from '../types.js';
 
 function parseFilters(filterString: string): Record<string, string> {
@@ -27,6 +29,7 @@ ${colors.bold('USAGE:')}
 
 ${colors.bold('OPTIONS:')}
   --mine              Filter by configured user ID (assignee)
+  --status <status>   Filter by status: open, completed, all (default: open)
   --person <id>       Filter by assignee person ID
   --project <id>      Filter by project ID
   --filter <filters>  Generic filters (comma-separated key=value pairs)
@@ -38,8 +41,9 @@ ${colors.bold('OPTIONS:')}
 ${colors.bold('EXAMPLES:')}
   productive tasks list
   productive tasks list --mine
-  productive tasks list --project 12345
-  productive tasks list --filter assignee_id=123,status=1
+  productive tasks list --mine --status completed
+  productive tasks list --status all --project 12345
+  productive tasks list --filter assignee_id=123
 `);
   } else if (subcommand === 'get') {
     console.log(`
@@ -133,6 +137,15 @@ async function tasksList(
     if (options.project) {
       filter.project_id = String(options.project);
     }
+    
+    // Status filter: open (default), completed, or all
+    const status = String(options.status || 'open').toLowerCase();
+    if (status === 'open') {
+      filter.status = '1'; // 1 = open/active
+    } else if (status === 'completed' || status === 'done') {
+      filter.status = '2'; // 2 = completed
+    }
+    // 'all' = no status filter
 
     const response = await api.getTasks({
       page: parseInt(String(options.page || options.p || '1')),
@@ -167,14 +180,26 @@ async function tasksList(
       formatter.output(data);
     } else {
       response.data.forEach((task) => {
-        const status = task.attributes.completed ? colors.green('✓') : colors.gray('○');
-        console.log(`${status} ${colors.bold(task.attributes.title)}`);
-        console.log(colors.dim(`  ID: ${task.id}`));
+        const status = task.attributes.completed 
+          ? colors.green('✓') 
+          : colors.yellow('○');
+        const title = task.attributes.title || 'Untitled';
+        
+        console.log(`${status} ${colors.bold(title)} ${linkedId(task.id, 'task')}`);
+        
         if (task.attributes.due_date) {
-          console.log(colors.dim(`  Due: ${task.attributes.due_date}`));
+          const dueDate = new Date(task.attributes.due_date);
+          const now = new Date();
+          const isOverdue = !task.attributes.completed && dueDate < now;
+          const dueDateStr = task.attributes.due_date;
+          console.log(`  ${colors.cyan('Due:')} ${isOverdue ? colors.red(dueDateStr) : dueDateStr}`);
         }
+        
         if (task.attributes.description) {
-          console.log(colors.dim(`  ${task.attributes.description}`));
+          const description = truncate(stripHtml(task.attributes.description), 100);
+          if (description) {
+            console.log(`  ${colors.dim(description)}`);
+          }
         }
         console.log();
       });
@@ -226,19 +251,35 @@ async function tasksGet(
         relationships: task.relationships,
       });
     } else {
-      const status = task.attributes.completed ? colors.green('✓ Completed') : colors.gray('○ Active');
+      const status = task.attributes.completed 
+        ? colors.green('✓ Completed') 
+        : colors.yellow('○ Active');
+      
       console.log(colors.bold(task.attributes.title));
       console.log(colors.dim('─'.repeat(50)));
-      console.log(colors.cyan('ID:'), task.id);
-      console.log(colors.cyan('Status:'), status);
+      console.log(`${colors.cyan('ID:')}      ${linkedId(task.id, 'task')}`);
+      console.log(`${colors.cyan('Status:')}  ${status}`);
+      
       if (task.attributes.due_date) {
-        console.log(colors.cyan('Due Date:'), task.attributes.due_date);
+        const dueDate = new Date(task.attributes.due_date);
+        const now = new Date();
+        const isOverdue = !task.attributes.completed && dueDate < now;
+        const dueDateStr = task.attributes.due_date;
+        console.log(`${colors.cyan('Due:')}     ${isOverdue ? colors.red(dueDateStr) : dueDateStr}`);
       }
+      
       if (task.attributes.description) {
-        console.log(colors.cyan('Description:'), task.attributes.description);
+        const description = stripHtml(task.attributes.description);
+        if (description) {
+          console.log(`${colors.cyan('Description:')}`);
+          // Indent multiline descriptions
+          const lines = description.split('\n').map(line => `  ${line}`);
+          console.log(lines.join('\n'));
+        }
       }
-      console.log(colors.cyan('Created:'), new Date(task.attributes.created_at).toLocaleString());
-      console.log(colors.cyan('Updated:'), new Date(task.attributes.updated_at).toLocaleString());
+      
+      console.log(`${colors.cyan('Created:')} ${new Date(task.attributes.created_at).toLocaleString()}`);
+      console.log(`${colors.cyan('Updated:')} ${new Date(task.attributes.updated_at).toLocaleString()}`);
     }
   } catch (error) {
     spinner.fail();
