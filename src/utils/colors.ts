@@ -24,7 +24,8 @@ const BG_RED = '\x1b[41m';
 const BG_GREEN = '\x1b[42m';
 const BG_YELLOW = '\x1b[43m';
 
-let colorEnabled = process.stdout.isTTY && process.env.NO_COLOR === undefined;
+// Colors enabled by default, disabled by NO_COLOR env var
+let colorEnabled = process.env.NO_COLOR === undefined;
 
 export function setColorEnabled(enabled: boolean): void {
   colorEnabled = enabled;
