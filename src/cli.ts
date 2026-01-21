@@ -17,6 +17,7 @@ import {
 import { handleBudgetsCommand, showBudgetsHelp } from "./commands/budgets.js";
 import { handleCacheCommand, showCacheHelp } from "./commands/cache.js";
 import { handleApiCommand, showApiHelp } from "./commands/api.js";
+import { processRefreshQueue } from "./utils/refresh-queue.js";
 
 const VERSION = "0.1.4";
 
@@ -166,6 +167,12 @@ async function main(): Promise<void> {
     showHelp();
     process.exit(0);
   }
+
+  // Process background refresh queue (non-blocking, silent)
+  // This refreshes stale cache entries queued from previous invocations
+  processRefreshQueue(options).catch(() => {
+    // Silently ignore errors - refresh is best-effort
+  });
 
   // Route to appropriate handler
   try {

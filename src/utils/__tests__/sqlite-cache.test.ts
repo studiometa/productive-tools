@@ -358,6 +358,9 @@ describe("SqliteCache", () => {
       await cache.clear();
 
       expect(mockDbInstance.exec).toHaveBeenCalledWith("DELETE FROM cache");
+      expect(mockDbInstance.exec).toHaveBeenCalledWith(
+        "DELETE FROM refresh_queue",
+      );
       expect(mockDbInstance.exec).toHaveBeenCalledWith("DELETE FROM projects");
       expect(mockDbInstance.exec).toHaveBeenCalledWith("DELETE FROM people");
       expect(mockDbInstance.exec).toHaveBeenCalledWith("DELETE FROM services");
@@ -418,19 +421,60 @@ describe("SqliteCache", () => {
       expect(result).toBeNull();
     });
 
-    it("should set cached data with TTL", async () => {
+    it("should set cached data with TTL and staleness", async () => {
       const testData = { result: "test" };
       mockPreparedStatement.run.mockReturnValue({ changes: 1 });
 
-      await cache.cacheSet("test-key", testData, "/endpoint", 3600000);
+      await cache.cacheSet("test-key", testData, "/endpoint", 3600000, {
+        page: 1,
+      });
 
       expect(mockPreparedStatement.run).toHaveBeenCalledWith(
         "test-key",
         JSON.stringify(testData),
         "/endpoint",
+        JSON.stringify({ page: 1 }),
+        expect.any(Number), // stale_at
         expect.any(Number), // expires_at
         expect.any(Number), // created_at
       );
+    });
+
+    it("should get cached data with metadata", async () => {
+      const testData = { result: "test" };
+      const now = Date.now();
+      mockPreparedStatement.get.mockReturnValue({
+        data: JSON.stringify(testData),
+        endpoint: "/projects",
+        params: JSON.stringify({ page: 1 }),
+        stale_at: now + 1000000, // Not stale yet
+        expires_at: now + 2000000,
+      });
+
+      const result = await cache.cacheGetWithMeta<typeof testData>("test-key");
+
+      expect(result).not.toBeNull();
+      expect(result!.data).toEqual(testData);
+      expect(result!.isStale).toBe(false);
+      expect(result!.endpoint).toBe("/projects");
+      expect(result!.params).toEqual({ page: 1 });
+    });
+
+    it("should detect stale cache entries", async () => {
+      const testData = { result: "test" };
+      const now = Date.now();
+      mockPreparedStatement.get.mockReturnValue({
+        data: JSON.stringify(testData),
+        endpoint: "/projects",
+        params: JSON.stringify({}),
+        stale_at: now - 1000, // Already stale
+        expires_at: now + 1000000,
+      });
+
+      const result = await cache.cacheGetWithMeta<typeof testData>("test-key");
+
+      expect(result).not.toBeNull();
+      expect(result!.isStale).toBe(true);
     });
 
     it("should check if key exists", async () => {
@@ -510,6 +554,80 @@ describe("SqliteCache", () => {
       expect(stats.entries).toBe(0);
       expect(stats.size).toBe(0);
       expect(stats.oldestAge).toBe(0);
+    });
+  });
+
+  describe("Refresh Queue", () => {
+    it("should queue a refresh job", async () => {
+      mockPreparedStatement.run.mockReturnValue({ changes: 1 });
+
+      await cache.queueRefresh("test-key", "/projects", { page: 1 });
+
+      expect(mockPreparedStatement.run).toHaveBeenCalledWith(
+        "test-key",
+        "/projects",
+        JSON.stringify({ page: 1 }),
+        expect.any(Number), // queued_at
+      );
+    });
+
+    it("should dequeue a refresh job", async () => {
+      mockPreparedStatement.run.mockReturnValue({ changes: 1 });
+
+      await cache.dequeueRefresh("test-key");
+
+      expect(mockPreparedStatement.run).toHaveBeenCalledWith("test-key");
+    });
+
+    it("should get pending refresh jobs", async () => {
+      const now = Date.now();
+      mockPreparedStatement.all.mockReturnValue([
+        {
+          cache_key: "key-1",
+          endpoint: "/projects",
+          params: JSON.stringify({ page: 1 }),
+          queued_at: now - 1000,
+        },
+        {
+          cache_key: "key-2",
+          endpoint: "/time_entries",
+          params: JSON.stringify({}),
+          queued_at: now - 500,
+        },
+      ]);
+
+      const jobs = await cache.getPendingRefreshJobs();
+
+      expect(jobs).toHaveLength(2);
+      expect(jobs[0].cacheKey).toBe("key-1");
+      expect(jobs[0].endpoint).toBe("/projects");
+      expect(jobs[0].params).toEqual({ page: 1 });
+      expect(jobs[1].cacheKey).toBe("key-2");
+    });
+
+    it("should get refresh queue count", async () => {
+      mockPreparedStatement.get.mockReturnValue({ count: 5 });
+
+      const count = await cache.getRefreshQueueCount();
+
+      expect(count).toBe(5);
+    });
+
+    it("should clear refresh queue", async () => {
+      mockPreparedStatement.run.mockReturnValue({ changes: 3 });
+
+      const cleared = await cache.clearRefreshQueue();
+
+      expect(cleared).toBe(3);
+    });
+
+    it("should remove job from queue when cache is updated", async () => {
+      mockPreparedStatement.run.mockReturnValue({ changes: 1 });
+
+      await cache.cacheSet("test-key", { data: "test" }, "/endpoint", 3600000);
+
+      // Should call dequeueRefresh internally
+      expect(mockPreparedStatement.run).toHaveBeenCalledWith("test-key");
     });
   });
 });

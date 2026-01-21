@@ -3,18 +3,30 @@ import { CacheStore, getCache, resetCache, disableCache } from "../cache.js";
 
 // Mock the sqlite-cache module
 const mockCacheGet = vi.fn();
+const mockCacheGetWithMeta = vi.fn();
 const mockCacheSet = vi.fn();
 const mockCacheInvalidate = vi.fn();
 const mockCacheCleanup = vi.fn();
 const mockCacheStats = vi.fn();
+const mockQueueRefresh = vi.fn();
+const mockDequeueRefresh = vi.fn();
+const mockGetPendingRefreshJobs = vi.fn();
+const mockGetRefreshQueueCount = vi.fn();
+const mockClearRefreshQueue = vi.fn();
 
 vi.mock("../sqlite-cache.js", () => ({
   getSqliteCache: vi.fn(() => ({
     cacheGet: mockCacheGet,
+    cacheGetWithMeta: mockCacheGetWithMeta,
     cacheSet: mockCacheSet,
     cacheInvalidate: mockCacheInvalidate,
     cacheCleanup: mockCacheCleanup,
     cacheStats: mockCacheStats,
+    queueRefresh: mockQueueRefresh,
+    dequeueRefresh: mockDequeueRefresh,
+    getPendingRefreshJobs: mockGetPendingRefreshJobs,
+    getRefreshQueueCount: mockGetRefreshQueueCount,
+    clearRefreshQueue: mockClearRefreshQueue,
   })),
 }));
 
@@ -23,10 +35,16 @@ describe("CacheStore", () => {
     vi.clearAllMocks();
     resetCache();
     mockCacheGet.mockResolvedValue(null);
+    mockCacheGetWithMeta.mockResolvedValue(null);
     mockCacheSet.mockResolvedValue(undefined);
     mockCacheInvalidate.mockResolvedValue(0);
     mockCacheCleanup.mockResolvedValue(0);
     mockCacheStats.mockResolvedValue({ entries: 0, size: 0, oldestAge: 0 });
+    mockQueueRefresh.mockResolvedValue(undefined);
+    mockDequeueRefresh.mockResolvedValue(undefined);
+    mockGetPendingRefreshJobs.mockResolvedValue([]);
+    mockGetRefreshQueueCount.mockResolvedValue(0);
+    mockClearRefreshQueue.mockResolvedValue(0);
   });
 
   afterEach(() => {
@@ -38,7 +56,12 @@ describe("CacheStore", () => {
     cache.setOrgId("org-1");
     const testData = { items: [1, 2, 3] };
 
-    mockCacheGet.mockResolvedValue(testData);
+    mockCacheGetWithMeta.mockResolvedValue({
+      data: testData,
+      isStale: false,
+      endpoint: "/projects",
+      params: { page: 1 },
+    });
 
     await cache.setAsync("/projects", { page: 1 }, "org-1", testData);
     const retrieved = await cache.getAsync("/projects", { page: 1 }, "org-1");
@@ -51,7 +74,7 @@ describe("CacheStore", () => {
     const cache = new CacheStore(true);
     cache.setOrgId("org-1");
 
-    mockCacheGet.mockResolvedValue(null);
+    mockCacheGetWithMeta.mockResolvedValue(null);
 
     const result = await cache.getAsync("/projects", {}, "org-1");
     expect(result).toBeNull();
@@ -148,6 +171,7 @@ describe("CacheStore", () => {
       { type: "projects" },
       "/projects",
       3600 * 1000,
+      {},
     );
 
     // Time entries should have 5 min TTL (300 * 1000 ms)
@@ -157,6 +181,7 @@ describe("CacheStore", () => {
       { type: "time" },
       "/time_entries",
       300 * 1000,
+      {},
     );
 
     // Tasks should have 15 min TTL (900 * 1000 ms)
@@ -166,6 +191,7 @@ describe("CacheStore", () => {
       { type: "tasks" },
       "/tasks",
       900 * 1000,
+      {},
     );
   });
 
@@ -186,6 +212,7 @@ describe("CacheStore", () => {
       { data: "test" },
       "/projects",
       60 * 1000, // 60 seconds in ms
+      {},
     );
   });
 
@@ -193,12 +220,17 @@ describe("CacheStore", () => {
     const cache = new CacheStore(true);
     // Don't explicitly set orgId - it should be set from the method parameter
 
-    mockCacheGet.mockResolvedValue({ data: "test" });
+    mockCacheGetWithMeta.mockResolvedValue({
+      data: { data: "test" },
+      isStale: false,
+      endpoint: "/projects",
+      params: {},
+    });
     const result = await cache.getAsync("/projects", {}, "org-1");
 
     // Should work since orgId is passed to the method
     expect(result).toEqual({ data: "test" });
-    expect(mockCacheGet).toHaveBeenCalled();
+    expect(mockCacheGetWithMeta).toHaveBeenCalled();
 
     const { getSqliteCache } = await import("../sqlite-cache.js");
     expect(getSqliteCache).toHaveBeenCalledWith("org-1");
@@ -217,6 +249,96 @@ describe("CacheStore", () => {
     const { getSqliteCache } = await import("../sqlite-cache.js");
     expect(getSqliteCache).toHaveBeenCalledWith("org-1");
     expect(getSqliteCache).toHaveBeenCalledWith("org-2");
+  });
+
+  it("should queue refresh for stale cache entries", async () => {
+    const cache = new CacheStore(true);
+    cache.setOrgId("org-1");
+
+    mockCacheGetWithMeta.mockResolvedValue({
+      data: { items: [1, 2, 3] },
+      isStale: true, // Stale!
+      endpoint: "/projects",
+      params: { page: 1 },
+    });
+
+    const result = await cache.getAsync("/projects", { page: 1 }, "org-1");
+
+    // Should return data
+    expect(result).toEqual({ items: [1, 2, 3] });
+    // Should queue for refresh
+    expect(mockQueueRefresh).toHaveBeenCalledWith(
+      expect.any(String),
+      "/projects",
+      { page: 1 },
+    );
+  });
+
+  it("should not queue refresh for fresh cache entries", async () => {
+    const cache = new CacheStore(true);
+    cache.setOrgId("org-1");
+
+    mockCacheGetWithMeta.mockResolvedValue({
+      data: { items: [1, 2, 3] },
+      isStale: false, // Fresh
+      endpoint: "/projects",
+      params: { page: 1 },
+    });
+
+    await cache.getAsync("/projects", { page: 1 }, "org-1");
+
+    // Should NOT queue for refresh
+    expect(mockQueueRefresh).not.toHaveBeenCalled();
+  });
+
+  it("should get refresh queue count", async () => {
+    const cache = new CacheStore(true);
+    cache.setOrgId("org-1");
+
+    mockGetRefreshQueueCount.mockResolvedValue(5);
+
+    const count = await cache.getRefreshQueueCountAsync();
+
+    expect(count).toBe(5);
+  });
+
+  it("should get pending refresh jobs", async () => {
+    const cache = new CacheStore(true);
+    cache.setOrgId("org-1");
+
+    const jobs = [
+      {
+        cacheKey: "key-1",
+        endpoint: "/projects",
+        params: {},
+        queuedAt: Date.now(),
+      },
+    ];
+    mockGetPendingRefreshJobs.mockResolvedValue(jobs);
+
+    const result = await cache.getPendingRefreshJobsAsync();
+
+    expect(result).toEqual(jobs);
+  });
+
+  it("should clear refresh queue", async () => {
+    const cache = new CacheStore(true);
+    cache.setOrgId("org-1");
+
+    mockClearRefreshQueue.mockResolvedValue(3);
+
+    const cleared = await cache.clearRefreshQueueAsync();
+
+    expect(cleared).toBe(3);
+  });
+
+  it("should dequeue refresh job", async () => {
+    const cache = new CacheStore(true);
+    cache.setOrgId("org-1");
+
+    await cache.dequeueRefreshAsync("test-key");
+
+    expect(mockDequeueRefresh).toHaveBeenCalledWith("test-key");
   });
 });
 

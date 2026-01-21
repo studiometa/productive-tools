@@ -5,13 +5,20 @@ export interface ProductiveConfig extends Record<string, string | undefined> {
   baseUrl?: string;
 }
 
+export interface ProductiveApiMeta {
+  page?: number;
+  per_page?: number;
+  total?: number;
+  total_pages?: number;
+  current_page?: number;
+  total_count?: number;
+  page_size?: number;
+  max_page_size?: number;
+}
+
 export interface ProductiveApiResponse<T> {
   data: T;
-  meta?: {
-    page?: number;
-    per_page?: number;
-    total?: number;
-  };
+  meta?: ProductiveApiMeta;
   included?: Array<{
     id: string;
     type: string;
@@ -21,7 +28,7 @@ export interface ProductiveApiResponse<T> {
 
 export interface ProductiveProject {
   id: string;
-  type: 'projects';
+  type: "projects";
   attributes: {
     name: string;
     project_number?: string;
@@ -35,7 +42,7 @@ export interface ProductiveProject {
 
 export interface ProductiveTimeEntry {
   id: string;
-  type: 'time_entries';
+  type: "time_entries";
   attributes: {
     date: string;
     time: number;
@@ -58,7 +65,7 @@ export interface ProductiveTimeEntry {
 
 export interface ProductiveTask {
   id: string;
-  type: 'tasks';
+  type: "tasks";
   attributes: {
     title: string;
     description?: string;
@@ -72,7 +79,7 @@ export interface ProductiveTask {
 
 export interface ProductivePerson {
   id: string;
-  type: 'people';
+  type: "people";
   attributes: {
     first_name: string;
     last_name: string;
@@ -86,7 +93,7 @@ export interface ProductivePerson {
 
 export interface ProductiveService {
   id: string;
-  type: 'services';
+  type: "services";
   attributes: {
     name: string;
     created_at: string;
@@ -97,7 +104,7 @@ export interface ProductiveService {
 
 export interface ProductiveBudget {
   id: string;
-  type: 'budgets';
+  type: "budgets";
   attributes: {
     total_time_budget?: number;
     remaining_time_budget?: number;
@@ -108,7 +115,7 @@ export interface ProductiveBudget {
 }
 
 // CLI output formats for AI agents
-export type OutputFormat = 'json' | 'human' | 'csv' | 'table';
+export type OutputFormat = "json" | "human" | "csv" | "table";
 
 export interface CliOptions {
   format?: OutputFormat;

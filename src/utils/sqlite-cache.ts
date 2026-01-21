@@ -14,8 +14,28 @@ let DatabaseSync: typeof import("node:sqlite").DatabaseSync;
 
 async function loadSqlite() {
   if (!DatabaseSync) {
+    // Suppress the experimental warning for SQLite
+    const originalEmit = process.emit;
+    // @ts-expect-error - Monkey-patching process.emit to suppress warning
+    process.emit = function (event: string, ...args: unknown[]) {
+      if (
+        event === "warning" &&
+        args[0] &&
+        (args[0] as Error).name === "ExperimentalWarning" &&
+        (args[0] as Error).message.includes("SQLite")
+      ) {
+        return false;
+      }
+      return originalEmit.apply(process, [event, ...args] as Parameters<
+        typeof originalEmit
+      >);
+    };
+
     const sqlite = await import("node:sqlite");
     DatabaseSync = sqlite.DatabaseSync;
+
+    // Restore original emit
+    process.emit = originalEmit;
   }
   return DatabaseSync;
 }
@@ -62,11 +82,23 @@ const SCHEMA = `
     key TEXT PRIMARY KEY,
     data JSON NOT NULL,
     endpoint TEXT NOT NULL,
+    params JSON NOT NULL DEFAULT '{}',
     expires_at INTEGER NOT NULL,
+    stale_at INTEGER NOT NULL,
     created_at INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_cache_expires ON cache(expires_at);
   CREATE INDEX IF NOT EXISTS idx_cache_endpoint ON cache(endpoint);
+  CREATE INDEX IF NOT EXISTS idx_cache_stale ON cache(stale_at);
+
+  -- Refresh queue for stale cache entries
+  CREATE TABLE IF NOT EXISTS refresh_queue (
+    cache_key TEXT PRIMARY KEY,
+    endpoint TEXT NOT NULL,
+    params JSON NOT NULL,
+    queued_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_refresh_queue_queued ON refresh_queue(queued_at);
 
   -- Projects
   CREATE TABLE IF NOT EXISTS projects (
@@ -373,7 +405,12 @@ export class SqliteCache {
   // ============ Query Cache (Key-Value) ============
 
   /**
-   * Get cached data if not expired
+   * Staleness threshold (75% of TTL)
+   */
+  private static readonly STALE_THRESHOLD = 0.75;
+
+  /**
+   * Get cached data if not expired, with staleness info
    */
   async cacheGet<T>(key: string): Promise<T | null> {
     await this.ensureInitialized();
@@ -393,23 +430,77 @@ export class SqliteCache {
   }
 
   /**
-   * Store data with TTL
+   * Get cached data with metadata (for staleness detection)
+   */
+  async cacheGetWithMeta<T>(key: string): Promise<{
+    data: T;
+    isStale: boolean;
+    endpoint: string;
+    params: Record<string, unknown>;
+  } | null> {
+    await this.ensureInitialized();
+
+    const now = Date.now();
+    const stmt = this.db!.prepare(
+      "SELECT data, endpoint, params, stale_at, expires_at FROM cache WHERE key = ? AND expires_at > ?",
+    );
+    const row = stmt.get(key, now) as
+      | {
+          data: string;
+          endpoint: string;
+          params: string;
+          stale_at: number;
+          expires_at: number;
+        }
+      | undefined;
+
+    if (!row) return null;
+
+    try {
+      return {
+        data: JSON.parse(row.data) as T,
+        isStale: now >= row.stale_at,
+        endpoint: row.endpoint,
+        params: JSON.parse(row.params) as Record<string, unknown>,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Store data with TTL and staleness threshold
    */
   async cacheSet<T>(
     key: string,
     data: T,
     endpoint: string,
     ttlMs: number,
+    params: Record<string, unknown> = {},
   ): Promise<void> {
     await this.ensureInitialized();
 
     const now = Date.now();
+    const staleAt = now + Math.floor(ttlMs * SqliteCache.STALE_THRESHOLD);
+    const expiresAt = now + ttlMs;
+
     const stmt = this.db!.prepare(`
-      INSERT OR REPLACE INTO cache (key, data, endpoint, expires_at, created_at)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT OR REPLACE INTO cache (key, data, endpoint, params, stale_at, expires_at, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
 
-    stmt.run(key, JSON.stringify(data), endpoint, now + ttlMs, now);
+    stmt.run(
+      key,
+      JSON.stringify(data),
+      endpoint,
+      JSON.stringify(params),
+      staleAt,
+      expiresAt,
+      now,
+    );
+
+    // Remove from refresh queue if it was pending
+    await this.dequeueRefresh(key);
   }
 
   /**
@@ -443,11 +534,11 @@ export class SqliteCache {
     if (endpointPattern) {
       const stmt = this.db!.prepare("DELETE FROM cache WHERE endpoint LIKE ?");
       const result = stmt.run(`%${endpointPattern}%`);
-      return result.changes;
+      return Number(result.changes);
     } else {
       const stmt = this.db!.prepare("DELETE FROM cache");
       const result = stmt.run();
-      return result.changes;
+      return Number(result.changes);
     }
   }
 
@@ -459,7 +550,7 @@ export class SqliteCache {
 
     const stmt = this.db!.prepare("DELETE FROM cache WHERE expires_at < ?");
     const result = stmt.run(Date.now());
-    return result.changes;
+    return Number(result.changes);
   }
 
   /**
@@ -493,6 +584,91 @@ export class SqliteCache {
       size: sizeResult.size,
       oldestAge,
     };
+  }
+
+  // ============ Refresh Queue ============
+
+  /**
+   * Queue a cache key for background refresh
+   */
+  async queueRefresh(
+    cacheKey: string,
+    endpoint: string,
+    params: Record<string, unknown>,
+  ): Promise<void> {
+    await this.ensureInitialized();
+
+    const stmt = this.db!.prepare(`
+      INSERT OR IGNORE INTO refresh_queue (cache_key, endpoint, params, queued_at)
+      VALUES (?, ?, ?, ?)
+    `);
+
+    stmt.run(cacheKey, endpoint, JSON.stringify(params), Date.now());
+  }
+
+  /**
+   * Remove a cache key from the refresh queue
+   */
+  async dequeueRefresh(cacheKey: string): Promise<void> {
+    await this.ensureInitialized();
+
+    this.db!.prepare("DELETE FROM refresh_queue WHERE cache_key = ?").run(
+      cacheKey,
+    );
+  }
+
+  /**
+   * Get all pending refresh jobs
+   */
+  async getPendingRefreshJobs(): Promise<
+    Array<{
+      cacheKey: string;
+      endpoint: string;
+      params: Record<string, unknown>;
+      queuedAt: number;
+    }>
+  > {
+    await this.ensureInitialized();
+
+    const stmt = this.db!.prepare(
+      "SELECT cache_key, endpoint, params, queued_at FROM refresh_queue ORDER BY queued_at ASC",
+    );
+    const rows = stmt.all() as Array<{
+      cache_key: string;
+      endpoint: string;
+      params: string;
+      queued_at: number;
+    }>;
+
+    return rows.map((row) => ({
+      cacheKey: row.cache_key,
+      endpoint: row.endpoint,
+      params: JSON.parse(row.params) as Record<string, unknown>,
+      queuedAt: row.queued_at,
+    }));
+  }
+
+  /**
+   * Get count of pending refresh jobs
+   */
+  async getRefreshQueueCount(): Promise<number> {
+    await this.ensureInitialized();
+
+    const result = this.db!.prepare(
+      "SELECT COUNT(*) as count FROM refresh_queue",
+    ).get() as { count: number };
+
+    return result.count;
+  }
+
+  /**
+   * Clear the entire refresh queue
+   */
+  async clearRefreshQueue(): Promise<number> {
+    await this.ensureInitialized();
+
+    const result = this.db!.prepare("DELETE FROM refresh_queue").run();
+    return Number(result.changes);
   }
 
   // ============ Utilities ============
@@ -537,6 +713,7 @@ export class SqliteCache {
     await this.ensureInitialized();
 
     this.db!.exec("DELETE FROM cache");
+    this.db!.exec("DELETE FROM refresh_queue");
     this.db!.exec("DELETE FROM projects");
     this.db!.exec("DELETE FROM people");
     this.db!.exec("DELETE FROM services");

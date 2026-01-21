@@ -5,6 +5,11 @@ interface CacheOptions {
   ttl?: number; // TTL in seconds
 }
 
+interface CacheGetResult<T> {
+  data: T;
+  isStale: boolean;
+}
+
 // Default TTLs by endpoint pattern (in seconds)
 const DEFAULT_TTLS: Record<string, number> = {
   "/projects": 3600, // 1 hour
@@ -17,7 +22,7 @@ const DEFAULT_TTLS: Record<string, number> = {
 
 /**
  * Cache store using SQLite for persistence.
- * Provides the same interface as the old FileCache but backed by SQLite.
+ * Supports stale-while-revalidate pattern with background refresh queue.
  */
 export class CacheStore {
   private sqliteCache: SqliteCache | null = null;
@@ -134,6 +139,7 @@ export class CacheStore {
 
   /**
    * Get cached data if valid (async version)
+   * Returns data and staleness info. If stale, queues for background refresh.
    */
   async getAsync<T>(
     endpoint: string,
@@ -148,7 +154,46 @@ export class CacheStore {
 
     try {
       const key = this.getCacheKey(endpoint, params, orgId);
-      return await cache.cacheGet<T>(key);
+      const result = await cache.cacheGetWithMeta<T>(key);
+
+      if (!result) return null;
+
+      // If stale, queue for background refresh
+      if (result.isStale) {
+        await cache.queueRefresh(key, endpoint, params);
+      }
+
+      return result.data;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get cached data with staleness info (async version)
+   * Allows caller to know if data is stale without triggering queue.
+   */
+  async getWithMetaAsync<T>(
+    endpoint: string,
+    params: Record<string, unknown>,
+    orgId: string,
+  ): Promise<CacheGetResult<T> | null> {
+    if (!this.enabled) return null;
+
+    this.setOrgId(orgId);
+    const cache = this.getCache();
+    if (!cache) return null;
+
+    try {
+      const key = this.getCacheKey(endpoint, params, orgId);
+      const result = await cache.cacheGetWithMeta<T>(key);
+
+      if (!result) return null;
+
+      return {
+        data: result.data,
+        isStale: result.isStale,
+      };
     } catch {
       return null;
     }
@@ -175,7 +220,7 @@ export class CacheStore {
       const ttl = this.getTTL(endpoint, options?.ttl);
 
       // Fire and forget
-      cache.cacheSet(key, data, endpoint, ttl).catch(() => {});
+      cache.cacheSet(key, data, endpoint, ttl, params).catch(() => {});
 
       // Cleanup expired entries periodically (async, don't block)
       setImmediate(() => {
@@ -205,7 +250,7 @@ export class CacheStore {
     try {
       const key = this.getCacheKey(endpoint, params, orgId);
       const ttl = this.getTTL(endpoint, options?.ttl);
-      await cache.cacheSet(key, data, endpoint, ttl);
+      await cache.cacheSet(key, data, endpoint, ttl, params);
     } catch {
       // Silently fail cache writes
     }
@@ -289,6 +334,77 @@ export class CacheStore {
       return await cache.cacheStats();
     } catch {
       return { entries: 0, size: 0, oldestAge: 0 };
+    }
+  }
+
+  /**
+   * Get pending refresh jobs count
+   */
+  async getRefreshQueueCountAsync(): Promise<number> {
+    if (!this.enabled) return 0;
+
+    const cache = this.getCache();
+    if (!cache) return 0;
+
+    try {
+      return await cache.getRefreshQueueCount();
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Get all pending refresh jobs
+   */
+  async getPendingRefreshJobsAsync(): Promise<
+    Array<{
+      cacheKey: string;
+      endpoint: string;
+      params: Record<string, unknown>;
+      queuedAt: number;
+    }>
+  > {
+    if (!this.enabled) return [];
+
+    const cache = this.getCache();
+    if (!cache) return [];
+
+    try {
+      return await cache.getPendingRefreshJobs();
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Remove a job from the refresh queue
+   */
+  async dequeueRefreshAsync(cacheKey: string): Promise<void> {
+    if (!this.enabled) return;
+
+    const cache = this.getCache();
+    if (!cache) return;
+
+    try {
+      await cache.dequeueRefresh(cacheKey);
+    } catch {
+      // Silently fail
+    }
+  }
+
+  /**
+   * Clear the entire refresh queue
+   */
+  async clearRefreshQueueAsync(): Promise<number> {
+    if (!this.enabled) return 0;
+
+    const cache = this.getCache();
+    if (!cache) return 0;
+
+    try {
+      return await cache.clearRefreshQueue();
+    } catch {
+      return 0;
     }
   }
 }
