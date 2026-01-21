@@ -88,6 +88,48 @@ productive projects list --format json
 productive time list --format csv > time-entries.csv
 ```
 
+## Shell Completion
+
+Enable tab completion for your shell to autocomplete commands, subcommands, and options.
+
+### Bash
+
+Add to your `~/.bashrc` or `~/.bash_profile`:
+
+```bash
+eval "$(productive completion bash)"
+```
+
+Or install permanently:
+
+```bash
+productive completion bash > /usr/local/etc/bash_completion.d/productive
+```
+
+### Zsh
+
+Add to your `~/.zshrc`:
+
+```bash
+eval "$(productive completion zsh)"
+```
+
+Or install permanently:
+
+```bash
+productive completion zsh > /usr/local/share/zsh/site-functions/_productive
+```
+
+### Fish
+
+Install permanently:
+
+```bash
+productive completion fish > ~/.config/fish/completions/productive.fish
+```
+
+After installation, restart your shell or source your configuration file.
+
 ## Usage
 
 ### Commands Overview
@@ -103,7 +145,9 @@ Available commands:
   people       Manage people
   services     Manage services
   budgets      Manage budgets
+  cache        Manage CLI cache
   api          Make custom API requests
+  completion   Generate shell completion scripts
 ```
 
 ### Configuration

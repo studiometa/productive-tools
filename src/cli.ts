@@ -17,6 +17,10 @@ import {
 import { handleBudgetsCommand, showBudgetsHelp } from "./commands/budgets.js";
 import { handleCacheCommand, showCacheHelp } from "./commands/cache.js";
 import { handleApiCommand, showApiHelp } from "./commands/api.js";
+import {
+  handleCompletionCommand,
+  showCompletionHelp,
+} from "./commands/completion.js";
 import { processRefreshQueue } from "./utils/refresh-queue.js";
 
 const VERSION = "0.1.4";
@@ -66,6 +70,11 @@ ${colors.bold("COMMANDS:")}
 
   api                 Make custom API requests
     <endpoint>          Execute authenticated API request
+
+  completion          Generate shell completion script
+    bash                Generate Bash completion
+    zsh                 Generate Zsh completion
+    fish                Generate Fish completion
 
 ${colors.bold("OPTIONS:")}
   -f, --format <fmt>  Output format: json, human, csv, table (default: human)
@@ -252,6 +261,16 @@ async function main(): Promise<void> {
         await handleApiCommand(
           subcommand ? [subcommand, ...positional] : positional,
           options,
+        );
+        break;
+
+      case "completion":
+        if (wantsHelp) {
+          showCompletionHelp();
+          process.exit(0);
+        }
+        handleCompletionCommand(
+          subcommand ? [subcommand, ...positional] : positional,
         );
         break;
 
