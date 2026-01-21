@@ -21,6 +21,7 @@ import {
   handleCompletionCommand,
   showCompletionHelp,
 } from "./commands/completion.js";
+import { handleCompletionHelper } from "./commands/completion-helper.js";
 import { processRefreshQueue } from "./utils/refresh-queue.js";
 
 const VERSION = "0.1.4";
@@ -272,6 +273,13 @@ async function main(): Promise<void> {
         handleCompletionCommand(
           subcommand ? [subcommand, ...positional] : positional,
           options,
+        );
+        break;
+
+      case "__completion_helper":
+        // Hidden command for shell completion scripts
+        await handleCompletionHelper(
+          subcommand ? [subcommand, ...positional] : positional,
         );
         break;
 

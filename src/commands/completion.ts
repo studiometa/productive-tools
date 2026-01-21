@@ -36,6 +36,12 @@ _productive_completions() {
   # Format options
   local formats="json human csv table"
 
+  # Helper to get dynamic completions
+  _get_completions() {
+    local type=\$1
+    productive __completion_helper "\${type}" 2>/dev/null | cut -d: -f2
+  }
+
   # Completion logic
   case "\${COMP_CWORD}" in
     1)
@@ -83,7 +89,38 @@ _productive_completions() {
         --format|-f)
           COMPREPLY=( \$(compgen -W "\${formats}" -- "\${cur}") )
           ;;
-        --token|--api-token|--org-id|--organization-id|--user-id|--base-url|--page|--size|--sort|set|get|clear)
+        set)
+          # Complete config keys for 'config set'
+          local keys=\$(_get_completions "config-keys")
+          COMPREPLY=( \$(compgen -W "\${keys}" -- "\${cur}") )
+          ;;
+        get)
+          # Check if we're in 'config get' context
+          if [[ "\${COMP_WORDS[1]}" == "config" ]]; then
+            local keys=\$(_get_completions "config-keys")
+            COMPREPLY=( \$(compgen -W "\${keys}" -- "\${cur}") )
+          else
+            # For other 'get' commands, try to complete IDs from projects
+            local ids=\$(_get_completions "projects")
+            COMPREPLY=( \$(compgen -W "\${ids}" -- "\${cur}") )
+          fi
+          ;;
+        --project)
+          # Complete project names
+          local projects=\$(_get_completions "projects")
+          COMPREPLY=( \$(compgen -W "\${projects}" -- "\${cur}") )
+          ;;
+        --service)
+          # Complete service names
+          local services=\$(_get_completions "services")
+          COMPREPLY=( \$(compgen -W "\${services}" -- "\${cur}") )
+          ;;
+        --assignee|--person)
+          # Complete person names
+          local people=\$(_get_completions "people")
+          COMPREPLY=( \$(compgen -W "\${people}" -- "\${cur}") )
+          ;;
+        --token|--api-token|--org-id|--organization-id|--user-id|--base-url|--page|--size|--sort|clear)
           # No completion for values
           COMPREPLY=()
           ;;
@@ -104,6 +141,14 @@ const ZSH_COMPLETION = `#compdef productive
 
 _productive() {
   local line state
+
+  # Helper to get dynamic completions
+  _get_productive_completions() {
+    local type=$1
+    productive __completion_helper "$type" 2>/dev/null | while IFS=: read -r id name; do
+      echo "$name"
+    done
+  }
 
   _arguments -C \\
     '1: :->command' \\
@@ -218,6 +263,22 @@ _productive() {
       esac
       ;;
     args)
+      # Dynamic completions for config keys
+      local -a config_keys
+      config_keys=(\${(f)"\$(_get_productive_completions config-keys)"})
+
+      # Dynamic completions for projects
+      local -a projects
+      projects=(\${(f)"\$(_get_productive_completions projects)"})
+
+      # Dynamic completions for services
+      local -a services
+      services=(\${(f)"\$(_get_productive_completions services)"})
+
+      # Dynamic completions for people
+      local -a people
+      people=(\${(f)"\$(_get_productive_completions people)"})
+
       _arguments \\
         '(-f --format)'{-f,--format}'[Output format]:format:(json human csv table)' \\
         '--no-color[Disable colored output]' \\
@@ -226,6 +287,10 @@ _productive() {
         '(-p --page)'{-p,--page}'[Page number]:page number:' \\
         '(-s --size)'{-s,--size}'[Page size]:page size:' \\
         '--sort[Sort by field]:field:' \\
+        '--project[Project]:project:(\$projects)' \\
+        '--service[Service]:service:(\$services)' \\
+        '--assignee[Assignee]:assignee:(\$people)' \\
+        '--person[Person]:person:(\$people)' \\
         '(-h --help)'{-h,--help}'[Show help]' \\
         '(-v --version)'{-v,--version}'[Show version]' \\
         '--token[API token]:token:' \\
@@ -233,7 +298,22 @@ _productive() {
         '--org-id[Organization ID]:org id:' \\
         '--organization-id[Organization ID]:org id:' \\
         '--user-id[User ID]:user id:' \\
-        '--base-url[API base URL]:url:_urls'
+        '--base-url[API base URL]:url:_urls' \\
+        '*::arg:->arg_completion'
+
+      # Handle positional arguments based on context
+      case $line[2] in
+        set)
+          if [[ $line[1] == "config" ]]; then
+            _describe 'config key' config_keys
+          fi
+          ;;
+        get)
+          if [[ $line[1] == "config" ]]; then
+            _describe 'config key' config_keys
+          fi
+          ;;
+      esac
       ;;
   esac
 }
@@ -242,6 +322,29 @@ _productive "$@"
 `;
 
 const FISH_COMPLETION = `# Completions for productive CLI
+
+# Helper functions for dynamic completions
+function __productive_get_projects
+    productive __completion_helper projects 2>/dev/null | string split0 | while read -d : id name
+        echo "$name"
+    end
+end
+
+function __productive_get_services
+    productive __completion_helper services 2>/dev/null | string split0 | while read -d : id name
+        echo "$name"
+    end
+end
+
+function __productive_get_people
+    productive __completion_helper people 2>/dev/null | string split0 | while read -d : id name
+        echo "$name"
+    end
+end
+
+function __productive_get_config_keys
+    productive __completion_helper config-keys 2>/dev/null
+end
 
 # Main commands
 complete -c productive -f -n "__fish_use_subcommand" -a "config" -d "Manage CLI configuration"
@@ -305,6 +408,9 @@ complete -c productive -f -n "__fish_seen_subcommand_from completion" -a "bash" 
 complete -c productive -f -n "__fish_seen_subcommand_from completion" -a "zsh" -d "Install Zsh completion"
 complete -c productive -f -n "__fish_seen_subcommand_from completion" -a "fish" -d "Install Fish completion"
 
+# Config key completions for 'config set' and 'config get'
+complete -c productive -f -n "__fish_seen_subcommand_from config; and __fish_seen_subcommand_from set get" -a "(__productive_get_config_keys)"
+
 # Global options
 complete -c productive -s f -l format -d "Output format" -xa "json human csv table"
 complete -c productive -l no-color -d "Disable colored output"
@@ -313,6 +419,10 @@ complete -c productive -l refresh -d "Force refresh cached data"
 complete -c productive -s p -l page -d "Page number" -r
 complete -c productive -s s -l size -d "Page size" -r
 complete -c productive -l sort -d "Sort by field" -r
+complete -c productive -l project -d "Project" -xa "(__productive_get_projects)"
+complete -c productive -l service -d "Service" -xa "(__productive_get_services)"
+complete -c productive -l assignee -d "Assignee" -xa "(__productive_get_people)"
+complete -c productive -l person -d "Person" -xa "(__productive_get_people)"
 complete -c productive -s h -l help -d "Show help"
 complete -c productive -s v -l version -d "Show version"
 complete -c productive -l token -d "API token" -r
