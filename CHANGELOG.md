@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-01-21
+
+### Added
+- **Dynamic Argument Completion** - Intelligent autocomplete from local cache (6a6382c)
+  - Config keys completion for `config set/get` commands
+  - Project names completion for `--project` flag
+  - Service names completion for `--service` flag
+  - Person names completion for `--assignee` and `--person` flags
+  - Hidden `__completion_helper` command for shell scripts
+  - Works in Bash, Zsh, and Fish shells
+  - Fast and responsive using SQLite cache
+  - Graceful fallback when cache is empty
+
 ## [0.2.3] - 2026-01-21
 
 ### Added
