@@ -271,6 +271,7 @@ async function main(): Promise<void> {
         }
         handleCompletionCommand(
           subcommand ? [subcommand, ...positional] : positional,
+          options,
         );
         break;
 

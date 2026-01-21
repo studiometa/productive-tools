@@ -90,45 +90,46 @@ productive time list --format csv > time-entries.csv
 
 ## Shell Completion
 
-Enable tab completion for your shell to autocomplete commands, subcommands, and options.
+Enable tab completion for your shell to autocomplete commands, subcommands, and options. Completions are automatically installed to standard directories.
 
-### Bash
-
-Add to your `~/.bashrc` or `~/.bash_profile`:
+### Quick Install
 
 ```bash
-eval "$(productive completion bash)"
+# Bash
+productive completion bash
+
+# Zsh
+productive completion zsh
+
+# Fish
+productive completion fish
 ```
 
-Or install permanently:
+After installation, restart your shell to activate completions.
+
+### Installation Details
+
+**Bash:**
+- Installs to: `~/.local/share/bash-completion/completions/productive`
+- Restart shell: `exec bash`
+
+**Zsh:**
+- Installs to: `~/.local/share/zsh/site-functions/_productive`
+- Restart shell: `exec zsh`
+- Note: Ensure the directory is in your `$fpath`
+
+**Fish:**
+- Installs to: `~/.config/fish/completions/productive.fish`
+- Completions load automatically
+
+### Print Script Only
+
+To output the completion script without installing:
 
 ```bash
-productive completion bash > /usr/local/etc/bash_completion.d/productive
+productive completion bash --print > my-completion.sh
+productive completion zsh --print | less
 ```
-
-### Zsh
-
-Add to your `~/.zshrc`:
-
-```bash
-eval "$(productive completion zsh)"
-```
-
-Or install permanently:
-
-```bash
-productive completion zsh > /usr/local/share/zsh/site-functions/_productive
-```
-
-### Fish
-
-Install permanently:
-
-```bash
-productive completion fish > ~/.config/fish/completions/productive.fish
-```
-
-After installation, restart your shell or source your configuration file.
 
 ## Usage
 
