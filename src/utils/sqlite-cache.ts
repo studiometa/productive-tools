@@ -57,6 +57,17 @@ const SCHEMA = `
     value TEXT
   );
 
+  -- API Query Cache (key-value store with TTL)
+  CREATE TABLE IF NOT EXISTS cache (
+    key TEXT PRIMARY KEY,
+    data JSON NOT NULL,
+    endpoint TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_cache_expires ON cache(expires_at);
+  CREATE INDEX IF NOT EXISTS idx_cache_endpoint ON cache(endpoint);
+
   -- Projects
   CREATE TABLE IF NOT EXISTS projects (
     id TEXT PRIMARY KEY,
@@ -359,6 +370,131 @@ export class SqliteCache {
     return syncTime !== null && !this.isStale(syncTime, ttl);
   }
 
+  // ============ Query Cache (Key-Value) ============
+
+  /**
+   * Get cached data if not expired
+   */
+  async cacheGet<T>(key: string): Promise<T | null> {
+    await this.ensureInitialized();
+
+    const stmt = this.db!.prepare(
+      "SELECT data FROM cache WHERE key = ? AND expires_at > ?",
+    );
+    const row = stmt.get(key, Date.now()) as { data: string } | undefined;
+
+    if (!row) return null;
+
+    try {
+      return JSON.parse(row.data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Store data with TTL
+   */
+  async cacheSet<T>(
+    key: string,
+    data: T,
+    endpoint: string,
+    ttlMs: number,
+  ): Promise<void> {
+    await this.ensureInitialized();
+
+    const now = Date.now();
+    const stmt = this.db!.prepare(`
+      INSERT OR REPLACE INTO cache (key, data, endpoint, expires_at, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(key, JSON.stringify(data), endpoint, now + ttlMs, now);
+  }
+
+  /**
+   * Check if key exists and is not expired
+   */
+  async cacheHas(key: string): Promise<boolean> {
+    await this.ensureInitialized();
+
+    const stmt = this.db!.prepare(
+      "SELECT 1 FROM cache WHERE key = ? AND expires_at > ?",
+    );
+    const row = stmt.get(key, Date.now());
+    return !!row;
+  }
+
+  /**
+   * Delete a specific cache entry
+   */
+  async cacheDelete(key: string): Promise<void> {
+    await this.ensureInitialized();
+
+    this.db!.prepare("DELETE FROM cache WHERE key = ?").run(key);
+  }
+
+  /**
+   * Invalidate cache entries matching an endpoint pattern
+   */
+  async cacheInvalidate(endpointPattern?: string): Promise<number> {
+    await this.ensureInitialized();
+
+    if (endpointPattern) {
+      const stmt = this.db!.prepare("DELETE FROM cache WHERE endpoint LIKE ?");
+      const result = stmt.run(`%${endpointPattern}%`);
+      return result.changes;
+    } else {
+      const stmt = this.db!.prepare("DELETE FROM cache");
+      const result = stmt.run();
+      return result.changes;
+    }
+  }
+
+  /**
+   * Remove expired entries
+   */
+  async cacheCleanup(): Promise<number> {
+    await this.ensureInitialized();
+
+    const stmt = this.db!.prepare("DELETE FROM cache WHERE expires_at < ?");
+    const result = stmt.run(Date.now());
+    return result.changes;
+  }
+
+  /**
+   * Get cache statistics
+   */
+  async cacheStats(): Promise<{
+    entries: number;
+    size: number;
+    oldestAge: number;
+  }> {
+    await this.ensureInitialized();
+
+    const countResult = this.db!.prepare(
+      "SELECT COUNT(*) as count FROM cache WHERE expires_at > ?",
+    ).get(Date.now()) as { count: number };
+
+    const sizeResult = this.db!.prepare(
+      "SELECT COALESCE(SUM(LENGTH(data)), 0) as size FROM cache WHERE expires_at > ?",
+    ).get(Date.now()) as { size: number };
+
+    const oldestResult = this.db!.prepare(
+      "SELECT MIN(created_at) as oldest FROM cache WHERE expires_at > ?",
+    ).get(Date.now()) as { oldest: number | null };
+
+    const oldestAge = oldestResult.oldest
+      ? Math.round((Date.now() - oldestResult.oldest) / 1000)
+      : 0;
+
+    return {
+      entries: countResult.count,
+      size: sizeResult.size,
+      oldestAge,
+    };
+  }
+
   // ============ Utilities ============
 
   async getStats(): Promise<{
@@ -400,6 +536,7 @@ export class SqliteCache {
   async clear(): Promise<void> {
     await this.ensureInitialized();
 
+    this.db!.exec("DELETE FROM cache");
     this.db!.exec("DELETE FROM projects");
     this.db!.exec("DELETE FROM people");
     this.db!.exec("DELETE FROM services");

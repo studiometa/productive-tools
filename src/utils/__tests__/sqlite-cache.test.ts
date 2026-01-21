@@ -357,6 +357,7 @@ describe("SqliteCache", () => {
     it("should clear all cache", async () => {
       await cache.clear();
 
+      expect(mockDbInstance.exec).toHaveBeenCalledWith("DELETE FROM cache");
       expect(mockDbInstance.exec).toHaveBeenCalledWith("DELETE FROM projects");
       expect(mockDbInstance.exec).toHaveBeenCalledWith("DELETE FROM people");
       expect(mockDbInstance.exec).toHaveBeenCalledWith("DELETE FROM services");
@@ -390,6 +391,125 @@ describe("SqliteCache", () => {
       getSqliteCache("org-2");
 
       expect(() => clearSqliteCacheInstances()).not.toThrow();
+    });
+  });
+
+  describe("Query Cache (Key-Value)", () => {
+    it("should get cached data if not expired", async () => {
+      const testData = { result: "test" };
+      mockPreparedStatement.get.mockReturnValue({
+        data: JSON.stringify(testData),
+      });
+
+      const result = await cache.cacheGet<typeof testData>("test-key");
+
+      expect(result).toEqual(testData);
+      expect(mockPreparedStatement.get).toHaveBeenCalledWith(
+        "test-key",
+        expect.any(Number),
+      );
+    });
+
+    it("should return null for non-existent cache", async () => {
+      mockPreparedStatement.get.mockReturnValue(undefined);
+
+      const result = await cache.cacheGet("non-existent");
+
+      expect(result).toBeNull();
+    });
+
+    it("should set cached data with TTL", async () => {
+      const testData = { result: "test" };
+      mockPreparedStatement.run.mockReturnValue({ changes: 1 });
+
+      await cache.cacheSet("test-key", testData, "/endpoint", 3600000);
+
+      expect(mockPreparedStatement.run).toHaveBeenCalledWith(
+        "test-key",
+        JSON.stringify(testData),
+        "/endpoint",
+        expect.any(Number), // expires_at
+        expect.any(Number), // created_at
+      );
+    });
+
+    it("should check if key exists", async () => {
+      mockPreparedStatement.get.mockReturnValue({ "1": 1 });
+
+      const result = await cache.cacheHas("test-key");
+
+      expect(result).toBe(true);
+    });
+
+    it("should return false if key does not exist", async () => {
+      mockPreparedStatement.get.mockReturnValue(undefined);
+
+      const result = await cache.cacheHas("non-existent");
+
+      expect(result).toBe(false);
+    });
+
+    it("should delete a specific cache entry", async () => {
+      mockPreparedStatement.run.mockReturnValue({ changes: 1 });
+
+      await cache.cacheDelete("test-key");
+
+      expect(mockPreparedStatement.run).toHaveBeenCalledWith("test-key");
+    });
+
+    it("should invalidate cache entries by pattern", async () => {
+      mockPreparedStatement.run.mockReturnValue({ changes: 5 });
+
+      const deleted = await cache.cacheInvalidate("projects");
+
+      expect(deleted).toBe(5);
+      expect(mockPreparedStatement.run).toHaveBeenCalledWith("%projects%");
+    });
+
+    it("should invalidate all cache entries", async () => {
+      mockPreparedStatement.run.mockReturnValue({ changes: 10 });
+
+      const deleted = await cache.cacheInvalidate();
+
+      expect(deleted).toBe(10);
+    });
+
+    it("should cleanup expired entries", async () => {
+      mockPreparedStatement.run.mockReturnValue({ changes: 3 });
+
+      const cleaned = await cache.cacheCleanup();
+
+      expect(cleaned).toBe(3);
+      expect(mockPreparedStatement.run).toHaveBeenCalledWith(
+        expect.any(Number),
+      );
+    });
+
+    it("should return cache stats", async () => {
+      mockPreparedStatement.get
+        .mockReturnValueOnce({ count: 10 })
+        .mockReturnValueOnce({ size: 2048 })
+        .mockReturnValueOnce({ oldest: Date.now() - 60000 });
+
+      const stats = await cache.cacheStats();
+
+      expect(stats.entries).toBe(10);
+      expect(stats.size).toBe(2048);
+      expect(stats.oldestAge).toBeGreaterThanOrEqual(59);
+      expect(stats.oldestAge).toBeLessThanOrEqual(61);
+    });
+
+    it("should handle null oldest timestamp in stats", async () => {
+      mockPreparedStatement.get
+        .mockReturnValueOnce({ count: 0 })
+        .mockReturnValueOnce({ size: 0 })
+        .mockReturnValueOnce({ oldest: null });
+
+      const stats = await cache.cacheStats();
+
+      expect(stats.entries).toBe(0);
+      expect(stats.size).toBe(0);
+      expect(stats.oldestAge).toBe(0);
     });
   });
 });

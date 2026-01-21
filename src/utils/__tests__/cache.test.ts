@@ -1,133 +1,228 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { FileCache, getCache, resetCache, disableCache } from '../cache.js';
-import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { CacheStore, getCache, resetCache, disableCache } from "../cache.js";
 
-describe('FileCache', () => {
-  let originalEnv: NodeJS.ProcessEnv;
+// Mock the sqlite-cache module
+const mockCacheGet = vi.fn();
+const mockCacheSet = vi.fn();
+const mockCacheInvalidate = vi.fn();
+const mockCacheCleanup = vi.fn();
+const mockCacheStats = vi.fn();
 
+vi.mock("../sqlite-cache.js", () => ({
+  getSqliteCache: vi.fn(() => ({
+    cacheGet: mockCacheGet,
+    cacheSet: mockCacheSet,
+    cacheInvalidate: mockCacheInvalidate,
+    cacheCleanup: mockCacheCleanup,
+    cacheStats: mockCacheStats,
+  })),
+}));
+
+describe("CacheStore", () => {
   beforeEach(() => {
-    originalEnv = { ...process.env };
+    vi.clearAllMocks();
     resetCache();
+    mockCacheGet.mockResolvedValue(null);
+    mockCacheSet.mockResolvedValue(undefined);
+    mockCacheInvalidate.mockResolvedValue(0);
+    mockCacheCleanup.mockResolvedValue(0);
+    mockCacheStats.mockResolvedValue({ entries: 0, size: 0, oldestAge: 0 });
   });
 
   afterEach(() => {
-    process.env = originalEnv;
     resetCache();
   });
 
-  it('should create cache directory', () => {
-    const cache = new FileCache(true);
-    cache.set('/test', {}, 'org-1', { data: 'test' });
-    expect(existsSync(join(homedir(), '.cache', 'productive-cli', 'queries'))).toBe(true);
-  });
-
-  it('should store and retrieve data', () => {
-    const cache = new FileCache(true);
+  it("should store and retrieve data (async)", async () => {
+    const cache = new CacheStore(true);
+    cache.setOrgId("org-1");
     const testData = { items: [1, 2, 3] };
 
-    cache.set('/projects', { page: 1 }, 'org-1', testData);
-    const retrieved = cache.get('/projects', { page: 1 }, 'org-1');
+    mockCacheGet.mockResolvedValue(testData);
 
+    await cache.setAsync("/projects", { page: 1 }, "org-1", testData);
+    const retrieved = await cache.getAsync("/projects", { page: 1 }, "org-1");
+
+    expect(mockCacheSet).toHaveBeenCalled();
     expect(retrieved).toEqual(testData);
   });
 
-  it('should return null for non-existent cache', () => {
-    const cache = new FileCache(true);
-    const result = cache.get('/projects', {}, 'org-1');
+  it("should return null for non-existent cache", async () => {
+    const cache = new CacheStore(true);
+    cache.setOrgId("org-1");
+
+    mockCacheGet.mockResolvedValue(null);
+
+    const result = await cache.getAsync("/projects", {}, "org-1");
     expect(result).toBeNull();
   });
 
-  it('should return different data for different params', () => {
-    const cache = new FileCache(true);
+  it("should generate different keys for different params", async () => {
+    const cache = new CacheStore(true);
+    cache.setOrgId("org-1");
+
     const data1 = { page: 1 };
     const data2 = { page: 2 };
 
-    cache.set('/projects', { page: '1' }, 'org-1', data1);
-    cache.set('/projects', { page: '2' }, 'org-1', data2);
+    await cache.setAsync("/projects", { page: "1" }, "org-1", data1);
+    await cache.setAsync("/projects", { page: "2" }, "org-1", data2);
 
-    expect(cache.get('/projects', { page: '1' }, 'org-1')).toEqual(data1);
-    expect(cache.get('/projects', { page: '2' }, 'org-1')).toEqual(data2);
+    // Check that cacheSet was called with different keys
+    const calls = mockCacheSet.mock.calls;
+    expect(calls.length).toBe(2);
+    expect(calls[0][0]).not.toBe(calls[1][0]); // Different keys
   });
 
-  it('should return different data for different orgs', () => {
-    const cache = new FileCache(true);
+  it("should generate different keys for different orgs", async () => {
+    const cache = new CacheStore(true);
+
     const data1 = { org: 1 };
     const data2 = { org: 2 };
 
-    cache.set('/projects', {}, 'org-1', data1);
-    cache.set('/projects', {}, 'org-2', data2);
+    cache.setOrgId("org-1");
+    await cache.setAsync("/projects", {}, "org-1", data1);
 
-    expect(cache.get('/projects', {}, 'org-1')).toEqual(data1);
-    expect(cache.get('/projects', {}, 'org-2')).toEqual(data2);
+    cache.setOrgId("org-2");
+    await cache.setAsync("/projects", {}, "org-2", data2);
+
+    // Check that cacheSet was called with different keys
+    const calls = mockCacheSet.mock.calls;
+    expect(calls.length).toBe(2);
+    expect(calls[0][0]).not.toBe(calls[1][0]); // Different keys
   });
 
-  it('should invalidate by pattern', () => {
-    const cache = new FileCache(true);
+  it("should invalidate by pattern (async)", async () => {
+    const cache = new CacheStore(true);
+    cache.setOrgId("org-1");
 
-    cache.set('/projects', {}, 'org-1', { type: 'projects' });
-    cache.set('/time_entries', {}, 'org-1', { type: 'time' });
+    mockCacheInvalidate.mockResolvedValue(1);
 
-    cache.invalidate('projects');
+    const deleted = await cache.invalidateAsync("projects");
 
-    expect(cache.get('/projects', {}, 'org-1')).toBeNull();
-    expect(cache.get('/time_entries', {}, 'org-1')).toEqual({ type: 'time' });
+    expect(mockCacheInvalidate).toHaveBeenCalledWith("projects");
+    expect(deleted).toBe(1);
   });
 
-  it('should clear all cache', () => {
-    const cache = new FileCache(true);
+  it("should clear all cache", async () => {
+    const cache = new CacheStore(true);
+    cache.setOrgId("org-1");
 
-    cache.set('/projects', {}, 'org-1', { type: 'projects' });
-    cache.set('/time_entries', {}, 'org-1', { type: 'time' });
+    await cache.invalidateAsync();
 
-    cache.clear();
-
-    expect(cache.get('/projects', {}, 'org-1')).toBeNull();
-    expect(cache.get('/time_entries', {}, 'org-1')).toBeNull();
+    expect(mockCacheInvalidate).toHaveBeenCalledWith(undefined);
   });
 
-  it('should report stats', () => {
-    const cache = new FileCache(true);
+  it("should report stats (async)", async () => {
+    const cache = new CacheStore(true);
+    cache.setOrgId("org-1");
 
-    cache.set('/projects', {}, 'org-1', { data: 'test' });
-    cache.set('/time_entries', {}, 'org-1', { data: 'test2' });
+    mockCacheStats.mockResolvedValue({ entries: 5, size: 1024, oldestAge: 60 });
 
-    const stats = cache.stats();
+    const stats = await cache.statsAsync();
 
-    expect(stats.entries).toBe(2);
-    expect(stats.size).toBeGreaterThan(0);
-    expect(stats.oldestAge).toBeGreaterThanOrEqual(0);
+    expect(stats.entries).toBe(5);
+    expect(stats.size).toBe(1024);
+    expect(stats.oldestAge).toBe(60);
   });
 
-  it('should not cache when disabled', () => {
-    const cache = new FileCache(false);
+  it("should not cache when disabled", async () => {
+    const cache = new CacheStore(false);
+    cache.setOrgId("org-1");
 
-    cache.set('/projects', {}, 'org-1', { data: 'test' });
-    const result = cache.get('/projects', {}, 'org-1');
+    await cache.setAsync("/projects", {}, "org-1", { data: "test" });
+    const result = await cache.getAsync("/projects", {}, "org-1");
 
     expect(result).toBeNull();
+    expect(mockCacheSet).not.toHaveBeenCalled();
+    expect(mockCacheGet).not.toHaveBeenCalled();
   });
 
-  it('should expire entries after TTL', async () => {
-    const cache = new FileCache(true);
+  it("should use correct TTL for different endpoints", async () => {
+    const cache = new CacheStore(true);
+    cache.setOrgId("org-1");
 
-    // Set with 1 second TTL
-    cache.set('/projects', {}, 'org-1', { data: 'test' }, { ttl: 1 });
+    // Projects should have 1 hour TTL (3600 * 1000 ms)
+    await cache.setAsync("/projects", {}, "org-1", { type: "projects" });
+    expect(mockCacheSet).toHaveBeenLastCalledWith(
+      expect.any(String),
+      { type: "projects" },
+      "/projects",
+      3600 * 1000,
+    );
 
-    // Should exist immediately
-    expect(cache.get('/projects', {}, 'org-1')).toEqual({ data: 'test' });
+    // Time entries should have 5 min TTL (300 * 1000 ms)
+    await cache.setAsync("/time_entries", {}, "org-1", { type: "time" });
+    expect(mockCacheSet).toHaveBeenLastCalledWith(
+      expect.any(String),
+      { type: "time" },
+      "/time_entries",
+      300 * 1000,
+    );
 
-    // Wait for expiration
-    await new Promise(resolve => setTimeout(resolve, 1100));
+    // Tasks should have 15 min TTL (900 * 1000 ms)
+    await cache.setAsync("/tasks", {}, "org-1", { type: "tasks" });
+    expect(mockCacheSet).toHaveBeenLastCalledWith(
+      expect.any(String),
+      { type: "tasks" },
+      "/tasks",
+      900 * 1000,
+    );
+  });
 
-    // Should be expired
-    expect(cache.get('/projects', {}, 'org-1')).toBeNull();
+  it("should allow custom TTL", async () => {
+    const cache = new CacheStore(true);
+    cache.setOrgId("org-1");
+
+    await cache.setAsync(
+      "/projects",
+      {},
+      "org-1",
+      { data: "test" },
+      { ttl: 60 },
+    );
+
+    expect(mockCacheSet).toHaveBeenCalledWith(
+      expect.any(String),
+      { data: "test" },
+      "/projects",
+      60 * 1000, // 60 seconds in ms
+    );
+  });
+
+  it("should auto-set orgId from method parameters", async () => {
+    const cache = new CacheStore(true);
+    // Don't explicitly set orgId - it should be set from the method parameter
+
+    mockCacheGet.mockResolvedValue({ data: "test" });
+    const result = await cache.getAsync("/projects", {}, "org-1");
+
+    // Should work since orgId is passed to the method
+    expect(result).toEqual({ data: "test" });
+    expect(mockCacheGet).toHaveBeenCalled();
+
+    const { getSqliteCache } = await import("../sqlite-cache.js");
+    expect(getSqliteCache).toHaveBeenCalledWith("org-1");
+  });
+
+  it("should switch orgId and reset cache", async () => {
+    const cache = new CacheStore(true);
+
+    cache.setOrgId("org-1");
+    await cache.getAsync("/projects", {}, "org-1");
+
+    cache.setOrgId("org-2");
+    await cache.getAsync("/projects", {}, "org-2");
+
+    // Should have called getSqliteCache for each org change
+    const { getSqliteCache } = await import("../sqlite-cache.js");
+    expect(getSqliteCache).toHaveBeenCalledWith("org-1");
+    expect(getSqliteCache).toHaveBeenCalledWith("org-2");
   });
 });
 
-describe('Cache singleton', () => {
+describe("Cache singleton", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     resetCache();
   });
 
@@ -135,20 +230,25 @@ describe('Cache singleton', () => {
     resetCache();
   });
 
-  it('should return same instance', () => {
+  it("should return same instance", () => {
     const cache1 = getCache();
     const cache2 = getCache();
     expect(cache1).toBe(cache2);
   });
 
-  it('should disable cache', () => {
+  it("should disable cache", async () => {
     disableCache();
     const cache = getCache();
-    cache.set('/test', {}, 'org', { data: 'test' });
-    expect(cache.get('/test', {}, 'org')).toBeNull();
+    cache.setOrgId("org");
+
+    await cache.setAsync("/test", {}, "org", { data: "test" });
+    const result = await cache.getAsync("/test", {}, "org");
+
+    expect(result).toBeNull();
+    expect(mockCacheSet).not.toHaveBeenCalled();
   });
 
-  it('should reset singleton', () => {
+  it("should reset singleton", () => {
     const cache1 = getCache();
     resetCache();
     const cache2 = getCache();

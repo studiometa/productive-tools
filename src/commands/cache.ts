@@ -1,6 +1,5 @@
 import { OutputFormatter } from "../output.js";
 import { colors } from "../utils/colors.js";
-import { getCache } from "../utils/cache.js";
 import { getSqliteCache } from "../utils/sqlite-cache.js";
 import { ProductiveApi } from "../api.js";
 import { Spinner } from "../utils/spinner.js";
@@ -97,18 +96,20 @@ export function handleCacheCommand(
   const format = (options.format || options.f || "human") as OutputFormat;
   const formatter = new OutputFormatter(format, options["no-color"] === true);
 
+  const handleError = (error: Error) => {
+    formatter.error(error.message);
+    process.exit(1);
+  };
+
   switch (subcommand) {
     case "status":
-      cacheStatus(formatter, options);
+      cacheStatus(formatter, options).catch(handleError);
       break;
     case "clear":
-      cacheClear(args, formatter, options);
+      cacheClear(args, formatter, options).catch(handleError);
       break;
     case "sync":
-      cacheSync(formatter, options).catch((error) => {
-        formatter.error(error.message);
-        process.exit(1);
-      });
+      cacheSync(formatter, options).catch(handleError);
       break;
     default:
       formatter.error(`Unknown cache subcommand: ${subcommand}`);
@@ -119,124 +120,107 @@ export function handleCacheCommand(
   }
 }
 
-function cacheStatus(
+async function cacheStatus(
   formatter: OutputFormatter,
   options: Record<string, string | boolean>,
-): void {
-  const fileCache = getCache();
-  const fileStats = fileCache.stats();
+): Promise<void> {
+  const orgId = (options["org-id"] as string) || process.env.PRODUCTIVE_ORG_ID;
 
-  if (formatter["format"] === "json") {
-    const output: any = {
-      file_cache: {
-        entries: fileStats.entries,
-        size_bytes: fileStats.size,
-        size_human: formatBytes(fileStats.size),
-        oldest_age_seconds: fileStats.oldestAge,
-        oldest_age_human: formatDuration(fileStats.oldestAge),
-      },
-    };
+  if (!orgId) {
+    formatter.error(
+      "Organization ID required. Set via --org-id or PRODUCTIVE_ORG_ID",
+    );
+    process.exit(1);
+  }
 
-    // Add SQLite cache stats if available
-    try {
-      const orgId =
-        (options["org-id"] as string) || process.env.PRODUCTIVE_ORG_ID;
-      if (orgId) {
-        const sqliteCache = getSqliteCache(orgId);
-        sqliteCache.getStats().then((sqliteStats) => {
-          output.sqlite_cache = {
-            projects: sqliteStats.projects,
-            people: sqliteStats.people,
-            services: sqliteStats.services,
-            size_bytes: sqliteStats.dbSize,
-            size_human: formatBytes(sqliteStats.dbSize),
-          };
-          formatter.output(output);
-          sqliteCache.close();
-        });
-        return;
+  const sqliteCache = getSqliteCache(orgId);
+
+  try {
+    const queryStats = await sqliteCache.cacheStats();
+    const refStats = await sqliteCache.getStats();
+
+    if (formatter["format"] === "json") {
+      formatter.output({
+        query_cache: {
+          entries: queryStats.entries,
+          size_bytes: queryStats.size,
+          size_human: formatBytes(queryStats.size),
+          oldest_age_seconds: queryStats.oldestAge,
+          oldest_age_human: formatDuration(queryStats.oldestAge),
+        },
+        reference_cache: {
+          projects: refStats.projects,
+          people: refStats.people,
+          services: refStats.services,
+        },
+        database: {
+          size_bytes: refStats.dbSize,
+          size_human: formatBytes(refStats.dbSize),
+          location: `~/.cache/productive-cli/productive-${orgId}.db`,
+        },
+      });
+    } else {
+      console.log(colors.bold("Cache Statistics"));
+      console.log(colors.dim("─".repeat(60)));
+
+      console.log(colors.bold("\nQuery Cache (API Responses):"));
+      console.log(colors.cyan("  Entries:"), queryStats.entries);
+      console.log(colors.cyan("  Size:"), formatBytes(queryStats.size));
+      if (queryStats.entries > 0) {
+        console.log(
+          colors.cyan("  Oldest entry:"),
+          formatDuration(queryStats.oldestAge) + " ago",
+        );
       }
-    } catch {
-      // SQLite cache not available
-    }
 
-    formatter.output(output);
-  } else {
-    console.log(colors.bold("Cache Statistics"));
-    console.log(colors.dim("─".repeat(60)));
+      console.log(colors.bold("\nReference Cache (Synced Data):"));
+      console.log(colors.cyan("  Projects:"), refStats.projects);
+      console.log(colors.cyan("  People:"), refStats.people);
+      console.log(colors.cyan("  Services:"), refStats.services);
 
-    console.log(colors.bold("\nFile Cache (API Queries):"));
-    console.log(colors.cyan("  Entries:"), fileStats.entries);
-    console.log(colors.cyan("  Size:"), formatBytes(fileStats.size));
-    if (fileStats.entries > 0) {
+      console.log(colors.bold("\nDatabase:"));
+      console.log(colors.cyan("  Total size:"), formatBytes(refStats.dbSize));
       console.log(
-        colors.cyan("  Oldest entry:"),
-        formatDuration(fileStats.oldestAge) + " ago",
+        colors.dim(
+          `  Location: ~/.cache/productive-cli/productive-${orgId}.db`,
+        ),
       );
+      console.log();
     }
-    console.log(colors.dim("  Location: ~/.cache/productive-cli/queries/"));
-
-    // Add SQLite cache stats if available
-    try {
-      const orgId =
-        (options["org-id"] as string) || process.env.PRODUCTIVE_ORG_ID;
-      if (orgId) {
-        const sqliteCache = getSqliteCache(orgId);
-        sqliteCache.getStats().then((sqliteStats) => {
-          console.log(colors.bold("\nSQLite Cache (Reference Data):"));
-          console.log(colors.cyan("  Projects:"), sqliteStats.projects);
-          console.log(colors.cyan("  People:"), sqliteStats.people);
-          console.log(colors.cyan("  Services:"), sqliteStats.services);
-          console.log(colors.cyan("  Size:"), formatBytes(sqliteStats.dbSize));
-          console.log(
-            colors.dim(
-              `  Location: ~/.cache/productive-cli/productive-${orgId}.db`,
-            ),
-          );
-          console.log();
-          sqliteCache.close();
-        });
-        return;
-      }
-    } catch {
-      // SQLite cache not available
-    }
-
-    console.log();
+  } finally {
+    sqliteCache.close();
   }
 }
 
-function cacheClear(
+async function cacheClear(
   args: string[],
   formatter: OutputFormatter,
   options: Record<string, string | boolean>,
-): void {
-  const fileCache = getCache();
+): Promise<void> {
+  const orgId = (options["org-id"] as string) || process.env.PRODUCTIVE_ORG_ID;
+
+  if (!orgId) {
+    formatter.error(
+      "Organization ID required. Set via --org-id or PRODUCTIVE_ORG_ID",
+    );
+    process.exit(1);
+  }
+
+  const sqliteCache = getSqliteCache(orgId);
   const pattern = args[0];
 
-  if (pattern) {
-    fileCache.invalidate(pattern);
-    formatter.success(`File cache cleared for pattern: ${pattern}`);
-  } else {
-    fileCache.clear();
-
-    // Also clear SQLite cache if available
-    try {
-      const orgId =
-        (options["org-id"] as string) || process.env.PRODUCTIVE_ORG_ID;
-      if (orgId) {
-        const sqliteCache = getSqliteCache(orgId);
-        sqliteCache.clear().then(() => {
-          sqliteCache.close();
-          formatter.success("All caches cleared (file + SQLite)");
-        });
-        return;
-      }
-    } catch {
-      // SQLite cache not available
+  try {
+    if (pattern) {
+      const deleted = await sqliteCache.cacheInvalidate(pattern);
+      formatter.success(
+        `Cache cleared for pattern: ${pattern} (${deleted} entries removed)`,
+      );
+    } else {
+      await sqliteCache.clear();
+      formatter.success("All cache cleared");
     }
-
-    formatter.success("File cache cleared");
+  } finally {
+    sqliteCache.close();
   }
 }
 
