@@ -16,7 +16,7 @@ CLI tool for interacting with the [Productive.io](https://productive.io) API. Op
 - AI-optimized with structured JSON output
 - Multiple output formats (JSON, CSV, Table, Human-readable)
 - Zero runtime dependencies (native Node.js APIs only)
-- Secure credential storage with XDG compliance
+- Secure credential storage (macOS Keychain, Linux libsecret, XDG-compliant config)
 - Flexible authentication (CLI args, env vars, or config file)
 - Comprehensive test coverage (92.4%, 210 tests)
 - Full TypeScript support
@@ -129,6 +129,13 @@ productive config clear
 - **Linux/Unix**: `~/.config/productive-cli/config.json`
 - **macOS**: `~/Library/Application Support/productive-cli/config.json`
 - **Windows**: `%APPDATA%\productive-cli\config.json`
+
+**Secure Credential Storage:**
+
+Sensitive values (like `apiToken`) are automatically stored in the system keychain when available:
+- **macOS**: Keychain Access (via `security` CLI)
+- **Linux**: libsecret (via `secret-tool` CLI, requires `libsecret-tools` package)
+- **Fallback**: Config file (when keychain is unavailable)
 
 ### Projects
 
@@ -716,7 +723,8 @@ DEBUG=productive:* productive projects list
 
 ## Security
 
-- **Local Storage**: Credentials are stored locally in XDG-compliant directories
+- **Keychain Integration**: API tokens are stored securely in the system keychain (macOS Keychain, Linux libsecret)
+- **Fallback Storage**: When keychain is unavailable, credentials are stored in XDG-compliant config files
 - **No External Services**: All data stays between your machine and Productive.io
 - **HTTPS Only**: All API requests use HTTPS
 - **Token-Based Auth**: Secure token authentication with Productive.io
@@ -726,6 +734,18 @@ Security best practices:
 - Use environment variables in CI/CD environments
 - Rotate API tokens regularly
 - Restrict token permissions in Productive.io settings
+
+### Keychain Storage
+
+On supported platforms, sensitive values are automatically stored in the system keychain:
+
+| Platform | Backend | Requirement |
+|----------|---------|-------------|
+| macOS | Keychain Access | Built-in |
+| Linux | libsecret (Secret Service) | `libsecret-tools` package |
+| Windows | Not supported | Falls back to config file |
+
+The CLI automatically detects keychain availability and falls back to config file storage when needed.
 
 ## Resources
 

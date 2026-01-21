@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-01-21
+
+### Added
+- **Secure Keychain Storage** - Cross-platform secure credential storage (20b8c1e)
+  - macOS: Keychain Access (via `security` CLI)
+  - Linux: libsecret (via `secret-tool` CLI)
+  - Automatic fallback to config file when keychain is unavailable
+  - API tokens are automatically stored securely
+
 ## [0.2.0] - 2026-01-21
 
 ### Added
@@ -117,6 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ESM** module format
 - **XDG** compliant configuration storage
 
-[Unreleased]: https://github.com/studiometa/productive-cli/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/studiometa/productive-cli/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/studiometa/productive-cli/releases/tag/v0.1.0
+[Unreleased]: https://github.com/studiometa/productive-cli/compare/0.2.1...HEAD
+[0.2.1]: https://github.com/studiometa/productive-cli/compare/0.2.0...0.2.1
+[0.2.0]: https://github.com/studiometa/productive-cli/compare/0.1.0...0.2.0
+[0.1.0]: https://github.com/studiometa/productive-cli/releases/tag/0.1.0
