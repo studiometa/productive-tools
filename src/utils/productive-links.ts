@@ -9,23 +9,10 @@ import { colors } from "./colors.js";
 const PRODUCTIVE_BASE_URL = "https://app.productive.io";
 
 /**
- * Check if a value is concealed by 1Password CLI
- */
-function isConcealed(value: string | undefined): boolean {
-  if (!value) return false;
-  return (
-    value.includes("<concealed by 1Password>") || value.includes("%3Cconcealed")
-  );
-}
-
-/**
  * Get the organization ID for URL building
- * Returns undefined if the value is concealed by 1Password
  */
 function getOrgId(): string | undefined {
-  const orgId = getConfig().organizationId;
-  if (isConcealed(orgId)) return undefined;
-  return orgId;
+  return getConfig().organizationId;
 }
 
 /**
