@@ -40,7 +40,7 @@ ${colors.bold("OPTIONS:")}
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
   --sort <field>      Sort by field (prefix with - for descending)
-  -f, --format <fmt>  Output format: json, human, csv, table
+  -f, --format <fmt>  Output format: json, human, csv, table, kanban
 
 ${colors.bold("EXAMPLES:")}
   productive tasks list
@@ -48,6 +48,7 @@ ${colors.bold("EXAMPLES:")}
   productive tasks list --mine --status completed
   productive tasks list --status all --project 12345
   productive tasks list --filter assignee_id=123
+  productive tasks list --format kanban --project 12345
 `);
   } else if (subcommand === "get") {
     console.log(`
@@ -135,6 +136,140 @@ function getIncludedResource(
 ): Record<string, unknown> | undefined {
   if (!included || !id) return undefined;
   return included.find((r) => r.type === type && r.id === id)?.attributes;
+}
+
+// Helper to strip ANSI codes for length calculation
+function stripAnsi(str: string): string {
+  // eslint-disable-next-line no-control-regex
+  return str.replace(
+    /\x1b\[[0-9;]*m|\x1b\]8;;[^\x1b]*\x1b\\|\x1b\]8;;\x1b\\/g,
+    "",
+  );
+}
+
+// Helper to truncate text to fit width (accounting for ANSI codes)
+function truncateText(text: string, maxWidth: number): string {
+  const visibleLength = stripAnsi(text).length;
+  if (visibleLength <= maxWidth) return text;
+
+  // Simple truncation - find where to cut
+  let visibleCount = 0;
+  let cutIndex = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === "\x1b") {
+      // Skip ANSI sequence
+      const endBracket = text.indexOf("m", i);
+      const endOsc = text.indexOf("\\", i);
+      if (endBracket !== -1 && (endOsc === -1 || endBracket < endOsc)) {
+        i = endBracket;
+      } else if (endOsc !== -1) {
+        i = endOsc;
+      }
+      continue;
+    }
+    visibleCount++;
+    if (visibleCount >= maxWidth - 1) {
+      cutIndex = i;
+      break;
+    }
+  }
+  return text.slice(0, cutIndex) + "…" + "\x1b[0m";
+}
+
+// Helper to pad text to width (accounting for ANSI codes)
+function padText(text: string, width: number): string {
+  const visibleLength = stripAnsi(text).length;
+  if (visibleLength >= width) return text;
+  return text + " ".repeat(width - visibleLength);
+}
+
+interface KanbanTask {
+  id: string;
+  number?: number;
+  title: string;
+  assignee?: string;
+  statusId?: string;
+  statusName?: string;
+}
+
+interface KanbanColumn {
+  id: string;
+  name: string;
+  tasks: KanbanTask[];
+}
+
+// Render tasks in kanban board view
+function renderKanban(columns: KanbanColumn[], terminalWidth: number): void {
+  if (columns.length === 0) {
+    console.log(colors.dim("No columns to display"));
+    return;
+  }
+
+  const columnGap = 2;
+  const minColumnWidth = 20;
+  const maxColumnWidth = 40;
+
+  // Calculate column width based on terminal width and number of columns
+  const availableWidth = terminalWidth - (columns.length - 1) * columnGap;
+  let columnWidth = Math.floor(availableWidth / columns.length);
+  columnWidth = Math.max(minColumnWidth, Math.min(maxColumnWidth, columnWidth));
+
+  const contentWidth = columnWidth - 4; // Account for borders and padding
+
+  // Render header row
+  const headers = columns.map((col) => {
+    const countBadge = colors.dim(`(${col.tasks.length})`);
+    const headerText = `${colors.bold(col.name)} ${countBadge}`;
+    return padText(truncateText(headerText, columnWidth), columnWidth);
+  });
+  console.log(headers.join(" ".repeat(columnGap)));
+
+  // Render separator
+  const separators = columns.map(() => colors.dim("─".repeat(columnWidth)));
+  console.log(separators.join(" ".repeat(columnGap)));
+
+  // Find max tasks in any column
+  const maxTasks = Math.max(...columns.map((col) => col.tasks.length), 0);
+
+  // Render tasks row by row
+  for (let taskIndex = 0; taskIndex < maxTasks; taskIndex++) {
+    // Task title line
+    const titleLine = columns.map((col) => {
+      const task = col.tasks[taskIndex];
+      if (!task) return " ".repeat(columnWidth);
+
+      const numberPart = task.number
+        ? linkedId(task.id, "task").replace(`#${task.id}`, `#${task.number}`) +
+          " "
+        : "";
+      const titleText = `${numberPart}${task.title}`;
+      return padText(truncateText(titleText, columnWidth), columnWidth);
+    });
+    console.log(titleLine.join(" ".repeat(columnGap)));
+
+    // Task assignee line
+    const assigneeLine = columns.map((col) => {
+      const task = col.tasks[taskIndex];
+      if (!task) return " ".repeat(columnWidth);
+
+      if (task.assignee) {
+        const assigneeText = colors.dim(`  → ${task.assignee}`);
+        return padText(truncateText(assigneeText, columnWidth), columnWidth);
+      }
+      return " ".repeat(columnWidth);
+    });
+    // Only print if there's content
+    if (assigneeLine.some((line) => line.trim() !== "")) {
+      console.log(assigneeLine.join(" ".repeat(columnGap)));
+    }
+
+    // Empty line between tasks
+    if (taskIndex < maxTasks - 1) {
+      console.log(
+        columns.map(() => " ".repeat(columnWidth)).join(" ".repeat(columnGap)),
+      );
+    }
+  }
 }
 
 async function tasksList(
@@ -258,6 +393,78 @@ async function tasksList(
         };
       });
       formatter.output(data);
+    } else if (formatter["format"] === "kanban") {
+      // Build kanban columns from workflow statuses (grouped by name)
+      const statusMap = new Map<string, KanbanColumn>();
+      const defaultColumn: KanbanColumn = {
+        id: "unknown",
+        name: "No Status",
+        tasks: [],
+      };
+
+      // Process all tasks and group by status name
+      for (const task of response.data) {
+        const statusId = task.relationships?.workflow_status?.data?.id;
+        const statusData = getIncludedResource(
+          response.included,
+          "workflow_statuses",
+          statusId,
+        );
+        const assigneeData = getIncludedResource(
+          response.included,
+          "people",
+          task.relationships?.assignee?.data?.id,
+        );
+
+        const statusName = statusData
+          ? String(statusData.name || "Unknown")
+          : null;
+
+        const kanbanTask: KanbanTask = {
+          id: task.id,
+          number: task.attributes.number,
+          title: task.attributes.title || "Untitled",
+          assignee: assigneeData
+            ? `${assigneeData.first_name} ${assigneeData.last_name}`
+            : undefined,
+          statusId,
+          statusName: statusName || undefined,
+        };
+
+        if (statusName) {
+          // Group by status name (not ID) to merge same-named statuses
+          if (!statusMap.has(statusName)) {
+            statusMap.set(statusName, {
+              id: statusId || statusName,
+              name: statusName,
+              tasks: [],
+            });
+          }
+          statusMap.get(statusName)!.tasks.push(kanbanTask);
+        } else {
+          defaultColumn.tasks.push(kanbanTask);
+        }
+      }
+
+      // Build columns array, sorted by status name
+      const columns = Array.from(statusMap.values()).sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
+
+      // Add default column if it has tasks
+      if (defaultColumn.tasks.length > 0) {
+        columns.push(defaultColumn);
+      }
+
+      // Get terminal width
+      const terminalWidth = process.stdout.columns || 80;
+
+      renderKanban(columns, terminalWidth);
+
+      if (response.meta?.total) {
+        console.log();
+        console.log(colors.dim(`Total: ${response.meta.total} tasks`));
+      }
     } else {
       response.data.forEach((task) => {
         const isClosed = task.attributes.closed;

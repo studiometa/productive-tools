@@ -155,7 +155,7 @@ export interface ProductiveBudget {
 }
 
 // CLI output formats for AI agents
-export type OutputFormat = "json" | "human" | "csv" | "table";
+export type OutputFormat = "json" | "human" | "csv" | "table" | "kanban";
 
 export interface CliOptions {
   format?: OutputFormat;
