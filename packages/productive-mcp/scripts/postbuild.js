@@ -7,12 +7,15 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const distFile = resolve(__dirname, '../dist/index.js');
+const files = ['index.js', 'server.js'];
 
-try {
-  chmodSync(distFile, 0o755);
-  console.log('✓ Made dist/index.js executable');
-} catch (error) {
-  console.error('Failed to make dist/index.js executable:', error.message);
-  process.exit(1);
+for (const file of files) {
+  const distFile = resolve(__dirname, '../dist', file);
+  try {
+    chmodSync(distFile, 0o755);
+    console.log(`✓ Made dist/${file} executable`);
+  } catch (error) {
+    console.error(`Failed to make dist/${file} executable:`, error.message);
+    process.exit(1);
+  }
 }

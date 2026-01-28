@@ -7,7 +7,8 @@
     "access": "public"
   },
   "bin": {
-    "productive-mcp": "./dist/index.js"
+    "productive-mcp": "./dist/index.js",
+    "productive-mcp-server": "./dist/server.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -15,14 +16,33 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./server": {
+      "import": "./dist/server.js",
+      "types": "./dist/server.d.ts"
+    },
+    "./auth": {
+      "import": "./dist/auth.js",
+      "types": "./dist/auth.d.ts"
+    },
+    "./tools": {
+      "import": "./dist/tools.js",
+      "types": "./dist/tools.d.ts"
+    },
+    "./handlers": {
+      "import": "./dist/handlers.js",
+      "types": "./dist/handlers.d.ts"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "Dockerfile"
   ],
   "scripts": {
     "dev": "vite build --watch",
+    "dev:server": "node --watch dist/server.js",
     "build": "vite build && tsc --emitDeclarationOnly && node scripts/postbuild.js",
+    "start": "node dist/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "oxlint src",
@@ -35,7 +55,9 @@
     "productive",
     "claude",
     "ai",
-    "project-management"
+    "project-management",
+    "http",
+    "remote"
   ],
   "author": "Studio Meta",
   "license": "MIT",
@@ -45,11 +67,12 @@
     "directory": "packages/productive-mcp"
   },
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
-    "@studiometa/productive-cli": "*"
+    "@studiometa/productive-cli": "*",
+    "h3": "^1.15.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
