@@ -3,6 +3,8 @@ import { OutputFormatter, createSpinner } from '../output.js';
 import { colors } from '../utils/colors.js';
 import { linkedId } from '../utils/productive-links.js';
 import type { OutputFormat } from '../types.js';
+import { handleError, exitWithValidationError, runCommand } from '../error-handler.js';
+import { createContext, type CommandContext, type CommandOptions } from '../context.js';
 
 function parseFilters(filterString: string): Record<string, string> {
   const filters: Record<string, string> = {};
@@ -94,13 +96,16 @@ export async function handleProjectsCommand(
   const format = (options.format || options.f || 'human') as OutputFormat;
   const formatter = new OutputFormatter(format, options['no-color'] === true);
 
+  // Create context for commands that support it
+  const ctx = createContext(options as CommandOptions);
+
   switch (subcommand) {
     case 'list':
     case 'ls':
-      await projectsList(options, formatter);
+      await projectsListWithContext(ctx);
       break;
     case 'get':
-      await projectsGet(args, options, formatter);
+      await projectsGetWithContext(args, ctx);
       break;
     default:
       formatter.error(`Unknown projects subcommand: ${subcommand}`);
@@ -245,15 +250,143 @@ async function projectsGet(
   }
 }
 
-function handleError(error: unknown, formatter: OutputFormatter): void {
-  if (error instanceof ProductiveApiError) {
-    if (formatter['format'] === 'json') {
-      formatter.output(error.toJSON());
-    } else {
-      formatter.error(error.message);
+// ============================================================================
+// Context-based command implementations (new pattern)
+// ============================================================================
+
+/**
+ * List projects using context-based dependency injection.
+ */
+async function projectsListWithContext(ctx: CommandContext): Promise<void> {
+  const spinner = ctx.createSpinner('Fetching projects...');
+  spinner.start();
+
+  await runCommand(async () => {
+    const filter: Record<string, string> = {};
+
+    // Parse generic filters first
+    if (ctx.options.filter) {
+      Object.assign(filter, parseFilters(String(ctx.options.filter)));
     }
-  } else {
-    formatter.error('An unexpected error occurred', error);
-  }
-  process.exit(1);
+
+    // Specific filter options (override generic filters)
+    if (ctx.options.company) {
+      filter.company_id = String(ctx.options.company);
+    }
+
+    const { page, perPage } = ctx.getPagination();
+    const response = await ctx.api.getProjects({
+      page,
+      perPage,
+      filter,
+      sort: ctx.getSort(),
+    });
+
+    spinner.succeed();
+
+    const format = ctx.options.format || ctx.options.f || 'human';
+    if (format === 'json') {
+      ctx.formatter.output({
+        data: response.data.map((p) => ({
+          id: p.id,
+          name: p.attributes.name,
+          project_number: p.attributes.project_number,
+          archived: p.attributes.archived,
+          budget: p.attributes.budget,
+          created_at: p.attributes.created_at,
+          updated_at: p.attributes.updated_at,
+        })),
+        meta: response.meta,
+      });
+    } else if (format === 'csv' || format === 'table') {
+      const data = response.data.map((p) => ({
+        id: p.id,
+        name: p.attributes.name,
+        number: p.attributes.project_number || '',
+        archived: p.attributes.archived ? 'yes' : 'no',
+        budget: p.attributes.budget || '',
+        created: p.attributes.created_at.split('T')[0],
+      }));
+      ctx.formatter.output(data);
+    } else {
+      response.data.forEach((project) => {
+        const status = project.attributes.archived
+          ? colors.gray('[archived]')
+          : colors.green('[active]');
+
+        console.log(`${colors.bold(project.attributes.name)} ${status} ${linkedId(project.id, 'project')}`);
+        if (project.attributes.project_number) {
+          console.log(colors.dim(`  Number: ${project.attributes.project_number}`));
+        }
+        if (project.attributes.budget) {
+          console.log(colors.dim(`  Budget: ${project.attributes.budget}`));
+        }
+        console.log();
+      });
+
+      if (response.meta?.total) {
+        const currentPage = response.meta.page || 1;
+        const pageSize = response.meta.per_page || 100;
+        const totalPages = Math.ceil(response.meta.total / pageSize);
+        console.log(colors.dim(`Page ${currentPage}/${totalPages} (Total: ${response.meta.total})`));
+      }
+    }
+  }, ctx.formatter);
 }
+
+/**
+ * Get a single project using context-based dependency injection.
+ */
+async function projectsGetWithContext(args: string[], ctx: CommandContext): Promise<void> {
+  const [id] = args;
+
+  if (!id) {
+    exitWithValidationError('id', 'productive projects get <id>', ctx.formatter);
+  }
+
+  const spinner = ctx.createSpinner('Fetching project...');
+  spinner.start();
+
+  await runCommand(async () => {
+    const response = await ctx.api.getProject(id);
+    const project = response.data;
+
+    spinner.succeed();
+
+    const format = ctx.options.format || ctx.options.f || 'human';
+    if (format === 'json') {
+      ctx.formatter.output({
+        id: project.id,
+        name: project.attributes.name,
+        project_number: project.attributes.project_number,
+        archived: project.attributes.archived,
+        budget: project.attributes.budget,
+        created_at: project.attributes.created_at,
+        updated_at: project.attributes.updated_at,
+        relationships: project.relationships,
+      });
+    } else {
+      console.log(colors.bold(colors.cyan(project.attributes.name)));
+      console.log(colors.dim('─'.repeat(50)));
+      console.log(`${colors.cyan('ID:')}      ${linkedId(project.id, 'project')}`);
+      if (project.attributes.project_number) {
+        console.log(`${colors.cyan('Number:')}  ${project.attributes.project_number}`);
+      }
+      console.log(
+        `${colors.cyan('Status:')}  ${project.attributes.archived ? colors.gray('Archived') : colors.green('Active')}`
+      );
+      if (project.attributes.budget) {
+        console.log(`${colors.cyan('Budget:')}  ${project.attributes.budget}`);
+      }
+      console.log(`${colors.cyan('Created:')} ${new Date(project.attributes.created_at).toLocaleString()}`);
+      console.log(`${colors.cyan('Updated:')} ${new Date(project.attributes.updated_at).toLocaleString()}`);
+    }
+  }, ctx.formatter);
+}
+
+// ============================================================================
+// Legacy implementations (kept for reference during migration)
+// ============================================================================
+
+// The old projectsList, projectsGet functions are kept above for
+// backward compatibility but are no longer called

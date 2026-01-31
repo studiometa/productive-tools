@@ -6,6 +6,9 @@ import { parseDate, parseDateRange } from '../utils/date.js';
 import { stripHtml, link } from '../utils/html.js';
 import { timeEntriesUrl } from '../utils/productive-links.js';
 import type { OutputFormat } from '../types.js';
+import { handleError, exitWithValidationError, runCommand } from '../error-handler.js';
+import { ValidationError, ConfigError } from '../errors.js';
+import { createContext, type CommandContext, type CommandOptions } from '../context.js';
 
 export function showTimeHelp(subcommand?: string): void {
   if (subcommand === 'list' || subcommand === 'ls') {
@@ -163,23 +166,26 @@ export async function handleTimeCommand(
   const format = (options.format || options.f || 'human') as OutputFormat;
   const formatter = new OutputFormatter(format, options['no-color'] === true);
 
+  // Create context for commands that support it
+  const ctx = createContext(options as CommandOptions);
+
   switch (subcommand) {
     case 'list':
     case 'ls':
-      await timeList(options, formatter);
+      await timeListWithContext(ctx);
       break;
     case 'get':
-      await timeGet(args, options, formatter);
+      await timeGetWithContext(args, ctx);
       break;
     case 'add':
-      await timeAdd(options, formatter);
+      await timeAddWithContext(ctx);
       break;
     case 'update':
-      await timeUpdate(args, options, formatter);
+      await timeUpdateWithContext(args, ctx);
       break;
     case 'delete':
     case 'rm':
-      await timeDelete(args, options, formatter);
+      await timeDeleteWithContext(args, ctx);
       break;
     default:
       formatter.error(`Unknown time subcommand: ${subcommand}`);
@@ -521,15 +527,323 @@ async function timeDelete(
   }
 }
 
-function handleError(error: unknown, formatter: OutputFormatter): void {
-  if (error instanceof ProductiveApiError) {
-    if (formatter['format'] === 'json') {
-      formatter.output(error.toJSON());
-    } else {
-      formatter.error(error.message);
+// ============================================================================
+// Context-based command implementations (new pattern)
+// These use explicit dependency injection for better testability
+// ============================================================================
+
+/**
+ * List time entries using context-based dependency injection.
+ * This is the new recommended pattern for command implementations.
+ */
+async function timeListWithContext(ctx: CommandContext): Promise<void> {
+  const spinner = ctx.createSpinner('Fetching time entries...');
+  spinner.start();
+
+  await runCommand(async () => {
+    const filter: Record<string, string> = {};
+
+    // Parse generic filters first
+    if (ctx.options.filter) {
+      Object.assign(filter, parseFilters(String(ctx.options.filter)));
     }
-  } else {
-    formatter.error('An unexpected error occurred', error);
-  }
-  process.exit(1);
+
+    // Date filtering with smart parsing
+    if (ctx.options.date) {
+      const range = parseDateRange(String(ctx.options.date));
+      if (range) {
+        filter.after = range.from;
+        filter.before = range.to;
+      }
+    }
+    // --from and --to override --date
+    if (ctx.options.from) {
+      const parsed = parseDate(String(ctx.options.from));
+      if (parsed) filter.after = parsed;
+    }
+    if (ctx.options.to) {
+      const parsed = parseDate(String(ctx.options.to));
+      if (parsed) filter.before = parsed;
+    }
+
+    // Person filtering
+    if (ctx.options.mine && ctx.config.userId) {
+      filter.person_id = ctx.config.userId;
+    } else if (ctx.options.person) {
+      filter.person_id = String(ctx.options.person);
+    }
+    if (ctx.options.project) filter.project_id = String(ctx.options.project);
+
+    const { page, perPage } = ctx.getPagination();
+    const response = await ctx.api.getTimeEntries({
+      page,
+      perPage,
+      filter,
+      sort: ctx.getSort(),
+    });
+
+    spinner.succeed();
+
+    const format = ctx.options.format || ctx.options.f || 'human';
+    if (format === 'json') {
+      ctx.formatter.output({
+        data: response.data.map((e) => ({
+          id: e.id,
+          date: e.attributes.date,
+          time_minutes: e.attributes.time,
+          time_hours: (e.attributes.time / 60).toFixed(2),
+          note: e.attributes.note,
+          person_id: e.relationships?.person?.data?.id,
+          service_id: e.relationships?.service?.data?.id,
+          project_id: e.relationships?.project?.data?.id,
+          created_at: e.attributes.created_at,
+          updated_at: e.attributes.updated_at,
+        })),
+        meta: response.meta,
+      });
+    } else if (format === 'csv' || format === 'table') {
+      const data = response.data.map((e) => ({
+        id: e.id,
+        date: e.attributes.date,
+        hours: (e.attributes.time / 60).toFixed(2),
+        note: e.attributes.note || '',
+        person_id: e.relationships?.person?.data?.id || '',
+        project_id: e.relationships?.project?.data?.id || '',
+      }));
+      ctx.formatter.output(data);
+    } else {
+      let totalMinutes = 0;
+      response.data.forEach((entry) => {
+        const hours = Math.floor(entry.attributes.time / 60);
+        const minutes = entry.attributes.time % 60;
+        const duration = colors.green(`${hours}h ${minutes.toString().padStart(2, '0')}m`);
+        totalMinutes += entry.attributes.time;
+
+        const dateUrl = timeEntriesUrl(entry.attributes.date);
+        const dateDisplay = dateUrl
+          ? link(colors.bold(entry.attributes.date), dateUrl)
+          : colors.bold(entry.attributes.date);
+
+        console.log(`${dateDisplay}  ${duration}  ${colors.dim(`#${entry.id}`)}`);
+        if (entry.attributes.note) {
+          const note = stripHtml(entry.attributes.note);
+          if (note) {
+            console.log(`  ${colors.dim(note)}`);
+          }
+        }
+        console.log();
+      });
+
+      if (response.data.length > 0) {
+        const totalHours = Math.floor(totalMinutes / 60);
+        const totalMins = totalMinutes % 60;
+        console.log(colors.bold(colors.cyan(`Total: ${totalHours}h ${totalMins.toString().padStart(2, '0')}m`)));
+      }
+
+      if (response.meta?.total) {
+        const currentPage = response.meta.page || 1;
+        const pageSize = response.meta.per_page || 100;
+        const totalPages = Math.ceil(response.meta.total / pageSize);
+        console.log(colors.dim(`Page ${currentPage}/${totalPages} (Total: ${response.meta.total} entries)`));
+      }
+    }
+  }, ctx.formatter);
 }
+
+/**
+ * Get a single time entry using context-based dependency injection.
+ */
+async function timeGetWithContext(args: string[], ctx: CommandContext): Promise<void> {
+  const [id] = args;
+
+  if (!id) {
+    exitWithValidationError('id', 'productive time get <id>', ctx.formatter);
+  }
+
+  const spinner = ctx.createSpinner('Fetching time entry...');
+  spinner.start();
+
+  await runCommand(async () => {
+    const response = await ctx.api.getTimeEntry(id);
+    const entry = response.data;
+
+    spinner.succeed();
+
+    const format = ctx.options.format || ctx.options.f || 'human';
+    if (format === 'json') {
+      ctx.formatter.output({
+        id: entry.id,
+        date: entry.attributes.date,
+        time_minutes: entry.attributes.time,
+        time_hours: (entry.attributes.time / 60).toFixed(2),
+        note: entry.attributes.note,
+        person_id: entry.relationships?.person?.data?.id,
+        service_id: entry.relationships?.service?.data?.id,
+        project_id: entry.relationships?.project?.data?.id,
+        created_at: entry.attributes.created_at,
+        updated_at: entry.attributes.updated_at,
+      });
+    } else {
+      const hours = Math.floor(entry.attributes.time / 60);
+      const minutes = entry.attributes.time % 60;
+      console.log(colors.bold('Time Entry'));
+      console.log(colors.dim('─'.repeat(50)));
+      console.log(`${colors.cyan('ID:')}       ${entry.id}`);
+      console.log(`${colors.cyan('Date:')}     ${entry.attributes.date}`);
+      console.log(`${colors.cyan('Duration:')} ${colors.green(`${hours}h ${minutes.toString().padStart(2, '0')}m`)} ${colors.dim(`(${entry.attributes.time} minutes)`)}`);
+      if (entry.attributes.note) {
+        const note = stripHtml(entry.attributes.note);
+        if (note) {
+          console.log(`${colors.cyan('Note:')}     ${note}`);
+        }
+      }
+    }
+  }, ctx.formatter);
+}
+
+/**
+ * Add a time entry using context-based dependency injection.
+ */
+async function timeAddWithContext(ctx: CommandContext): Promise<void> {
+  const spinner = ctx.createSpinner('Creating time entry...');
+  spinner.start();
+
+  // Validate required fields before making API call
+  const personId = String(ctx.options.person || ctx.config.userId || '');
+  if (!personId) {
+    spinner.fail();
+    handleError(
+      new ConfigError('Person ID required. Specify --person or set userId in config', ['userId']),
+      ctx.formatter
+    );
+    return;
+  }
+
+  if (!ctx.options.service) {
+    spinner.fail();
+    handleError(
+      ValidationError.required('service'),
+      ctx.formatter
+    );
+    return;
+  }
+
+  if (!ctx.options.time) {
+    spinner.fail();
+    handleError(
+      ValidationError.required('time'),
+      ctx.formatter
+    );
+    return;
+  }
+
+  await runCommand(async () => {
+    const date = String(ctx.options.date || new Date().toISOString().split('T')[0]);
+
+    const response = await ctx.api.createTimeEntry({
+      person_id: personId,
+      service_id: String(ctx.options.service),
+      date,
+      time: parseInt(String(ctx.options.time)),
+      note: String(ctx.options.note || ''),
+    });
+
+    spinner.succeed();
+
+    const entry = response.data;
+    const hours = Math.floor(entry.attributes.time / 60);
+    const minutes = entry.attributes.time % 60;
+
+    const format = ctx.options.format || ctx.options.f || 'human';
+    if (format === 'json') {
+      ctx.formatter.output({
+        status: 'success',
+        id: entry.id,
+        date: entry.attributes.date,
+        time_minutes: entry.attributes.time,
+        time_hours: (entry.attributes.time / 60).toFixed(2),
+        note: entry.attributes.note,
+      });
+    } else {
+      ctx.formatter.success('Time entry created');
+      console.log(colors.cyan('ID:'), entry.id);
+      console.log(colors.cyan('Date:'), entry.attributes.date);
+      console.log(colors.cyan('Duration:'), `${hours}h ${minutes}m`);
+      if (entry.attributes.note) {
+        console.log(colors.cyan('Note:'), entry.attributes.note);
+      }
+    }
+  }, ctx.formatter);
+}
+
+/**
+ * Update a time entry using context-based dependency injection.
+ */
+async function timeUpdateWithContext(args: string[], ctx: CommandContext): Promise<void> {
+  const [id] = args;
+
+  if (!id) {
+    exitWithValidationError('id', 'productive time update <id> [options]', ctx.formatter);
+  }
+
+  const spinner = ctx.createSpinner('Updating time entry...');
+  spinner.start();
+
+  await runCommand(async () => {
+    const data: { time?: number; note?: string; date?: string } = {};
+    if (ctx.options.time) data.time = parseInt(String(ctx.options.time));
+    if (ctx.options.note) data.note = String(ctx.options.note);
+    if (ctx.options.date) data.date = String(ctx.options.date);
+
+    if (Object.keys(data).length === 0) {
+      spinner.fail();
+      throw ValidationError.invalid('options', data, 'No updates specified. Use --time, --note, or --date');
+    }
+
+    const response = await ctx.api.updateTimeEntry(id, data);
+
+    spinner.succeed();
+
+    const format = ctx.options.format || ctx.options.f || 'human';
+    if (format === 'json') {
+      ctx.formatter.output({ status: 'success', id: response.data.id });
+    } else {
+      ctx.formatter.success(`Time entry ${id} updated`);
+    }
+  }, ctx.formatter);
+}
+
+/**
+ * Delete a time entry using context-based dependency injection.
+ */
+async function timeDeleteWithContext(args: string[], ctx: CommandContext): Promise<void> {
+  const [id] = args;
+
+  if (!id) {
+    exitWithValidationError('id', 'productive time delete <id>', ctx.formatter);
+  }
+
+  const spinner = ctx.createSpinner('Deleting time entry...');
+  spinner.start();
+
+  await runCommand(async () => {
+    await ctx.api.deleteTimeEntry(id);
+
+    spinner.succeed();
+
+    const format = ctx.options.format || ctx.options.f || 'human';
+    if (format === 'json') {
+      ctx.formatter.output({ status: 'success', deleted: id });
+    } else {
+      ctx.formatter.success(`Time entry ${id} deleted`);
+    }
+  }, ctx.formatter);
+}
+
+// ============================================================================
+// Legacy implementations (kept for reference during migration)
+// These can be removed once all commands use the new pattern
+// ============================================================================
+
+// The old timeList, timeGet, timeAdd, timeUpdate, timeDelete functions
+// are kept above for backward compatibility but are no longer called

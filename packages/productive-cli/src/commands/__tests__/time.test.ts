@@ -243,10 +243,10 @@ describe('handleTimeCommand', () => {
     it('should require time entry ID', async () => {
       await expect(
         handleTimeCommand('get', [], { format: 'json' })
-      ).rejects.toThrow('process.exit(1)');
+      ).rejects.toThrow('process.exit(3)'); // Exit code 3 for validation errors
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Usage: productive time get <id>')
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('id')
       );
     });
 
@@ -257,7 +257,7 @@ describe('handleTimeCommand', () => {
 
       await expect(
         handleTimeCommand('get', ['999'], { format: 'json' })
-      ).rejects.toThrow('process.exit(1)');
+      ).rejects.toThrow('process.exit(5)'); // Exit code 5 for not found errors
     });
   });
 
@@ -387,9 +387,9 @@ describe('handleTimeCommand', () => {
           service: 'service-1',
           time: '480',
         })
-      ).rejects.toThrow('process.exit(1)');
+      ).rejects.toThrow('process.exit(4)'); // Exit code 4 for config errors
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining('Person ID required')
       );
     });
@@ -401,10 +401,10 @@ describe('handleTimeCommand', () => {
           person: 'person-1',
           time: '480',
         })
-      ).rejects.toThrow('process.exit(1)');
+      ).rejects.toThrow('process.exit(3)'); // Exit code 3 for validation errors
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Service ID required')
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('service is required')
       );
     });
 
@@ -415,10 +415,10 @@ describe('handleTimeCommand', () => {
           person: 'person-1',
           service: 'service-1',
         })
-      ).rejects.toThrow('process.exit(1)');
+      ).rejects.toThrow('process.exit(3)'); // Exit code 3 for validation errors
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Time required')
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('time is required')
       );
     });
 
@@ -480,19 +480,19 @@ describe('handleTimeCommand', () => {
     it('should require time entry ID', async () => {
       await expect(
         handleTimeCommand('update', [], { format: 'json', time: '360' })
-      ).rejects.toThrow('process.exit(1)');
+      ).rejects.toThrow('process.exit(3)'); // Exit code 3 for validation errors
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Usage: productive time update <id>')
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('id')
       );
     });
 
     it('should require at least one update field', async () => {
       await expect(
         handleTimeCommand('update', ['1'], { format: 'json' })
-      ).rejects.toThrow('process.exit(1)');
+      ).rejects.toThrow('process.exit(3)'); // Exit code 3 for validation errors
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining('No updates specified')
       );
     });
@@ -507,7 +507,7 @@ describe('handleTimeCommand', () => {
           format: 'json',
           time: '360',
         })
-      ).rejects.toThrow('process.exit(1)');
+      ).rejects.toThrow('process.exit(5)'); // Exit code 5 for not found errors
     });
   });
 
@@ -540,10 +540,10 @@ describe('handleTimeCommand', () => {
     it('should require time entry ID', async () => {
       await expect(
         handleTimeCommand('delete', [], { format: 'json' })
-      ).rejects.toThrow('process.exit(1)');
+      ).rejects.toThrow('process.exit(3)'); // Exit code 3 for validation errors
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Usage: productive time delete <id>')
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('id')
       );
     });
 
@@ -554,7 +554,7 @@ describe('handleTimeCommand', () => {
 
       await expect(
         handleTimeCommand('delete', ['999'], { format: 'json' })
-      ).rejects.toThrow('process.exit(1)');
+      ).rejects.toThrow('process.exit(5)'); // Exit code 5 for not found errors
     });
   });
 

@@ -2,8 +2,27 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { handleProjectsCommand } from '../projects.js';
 import { ProductiveApi, ProductiveApiError } from '../../api.js';
 
-// Mock dependencies
-vi.mock('../../api.js');
+// Mock dependencies with proper ProductiveApiError implementation
+vi.mock('../../api.js', () => ({
+  ProductiveApi: vi.fn(),
+  ProductiveApiError: class ProductiveApiError extends Error {
+    constructor(
+      message: string,
+      public statusCode?: number,
+      public response?: unknown,
+    ) {
+      super(message);
+      this.name = 'ProductiveApiError';
+    }
+    toJSON() {
+      return {
+        error: this.name,
+        message: this.message,
+        statusCode: this.statusCode,
+      };
+    }
+  },
+}));
 vi.mock('../../output.js', () => ({
   OutputFormatter: vi.fn().mockImplementation((format, noColor) => ({
     format,
@@ -292,7 +311,7 @@ describe('projects command', () => {
     it('should exit with error when id is missing', async () => {
       await handleProjectsCommand('get', [], {});
 
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(processExitSpy).toHaveBeenCalledWith(3); // Exit code 3 for validation errors
     });
 
     it('should handle API errors', async () => {
@@ -304,7 +323,7 @@ describe('projects command', () => {
 
       await handleProjectsCommand('get', ['999'], {});
 
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(processExitSpy).toHaveBeenCalledWith(5); // Exit code 5 for not found errors
     });
 
     it('should handle unexpected errors', async () => {
@@ -315,7 +334,7 @@ describe('projects command', () => {
 
       await handleProjectsCommand('get', ['1'], {});
 
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(processExitSpy).toHaveBeenCalledWith(1); // Exit code 1 for general errors
     });
   });
 
