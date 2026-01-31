@@ -9,6 +9,8 @@ import {
 import { OutputFormatter } from "../output.js";
 import { colors } from "../utils/colors.js";
 import type { OutputFormat } from "../types.js";
+import { handleError, exitWithValidationError } from "../error-handler.js";
+import { ValidationError, ConfigError, CommandError } from "../errors.js";
 
 export function showConfigHelp(subcommand?: string): void {
   if (subcommand === "set") {
@@ -138,38 +140,42 @@ export function handleConfigCommand(
   const format = (options.format || options.f || "human") as OutputFormat;
   const formatter = new OutputFormatter(format, options["no-color"] === true);
 
-  switch (subcommand) {
-    case "set":
-      configSet(args, formatter);
-      break;
-    case "get":
-      configGet(args, options, formatter);
-      break;
-    case "validate":
-      configValidate(formatter);
-      break;
-    case "clear":
-      configClear(formatter);
-      break;
-    default:
-      formatter.error(`Unknown config subcommand: ${subcommand}`);
-      process.exit(1);
+  try {
+    switch (subcommand) {
+      case "set":
+        configSet(args, formatter);
+        break;
+      case "get":
+        configGet(args, options, formatter);
+        break;
+      case "validate":
+        configValidate(formatter);
+        break;
+      case "clear":
+        configClear(formatter);
+        break;
+      default:
+        throw CommandError.unknownSubcommand("config", subcommand);
+    }
+  } catch (error) {
+    handleError(error, formatter);
   }
 }
 
 function configSet(args: string[], formatter: OutputFormatter): void {
   const [key, value] = args;
 
-  if (!key || !value) {
-    formatter.error("Usage: productive config set <key> <value>");
-    process.exit(1);
+  if (!key) {
+    throw ValidationError.required("key");
   }
 
-  if (!["apiToken", "organizationId", "userId", "baseUrl"].includes(key)) {
-    formatter.error(`Invalid configuration key: ${key}`, {
-      validKeys: ["apiToken", "organizationId", "userId", "baseUrl"],
-    });
-    process.exit(1);
+  if (!value) {
+    throw ValidationError.required("value");
+  }
+
+  const validKeys = ["apiToken", "organizationId", "userId", "baseUrl"];
+  if (!validKeys.includes(key)) {
+    throw ValidationError.invalid("key", key, `must be one of: ${validKeys.join(", ")}`);
   }
 
   const result = setConfig(
@@ -191,9 +197,9 @@ function configGet(
   const noMask = options["no-mask"] === true;
 
   if (key) {
-    if (!["apiToken", "organizationId", "userId", "baseUrl"].includes(key)) {
-      formatter.error(`Invalid configuration key: ${key}`);
-      process.exit(1);
+    const validKeys = ["apiToken", "organizationId", "userId", "baseUrl"];
+    if (!validKeys.includes(key)) {
+      throw ValidationError.invalid("key", key, `must be one of: ${validKeys.join(", ")}`);
     }
 
     const value = currentConfig[key as keyof typeof currentConfig];
@@ -255,17 +261,17 @@ function configValidate(formatter: OutputFormatter): void {
       valid: validation.valid,
       missing: validation.missing,
     });
-    process.exit(validation.valid ? 0 : 1);
+    if (!validation.valid) {
+      throw new ConfigError("Configuration is incomplete", validation.missing);
+    }
   } else {
     if (validation.valid) {
       formatter.success("Configuration is valid");
     } else {
-      formatter.error("Configuration is incomplete");
-      console.log("Missing required fields:");
-      validation.missing.forEach((field) => {
-        console.log(`  - ${field}`);
-      });
-      process.exit(1);
+      throw new ConfigError(
+        `Configuration is incomplete. Missing: ${validation.missing.join(", ")}`,
+        validation.missing,
+      );
     }
   }
 }

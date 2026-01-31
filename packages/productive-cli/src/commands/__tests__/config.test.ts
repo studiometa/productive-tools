@@ -79,23 +79,23 @@ describe("config command", () => {
 
     it("should exit with error when key is missing", () => {
       expect(() => handleConfigCommand("set", [], {})).toThrow(
-        "process.exit(1)",
+        "process.exit(3)",
       );
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(processExitSpy).toHaveBeenCalledWith(3);
     });
 
     it("should exit with error when value is missing", () => {
       expect(() => handleConfigCommand("set", ["apiToken"], {})).toThrow(
-        "process.exit(1)",
+        "process.exit(3)",
       );
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(processExitSpy).toHaveBeenCalledWith(3);
     });
 
     it("should exit with error for invalid configuration key", () => {
       expect(() =>
         handleConfigCommand("set", ["invalidKey", "value"], {}),
-      ).toThrow("process.exit(1)");
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      ).toThrow("process.exit(3)");
+      expect(processExitSpy).toHaveBeenCalledWith(3);
       // Check that setConfig was NOT called after clearing at the start of this test
       const calls = vi.mocked(configModule.setConfig).mock.calls;
       expect(calls.length).toBe(0);
@@ -185,9 +185,9 @@ describe("config command", () => {
 
     it("should exit with error for invalid configuration key", () => {
       expect(() => handleConfigCommand("get", ["invalidKey"], {})).toThrow(
-        "process.exit(1)",
+        "process.exit(3)",
       );
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(processExitSpy).toHaveBeenCalledWith(3);
     });
 
     it("should warn when key is not set", () => {
@@ -225,10 +225,10 @@ describe("config command", () => {
       });
 
       expect(() => handleConfigCommand("validate", [], {})).toThrow(
-        "process.exit(1)",
+        "process.exit(4)",
       );
       expect(configModule.validateConfig).toHaveBeenCalled();
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(processExitSpy).toHaveBeenCalledWith(4);
     });
 
     it("should validate configuration in json format", () => {
@@ -237,11 +237,10 @@ describe("config command", () => {
         missing: [],
       });
 
-      expect(() =>
-        handleConfigCommand("validate", [], { format: "json" }),
-      ).toThrow("process.exit(0)");
+      // Valid config in json format should not throw
+      handleConfigCommand("validate", [], { format: "json" });
       expect(configModule.validateConfig).toHaveBeenCalled();
-      expect(processExitSpy).toHaveBeenCalledWith(0);
+      expect(processExitSpy).not.toHaveBeenCalled();
     });
 
     it("should validate configuration in json format with errors", () => {
@@ -252,9 +251,9 @@ describe("config command", () => {
 
       expect(() =>
         handleConfigCommand("validate", [], { format: "json" }),
-      ).toThrow("process.exit(1)");
+      ).toThrow("process.exit(4)");
       expect(configModule.validateConfig).toHaveBeenCalled();
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(processExitSpy).toHaveBeenCalledWith(4);
     });
   });
 

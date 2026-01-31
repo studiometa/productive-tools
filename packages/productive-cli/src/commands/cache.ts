@@ -10,6 +10,8 @@ import type {
   ProductivePerson,
   ProductiveService,
 } from "../types.js";
+import { handleError, runCommand } from "../error-handler.js";
+import { ConfigError, CommandError } from "../errors.js";
 
 export function showCacheHelp(subcommand?: string): void {
   if (subcommand === "status") {
@@ -115,39 +117,32 @@ Run ${colors.cyan("productive cache <subcommand> --help")} for subcommand detail
   }
 }
 
-export function handleCacheCommand(
+export async function handleCacheCommand(
   subcommand: string,
   args: string[],
   options: Record<string, string | boolean>,
-): void {
+): Promise<void> {
   const format = (options.format || options.f || "human") as OutputFormat;
   const formatter = new OutputFormatter(format, options["no-color"] === true);
 
-  const handleError = (error: Error) => {
-    formatter.error(error.message);
-    process.exit(1);
-  };
-
-  switch (subcommand) {
-    case "status":
-      cacheStatus(formatter, options).catch(handleError);
-      break;
-    case "clear":
-      cacheClear(args, formatter, options).catch(handleError);
-      break;
-    case "sync":
-      cacheSync(formatter, options).catch(handleError);
-      break;
-    case "queue":
-      cacheQueue(formatter, options).catch(handleError);
-      break;
-    default:
-      formatter.error(`Unknown cache subcommand: ${subcommand}`);
-      console.log(
-        `Run ${colors.cyan("productive cache --help")} for usage information`,
-      );
-      process.exit(1);
-  }
+  await runCommand(async () => {
+    switch (subcommand) {
+      case "status":
+        await cacheStatus(formatter, options);
+        break;
+      case "clear":
+        await cacheClear(args, formatter, options);
+        break;
+      case "sync":
+        await cacheSync(formatter, options);
+        break;
+      case "queue":
+        await cacheQueue(formatter, options);
+        break;
+      default:
+        throw CommandError.unknownSubcommand("cache", subcommand);
+    }
+  }, formatter);
 }
 
 async function cacheStatus(
@@ -157,10 +152,7 @@ async function cacheStatus(
   const orgId = (options["org-id"] as string) || process.env.PRODUCTIVE_ORG_ID;
 
   if (!orgId) {
-    formatter.error(
-      "Organization ID required. Set via --org-id or PRODUCTIVE_ORG_ID",
-    );
-    process.exit(1);
+    throw ConfigError.missingOrganizationId();
   }
 
   const sqliteCache = getSqliteCache(orgId);
@@ -240,10 +232,7 @@ async function cacheClear(
   const orgId = (options["org-id"] as string) || process.env.PRODUCTIVE_ORG_ID;
 
   if (!orgId) {
-    formatter.error(
-      "Organization ID required. Set via --org-id or PRODUCTIVE_ORG_ID",
-    );
-    process.exit(1);
+    throw ConfigError.missingOrganizationId();
   }
 
   const sqliteCache = getSqliteCache(orgId);
@@ -276,9 +265,7 @@ async function cacheSync(
       (options["org-id"] as string) || process.env.PRODUCTIVE_ORG_ID;
 
     if (!orgId) {
-      throw new Error(
-        "Organization ID required. Set via --org-id or PRODUCTIVE_ORG_ID",
-      );
+      throw ConfigError.missingOrganizationId();
     }
 
     const sqliteCache = getSqliteCache(orgId);
@@ -362,10 +349,7 @@ async function cacheQueue(
   const orgId = (options["org-id"] as string) || process.env.PRODUCTIVE_ORG_ID;
 
   if (!orgId) {
-    formatter.error(
-      "Organization ID required. Set via --org-id or PRODUCTIVE_ORG_ID",
-    );
-    process.exit(1);
+    throw ConfigError.missingOrganizationId();
   }
 
   const cache = getCache();

@@ -4,6 +4,8 @@ import { getConfig } from "../config.js";
 import { OutputFormatter, createSpinner } from "../output.js";
 import { colors } from "../utils/colors.js";
 import type { OutputFormat } from "../types.js";
+import { handleError, runCommand, exitWithValidationError, exitWithConfigError } from "../error-handler.js";
+import { ConfigError, ValidationError, ApiError } from "../errors.js";
 
 interface FieldValue {
   key: string;
@@ -29,7 +31,7 @@ function parseFieldValue(value: string): unknown {
     const filename = value.slice(1);
     if (filename === "-") {
       // Read from stdin - not implemented in this context
-      throw new Error("Reading from stdin is not supported yet");
+      throw new ValidationError("Reading from stdin is not supported yet", "field");
     }
     try {
       const content = readFileSync(filename, "utf-8");
@@ -41,7 +43,7 @@ function parseFieldValue(value: string): unknown {
         return content.trim();
       }
     } catch (error) {
-      throw new Error(`Failed to read file: ${filename}`);
+      throw new ValidationError(`Failed to read file: ${filename}`, "field", value);
     }
   }
 
@@ -55,7 +57,7 @@ function parseFields(fields: string[]): Record<string, unknown> {
   for (const field of fields) {
     const equalIndex = field.indexOf("=");
     if (equalIndex === -1) {
-      throw new Error(`Invalid field format: ${field}. Expected key=value`);
+      throw ValidationError.invalid("field", field, "expected key=value format");
     }
 
     const key = field.slice(0, equalIndex);
@@ -73,7 +75,7 @@ function parseRawFields(fields: string[]): Record<string, string> {
   for (const field of fields) {
     const equalIndex = field.indexOf("=");
     if (equalIndex === -1) {
-      throw new Error(`Invalid field format: ${field}. Expected key=value`);
+      throw ValidationError.invalid("raw-field", field, "expected key=value format");
     }
 
     const key = field.slice(0, equalIndex);
@@ -194,12 +196,11 @@ export async function handleApiCommand(
 ): Promise<void> {
   const [endpoint] = args;
 
+  const format = (options.format || "json") as OutputFormat;
+  const formatter = new OutputFormatter(format, options["no-color"] === true);
+
   if (!endpoint) {
-    console.error(colors.red("Error: endpoint is required"));
-    console.log(
-      `\nRun ${colors.cyan("productive api --help")} for usage information`,
-    );
-    process.exit(1);
+    exitWithValidationError("endpoint", "productive api <endpoint>", formatter);
   }
 
   // Validate endpoint starts with /
@@ -207,23 +208,16 @@ export async function handleApiCommand(
     ? endpoint
     : `/${endpoint}`;
 
-  const format = (options.format || "json") as OutputFormat;
-  const formatter = new OutputFormatter(format, options["no-color"] === true);
-
-  try {
+  await runCommand(async () => {
     // Get configuration
     const config = getConfig(options);
 
     if (!config.apiToken) {
-      throw new ProductiveApiError(
-        "API token not configured. Set via: --token <token>, productive config set apiToken <token>, or PRODUCTIVE_API_TOKEN env var",
-      );
+      throw ConfigError.missingToken();
     }
 
     if (!config.organizationId) {
-      throw new ProductiveApiError(
-        "Organization ID not configured. Set via: --org-id <id>, productive config set organizationId <id>, or PRODUCTIVE_ORG_ID env var",
-      );
+      throw ConfigError.missingOrganizationId();
     }
 
     const baseUrl = config.baseUrl || "https://api.productive.io/api/v2";
@@ -291,7 +285,7 @@ export async function handleApiCommand(
       try {
         body = JSON.parse(content);
       } catch {
-        throw new Error(`Failed to parse JSON from file: ${inputFile}`);
+        throw ValidationError.invalid("input", inputFile, "must contain valid JSON");
       }
 
       // If we have fields with --input, they become query parameters
@@ -314,7 +308,7 @@ export async function handleApiCommand(
     const paginate = options.paginate === true;
 
     if (paginate && method !== "GET") {
-      throw new Error("Pagination is only supported for GET requests");
+      throw ValidationError.invalid("paginate", true, "only supported for GET requests");
     }
 
     const spinner = createSpinner(`${method} ${normalizedEndpoint}...`, format);
@@ -350,9 +344,7 @@ export async function handleApiCommand(
         for (const header of customHeaders) {
           const colonIndex = header.indexOf(":");
           if (colonIndex === -1) {
-            throw new Error(
-              `Invalid header format: ${header}. Expected "Key: Value"`,
-            );
+            throw ValidationError.invalid("header", header, 'expected "Key: Value" format');
           }
           const key = header.slice(0, colonIndex).trim();
           const value = header.slice(colonIndex + 1).trim();
@@ -366,9 +358,7 @@ export async function handleApiCommand(
         for (const header of customHeaders) {
           const colonIndex = header.indexOf(":");
           if (colonIndex === -1) {
-            throw new Error(
-              `Invalid header format: ${header}. Expected "Key: Value"`,
-            );
+            throw ValidationError.invalid("header", header, 'expected "Key: Value" format');
           }
           const key = header.slice(0, colonIndex).trim();
           const value = header.slice(colonIndex + 1).trim();
@@ -395,7 +385,7 @@ export async function handleApiCommand(
           // Use default error message
         }
 
-        throw new ProductiveApiError(errorMessage, response.status, errorText);
+        throw ApiError.fromResponse(response.status, errorMessage, url.pathname, errorText);
       }
 
       const data = (await response.json()) as Record<string, unknown>;
@@ -449,16 +439,5 @@ export async function handleApiCommand(
         total_items: allData.length,
       },
     });
-  } catch (error) {
-    if (error instanceof ProductiveApiError) {
-      if (format === "json") {
-        formatter.output(error.toJSON());
-      } else {
-        formatter.error(error.message);
-      }
-    } else {
-      formatter.error("An unexpected error occurred", error);
-    }
-    process.exit(1);
-  }
+  }, formatter);
 }

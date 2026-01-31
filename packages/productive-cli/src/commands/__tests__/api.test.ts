@@ -56,8 +56,8 @@ describe("api command", () => {
 
   describe("endpoint validation", () => {
     it("should exit with error when endpoint is missing", async () => {
-      await expect(handleApiCommand([], {})).rejects.toThrow("process.exit(1)");
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      await expect(handleApiCommand([], {})).rejects.toThrow("process.exit(3)");
+      expect(processExitSpy).toHaveBeenCalledWith(3);
     });
 
     it("should normalize endpoint to start with /", async () => {
@@ -623,8 +623,9 @@ describe("api command", () => {
           JSON.stringify({ errors: [{ detail: "Invalid token" }] }),
       });
 
+      // 401 errors exit with code 2 (authentication error)
       await expect(handleApiCommand(["/projects"], {})).rejects.toThrow(
-        "process.exit(1)",
+        "process.exit(2)",
       );
     });
 

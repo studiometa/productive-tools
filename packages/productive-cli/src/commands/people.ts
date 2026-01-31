@@ -2,11 +2,13 @@ import { ProductiveApi, ProductiveApiError } from '../api.js';
 import { OutputFormatter, createSpinner } from '../output.js';
 import { colors } from '../utils/colors.js';
 import type { OutputFormat } from '../types.js';
+import { handleError, exitWithValidationError, runCommand } from '../error-handler.js';
+import { createContext, type CommandContext, type CommandOptions } from '../context.js';
 
 function parseFilters(filterString: string): Record<string, string> {
   const filters: Record<string, string> = {};
   if (!filterString) return filters;
-  
+
   filterString.split(',').forEach((pair) => {
     const [key, value] = pair.split('=');
     if (key && value) {
@@ -89,13 +91,15 @@ export async function handlePeopleCommand(
   const format = (options.format || options.f || 'human') as OutputFormat;
   const formatter = new OutputFormatter(format, options['no-color'] === true);
 
+  const ctx = createContext(options as CommandOptions);
+
   switch (subcommand) {
     case 'list':
     case 'ls':
-      await peopleList(options, formatter);
+      await peopleListWithContext(ctx);
       break;
     case 'get':
-      await peopleGet(args, options, formatter);
+      await peopleGetWithContext(args, ctx);
       break;
     default:
       formatter.error(`Unknown people subcommand: ${subcommand}`);
@@ -103,38 +107,38 @@ export async function handlePeopleCommand(
   }
 }
 
-async function peopleList(
-  options: Record<string, string | boolean>,
-  formatter: OutputFormatter
-): Promise<void> {
-  const spinner = createSpinner('Fetching people...', formatter['format']);
+// ============================================================================
+// Context-based command implementations (new pattern)
+// ============================================================================
+
+async function peopleListWithContext(ctx: CommandContext): Promise<void> {
+  const spinner = ctx.createSpinner('Fetching people...');
   spinner.start();
 
-  try {
-    const api = new ProductiveApi(options);
+  await runCommand(async () => {
     const filter: Record<string, string> = {};
 
-    // Parse generic filters first
-    if (options.filter) {
-      Object.assign(filter, parseFilters(String(options.filter)));
+    if (ctx.options.filter) {
+      Object.assign(filter, parseFilters(String(ctx.options.filter)));
     }
 
-    // Specific filter options (override generic filters)
-    if (options.company) {
-      filter.company_id = String(options.company);
+    if (ctx.options.company) {
+      filter.company_id = String(ctx.options.company);
     }
 
-    const response = await api.getPeople({
-      page: parseInt(String(options.page || options.p || '1')),
-      perPage: parseInt(String(options.size || options.s || '100')),
+    const { page, perPage } = ctx.getPagination();
+    const response = await ctx.api.getPeople({
+      page,
+      perPage,
       filter,
-      sort: String(options.sort || ''),
+      sort: ctx.getSort(),
     });
 
     spinner.succeed();
 
-    if (formatter['format'] === 'json') {
-      formatter.output({
+    const format = ctx.options.format || ctx.options.f || 'human';
+    if (format === 'json') {
+      ctx.formatter.output({
         data: response.data.map((p) => ({
           id: p.id,
           first_name: p.attributes.first_name,
@@ -146,7 +150,7 @@ async function peopleList(
         })),
         meta: response.meta,
       });
-    } else if (formatter['format'] === 'csv' || formatter['format'] === 'table') {
+    } else if (format === 'csv' || format === 'table') {
       const data = response.data.map((p) => ({
         id: p.id,
         first_name: p.attributes.first_name,
@@ -154,7 +158,7 @@ async function peopleList(
         email: p.attributes.email,
         active: p.attributes.active ? 'yes' : 'no',
       }));
-      formatter.output(data);
+      ctx.formatter.output(data);
     } else {
       response.data.forEach((person) => {
         const status = person.attributes.active ? colors.green('[active]') : colors.gray('[inactive]');
@@ -172,36 +176,28 @@ async function peopleList(
         console.log(colors.dim(`Page ${currentPage}/${totalPages} (Total: ${response.meta.total} people)`));
       }
     }
-  } catch (error) {
-    spinner.fail();
-    handleError(error, formatter);
-  }
+  }, ctx.formatter);
 }
 
-async function peopleGet(
-  args: string[],
-  options: Record<string, string | boolean>,
-  formatter: OutputFormatter
-): Promise<void> {
+async function peopleGetWithContext(args: string[], ctx: CommandContext): Promise<void> {
   const [id] = args;
 
   if (!id) {
-    formatter.error('Usage: productive people get <id>');
-    process.exit(1);
+    exitWithValidationError('id', 'productive people get <id>', ctx.formatter);
   }
 
-  const spinner = createSpinner('Fetching person...', formatter['format']);
+  const spinner = ctx.createSpinner('Fetching person...');
   spinner.start();
 
-  try {
-    const api = new ProductiveApi(options);
-    const response = await api.getPerson(id);
+  await runCommand(async () => {
+    const response = await ctx.api.getPerson(id);
     const person = response.data;
 
     spinner.succeed();
 
-    if (formatter['format'] === 'json') {
-      formatter.output({
+    const format = ctx.options.format || ctx.options.f || 'human';
+    if (format === 'json') {
+      ctx.formatter.output({
         id: person.id,
         first_name: person.attributes.first_name,
         last_name: person.attributes.last_name,
@@ -224,21 +220,5 @@ async function peopleGet(
       console.log(colors.cyan('Created:'), new Date(person.attributes.created_at).toLocaleString());
       console.log(colors.cyan('Updated:'), new Date(person.attributes.updated_at).toLocaleString());
     }
-  } catch (error) {
-    spinner.fail();
-    handleError(error, formatter);
-  }
-}
-
-function handleError(error: unknown, formatter: OutputFormatter): void {
-  if (error instanceof ProductiveApiError) {
-    if (formatter['format'] === 'json') {
-      formatter.output(error.toJSON());
-    } else {
-      formatter.error(error.message);
-    }
-  } else {
-    formatter.error('An unexpected error occurred', error);
-  }
-  process.exit(1);
+  }, ctx.formatter);
 }

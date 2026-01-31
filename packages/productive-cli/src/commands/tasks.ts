@@ -9,6 +9,8 @@ import {
   linkedPerson,
 } from "../utils/productive-links.js";
 import type { OutputFormat } from "../types.js";
+import { handleError, exitWithValidationError, runCommand } from "../error-handler.js";
+import { createContext, type CommandContext, type CommandOptions } from "../context.js";
 
 function parseFilters(filterString: string): Record<string, string> {
   const filters: Record<string, string> = {};
@@ -102,13 +104,15 @@ export async function handleTasksCommand(
   const format = (options.format || options.f || "human") as OutputFormat;
   const formatter = new OutputFormatter(format, options["no-color"] === true);
 
+  const ctx = createContext(options as CommandOptions);
+
   switch (subcommand) {
     case "list":
     case "ls":
-      await tasksList(options, formatter);
+      await tasksListWithContext(ctx);
       break;
     case "get":
-      await tasksGet(args, options, formatter);
+      await tasksGetWithContext(args, ctx);
       break;
     default:
       formatter.error(`Unknown tasks subcommand: ${subcommand}`);
@@ -729,15 +733,428 @@ async function tasksGet(
   }
 }
 
-function handleError(error: unknown, formatter: OutputFormatter): void {
-  if (error instanceof ProductiveApiError) {
-    if (formatter["format"] === "json") {
-      formatter.output(error.toJSON());
-    } else {
-      formatter.error(error.message);
+// ============================================================================
+// Context-based command implementations (new pattern)
+// ============================================================================
+
+async function tasksListWithContext(ctx: CommandContext): Promise<void> {
+  const spinner = ctx.createSpinner("Fetching tasks...");
+  spinner.start();
+
+  await runCommand(async () => {
+    const filter: Record<string, string> = {};
+
+    if (ctx.options.filter) {
+      Object.assign(filter, parseFilters(String(ctx.options.filter)));
     }
-  } else {
-    formatter.error("An unexpected error occurred", error);
+
+    if (ctx.options.mine && ctx.config.userId) {
+      filter.assignee_id = ctx.config.userId;
+    } else if (ctx.options.person) {
+      filter.assignee_id = String(ctx.options.person);
+    }
+    if (ctx.options.project) {
+      filter.project_id = String(ctx.options.project);
+    }
+
+    const status = String(ctx.options.status || "open").toLowerCase();
+    if (status === "open") {
+      filter.status = "1";
+    } else if (status === "completed" || status === "done") {
+      filter.status = "2";
+    }
+
+    const { page, perPage } = ctx.getPagination();
+    const response = await ctx.api.getTasks({
+      page,
+      perPage,
+      filter,
+      sort: ctx.getSort(),
+      include: ["project", "assignee", "workflow_status"],
+    });
+
+    spinner.succeed();
+
+    const format = ctx.options.format || ctx.options.f || "human";
+    if (format === "json") {
+      ctx.formatter.output({
+        data: response.data.map((t) => {
+          const projectData = getIncludedResource(
+            response.included,
+            "projects",
+            t.relationships?.project?.data?.id,
+          );
+          const assigneeData = getIncludedResource(
+            response.included,
+            "people",
+            t.relationships?.assignee?.data?.id,
+          );
+          const statusData = getIncludedResource(
+            response.included,
+            "workflow_statuses",
+            t.relationships?.workflow_status?.data?.id,
+          );
+          return {
+            id: t.id,
+            number: t.attributes.number,
+            title: t.attributes.title,
+            closed: t.attributes.closed,
+            due_date: t.attributes.due_date,
+            worked_time: t.attributes.worked_time,
+            initial_estimate: t.attributes.initial_estimate,
+            project_id: t.relationships?.project?.data?.id,
+            project_name: projectData?.name,
+            assignee_id: t.relationships?.assignee?.data?.id,
+            assignee_name: assigneeData
+              ? `${assigneeData.first_name} ${assigneeData.last_name}`
+              : undefined,
+            status_id: t.relationships?.workflow_status?.data?.id,
+            status_name: statusData?.name,
+            created_at: t.attributes.created_at,
+            updated_at: t.attributes.updated_at,
+          };
+        }),
+        meta: response.meta,
+      });
+    } else if (format === "csv" || format === "table") {
+      const data = response.data.map((t) => {
+        const projectData = getIncludedResource(
+          response.included,
+          "projects",
+          t.relationships?.project?.data?.id,
+        );
+        const assigneeData = getIncludedResource(
+          response.included,
+          "people",
+          t.relationships?.assignee?.data?.id,
+        );
+        const statusData = getIncludedResource(
+          response.included,
+          "workflow_statuses",
+          t.relationships?.workflow_status?.data?.id,
+        );
+        return {
+          id: t.id,
+          number: t.attributes.number || "",
+          title: t.attributes.title,
+          project: projectData?.name || "",
+          assignee: assigneeData
+            ? `${assigneeData.first_name} ${assigneeData.last_name}`
+            : "",
+          status: statusData?.name || "",
+          worked: formatTime(t.attributes.worked_time),
+          estimate: formatTime(t.attributes.initial_estimate),
+          due_date: t.attributes.due_date || "",
+        };
+      });
+      ctx.formatter.output(data);
+    } else if (format === "kanban") {
+      const statusMap = new Map<string, KanbanColumn>();
+      const defaultColumn: KanbanColumn = {
+        id: "unknown",
+        name: "No Status",
+        tasks: [],
+      };
+
+      for (const task of response.data) {
+        const statusId = task.relationships?.workflow_status?.data?.id;
+        const statusData = getIncludedResource(
+          response.included,
+          "workflow_statuses",
+          statusId,
+        );
+        const assigneeData = getIncludedResource(
+          response.included,
+          "people",
+          task.relationships?.assignee?.data?.id,
+        );
+
+        const statusName = statusData
+          ? String(statusData.name || "Unknown")
+          : null;
+
+        const kanbanTask: KanbanTask = {
+          id: task.id,
+          number: task.attributes.number,
+          title: task.attributes.title || "Untitled",
+          assignee: assigneeData
+            ? `${assigneeData.first_name} ${assigneeData.last_name}`
+            : undefined,
+          statusId,
+          statusName: statusName || undefined,
+        };
+
+        if (statusName) {
+          if (!statusMap.has(statusName)) {
+            statusMap.set(statusName, {
+              id: statusId || statusName,
+              name: statusName,
+              tasks: [],
+            });
+          }
+          statusMap.get(statusName)!.tasks.push(kanbanTask);
+        } else {
+          defaultColumn.tasks.push(kanbanTask);
+        }
+      }
+
+      const columns = Array.from(statusMap.values()).sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
+
+      if (defaultColumn.tasks.length > 0) {
+        columns.push(defaultColumn);
+      }
+
+      const terminalWidth = process.stdout.columns || 80;
+      renderKanban(columns, terminalWidth);
+
+      if (response.meta?.total) {
+        console.log();
+        console.log(colors.dim(`Total: ${response.meta.total} tasks`));
+      }
+    } else {
+      response.data.forEach((task) => {
+        const isClosed = task.attributes.closed;
+        const statusIcon = isClosed ? colors.green("✓") : colors.yellow("○");
+        const title = task.attributes.title || "Untitled";
+        const taskNumber = task.attributes.number
+          ? `#${task.attributes.number}`
+          : "";
+
+        const projectData = getIncludedResource(
+          response.included,
+          "projects",
+          task.relationships?.project?.data?.id,
+        );
+        const assigneeData = getIncludedResource(
+          response.included,
+          "people",
+          task.relationships?.assignee?.data?.id,
+        );
+        const statusData = getIncludedResource(
+          response.included,
+          "workflow_statuses",
+          task.relationships?.workflow_status?.data?.id,
+        );
+
+        const numberPart = taskNumber ? colors.dim(taskNumber) + " " : "";
+        console.log(
+          `${statusIcon} ${numberPart}${colors.bold(title)} ${linkedId(task.id, "task")}`,
+        );
+
+        const parts: string[] = [];
+        if (projectData?.name) {
+          const projectId = task.relationships?.project?.data?.id;
+          const projectName = colors.cyan(String(projectData.name));
+          parts.push(
+            projectId ? linkedProject(projectName, projectId) : projectName,
+          );
+        }
+        if (assigneeData) {
+          const assigneeId = task.relationships?.assignee?.data?.id;
+          const assigneeName = `${assigneeData.first_name} ${assigneeData.last_name}`;
+          const assigneeText = assigneeId
+            ? linkedPerson(assigneeName, assigneeId)
+            : assigneeName;
+          parts.push(`${colors.dim("→")} ${assigneeText}`);
+        }
+        if (statusData?.name) {
+          parts.push(colors.dim(`[${statusData.name}]`));
+        }
+        if (parts.length > 0) {
+          console.log(`  ${parts.join(" ")}`);
+        }
+
+        const timeInfo: string[] = [];
+        const worked = task.attributes.worked_time;
+        const estimate = task.attributes.initial_estimate;
+        if (worked !== undefined && worked > 0) {
+          const workedStr = formatTime(worked);
+          if (estimate !== undefined && estimate > 0) {
+            const estimateStr = formatTime(estimate);
+            const isOverBudget = worked > estimate;
+            const ratio = `${workedStr}/${estimateStr}`;
+            timeInfo.push(
+              `${colors.dim("Time:")} ${isOverBudget ? colors.red(ratio) : ratio}`,
+            );
+          } else {
+            timeInfo.push(`${colors.dim("Time:")} ${workedStr}`);
+          }
+        } else if (estimate !== undefined && estimate > 0) {
+          timeInfo.push(`${colors.dim("Est:")} ${formatTime(estimate)}`);
+        }
+
+        if (task.attributes.due_date) {
+          const dueDate = new Date(task.attributes.due_date);
+          const now = new Date();
+          const isOverdue = !isClosed && dueDate < now;
+          const dueDateStr = task.attributes.due_date;
+          timeInfo.push(
+            `${colors.dim("Due:")} ${isOverdue ? colors.red(dueDateStr) : dueDateStr}`,
+          );
+        }
+
+        if (timeInfo.length > 0) {
+          console.log(`  ${timeInfo.join("  ")}`);
+        }
+
+        console.log();
+      });
+
+      if (response.meta?.total) {
+        const currentPage = response.meta.page || 1;
+        const perPage = response.meta.per_page || 100;
+        const totalPages = Math.ceil(response.meta.total / perPage);
+        console.log(
+          colors.dim(
+            `Page ${currentPage}/${totalPages} (Total: ${response.meta.total} tasks)`,
+          ),
+        );
+      }
+    }
+  }, ctx.formatter);
+}
+
+async function tasksGetWithContext(args: string[], ctx: CommandContext): Promise<void> {
+  const [id] = args;
+
+  if (!id) {
+    exitWithValidationError("id", "productive tasks get <id>", ctx.formatter);
   }
-  process.exit(1);
+
+  const spinner = ctx.createSpinner("Fetching task...");
+  spinner.start();
+
+  await runCommand(async () => {
+    const response = await ctx.api.getTask(id, {
+      include: ["project", "assignee", "workflow_status"],
+    });
+    const task = response.data;
+
+    const projectData = getIncludedResource(
+      response.included,
+      "projects",
+      task.relationships?.project?.data?.id,
+    );
+    const assigneeData = getIncludedResource(
+      response.included,
+      "people",
+      task.relationships?.assignee?.data?.id,
+    );
+    const statusData = getIncludedResource(
+      response.included,
+      "workflow_statuses",
+      task.relationships?.workflow_status?.data?.id,
+    );
+
+    spinner.succeed();
+
+    const format = ctx.options.format || ctx.options.f || "human";
+    if (format === "json") {
+      ctx.formatter.output({
+        id: task.id,
+        number: task.attributes.number,
+        title: task.attributes.title,
+        description: task.attributes.description,
+        closed: task.attributes.closed,
+        due_date: task.attributes.due_date,
+        worked_time: task.attributes.worked_time,
+        initial_estimate: task.attributes.initial_estimate,
+        project_id: task.relationships?.project?.data?.id,
+        project_name: projectData?.name,
+        assignee_id: task.relationships?.assignee?.data?.id,
+        assignee_name: assigneeData
+          ? `${assigneeData.first_name} ${assigneeData.last_name}`
+          : undefined,
+        status_id: task.relationships?.workflow_status?.data?.id,
+        status_name: statusData?.name,
+        created_at: task.attributes.created_at,
+        updated_at: task.attributes.updated_at,
+      });
+    } else {
+      const isClosed = task.attributes.closed;
+      const statusIcon = isClosed
+        ? colors.green("✓ Completed")
+        : colors.yellow("○ Active");
+      const taskNumber = task.attributes.number
+        ? colors.dim(`#${task.attributes.number} `)
+        : "";
+
+      console.log(`${taskNumber}${colors.bold(task.attributes.title)}`);
+      console.log(colors.dim("─".repeat(50)));
+      console.log(`${colors.cyan("ID:")}       ${linkedId(task.id, "task")}`);
+      console.log(`${colors.cyan("Status:")}   ${statusIcon}`);
+
+      if (statusData?.name) {
+        console.log(
+          `${colors.cyan("Workflow:")} ${colors.dim(`[${statusData.name}]`)}`,
+        );
+      }
+
+      if (projectData?.name) {
+        const projectId = task.relationships?.project?.data?.id;
+        const projectName = String(projectData.name);
+        const projectText = projectId
+          ? linkedProject(projectName, projectId)
+          : projectName;
+        console.log(`${colors.cyan("Project:")}  ${projectText}`);
+      }
+
+      if (assigneeData) {
+        const assigneeId = task.relationships?.assignee?.data?.id;
+        const assigneeName = `${assigneeData.first_name} ${assigneeData.last_name}`;
+        const assigneeText = assigneeId
+          ? linkedPerson(assigneeName, assigneeId)
+          : assigneeName;
+        console.log(`${colors.cyan("Assignee:")} ${assigneeText}`);
+      }
+
+      const worked = task.attributes.worked_time;
+      const estimate = task.attributes.initial_estimate;
+      if (worked !== undefined && worked > 0) {
+        const workedStr = formatTime(worked);
+        if (estimate !== undefined && estimate > 0) {
+          const estimateStr = formatTime(estimate);
+          const isOverBudget = worked > estimate;
+          const ratio = `${workedStr} / ${estimateStr}`;
+          console.log(
+            `${colors.cyan("Time:")}     ${isOverBudget ? colors.red(ratio) : ratio}`,
+          );
+        } else {
+          console.log(`${colors.cyan("Time:")}     ${workedStr}`);
+        }
+      } else if (estimate !== undefined && estimate > 0) {
+        console.log(`${colors.cyan("Estimate:")} ${formatTime(estimate)}`);
+      }
+
+      if (task.attributes.due_date) {
+        const dueDate = new Date(task.attributes.due_date);
+        const now = new Date();
+        const isOverdue = !isClosed && dueDate < now;
+        const dueDateStr = task.attributes.due_date;
+        console.log(
+          `${colors.cyan("Due:")}      ${isOverdue ? colors.red(dueDateStr) : dueDateStr}`,
+        );
+      }
+
+      if (task.attributes.description) {
+        const description = stripHtml(task.attributes.description);
+        if (description) {
+          console.log();
+          console.log(`${colors.cyan("Description:")}`);
+          const lines = description.split("\n").map((line) => `  ${line}`);
+          console.log(lines.join("\n"));
+        }
+      }
+
+      console.log();
+      console.log(
+        `${colors.dim("Created:")} ${new Date(task.attributes.created_at).toLocaleString()}`,
+      );
+      console.log(
+        `${colors.dim("Updated:")} ${new Date(task.attributes.updated_at).toLocaleString()}`,
+      );
+    }
+  }, ctx.formatter);
 }

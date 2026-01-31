@@ -3,11 +3,13 @@ import { OutputFormatter, createSpinner } from '../output.js';
 import { colors } from '../utils/colors.js';
 import { linkedId } from '../utils/productive-links.js';
 import type { OutputFormat } from '../types.js';
+import { handleError, runCommand } from '../error-handler.js';
+import { createContext, type CommandContext, type CommandOptions } from '../context.js';
 
 function parseFilters(filterString: string): Record<string, string> {
   const filters: Record<string, string> = {};
   if (!filterString) return filters;
-  
+
   filterString.split(',').forEach((pair) => {
     const [key, value] = pair.split('=');
     if (key && value) {
@@ -75,10 +77,12 @@ export async function handleServicesCommand(
   const format = (options.format || options.f || 'human') as OutputFormat;
   const formatter = new OutputFormatter(format, options['no-color'] === true);
 
+  const ctx = createContext(options as CommandOptions);
+
   switch (subcommand) {
     case 'list':
     case 'ls':
-      await servicesList(options, formatter);
+      await servicesListWithContext(ctx);
       break;
     default:
       formatter.error(`Unknown services subcommand: ${subcommand}`);
@@ -86,40 +90,40 @@ export async function handleServicesCommand(
   }
 }
 
-async function servicesList(
-  options: Record<string, string | boolean>,
-  formatter: OutputFormatter
-): Promise<void> {
-  const spinner = createSpinner('Fetching services...', formatter['format']);
+// ============================================================================
+// Context-based command implementations (new pattern)
+// ============================================================================
+
+async function servicesListWithContext(ctx: CommandContext): Promise<void> {
+  const spinner = ctx.createSpinner('Fetching services...');
   spinner.start();
 
-  try {
-    const api = new ProductiveApi(options);
+  await runCommand(async () => {
     const filter: Record<string, string> = {};
 
-    // Parse generic filters first
-    if (options.filter) {
-      Object.assign(filter, parseFilters(String(options.filter)));
+    if (ctx.options.filter) {
+      Object.assign(filter, parseFilters(String(ctx.options.filter)));
     }
 
-    // Specific filter options (override generic filters)
-    if (options.project) {
-      filter.project_id = String(options.project);
+    if (ctx.options.project) {
+      filter.project_id = String(ctx.options.project);
     }
-    if (options.deal) {
-      filter.deal_id = String(options.deal);
+    if (ctx.options.deal) {
+      filter.deal_id = String(ctx.options.deal);
     }
 
-    const response = await api.getServices({
-      page: parseInt(String(options.page || options.p || '1')),
-      perPage: parseInt(String(options.size || options.s || '100')),
+    const { page, perPage } = ctx.getPagination();
+    const response = await ctx.api.getServices({
+      page,
+      perPage,
       filter,
     });
 
     spinner.succeed();
 
-    if (formatter['format'] === 'json') {
-      formatter.output({
+    const format = ctx.options.format || ctx.options.f || 'human';
+    if (format === 'json') {
+      ctx.formatter.output({
         data: response.data.map((s) => ({
           id: s.id,
           name: s.attributes.name,
@@ -128,12 +132,12 @@ async function servicesList(
         })),
         meta: response.meta,
       });
-    } else if (formatter['format'] === 'csv' || formatter['format'] === 'table') {
+    } else if (format === 'csv' || format === 'table') {
       const data = response.data.map((s) => ({
         id: s.id,
         name: s.attributes.name,
       }));
-      formatter.output(data);
+      ctx.formatter.output(data);
     } else {
       response.data.forEach((service) => {
         console.log(`${colors.bold(service.attributes.name)} ${linkedId(service.id, 'service')}`);
@@ -147,21 +151,5 @@ async function servicesList(
         console.log(colors.dim(`Page ${currentPage}/${totalPages} (Total: ${response.meta.total} services)`));
       }
     }
-  } catch (error) {
-    spinner.fail();
-    handleError(error, formatter);
-  }
-}
-
-function handleError(error: unknown, formatter: OutputFormatter): void {
-  if (error instanceof ProductiveApiError) {
-    if (formatter['format'] === 'json') {
-      formatter.output(error.toJSON());
-    } else {
-      formatter.error(error.message);
-    }
-  } else {
-    formatter.error('An unexpected error occurred', error);
-  }
-  process.exit(1);
+  }, ctx.formatter);
 }

@@ -334,7 +334,7 @@ describe("tasks command", () => {
 
     it("should exit with error when id is missing", async () => {
       await expect(() => handleTasksCommand("get", [], {})).rejects.toThrow(
-        "process.exit(1)",
+        "process.exit(3)",
       );
     });
 

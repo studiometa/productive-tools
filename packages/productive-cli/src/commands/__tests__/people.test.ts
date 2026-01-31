@@ -235,7 +235,7 @@ describe('people command', () => {
     it('should exit with error when id is missing', async () => {
       await handlePeopleCommand('get', [], {});
 
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(processExitSpy).toHaveBeenCalledWith(3);
     });
 
     it('should handle API errors', async () => {
