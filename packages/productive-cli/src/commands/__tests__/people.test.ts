@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { handlePeopleCommand } from '../people.js';
+import { handlePeopleCommand } from '../people/index.js';
 import { ProductiveApi, ProductiveApiError } from '../../api.js';
 
 // Mock dependencies
