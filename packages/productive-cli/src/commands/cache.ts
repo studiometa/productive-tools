@@ -13,6 +13,35 @@ import type {
 import { runCommand } from "../error-handler.js";
 import { ConfigError, CommandError } from "../errors.js";
 
+// ============================================================================
+// Exported helper functions (easily testable)
+// ============================================================================
+
+/**
+ * Format bytes to human-readable string
+ */
+export function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
+
+/**
+ * Format duration in seconds to human-readable string
+ */
+export function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+  return `${Math.floor(seconds / 86400)}d`;
+}
+
+// ============================================================================
+// Help functions
+// ============================================================================
+
 export function showCacheHelp(subcommand?: string): void {
   if (subcommand === "status") {
     console.log(`
@@ -117,6 +146,10 @@ Run ${colors.cyan("productive cache <subcommand> --help")} for subcommand detail
   }
 }
 
+// ============================================================================
+// Main command handler
+// ============================================================================
+
 export async function handleCacheCommand(
   subcommand: string,
   args: string[],
@@ -144,6 +177,10 @@ export async function handleCacheCommand(
     }
   }, formatter);
 }
+
+// ============================================================================
+// Subcommand implementations
+// ============================================================================
 
 async function cacheStatus(
   formatter: OutputFormatter,
@@ -336,7 +373,7 @@ async function cacheSync(
       console.log(colors.green("✓"), "Cache sync completed");
       console.log(colors.dim(`  Database size: ${formatBytes(stats.dbSize)}`));
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     spinner.fail("Cache sync failed");
     throw error;
   }
@@ -411,19 +448,4 @@ async function cacheQueue(
     }
     console.log();
   }
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
-}
-
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-  return `${Math.floor(seconds / 86400)}d`;
 }

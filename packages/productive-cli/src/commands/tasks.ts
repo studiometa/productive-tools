@@ -11,7 +11,11 @@ import { exitWithValidationError, runCommand } from "../error-handler.js";
 import { createContext, type CommandContext, type CommandOptions } from "../context.js";
 import { formatTask, formatListResponse } from "../formatters/index.js";
 
-function parseFilters(filterString: string): Record<string, string> {
+/**
+ * Parse filter string into key-value pairs
+ * @example parseFilters("assignee_id=123,status=open") => { assignee_id: "123", status: "open" }
+ */
+export function parseFilters(filterString: string): Record<string, string> {
   const filters: Record<string, string> = {};
   if (!filterString) return filters;
 
@@ -119,8 +123,10 @@ export async function handleTasksCommand(
   }
 }
 
-// Helper to format time in minutes to human readable format
-function formatTime(minutes: number | undefined): string {
+/**
+ * Format time in minutes to human readable format
+ */
+export function formatTime(minutes: number | undefined): string {
   if (minutes === undefined || minutes === null) return "-";
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
@@ -129,8 +135,10 @@ function formatTime(minutes: number | undefined): string {
   return `${hours}h${mins}m`;
 }
 
-// Helper to get included resource by type and id
-function getIncludedResource(
+/**
+ * Get included resource by type and id from JSON:API includes
+ */
+export function getIncludedResource(
   included:
     | Array<{ id: string; type: string; attributes: Record<string, unknown> }>
     | undefined,
@@ -141,8 +149,10 @@ function getIncludedResource(
   return included.find((r) => r.type === type && r.id === id)?.attributes;
 }
 
-// Helper to strip ANSI codes for length calculation
-function stripAnsi(str: string): string {
+/**
+ * Strip ANSI codes for length calculation
+ */
+export function stripAnsi(str: string): string {
   // eslint-disable-next-line no-control-regex
   return str.replace(
     /\x1b\[[0-9;]*m|\x1b\]8;;[^\x1b]*\x1b\\|\x1b\]8;;\x1b\\/g,
@@ -150,8 +160,10 @@ function stripAnsi(str: string): string {
   );
 }
 
-// Helper to truncate text to fit width (accounting for ANSI codes)
-function truncateText(text: string, maxWidth: number): string {
+/**
+ * Truncate text to fit width (accounting for ANSI codes)
+ */
+export function truncateText(text: string, maxWidth: number): string {
   const visibleLength = stripAnsi(text).length;
   if (visibleLength <= maxWidth) return text;
 
@@ -179,8 +191,10 @@ function truncateText(text: string, maxWidth: number): string {
   return text.slice(0, cutIndex) + "…" + "\x1b[0m";
 }
 
-// Helper to pad text to width (accounting for ANSI codes)
-function padText(text: string, width: number): string {
+/**
+ * Pad text to width (accounting for ANSI codes)
+ */
+export function padText(text: string, width: number): string {
   const visibleLength = stripAnsi(text).length;
   if (visibleLength >= width) return text;
   return text + " ".repeat(width - visibleLength);
