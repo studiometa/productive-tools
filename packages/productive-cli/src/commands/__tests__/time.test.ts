@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { handleTimeCommand } from '../time.js';
+import { handleTimeCommand } from '../time/index.js';
 import * as api from '../../api.js';
 import * as config from '../../config.js';
 
