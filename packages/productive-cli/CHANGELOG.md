@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Monorepo Structure** - Restructured as npm workspace with separate packages (f74945b)
+- **Centralized Error Handling** - New error handling and context pattern for commands (07c5302, 1b399c4)
+  - `AppError` base class with typed error codes
+  - `ConfigurationError`, `ApiError`, `ValidationError` specialized types
+  - `createContext()` for dependency injection in commands
+  - `handleCommandError()` for consistent error formatting
+- **Shared Formatters** - Reusable formatters for CLI and MCP integration (fa37749)
+  - `formatTimeEntry()`, `formatProject()`, `formatTask()`, `formatPerson()`
+  - `formatService()`, `formatBudget()`, `formatListResponse()`
+  - Type-safe formatter options with `FormatterOptions`
+- **Result Type Utilities** - Functional error handling with `Result<T, E>` pattern (07c5302)
+
+### Changed
+- Migrated all commands to use centralized error handling and context pattern (1b399c4)
+- Refactored command structure for better testability and reuse
+
+### Fixed
+- Fix config-store test on macOS (was using wrong config directory path) (87af7cf)
+- Fix TypeScript build errors in context.ts and errors.ts (e0df59d)
+- Fix linting errors and remove unused code (ec8a0ed)
+
 ## [0.2.4] - 2026-01-21
 
 ### Added
