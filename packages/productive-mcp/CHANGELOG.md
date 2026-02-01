@@ -21,12 +21,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `handlers.ts` - Request handlers
   - `tools.ts` - MCP tool definitions
 - **Agent-Friendly Formatters** - Structured response formatting (d5020cb)
-- **Unit Tests** - Auth module test coverage (487e3df)
+- **Comprehensive Test Suite** - 93 tests with 96% coverage (27a3e6f, 2229c28)
+  - Auth module tests
+  - HTTP transport tests
+  - Tools and handlers tests
+  - Formatter tests
 
 ### Changed
 - Refactored stdio transport to use shared modules (f88fe8b)
 - Updated build config for multi-entry output (bc5c066)
 - Rewrote README for dual transport modes documentation (0482245)
+- Refactored for testability with dependency injection (2229c28)
 
 ## [0.1.0] - 2026-01-28
 

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Renderer Infrastructure** - Pluggable output rendering system (e5fa4fc, cc93bf8)
+  - Base renderers for JSON, CSV, and table formats
+  - Human-readable renderers for all resource types (projects, tasks, time, people, services, budgets)
+  - Extensible registry for custom renderers
+- **Budget Links** - Clickable links to budgets in terminal output (76966a4)
+
+### Changed
+- **Command Architecture** - Split commands into modular files (14ad00b, 6df0e37, 0538e59, fcfd100, 1e8df6e, 1535a27)
+  - Each command now has separate `command.ts`, `handlers.ts`, `help.ts` files
+  - Improved code organization and maintainability
+- **Centralized Error Handling** - Context/DI pattern for better testability (07c5302, 1b399c4)
+  - Typed errors: `AppError`, `ConfigurationError`, `ApiError`
+  - Result type utilities for functional error handling
+- Refactored all commands to use new renderer system (bad60f9, fdcdd3f, 33ea6cb, 5251a31)
+
+### Fixed
+- CI workflow now builds CLI before running MCP tests (76966a4)
+
 ## [0.2.4] - 2026-01-21
 
 ### Added
