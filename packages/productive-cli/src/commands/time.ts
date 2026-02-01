@@ -7,6 +7,7 @@ import type { OutputFormat } from '../types.js';
 import { handleError, exitWithValidationError, runCommand } from '../error-handler.js';
 import { ValidationError, ConfigError } from '../errors.js';
 import { createContext, type CommandContext, type CommandOptions } from '../context.js';
+import { formatTimeEntry, formatListResponse } from '../formatters/index.js';
 
 export function showTimeHelp(subcommand?: string): void {
   if (subcommand === 'list' || subcommand === 'ls') {
@@ -261,21 +262,7 @@ async function timeListWithContext(ctx: CommandContext): Promise<void> {
 
     const format = ctx.options.format || ctx.options.f || 'human';
     if (format === 'json') {
-      ctx.formatter.output({
-        data: response.data.map((e) => ({
-          id: e.id,
-          date: e.attributes.date,
-          time_minutes: e.attributes.time,
-          time_hours: (e.attributes.time / 60).toFixed(2),
-          note: e.attributes.note,
-          person_id: e.relationships?.person?.data?.id,
-          service_id: e.relationships?.service?.data?.id,
-          project_id: e.relationships?.project?.data?.id,
-          created_at: e.attributes.created_at,
-          updated_at: e.attributes.updated_at,
-        })),
-        meta: response.meta,
-      });
+      ctx.formatter.output(formatListResponse(response.data, formatTimeEntry, response.meta));
     } else if (format === 'csv' || format === 'table') {
       const data = response.data.map((e) => ({
         id: e.id,
@@ -346,18 +333,7 @@ async function timeGetWithContext(args: string[], ctx: CommandContext): Promise<
 
     const format = ctx.options.format || ctx.options.f || 'human';
     if (format === 'json') {
-      ctx.formatter.output({
-        id: entry.id,
-        date: entry.attributes.date,
-        time_minutes: entry.attributes.time,
-        time_hours: (entry.attributes.time / 60).toFixed(2),
-        note: entry.attributes.note,
-        person_id: entry.relationships?.person?.data?.id,
-        service_id: entry.relationships?.service?.data?.id,
-        project_id: entry.relationships?.project?.data?.id,
-        created_at: entry.attributes.created_at,
-        updated_at: entry.attributes.updated_at,
-      });
+      ctx.formatter.output(formatTimeEntry(entry));
     } else {
       const hours = Math.floor(entry.attributes.time / 60);
       const minutes = entry.attributes.time % 60;
@@ -433,11 +409,7 @@ async function timeAddWithContext(ctx: CommandContext): Promise<void> {
     if (format === 'json') {
       ctx.formatter.output({
         status: 'success',
-        id: entry.id,
-        date: entry.attributes.date,
-        time_minutes: entry.attributes.time,
-        time_hours: (entry.attributes.time / 60).toFixed(2),
-        note: entry.attributes.note,
+        ...formatTimeEntry(entry),
       });
     } else {
       ctx.formatter.success('Time entry created');

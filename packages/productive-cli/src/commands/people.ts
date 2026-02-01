@@ -3,6 +3,7 @@ import { colors } from '../utils/colors.js';
 import type { OutputFormat } from '../types.js';
 import { exitWithValidationError, runCommand } from '../error-handler.js';
 import { createContext, type CommandContext, type CommandOptions } from '../context.js';
+import { formatPerson, formatListResponse } from '../formatters/index.js';
 
 function parseFilters(filterString: string): Record<string, string> {
   const filters: Record<string, string> = {};
@@ -137,18 +138,7 @@ async function peopleListWithContext(ctx: CommandContext): Promise<void> {
 
     const format = ctx.options.format || ctx.options.f || 'human';
     if (format === 'json') {
-      ctx.formatter.output({
-        data: response.data.map((p) => ({
-          id: p.id,
-          first_name: p.attributes.first_name,
-          last_name: p.attributes.last_name,
-          email: p.attributes.email,
-          active: p.attributes.active,
-          created_at: p.attributes.created_at,
-          updated_at: p.attributes.updated_at,
-        })),
-        meta: response.meta,
-      });
+      ctx.formatter.output(formatListResponse(response.data, formatPerson, response.meta));
     } else if (format === 'csv' || format === 'table') {
       const data = response.data.map((p) => ({
         id: p.id,
@@ -196,16 +186,7 @@ async function peopleGetWithContext(args: string[], ctx: CommandContext): Promis
 
     const format = ctx.options.format || ctx.options.f || 'human';
     if (format === 'json') {
-      ctx.formatter.output({
-        id: person.id,
-        first_name: person.attributes.first_name,
-        last_name: person.attributes.last_name,
-        email: person.attributes.email,
-        active: person.attributes.active,
-        created_at: person.attributes.created_at,
-        updated_at: person.attributes.updated_at,
-        relationships: person.relationships,
-      });
+      ctx.formatter.output(formatPerson(person));
     } else {
       const name = `${person.attributes.first_name} ${person.attributes.last_name}`;
       console.log(colors.bold(colors.cyan(name)));

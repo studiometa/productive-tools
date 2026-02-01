@@ -16,14 +16,29 @@ export interface ProductiveApiMeta {
   max_page_size?: number;
 }
 
+/**
+ * JSON:API relationship data structure
+ * Can have either `data` (when loaded) or `meta` (when not included)
+ */
+export interface RelationshipData {
+  data?: { type: string; id: string } | null;
+  meta?: { included: boolean };
+}
+
+/**
+ * JSON:API resource structure (used in included array)
+ */
+export interface IncludedResource {
+  id: string;
+  type: string;
+  attributes: Record<string, unknown>;
+  relationships?: Record<string, RelationshipData>;
+}
+
 export interface ProductiveApiResponse<T> {
   data: T;
   meta?: ProductiveApiMeta;
-  included?: Array<{
-    id: string;
-    type: string;
-    attributes: Record<string, unknown>;
-  }>;
+  included?: IncludedResource[];
 }
 
 export interface ProductiveProject {
@@ -37,7 +52,7 @@ export interface ProductiveProject {
     created_at: string;
     updated_at: string;
   };
-  relationships?: Record<string, unknown>;
+  relationships?: Record<string, RelationshipData>;
 }
 
 export interface ProductiveTimeEntry {
@@ -47,19 +62,15 @@ export interface ProductiveTimeEntry {
     date: string;
     time: number;
     note?: string;
+    billable_time?: number;
+    approved?: boolean;
     created_at: string;
     updated_at: string;
   };
   relationships?: {
-    person?: {
-      data: { type: string; id: string };
-    };
-    service?: {
-      data: { type: string; id: string };
-    };
-    project?: {
-      data: { type: string; id: string };
-    };
+    person?: RelationshipData;
+    service?: RelationshipData;
+    project?: RelationshipData;
   };
 }
 
@@ -93,27 +104,13 @@ export interface ProductiveTask {
     completed?: boolean;
   };
   relationships?: {
-    project?: {
-      data: { type: string; id: string } | null;
-    };
-    assignee?: {
-      data: { type: string; id: string } | null;
-    };
-    workflow_status?: {
-      data: { type: string; id: string } | null;
-    };
-    task_list?: {
-      data: { type: string; id: string } | null;
-    };
-    service?: {
-      data: { type: string; id: string } | null;
-    };
-    creator?: {
-      data: { type: string; id: string } | null;
-    };
-    parent_task?: {
-      data: { type: string; id: string } | null;
-    };
+    project?: RelationshipData;
+    assignee?: RelationshipData;
+    workflow_status?: RelationshipData;
+    task_list?: RelationshipData;
+    service?: RelationshipData;
+    creator?: RelationshipData;
+    parent_task?: RelationshipData;
   };
 }
 
@@ -125,10 +122,11 @@ export interface ProductivePerson {
     last_name: string;
     email: string;
     active: boolean;
+    title?: string;
     created_at: string;
     updated_at: string;
   };
-  relationships?: Record<string, unknown>;
+  relationships?: Record<string, RelationshipData>;
 }
 
 export interface ProductiveService {
@@ -136,10 +134,12 @@ export interface ProductiveService {
   type: "services";
   attributes: {
     name: string;
+    budgeted_time?: number;
+    worked_time?: number;
     created_at: string;
     updated_at: string;
   };
-  relationships?: Record<string, unknown>;
+  relationships?: Record<string, RelationshipData>;
 }
 
 export interface ProductiveBudget {
@@ -151,7 +151,7 @@ export interface ProductiveBudget {
     total_monetary_budget?: number;
     remaining_monetary_budget?: number;
   };
-  relationships?: Record<string, unknown>;
+  relationships?: Record<string, RelationshipData>;
 }
 
 // CLI output formats for AI agents

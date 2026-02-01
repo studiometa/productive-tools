@@ -4,6 +4,7 @@ import { linkedId } from '../utils/productive-links.js';
 import type { OutputFormat } from '../types.js';
 import { exitWithValidationError, runCommand } from '../error-handler.js';
 import { createContext, type CommandContext, type CommandOptions } from '../context.js';
+import { formatProject, formatListResponse } from '../formatters/index.js';
 
 function parseFilters(filterString: string): Record<string, string> {
   const filters: Record<string, string> = {};
@@ -145,18 +146,7 @@ async function projectsListWithContext(ctx: CommandContext): Promise<void> {
 
     const format = ctx.options.format || ctx.options.f || 'human';
     if (format === 'json') {
-      ctx.formatter.output({
-        data: response.data.map((p) => ({
-          id: p.id,
-          name: p.attributes.name,
-          project_number: p.attributes.project_number,
-          archived: p.attributes.archived,
-          budget: p.attributes.budget,
-          created_at: p.attributes.created_at,
-          updated_at: p.attributes.updated_at,
-        })),
-        meta: response.meta,
-      });
+      ctx.formatter.output(formatListResponse(response.data, formatProject, response.meta));
     } else if (format === 'csv' || format === 'table') {
       const data = response.data.map((p) => ({
         id: p.id,
@@ -214,16 +204,7 @@ async function projectsGetWithContext(args: string[], ctx: CommandContext): Prom
 
     const format = ctx.options.format || ctx.options.f || 'human';
     if (format === 'json') {
-      ctx.formatter.output({
-        id: project.id,
-        name: project.attributes.name,
-        project_number: project.attributes.project_number,
-        archived: project.attributes.archived,
-        budget: project.attributes.budget,
-        created_at: project.attributes.created_at,
-        updated_at: project.attributes.updated_at,
-        relationships: project.relationships,
-      });
+      ctx.formatter.output(formatProject(project));
     } else {
       console.log(colors.bold(colors.cyan(project.attributes.name)));
       console.log(colors.dim('─'.repeat(50)));

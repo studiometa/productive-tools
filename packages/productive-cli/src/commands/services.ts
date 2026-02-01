@@ -4,6 +4,7 @@ import { linkedId } from '../utils/productive-links.js';
 import type { OutputFormat } from '../types.js';
 import { runCommand } from '../error-handler.js';
 import { createContext, type CommandContext, type CommandOptions } from '../context.js';
+import { formatService, formatListResponse } from '../formatters/index.js';
 
 function parseFilters(filterString: string): Record<string, string> {
   const filters: Record<string, string> = {};
@@ -122,15 +123,7 @@ async function servicesListWithContext(ctx: CommandContext): Promise<void> {
 
     const format = ctx.options.format || ctx.options.f || 'human';
     if (format === 'json') {
-      ctx.formatter.output({
-        data: response.data.map((s) => ({
-          id: s.id,
-          name: s.attributes.name,
-          created_at: s.attributes.created_at,
-          updated_at: s.attributes.updated_at,
-        })),
-        meta: response.meta,
-      });
+      ctx.formatter.output(formatListResponse(response.data, formatService, response.meta));
     } else if (format === 'csv' || format === 'table') {
       const data = response.data.map((s) => ({
         id: s.id,

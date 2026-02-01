@@ -3,6 +3,7 @@ import { colors } from '../utils/colors.js';
 import type { OutputFormat } from '../types.js';
 import { runCommand } from '../error-handler.js';
 import { createContext, type CommandContext, type CommandOptions } from '../context.js';
+import { formatBudget, formatListResponse } from '../formatters/index.js';
 
 function parseFilters(filterString: string): Record<string, string> {
   const filters: Record<string, string> = {};
@@ -118,16 +119,7 @@ async function budgetsListWithContext(ctx: CommandContext): Promise<void> {
 
     const format = ctx.options.format || ctx.options.f || 'human';
     if (format === 'json') {
-      ctx.formatter.output({
-        data: response.data.map((b) => ({
-          id: b.id,
-          total_time_budget: b.attributes.total_time_budget,
-          remaining_time_budget: b.attributes.remaining_time_budget,
-          total_monetary_budget: b.attributes.total_monetary_budget,
-          remaining_monetary_budget: b.attributes.remaining_monetary_budget,
-        })),
-        meta: response.meta,
-      });
+      ctx.formatter.output(formatListResponse(response.data, formatBudget, response.meta));
     } else if (format === 'csv' || format === 'table') {
       const data = response.data.map((b) => ({
         id: b.id,

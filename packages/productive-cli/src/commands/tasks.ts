@@ -9,6 +9,7 @@ import {
 import type { OutputFormat } from "../types.js";
 import { exitWithValidationError, runCommand } from "../error-handler.js";
 import { createContext, type CommandContext, type CommandOptions } from "../context.js";
+import { formatTask, formatListResponse } from "../formatters/index.js";
 
 function parseFilters(filterString: string): Record<string, string> {
   const filters: Record<string, string> = {};
@@ -315,45 +316,11 @@ async function tasksListWithContext(ctx: CommandContext): Promise<void> {
 
     const format = ctx.options.format || ctx.options.f || "human";
     if (format === "json") {
-      ctx.formatter.output({
-        data: response.data.map((t) => {
-          const projectData = getIncludedResource(
-            response.included,
-            "projects",
-            t.relationships?.project?.data?.id,
-          );
-          const assigneeData = getIncludedResource(
-            response.included,
-            "people",
-            t.relationships?.assignee?.data?.id,
-          );
-          const statusData = getIncludedResource(
-            response.included,
-            "workflow_statuses",
-            t.relationships?.workflow_status?.data?.id,
-          );
-          return {
-            id: t.id,
-            number: t.attributes.number,
-            title: t.attributes.title,
-            closed: t.attributes.closed,
-            due_date: t.attributes.due_date,
-            worked_time: t.attributes.worked_time,
-            initial_estimate: t.attributes.initial_estimate,
-            project_id: t.relationships?.project?.data?.id,
-            project_name: projectData?.name,
-            assignee_id: t.relationships?.assignee?.data?.id,
-            assignee_name: assigneeData
-              ? `${assigneeData.first_name} ${assigneeData.last_name}`
-              : undefined,
-            status_id: t.relationships?.workflow_status?.data?.id,
-            status_name: statusData?.name,
-            created_at: t.attributes.created_at,
-            updated_at: t.attributes.updated_at,
-          };
-        }),
-        meta: response.meta,
-      });
+      ctx.formatter.output(
+        formatListResponse(response.data, formatTask, response.meta, {
+          included: response.included,
+        })
+      );
     } else if (format === "csv" || format === "table") {
       const data = response.data.map((t) => {
         const projectData = getIncludedResource(
@@ -590,26 +557,7 @@ async function tasksGetWithContext(args: string[], ctx: CommandContext): Promise
 
     const format = ctx.options.format || ctx.options.f || "human";
     if (format === "json") {
-      ctx.formatter.output({
-        id: task.id,
-        number: task.attributes.number,
-        title: task.attributes.title,
-        description: task.attributes.description,
-        closed: task.attributes.closed,
-        due_date: task.attributes.due_date,
-        worked_time: task.attributes.worked_time,
-        initial_estimate: task.attributes.initial_estimate,
-        project_id: task.relationships?.project?.data?.id,
-        project_name: projectData?.name,
-        assignee_id: task.relationships?.assignee?.data?.id,
-        assignee_name: assigneeData
-          ? `${assigneeData.first_name} ${assigneeData.last_name}`
-          : undefined,
-        status_id: task.relationships?.workflow_status?.data?.id,
-        status_name: statusData?.name,
-        created_at: task.attributes.created_at,
-        updated_at: task.attributes.updated_at,
-      });
+      ctx.formatter.output(formatTask(task, { included: response.included }));
     } else {
       const isClosed = task.attributes.closed;
       const statusIcon = isClosed
