@@ -28,14 +28,15 @@
 import { ProductiveApi } from "./api.js";
 import { OutputFormatter, createSpinner } from "./output.js";
 import { getConfig } from "./config.js";
-import { getCache, type CacheStore } from "./utils/cache.js";
+import { getCache, CacheStore } from "./utils/cache.js";
 import type { OutputFormat, ProductiveConfig } from "./types.js";
 import type { Spinner } from "./utils/spinner.js";
 
 /**
  * Options passed to command context creation
  */
-export interface CommandOptions extends Record<string, string | boolean> {
+export interface CommandOptions {
+  [key: string]: string | boolean | number | undefined;
   format?: string;
   f?: string;
   "no-color"?: boolean;
@@ -95,9 +96,9 @@ export function createContext(options: CommandOptions = {}): CommandContext {
   const format = (options.format || options.f || "human") as OutputFormat;
   const noColor = options["no-color"] === true;
 
-  const config = getConfig(options);
+  const config = getConfig(options as Record<string, string | boolean>);
   const formatter = new OutputFormatter(format, noColor);
-  const api = new ProductiveApi(options);
+  const api = new ProductiveApi(options as Record<string, string | boolean>);
   const cache = getCache(options["no-cache"] !== true);
 
   return {
@@ -169,17 +170,8 @@ export function createTestContext(
 
   const defaultFormatter = new OutputFormatter("json", true);
 
-  // Create a mock cache
-  const mockCache: CacheStore = {
-    get: () => null,
-    set: () => {},
-    getAsync: async () => null,
-    setAsync: async () => {},
-    setOrgId: () => {},
-    invalidate: () => {},
-    invalidateAsync: async () => {},
-    isEnabled: () => false,
-  };
+  // Create a mock cache (disabled)
+  const mockCache = new CacheStore(false);
 
   // Create a mock API that throws if called without override
   const mockApi = new Proxy(

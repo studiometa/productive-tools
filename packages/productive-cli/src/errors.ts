@@ -163,10 +163,21 @@ export class ValidationError extends CliError {
 // ============================================================================
 
 /**
+ * API error codes
+ */
+export type ApiErrorCode =
+  | "API_ERROR"
+  | "AUTHENTICATION_ERROR"
+  | "AUTHORIZATION_ERROR"
+  | "NOT_FOUND_ERROR"
+  | "RATE_LIMIT_ERROR"
+  | "SERVER_ERROR";
+
+/**
  * Base class for API-related errors
  */
 export class ApiError extends CliError {
-  readonly code = "API_ERROR";
+  readonly code: ApiErrorCode = "API_ERROR";
   readonly isRecoverable: boolean;
 
   constructor(
@@ -231,7 +242,7 @@ export class ApiError extends CliError {
 }
 
 export class AuthenticationError extends ApiError {
-  override readonly code = "AUTHENTICATION_ERROR";
+  override readonly code: ApiErrorCode = "AUTHENTICATION_ERROR";
   override readonly isRecoverable = false;
 
   constructor(message: string, endpoint?: string, response?: unknown) {
@@ -245,7 +256,7 @@ export class AuthenticationError extends ApiError {
 }
 
 export class AuthorizationError extends ApiError {
-  override readonly code = "AUTHORIZATION_ERROR";
+  override readonly code: ApiErrorCode = "AUTHORIZATION_ERROR";
   override readonly isRecoverable = false;
 
   constructor(message: string, endpoint?: string, response?: unknown) {
@@ -260,7 +271,7 @@ export class AuthorizationError extends ApiError {
 }
 
 export class NotFoundError extends ApiError {
-  override readonly code = "NOT_FOUND_ERROR";
+  override readonly code: ApiErrorCode = "NOT_FOUND_ERROR";
   override readonly isRecoverable = false;
 
   constructor(message: string, endpoint?: string, response?: unknown) {
@@ -269,7 +280,7 @@ export class NotFoundError extends ApiError {
 }
 
 export class RateLimitError extends ApiError {
-  override readonly code = "RATE_LIMIT_ERROR";
+  override readonly code: ApiErrorCode = "RATE_LIMIT_ERROR";
   override readonly isRecoverable = true;
 
   constructor(
@@ -295,7 +306,7 @@ export class RateLimitError extends ApiError {
 }
 
 export class ServerError extends ApiError {
-  override readonly code = "SERVER_ERROR";
+  override readonly code: ApiErrorCode = "SERVER_ERROR";
   override readonly isRecoverable = true;
 
   constructor(

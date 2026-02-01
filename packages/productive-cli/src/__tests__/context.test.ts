@@ -41,10 +41,18 @@ vi.mock('../utils/cache.js', () => ({
     getAsync: vi.fn().mockResolvedValue(null),
     setAsync: vi.fn().mockResolvedValue(undefined),
     setOrgId: vi.fn(),
-    invalidate: vi.fn(),
-    invalidateAsync: vi.fn().mockResolvedValue(undefined),
-    isEnabled: vi.fn().mockReturnValue(false),
+    invalidate: vi.fn().mockReturnValue(0),
+    invalidateAsync: vi.fn().mockResolvedValue(0),
   }),
+  CacheStore: vi.fn().mockImplementation(() => ({
+    get: vi.fn().mockReturnValue(null),
+    set: vi.fn(),
+    getAsync: vi.fn().mockResolvedValue(null),
+    setAsync: vi.fn().mockResolvedValue(undefined),
+    setOrgId: vi.fn(),
+    invalidate: vi.fn().mockReturnValue(0),
+    invalidateAsync: vi.fn().mockResolvedValue(0),
+  })),
 }));
 
 describe('createContext', () => {
