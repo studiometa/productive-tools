@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { handleServicesCommand } from '../services.js';
+import { handleServicesCommand } from '../services/index.js';
 import { ProductiveApi, ProductiveApiError } from '../../api.js';
 
 // Mock dependencies

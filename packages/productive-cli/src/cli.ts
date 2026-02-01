@@ -13,7 +13,7 @@ import { handlePeopleCommand, showPeopleHelp } from "./commands/people/index.js"
 import {
   handleServicesCommand,
   showServicesHelp,
-} from "./commands/services.js";
+} from "./commands/services/index.js";
 import { handleBudgetsCommand, showBudgetsHelp } from "./commands/budgets.js";
 import { handleCacheCommand, showCacheHelp } from "./commands/cache.js";
 import { handleApiCommand, showApiHelp } from "./commands/api.js";
