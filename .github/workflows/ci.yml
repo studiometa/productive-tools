@@ -12,22 +12,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run oxlint
         run: npm run lint
-      
+
       - name: Check formatting
         run: npm run format:check
-      
+
+      - name: Build CLI (required for MCP typecheck)
+        run: npm run build --workspace=@studiometa/productive-cli
+
       - name: Type check
         run: npm run typecheck
 
@@ -39,44 +42,62 @@ jobs:
         node-version: [24]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
+      - name: Build CLI (required for MCP tests)
+        run: npm run build --workspace=@studiometa/productive-cli
+
       - name: Run tests with coverage
         run: npm run test:ci
-      
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         if: matrix.node-version == '24'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/coverage-final.json,./coverage/lcov.info
+          files: ./packages/productive-cli/coverage/lcov.info,./packages/productive-mcp/coverage/lcov.info
           fail_ci_if_error: false
           flags: unittests
           name: codecov-umbrella
-      
+
       - name: Generate coverage summary
         if: matrix.node-version == '24'
         run: |
           echo "## Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### @studiometa/productive-cli" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          cat coverage/coverage-summary.json | jq -r '.total | "Statements: \(.statements.pct)%\nBranches: \(.branches.pct)%\nFunctions: \(.functions.pct)%\nLines: \(.lines.pct)%"' >> $GITHUB_STEP_SUMMARY || echo "Coverage summary not available" >> $GITHUB_STEP_SUMMARY
+          cat packages/productive-cli/coverage/coverage-summary.json | jq -r '.total | "Statements: \(.statements.pct)%\nBranches: \(.branches.pct)%\nFunctions: \(.functions.pct)%\nLines: \(.lines.pct)%"' >> $GITHUB_STEP_SUMMARY || echo "Coverage summary not available" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-      
-      - name: Upload coverage artifacts
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### @studiometa/productive-mcp" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat packages/productive-mcp/coverage/coverage-summary.json | jq -r '.total | "Statements: \(.statements.pct)%\nBranches: \(.branches.pct)%\nFunctions: \(.functions.pct)%\nLines: \(.lines.pct)%"' >> $GITHUB_STEP_SUMMARY || echo "Coverage summary not available" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload CLI coverage artifacts
         uses: actions/upload-artifact@v4
         if: matrix.node-version == '24'
         with:
-          name: coverage
-          path: coverage/
+          name: coverage-cli
+          path: packages/productive-cli/coverage/
+
+      - name: Upload MCP coverage artifacts
+        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '24'
+        with:
+          name: coverage-mcp
+          path: packages/productive-mcp/coverage/
 
   build:
     name: Build
@@ -84,21 +105,27 @@ jobs:
     needs: [lint, test]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
-      - name: Build
+
+      - name: Build all packages
         run: npm run build
-      
-      - name: Upload build artifacts
+
+      - name: Upload CLI build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist/
+          name: dist-cli
+          path: packages/productive-cli/dist/
+
+      - name: Upload MCP build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-mcp
+          path: packages/productive-mcp/dist/

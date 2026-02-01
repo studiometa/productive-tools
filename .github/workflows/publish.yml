@@ -3,7 +3,7 @@ name: Publish
 on:
   push:
     tags:
-      - '*.*.*'
+      - 'v*.*.*'
 
 jobs:
   test:
@@ -21,11 +21,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Type check
-        run: npm run typecheck
-
       - name: Lint
         run: npm run lint
+
+      - name: Build CLI (required for MCP typecheck)
+        run: npm run build --workspace=@studiometa/productive-cli
+
+      - name: Type check
+        run: npm run typecheck
 
       - name: Test
         run: npm run test:ci
@@ -50,32 +53,83 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build all packages
         run: npm run build
 
-      - name: Determine npm tag
+      - name: Determine npm tag and version
         run: |
+          VERSION=${GITHUB_REF_NAME#v}
           NPM_TAG='latest'
           IS_PRERELEASE=false
 
-          if [[ $GITHUB_REF_NAME =~ 'alpha' || $GITHUB_REF_NAME =~ 'beta' || $GITHUB_REF_NAME =~ 'rc' ]]; then
+          if [[ $VERSION =~ (alpha|beta|rc) ]]; then
             NPM_TAG='next'
             IS_PRERELEASE=true
           fi
 
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "NPM_TAG=$NPM_TAG" >> $GITHUB_ENV
           echo "IS_PRERELEASE=$IS_PRERELEASE" >> $GITHUB_ENV
 
-      - name: Publish to npm
+      - name: Publish @studiometa/productive-cli
         run: npm publish --provenance --access public --tag ${{ env.NPM_TAG }}
+        working-directory: packages/productive-cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @studiometa/productive-mcp
+        run: npm publish --provenance --access public --tag ${{ env.NPM_TAG }}
+        working-directory: packages/productive-mcp
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Extract release notes from changelogs
+        id: release_notes
+        run: |
+          # Extract the [Unreleased] or current version section from each changelog
+          extract_section() {
+            local file=$1
+            local version=$2
+            
+            # Try to find the version section, fallback to Unreleased
+            awk -v ver="$version" '
+              /^## \[/ {
+                if (found) exit
+                if ($0 ~ "\\[" ver "\\]" || $0 ~ "\\[Unreleased\\]") {
+                  found = 1
+                  next
+                }
+              }
+              found && /^## \[/ { exit }
+              found { print }
+            ' "$file"
+          }
+          
+          {
+            echo "## @studiometa/productive-cli"
+            echo ""
+            extract_section "packages/productive-cli/CHANGELOG.md" "$VERSION"
+            echo ""
+            echo "---"
+            echo ""
+            echo "## @studiometa/productive-mcp"
+            echo ""
+            extract_section "packages/productive-mcp/CHANGELOG.md" "$VERSION"
+            echo ""
+            echo "---"
+            echo ""
+            echo "**Full Changelogs:**"
+            echo "- [productive-cli/CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/packages/productive-cli/CHANGELOG.md)"
+            echo "- [productive-mcp/CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/packages/productive-mcp/CHANGELOG.md)"
+          } > release_notes.md
+          
+          cat release_notes.md
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ github.ref_name }}
-          name: v${{ github.ref_name }}
-          body: Please refer to [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md) for details.
+          name: ${{ github.ref_name }}
+          bodyFile: release_notes.md
           draft: false
           prerelease: ${{ env.IS_PRERELEASE }}

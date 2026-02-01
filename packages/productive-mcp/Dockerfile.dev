@@ -1,0 +1,60 @@
+# Development Dockerfile - builds from local monorepo source
+# 
+# Build from the repository root:
+#   docker build -t productive-mcp-server -f packages/productive-mcp/Dockerfile.dev .
+
+# Build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files for both packages
+COPY package*.json ./
+COPY packages/productive-cli/package*.json ./packages/productive-cli/
+COPY packages/productive-mcp/package*.json ./packages/productive-mcp/
+
+# Install all dependencies
+RUN npm install
+
+# Copy source files
+COPY packages/productive-cli ./packages/productive-cli
+COPY packages/productive-mcp ./packages/productive-mcp
+
+# Build productive-cli first (dependency)
+WORKDIR /app/packages/productive-cli
+RUN npm run build
+
+# Build productive-mcp
+WORKDIR /app/packages/productive-mcp
+RUN npm run build
+
+# Production stage
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Copy built files
+COPY --from=builder /app/packages/productive-mcp/dist ./dist
+COPY --from=builder /app/packages/productive-mcp/package.json ./
+
+# Copy productive-cli as a local dependency
+COPY --from=builder /app/packages/productive-cli/dist ./node_modules/@studiometa/productive-cli/dist
+COPY --from=builder /app/packages/productive-cli/package.json ./node_modules/@studiometa/productive-cli/
+
+# Install production dependencies only
+RUN npm install --omit=dev --ignore-scripts
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOST=0.0.0.0
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start_period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+
+# Run the server
+CMD ["node", "dist/server.js"]

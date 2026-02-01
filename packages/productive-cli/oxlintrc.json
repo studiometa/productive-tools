@@ -1,0 +1,7 @@
+{
+  "rules": {
+    "no-console": "off",
+    "no-control-regex": "off",
+    "no-useless-escape": "off"
+  }
+}

@@ -1,40 +1,31 @@
 {
-  "name": "@studiometa/productive-cli",
+  "name": "@studiometa/productive",
   "version": "0.2.4",
-  "description": "CLI tool for interacting with Productive.io API - optimized for AI agents and humans",
+  "description": "Productive.io tools - CLI and MCP server for AI agents and humans",
+  "private": true,
   "type": "module",
-  "publishConfig": {
-    "access": "public"
-  },
-  "bin": {
-    "productive": "./dist/cli.js"
-  },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
-  "files": [
-    "dist"
+  "workspaces": [
+    "packages/*"
   ],
   "scripts": {
-    "dev": "vite build --watch",
-    "build": "vite build && tsc --emitDeclarationOnly && node scripts/postbuild.js",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:ci": "vitest run --coverage",
-    "lint": "oxlint src",
-    "format": "oxlint --fix src",
-    "format:check": "oxlint src",
-    "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "test:watch": "npm run test:watch --workspaces",
+    "test:ci": "npm run test:ci --workspaces --if-present",
+    "lint": "npm run lint --workspaces",
+    "format": "npm run format --workspaces",
+    "format:check": "npm run format:check --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "clean": "rm -rf packages/*/dist packages/*/node_modules node_modules",
+    "version": "npm version --workspaces --no-git-tag-version",
+    "preversion": "npm run build && npm run test"
   },
   "keywords": [
     "productive",
     "cli",
+    "mcp",
+    "model-context-protocol",
     "project-management",
     "api",
     "ai-agent",

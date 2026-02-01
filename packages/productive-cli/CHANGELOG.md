@@ -8,23 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Renderer Infrastructure** - Pluggable output rendering system (e5fa4fc, cc93bf8)
-  - Base renderers for JSON, CSV, and table formats
-  - Human-readable renderers for all resource types (projects, tasks, time, people, services, budgets)
-  - Extensible registry for custom renderers
-- **Budget Links** - Clickable links to budgets in terminal output (76966a4)
+- **Monorepo Structure** - Restructured as npm workspace with separate packages (f74945b)
+- **Centralized Error Handling** - New error handling and context pattern for commands (07c5302, 1b399c4)
+  - `AppError` base class with typed error codes
+  - `ConfigurationError`, `ApiError`, `ValidationError` specialized types
+  - `createContext()` for dependency injection in commands
+  - `handleCommandError()` for consistent error formatting
+- **Shared Formatters** - Reusable formatters for CLI and MCP integration (fa37749)
+  - `formatTimeEntry()`, `formatProject()`, `formatTask()`, `formatPerson()`
+  - `formatService()`, `formatBudget()`, `formatListResponse()`
+  - Type-safe formatter options with `FormatterOptions`
+- **Result Type Utilities** - Functional error handling with `Result<T, E>` pattern (07c5302)
 
 ### Changed
-- **Command Architecture** - Split commands into modular files (14ad00b, 6df0e37, 0538e59, fcfd100, 1e8df6e, 1535a27)
-  - Each command now has separate `command.ts`, `handlers.ts`, `help.ts` files
-  - Improved code organization and maintainability
-- **Centralized Error Handling** - Context/DI pattern for better testability (07c5302, 1b399c4)
-  - Typed errors: `AppError`, `ConfigurationError`, `ApiError`
-  - Result type utilities for functional error handling
-- Refactored all commands to use new renderer system (bad60f9, fdcdd3f, 33ea6cb, 5251a31)
+- Migrated all commands to use centralized error handling and context pattern (1b399c4)
+- Refactored command structure for better testability and reuse
 
 ### Fixed
-- CI workflow now builds CLI before running MCP tests (76966a4)
+- Fix config-store test on macOS (was using wrong config directory path) (87af7cf)
+- Fix TypeScript build errors in context.ts and errors.ts (e0df59d)
+- Fix linting errors and remove unused code (ec8a0ed)
 
 ## [0.2.4] - 2026-01-21
 
