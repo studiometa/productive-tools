@@ -7,17 +7,24 @@ import type { HandlerContext, BookingArgs, ToolResult } from './types.js';
 import { formatBooking, formatListResponse } from '../formatters.js';
 import { jsonResult, errorResult } from './utils.js';
 
+/** Default includes for bookings */
+const DEFAULT_BOOKING_INCLUDE = ['person', 'service'];
+
 export async function handleBookings(
   action: string,
   args: BookingArgs,
   ctx: HandlerContext,
 ): Promise<ToolResult> {
-  const { api, formatOptions, filter, page, perPage } = ctx;
+  const { api, formatOptions, filter, page, perPage, include: userInclude } = ctx;
   const { id, person_id, service_id, event_id, started_on, ended_on, time, note } = args;
+  // Merge default includes with user-provided includes
+  const include = userInclude?.length
+    ? [...new Set([...DEFAULT_BOOKING_INCLUDE, ...userInclude])]
+    : DEFAULT_BOOKING_INCLUDE;
 
   if (action === 'get') {
     if (!id) return errorResult('id is required for get action');
-    const result = await api.getBooking(id, { include: ['person', 'service'] });
+    const result = await api.getBooking(id, { include });
     return jsonResult(formatBooking(result.data, { ...formatOptions, included: result.included }));
   }
 
@@ -52,7 +59,7 @@ export async function handleBookings(
   }
 
   if (action === 'list') {
-    const result = await api.getBookings({ filter, page, perPage, include: ['person', 'service'] });
+    const result = await api.getBookings({ filter, page, perPage, include });
     return jsonResult(
       formatListResponse(result.data, formatBooking, result.meta, {
         ...formatOptions,

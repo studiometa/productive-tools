@@ -18,6 +18,7 @@ export interface HandlerContext {
   filter?: Record<string, string>;
   page?: number;
   perPage: number;
+  include?: string[];
 }
 
 /**

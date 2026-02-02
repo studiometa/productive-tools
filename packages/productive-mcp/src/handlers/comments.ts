@@ -7,17 +7,24 @@ import type { HandlerContext, CommentArgs, ToolResult } from './types.js';
 import { formatComment, formatListResponse } from '../formatters.js';
 import { jsonResult, errorResult } from './utils.js';
 
+/** Default includes for comments */
+const DEFAULT_COMMENT_INCLUDE = ['creator'];
+
 export async function handleComments(
   action: string,
   args: CommentArgs,
   ctx: HandlerContext,
 ): Promise<ToolResult> {
-  const { api, formatOptions, filter, page, perPage } = ctx;
+  const { api, formatOptions, filter, page, perPage, include: userInclude } = ctx;
   const { id, body, task_id, deal_id, company_id } = args;
+  // Merge default includes with user-provided includes
+  const include = userInclude?.length
+    ? [...new Set([...DEFAULT_COMMENT_INCLUDE, ...userInclude])]
+    : DEFAULT_COMMENT_INCLUDE;
 
   if (action === 'get') {
     if (!id) return errorResult('id is required for get action');
-    const result = await api.getComment(id, { include: ['creator'] });
+    const result = await api.getComment(id, { include });
     return jsonResult(formatComment(result.data, { ...formatOptions, included: result.included }));
   }
 
@@ -43,7 +50,7 @@ export async function handleComments(
   }
 
   if (action === 'list') {
-    const result = await api.getComments({ filter, page, perPage, include: ['creator'] });
+    const result = await api.getComments({ filter, page, perPage, include });
     return jsonResult(
       formatListResponse(result.data, formatComment, result.meta, {
         ...formatOptions,

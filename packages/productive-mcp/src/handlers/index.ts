@@ -43,6 +43,7 @@ interface ProductiveArgs {
   page?: number;
   per_page?: number;
   compact?: boolean;
+  include?: string[];
   // Common fields
   person_id?: string;
   service_id?: string;
@@ -96,17 +97,12 @@ export async function executeToolWithCredentials(
     return errorResult(`Unknown tool: ${name}`);
   }
 
-  const {
-    resource,
-    action,
-    filter,
-    page,
-    per_page,
-    compact = true,
-    ...restArgs
-  } = args as unknown as ProductiveArgs;
+  const { resource, action, filter, page, per_page, compact, include, ...restArgs } =
+    args as unknown as ProductiveArgs;
 
-  const formatOptions: McpFormatOptions = { compact };
+  // Default compact to false for 'get' action (single resource), true for 'list'
+  const isCompact = compact ?? action !== 'get';
+  const formatOptions: McpFormatOptions = { compact: isCompact };
   const stringFilter = toStringFilter(filter);
   const perPage = per_page ?? DEFAULT_PER_PAGE;
 
@@ -117,6 +113,7 @@ export async function executeToolWithCredentials(
     filter: stringFilter,
     page,
     perPage,
+    include,
   };
 
   try {

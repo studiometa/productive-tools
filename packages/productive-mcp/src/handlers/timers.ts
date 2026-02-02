@@ -12,12 +12,12 @@ export async function handleTimers(
   args: TimerArgs,
   ctx: HandlerContext,
 ): Promise<ToolResult> {
-  const { api, formatOptions, filter, page, perPage } = ctx;
+  const { api, formatOptions, filter, page, perPage, include } = ctx;
   const { id, service_id, time_entry_id } = args;
 
   if (action === 'get') {
     if (!id) return errorResult('id is required for get action');
-    const result = await api.getTimer(id);
+    const result = await api.getTimer(id, { include });
     return jsonResult(formatTimer(result.data, formatOptions));
   }
 
@@ -36,7 +36,7 @@ export async function handleTimers(
   }
 
   if (action === 'list') {
-    const result = await api.getTimers({ filter, page, perPage });
+    const result = await api.getTimers({ filter, page, perPage, include });
     return jsonResult(formatListResponse(result.data, formatTimer, result.meta, formatOptions));
   }
 

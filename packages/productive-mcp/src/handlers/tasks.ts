@@ -7,14 +7,20 @@ import type { HandlerContext, TaskArgs, ToolResult } from './types.js';
 import { formatTask, formatListResponse } from '../formatters.js';
 import { jsonResult, errorResult } from './utils.js';
 
+/** Default includes for tasks */
+const DEFAULT_TASK_INCLUDE = ['project', 'project.company'];
+
 export async function handleTasks(
   action: string,
   args: TaskArgs,
   ctx: HandlerContext,
 ): Promise<ToolResult> {
-  const { api, formatOptions, filter, page, perPage } = ctx;
+  const { api, formatOptions, filter, page, perPage, include: userInclude } = ctx;
   const { id, title, project_id, task_list_id, description, assignee_id } = args;
-  const include = ['project', 'project.company'];
+  // Merge default includes with user-provided includes
+  const include = userInclude?.length
+    ? [...new Set([...DEFAULT_TASK_INCLUDE, ...userInclude])]
+    : DEFAULT_TASK_INCLUDE;
 
   if (action === 'get') {
     if (!id) return errorResult('id is required for get action');
