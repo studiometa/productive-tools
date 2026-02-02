@@ -8,6 +8,7 @@ import type {
   ProductiveService,
   ProductiveBudget,
   ProductiveCompany,
+  ProductiveComment,
 } from "./types.js";
 import { getConfig } from "./config.js";
 import { getCache, type CacheStore } from "./utils/cache.js";
@@ -585,6 +586,111 @@ export class ProductiveApi {
             type: "companies",
             id,
             attributes,
+          },
+        },
+      },
+    );
+  }
+
+  // Comments
+  async getComments(params?: {
+    page?: number;
+    perPage?: number;
+    filter?: Record<string, string>;
+    include?: string[];
+  }): Promise<ProductiveApiResponse<ProductiveComment[]>> {
+    const query: Record<string, string> = {};
+
+    if (params?.page) query["page[number]"] = String(params.page);
+    if (params?.perPage) query["page[size]"] = String(params.perPage);
+    if (params?.filter) {
+      Object.entries(params.filter).forEach(([key, value]) => {
+        query[`filter[${key}]`] = value;
+      });
+    }
+    if (params?.include?.length) {
+      query["include"] = params.include.join(",");
+    }
+
+    return this.request<ProductiveApiResponse<ProductiveComment[]>>(
+      "/comments",
+      { query },
+    );
+  }
+
+  async getComment(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductiveComment>> {
+    const query: Record<string, string> = {};
+    if (params?.include?.length) {
+      query["include"] = params.include.join(",");
+    }
+    return this.request<ProductiveApiResponse<ProductiveComment>>(
+      `/comments/${id}`,
+      { query },
+    );
+  }
+
+  async createComment(data: {
+    body: string;
+    task_id?: string;
+    deal_id?: string;
+    company_id?: string;
+    invoice_id?: string;
+    person_id?: string;
+    discussion_id?: string;
+  }): Promise<ProductiveApiResponse<ProductiveComment>> {
+    const relationships: Record<string, { data: { type: string; id: string } }> = {};
+
+    if (data.task_id) {
+      relationships.task = { data: { type: "tasks", id: data.task_id } };
+    }
+    if (data.deal_id) {
+      relationships.deal = { data: { type: "deals", id: data.deal_id } };
+    }
+    if (data.company_id) {
+      relationships.company = { data: { type: "companies", id: data.company_id } };
+    }
+    if (data.invoice_id) {
+      relationships.invoice = { data: { type: "invoices", id: data.invoice_id } };
+    }
+    if (data.person_id) {
+      relationships.person = { data: { type: "people", id: data.person_id } };
+    }
+    if (data.discussion_id) {
+      relationships.discussion = { data: { type: "discussions", id: data.discussion_id } };
+    }
+
+    return this.request<ProductiveApiResponse<ProductiveComment>>("/comments", {
+      method: "POST",
+      body: {
+        data: {
+          type: "comments",
+          attributes: {
+            body: data.body,
+          },
+          relationships,
+        },
+      },
+    });
+  }
+
+  async updateComment(
+    id: string,
+    data: {
+      body?: string;
+    },
+  ): Promise<ProductiveApiResponse<ProductiveComment>> {
+    return this.request<ProductiveApiResponse<ProductiveComment>>(
+      `/comments/${id}`,
+      {
+        method: "PATCH",
+        body: {
+          data: {
+            type: "comments",
+            id,
+            attributes: data,
           },
         },
       },

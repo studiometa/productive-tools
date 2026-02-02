@@ -77,4 +77,5 @@ export type ResourceType =
   | 'person'
   | 'service'
   | 'budget'
-  | 'company';
+  | 'company'
+  | 'comment';

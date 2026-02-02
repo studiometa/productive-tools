@@ -67,3 +67,11 @@ export {
   humanCompanyListRenderer,
   humanCompanyDetailRenderer,
 } from './company.js';
+
+// Comments
+export {
+  HumanCommentListRenderer,
+  HumanCommentDetailRenderer,
+  humanCommentListRenderer,
+  humanCommentDetailRenderer,
+} from './comment.js';

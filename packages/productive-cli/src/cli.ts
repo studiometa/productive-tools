@@ -19,6 +19,10 @@ import {
   handleCompaniesCommand,
   showCompaniesHelp,
 } from "./commands/companies/index.js";
+import {
+  handleCommentsCommand,
+  showCommentsHelp,
+} from "./commands/comments/index.js";
 import { handleCacheCommand, showCacheHelp } from "./commands/cache.js";
 import { handleApiCommand, showApiHelp } from "./commands/api.js";
 import {
@@ -77,6 +81,12 @@ ${colors.bold("COMMANDS:")}
     get <id>            Get company details
     add                 Create company
     update <id>         Update company
+
+  comments            Manage comments
+    list, ls            List comments
+    get <id>            Get comment details
+    add                 Add a comment
+    update <id>         Update comment
 
   cache               Manage CLI cache
     status              Show cache statistics
@@ -265,6 +275,14 @@ async function main(): Promise<void> {
           process.exit(0);
         }
         await handleCompaniesCommand(subcommand || "list", positional, options);
+        break;
+
+      case "comments":
+        if (wantsHelp) {
+          showCommentsHelp(subcommand);
+          process.exit(0);
+        }
+        await handleCommentsCommand(subcommand || "list", positional, options);
         break;
 
       case "cache":

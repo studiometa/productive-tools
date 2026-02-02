@@ -174,6 +174,28 @@ export interface ProductiveCompany {
   relationships?: Record<string, RelationshipData>;
 }
 
+export interface ProductiveComment {
+  id: string;
+  type: "comments";
+  attributes: {
+    body: string;
+    commentable_type: string;
+    draft?: boolean;
+    pinned_at?: string;
+    created_at: string;
+    updated_at: string;
+  };
+  relationships?: {
+    creator?: RelationshipData;
+    task?: RelationshipData;
+    deal?: RelationshipData;
+    company?: RelationshipData;
+    invoice?: RelationshipData;
+    person?: RelationshipData;
+    discussion?: RelationshipData;
+  };
+}
+
 // CLI output formats for AI agents
 export type OutputFormat = "json" | "human" | "csv" | "table" | "kanban";
 
