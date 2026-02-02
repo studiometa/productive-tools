@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-02-02
+
+### Fixed
+
+- **MCP**: Add `WWW-Authenticate` header on 401 responses to trigger OAuth re-authentication (RFC 6750) ([65aa7d5])
+
 ## [0.6.3] - 2026-02-02
 
 ### Added
@@ -302,7 +308,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ESM** module format
 - **XDG** compliant configuration storage
 
-[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.6.3...HEAD
+[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.6.4...HEAD
+[0.6.4]: https://github.com/studiometa/productive-tools/compare/0.6.3...0.6.4
 [0.6.3]: https://github.com/studiometa/productive-tools/compare/0.6.2...0.6.3
 [0.6.2]: https://github.com/studiometa/productive-tools/compare/0.6.1...0.6.2
 [0.6.1]: https://github.com/studiometa/productive-tools/compare/0.6.0...0.6.1
@@ -390,6 +397,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [db8bea3]: https://github.com/studiometa/productive-tools/commit/db8bea3
 [b51d506]: https://github.com/studiometa/productive-tools/commit/b51d506
 [f46e8bd]: https://github.com/studiometa/productive-tools/commit/f46e8bd
+[65aa7d5]: https://github.com/studiometa/productive-tools/commit/65aa7d5
 [aa25804]: https://github.com/studiometa/productive-tools/commit/aa25804
 [ca186cc]: https://github.com/studiometa/productive-tools/commit/ca186cc
 [ed4293c]: https://github.com/studiometa/productive-tools/commit/ed4293c
