@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-02-02
+
+### Fixed
+- Tool execution now correctly passes credentials to ProductiveApi (e50803d)
+
 ## [0.4.5] - 2026-02-02
 
 ### Fixed
@@ -93,7 +98,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive deployment documentation
 - Server deployment options (PM2, systemd, Docker)
 
-[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.4.5...HEAD
+[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.4.6...HEAD
+[0.4.6]: https://github.com/studiometa/productive-tools/compare/0.4.5...0.4.6
 [0.4.5]: https://github.com/studiometa/productive-tools/compare/0.4.4...0.4.5
 [0.4.4]: https://github.com/studiometa/productive-tools/compare/0.4.3...0.4.4
 [0.4.3]: https://github.com/studiometa/productive-tools/compare/0.4.2...0.4.3
