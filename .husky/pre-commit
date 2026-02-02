@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# Run lint-staged for code quality
+npx lint-staged
+
+# Check for potential secrets in staged files
+echo "🔍 Checking for potential secrets..."
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|js|json)$' | grep -v -E '(node_modules|dist|\.example|\.test\.|\.spec\.|package\.json|package-lock\.json)' || true)
+
+if [ -n "$STAGED_FILES" ]; then
+  SECRET_PATTERN="(PRODUCTIVE_API_TOKEN|sk-[a-zA-Z0-9]{20,}|password\s*=\s*['\"][^'\"]+['\"]|apiKey\s*=\s*['\"][^'\"]+['\"])"
+  
+  if echo "$STAGED_FILES" | xargs grep -l -E "$SECRET_PATTERN" 2>/dev/null; then
+    echo "❌ Potential secret detected in staged files!"
+    echo "Please remove sensitive data before committing."
+    exit 1
+  fi
+fi
+
+echo "✅ No secrets detected"
