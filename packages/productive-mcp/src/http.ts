@@ -131,7 +131,17 @@ export function createHttpApp(): App {
       const credentials = parseAuthHeader(authHeader);
 
       if (!credentials) {
+        // RFC 6750: Return WWW-Authenticate header to trigger OAuth flow
+        const host = event.node.req.headers.host || 'localhost:3000';
+        const protocol = event.node.req.headers['x-forwarded-proto'] || 'http';
+        const baseUrl = `${protocol}://${host}`;
+
         setResponseHeader(event, 'Content-Type', 'application/json');
+        setResponseHeader(
+          event,
+          'WWW-Authenticate',
+          `Bearer resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`,
+        );
         event.node.res.statusCode = 401;
         return jsonRpcError(
           -32001,
@@ -192,6 +202,16 @@ export function createHttpApp(): App {
       const credentials = parseAuthHeader(authHeader);
 
       if (!credentials) {
+        // RFC 6750: Return WWW-Authenticate header to trigger OAuth flow
+        const host = event.node.req.headers.host || 'localhost:3000';
+        const protocol = event.node.req.headers['x-forwarded-proto'] || 'http';
+        const baseUrl = `${protocol}://${host}`;
+
+        setResponseHeader(
+          event,
+          'WWW-Authenticate',
+          `Bearer resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`,
+        );
         event.node.res.statusCode = 401;
         return { error: 'Authentication required' };
       }
