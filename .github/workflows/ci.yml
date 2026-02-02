@@ -59,7 +59,7 @@ jobs:
         run: npm run test:ci
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         if: matrix.node-version == '24'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -67,6 +67,14 @@ jobs:
           fail_ci_if_error: false
           flags: unittests
           name: codecov-umbrella
+
+      - name: Upload test results to Codecov
+        uses: codecov/codecov-action@v5
+        if: ${{ !cancelled() && matrix.node-version == '24' }}
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/productive-cli/test-results/junit.xml,./packages/productive-mcp/test-results/junit.xml
+          report_type: test_results
 
       - name: Generate coverage summary
         if: matrix.node-version == '24'

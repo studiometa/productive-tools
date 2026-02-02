@@ -11,6 +11,7 @@ dist/
 
 # Testing
 coverage/
+test-results/
 
 # IDE
 .vscode/

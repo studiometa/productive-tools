@@ -8,6 +8,10 @@ export default defineConfig({
     __VERSION__: JSON.stringify(pkg.version),
   },
   test: {
+    reporters: process.env.CI ? ['default', 'junit'] : ['default'],
+    outputFile: {
+      junit: './test-results/junit.xml',
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'json-summary', 'lcov'],

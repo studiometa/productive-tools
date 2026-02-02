@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **JUnit Test Reports** - Vitest generates JUnit XML reports in CI for Codecov test results (2857e54, !10)
 - **Security Workflow** - Automated security scanning in CI (e0e5197, db471fa)
   - npm audit for dependency vulnerabilities (fails on high severity)
   - Semgrep for code security analysis and secret detection (blocking)
