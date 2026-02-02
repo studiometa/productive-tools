@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **JUnit Test Reports** - Vitest generates JUnit XML reports in CI for Codecov test results (2857e54, !10)
+- **JUnit Test Reports** - Vitest generates JUnit XML reports in CI for Codecov test results ([8880538], [#10])
 - **Security Workflow** - Automated security scanning in CI (e0e5197, db471fa)
   - npm audit for dependency vulnerabilities (fails on high severity)
   - Semgrep for code security analysis and secret detection (blocking)
@@ -266,7 +266,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ESM** module format
 - **XDG** compliant configuration storage
 
-[Unreleased]: https://github.com/studiometa/productive-cli/compare/0.2.1...HEAD
-[0.2.1]: https://github.com/studiometa/productive-cli/compare/0.2.0...0.2.1
-[0.2.0]: https://github.com/studiometa/productive-cli/compare/0.1.0...0.2.0
-[0.1.0]: https://github.com/studiometa/productive-cli/releases/tag/0.1.0
+[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.3.0...HEAD
+[0.3.0]: https://github.com/studiometa/productive-tools/compare/0.2.4...0.3.0
+[0.2.4]: https://github.com/studiometa/productive-tools/compare/0.2.3...0.2.4
+[0.2.3]: https://github.com/studiometa/productive-tools/compare/0.2.2...0.2.3
+[0.2.2]: https://github.com/studiometa/productive-tools/compare/0.2.1...0.2.2
+[0.2.1]: https://github.com/studiometa/productive-tools/compare/0.2.0...0.2.1
+[0.2.0]: https://github.com/studiometa/productive-tools/compare/0.1.0...0.2.0
+[0.1.0]: https://github.com/studiometa/productive-tools/releases/tag/0.1.0
+[#10]: https://github.com/studiometa/productive-tools/pull/10
+[8880538]: https://github.com/studiometa/productive-tools/commit/8880538
