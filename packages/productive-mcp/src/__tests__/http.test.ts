@@ -4,7 +4,7 @@ import { toNodeListener } from 'h3';
 
 // Mock the handlers
 vi.mock('../handlers.js', () => ({
-  executeToolWithCredentials: vi.fn().mockImplementation((name, args, credentials) => {
+  executeToolWithCredentials: vi.fn().mockImplementation((name, args, _credentials) => {
     if (name === 'failing_tool') {
       throw new Error('Tool execution failed');
     }
@@ -171,7 +171,7 @@ describe('HTTP Server Integration', () => {
         },
         body: JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1 }),
       });
-      const data = await response.json();
+      await response.json();
 
       expect(response.status).toBe(401);
     });
@@ -188,7 +188,7 @@ describe('HTTP Server Integration', () => {
         },
         body: JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1 }),
       });
-      const data = await response.json();
+      await response.json();
 
       expect(response.status).toBe(401);
     });

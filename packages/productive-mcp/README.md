@@ -10,6 +10,7 @@ MCP (Model Context Protocol) server for [Productive.io](https://productive.io) A
 - ✅ Full Productive.io API access via MCP
 - 🔧 Support for projects, tasks, time entries, services, and people
 - 🔐 Two modes: local (stdio) and remote (HTTP)
+- 🔑 **OAuth 2.0 support** for Claude Desktop custom connectors
 - 🌐 Deploy once, share with your team via Claude Desktop custom connectors
 - 🐳 Docker-ready for easy deployment
 - 📦 Built on [@studiometa/productive-cli](../productive-cli)
@@ -83,9 +84,14 @@ Deploy once, share with your entire team via Claude Desktop's **custom connector
 
 ### How It Works
 
+The server supports **OAuth 2.0** for seamless Claude Desktop integration:
+
 1. Deploy the HTTP server to a URL (e.g., `https://productive.mcp.example.com`)
-2. Each team member generates their own Bearer token with their Productive credentials
-3. Team members add the custom connector in Claude Desktop with their personal token
+2. Add the custom connector in Claude Desktop with OAuth enabled
+3. When connecting, users are presented with a login form to enter their Productive credentials
+4. Credentials are securely encrypted and exchanged via OAuth tokens
+
+No central credential storage required - each user's credentials are encrypted directly in their OAuth token.
 
 ### Deploy the Server
 
@@ -128,11 +134,38 @@ services:
     environment:
       PORT: 3000
       HOST: 0.0.0.0
+      OAUTH_SECRET: "your-random-secret-here"  # Required for production!
 ```
 
-### Generate Your Token
+### Environment Variables
 
-Each team member generates their own token containing their Productive credentials:
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PORT` | No | Server port (default: 3000) |
+| `HOST` | No | Bind address (default: 0.0.0.0) |
+| `OAUTH_SECRET` | **Yes (production)** | Secret key for encrypting OAuth tokens |
+
+> ⚠️ **Important**: Always set `OAUTH_SECRET` in production. Generate a random secret:
+> ```bash
+> openssl rand -base64 32
+> ```
+
+### Configure Claude Desktop Custom Connector
+
+1. Open Claude Desktop Settings
+2. Go to **Custom Connectors** (beta)
+3. Click **Add custom connector**
+4. Configure:
+   - **Name**: `Productive`
+   - **Remote MCP server URL**: `https://productive.mcp.example.com/mcp`
+   - **Authorization URL**: `https://productive.mcp.example.com/authorize`
+   - **Token URL**: `https://productive.mcp.example.com/token`
+5. Claude will redirect you to a login form to enter your Productive credentials
+6. After login, you're connected and can start using Productive tools
+
+### Alternative: Manual Bearer Token
+
+If you prefer not to use OAuth, you can generate a Bearer token manually:
 
 ```bash
 # Format: base64(organizationId:apiToken:userId)
@@ -145,19 +178,6 @@ echo -n "12345:pk_abc123xyz:67890" | base64
 # Output: MTIzNDU6cGtfYWJjMTIzeHl6OjY3ODkw
 ```
 
-### Configure Claude Desktop Custom Connector
-
-1. Open Claude Desktop Settings
-2. Go to **Custom Connectors** (beta)
-3. Click **Add custom connector**
-4. Configure:
-   - **Name**: `Productive`
-   - **Remote MCP server URL**: `https://productive.mcp.example.com/mcp`
-   - Leave OAuth fields empty (we use Bearer token)
-5. When making requests, Claude will include your token in the `Authorization` header
-
-> **Note**: As of now, Claude Desktop custom connectors may require OAuth. If Bearer token auth isn't supported directly, you can use a reverse proxy to inject the Authorization header, or wait for Claude Desktop to support custom headers.
-
 ### Server Endpoints
 
 | Endpoint | Method | Description |
@@ -165,6 +185,10 @@ echo -n "12345:pk_abc123xyz:67890" | base64
 | `/mcp` | POST | MCP JSON-RPC endpoint |
 | `/health` | GET | Health check |
 | `/` | GET | Server info |
+| `/authorize` | GET | OAuth authorization (login form) |
+| `/authorize` | POST | OAuth authorization (process login) |
+| `/token` | POST | OAuth token exchange |
+| `/.well-known/oauth-authorization-server` | GET | OAuth metadata |
 
 ---
 
@@ -326,12 +350,29 @@ productive-mcp/
 ├── src/
 │   ├── index.ts      # Stdio transport (local mode)
 │   ├── server.ts     # HTTP transport (remote mode)
+│   ├── http.ts       # HTTP routes and MCP endpoint
+│   ├── oauth.ts      # OAuth 2.0 endpoints
+│   ├── crypto.ts     # Encryption for stateless OAuth tokens
 │   ├── tools.ts      # Tool definitions (shared)
 │   ├── handlers.ts   # Tool execution (shared)
 │   └── auth.ts       # Bearer token parsing
 ├── Dockerfile
 └── README.md
 ```
+
+### OAuth Flow (Stateless)
+
+The OAuth implementation is **stateless** - no database or session storage required:
+
+1. User visits `/authorize` → sees login form
+2. User enters Productive credentials (org ID, API token, user ID)
+3. Server encrypts credentials into the authorization code using `OAUTH_SECRET`
+4. Redirects back to Claude with the encrypted code
+5. Claude calls `/token` with the code
+6. Server decrypts the code → returns access token (base64 credentials)
+7. All MCP requests include this token in the `Authorization: Bearer` header
+
+This approach keeps the server stateless while securely passing credentials through the OAuth flow.
 
 ## Related Packages
 
