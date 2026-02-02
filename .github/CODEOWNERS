@@ -1,0 +1,17 @@
+# Default owners for everything
+* @titouanmathis
+
+# Security-sensitive files require explicit review
+packages/*/src/auth.ts @titouanmathis
+packages/*/src/oauth.ts @titouanmathis
+packages/*/src/crypto.ts @titouanmathis
+packages/*/src/**/keychain*.ts @titouanmathis
+
+# CI/CD and workflows
+.github/workflows/*.yml @titouanmathis
+.github/CODEOWNERS @titouanmathis
+renovate.json @titouanmathis
+
+# Configuration files
+.oxlintrc.json @titouanmathis
+package.json @titouanmathis
