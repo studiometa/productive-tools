@@ -20,6 +20,15 @@ vi.mock('@studiometa/productive-cli', () => {
     getPeople: vi.fn(),
     getPerson: vi.fn(),
     getReports: vi.fn(),
+    // Additional handlers for include tests
+    getDeals: vi.fn(),
+    getDeal: vi.fn(),
+    getBookings: vi.fn(),
+    getBooking: vi.fn(),
+    getComments: vi.fn(),
+    getComment: vi.fn(),
+    getTimers: vi.fn(),
+    getTimer: vi.fn(),
   };
 
   return {
@@ -29,6 +38,10 @@ vi.mock('@studiometa/productive-cli', () => {
     formatTask: vi.fn((task) => ({ id: task.id, ...task.attributes })),
     formatPerson: vi.fn((person) => ({ id: person.id, ...person.attributes })),
     formatService: vi.fn((service) => ({ id: service.id, ...service.attributes })),
+    formatDeal: vi.fn((deal) => ({ id: deal.id, ...deal.attributes })),
+    formatBooking: vi.fn((booking) => ({ id: booking.id, ...booking.attributes })),
+    formatComment: vi.fn((comment) => ({ id: comment.id, ...comment.attributes })),
+    formatTimer: vi.fn((timer) => ({ id: timer.id, ...timer.attributes })),
     formatListResponse: vi.fn((data, formatter, meta) => ({
       data: data.map((item: Record<string, unknown>) => formatter(item)),
       meta,
@@ -848,5 +861,363 @@ describe('help handler', () => {
     const content = JSON.parse(result.content[0].text as string);
     expect(content.error).toContain('Unknown resource');
     expect(content.available_resources).toBeDefined();
+  });
+});
+
+describe('query parameter', () => {
+  const credentials: ProductiveCredentials = {
+    apiToken: 'test-token',
+    organizationId: 'test-org',
+    userId: 'test-user',
+  };
+
+  let mockApi: ReturnType<typeof ProductiveApi>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockApi = new ProductiveApi({}) as ReturnType<typeof ProductiveApi>;
+  });
+
+  it('should pass query to filter for projects list', async () => {
+    const mockResponse = {
+      data: [{ id: '1', type: 'projects', attributes: { name: 'Website Project' } }],
+      meta: { current_page: 1, total_pages: 1 },
+    };
+    mockApi.getProjects.mockResolvedValue(mockResponse);
+
+    const result = await executeToolWithCredentials(
+      'productive',
+      { resource: 'projects', action: 'list', query: 'website' },
+      credentials,
+    );
+
+    expect(result.isError).toBeUndefined();
+    expect(mockApi.getProjects).toHaveBeenCalledWith(
+      expect.objectContaining({ filter: { query: 'website' } }),
+    );
+  });
+
+  it('should merge query with other filters', async () => {
+    const mockResponse = {
+      data: [],
+      meta: { current_page: 1, total_pages: 1 },
+    };
+    mockApi.getProjects.mockResolvedValue(mockResponse);
+
+    const result = await executeToolWithCredentials(
+      'productive',
+      { resource: 'projects', action: 'list', query: 'website', filter: { archived: 'false' } },
+      credentials,
+    );
+
+    expect(result.isError).toBeUndefined();
+    expect(mockApi.getProjects).toHaveBeenCalledWith(
+      expect.objectContaining({ filter: { query: 'website', archived: 'false' } }),
+    );
+  });
+});
+
+describe('include parameter', () => {
+  const credentials: ProductiveCredentials = {
+    apiToken: 'test-token',
+    organizationId: 'test-org',
+    userId: 'test-user',
+  };
+
+  let mockApi: ReturnType<typeof ProductiveApi>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockApi = new ProductiveApi({}) as ReturnType<typeof ProductiveApi>;
+  });
+
+  describe('tasks', () => {
+    it('should merge user includes with defaults for list', async () => {
+      const mockResponse = {
+        data: [{ id: '1', type: 'tasks', attributes: { title: 'Task 1' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      };
+      mockApi.getTasks.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'tasks', action: 'list', include: ['comments', 'assignee'] },
+        credentials,
+      );
+
+      expect(mockApi.getTasks).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: expect.arrayContaining(['project', 'project.company', 'comments', 'assignee']),
+        }),
+      );
+    });
+
+    it('should merge user includes with defaults for get', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'tasks', attributes: { title: 'Task 1' } },
+      };
+      mockApi.getTask.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'tasks', action: 'get', id: '123', include: ['subtasks'] },
+        credentials,
+      );
+
+      expect(mockApi.getTask).toHaveBeenCalledWith(
+        '123',
+        expect.objectContaining({
+          include: expect.arrayContaining(['project', 'project.company', 'subtasks']),
+        }),
+      );
+    });
+  });
+
+  describe('deals', () => {
+    it('should use default includes for list when no user includes', async () => {
+      const mockResponse = {
+        data: [{ id: '1', type: 'deals', attributes: { name: 'Deal 1' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      };
+      mockApi.getDeals.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'deals', action: 'list' },
+        credentials,
+      );
+
+      expect(mockApi.getDeals).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: ['company', 'deal_status'],
+        }),
+      );
+    });
+
+    it('should merge user includes with defaults for list', async () => {
+      const mockResponse = {
+        data: [{ id: '1', type: 'deals', attributes: { name: 'Deal 1' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      };
+      mockApi.getDeals.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'deals', action: 'list', include: ['project'] },
+        credentials,
+      );
+
+      expect(mockApi.getDeals).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: expect.arrayContaining(['company', 'deal_status', 'project']),
+        }),
+      );
+    });
+
+    it('should use default includes for get when no user includes', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'deals', attributes: { name: 'Deal 1' } },
+      };
+      mockApi.getDeal.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'deals', action: 'get', id: '123' },
+        credentials,
+      );
+
+      expect(mockApi.getDeal).toHaveBeenCalledWith(
+        '123',
+        expect.objectContaining({
+          include: ['company', 'deal_status', 'responsible'],
+        }),
+      );
+    });
+
+    it('should merge user includes with defaults for get', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'deals', attributes: { name: 'Deal 1' } },
+      };
+      mockApi.getDeal.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'deals', action: 'get', id: '123', include: ['services'] },
+        credentials,
+      );
+
+      expect(mockApi.getDeal).toHaveBeenCalledWith(
+        '123',
+        expect.objectContaining({
+          include: expect.arrayContaining(['company', 'deal_status', 'responsible', 'services']),
+        }),
+      );
+    });
+  });
+
+  describe('bookings', () => {
+    it('should use default includes when no user includes', async () => {
+      const mockResponse = {
+        data: [{ id: '1', type: 'bookings', attributes: { started_on: '2024-01-01' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      };
+      mockApi.getBookings.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'bookings', action: 'list' },
+        credentials,
+      );
+
+      expect(mockApi.getBookings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: ['person', 'service'],
+        }),
+      );
+    });
+
+    it('should merge user includes with defaults for list', async () => {
+      const mockResponse = {
+        data: [{ id: '1', type: 'bookings', attributes: { started_on: '2024-01-01' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      };
+      mockApi.getBookings.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'bookings', action: 'list', include: ['event'] },
+        credentials,
+      );
+
+      expect(mockApi.getBookings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: expect.arrayContaining(['person', 'service', 'event']),
+        }),
+      );
+    });
+
+    it('should merge user includes with defaults for get', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'bookings', attributes: { started_on: '2024-01-01' } },
+      };
+      mockApi.getBooking.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'bookings', action: 'get', id: '123', include: ['approver'] },
+        credentials,
+      );
+
+      expect(mockApi.getBooking).toHaveBeenCalledWith(
+        '123',
+        expect.objectContaining({
+          include: expect.arrayContaining(['person', 'service', 'approver']),
+        }),
+      );
+    });
+  });
+
+  describe('comments', () => {
+    it('should use default includes when no user includes', async () => {
+      const mockResponse = {
+        data: [{ id: '1', type: 'comments', attributes: { body: 'Comment 1' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      };
+      mockApi.getComments.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'comments', action: 'list' },
+        credentials,
+      );
+
+      expect(mockApi.getComments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: ['creator'],
+        }),
+      );
+    });
+
+    it('should merge user includes with defaults for list', async () => {
+      const mockResponse = {
+        data: [{ id: '1', type: 'comments', attributes: { body: 'Comment 1' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      };
+      mockApi.getComments.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'comments', action: 'list', include: ['task'] },
+        credentials,
+      );
+
+      expect(mockApi.getComments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: expect.arrayContaining(['creator', 'task']),
+        }),
+      );
+    });
+
+    it('should merge user includes with defaults for get', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'comments', attributes: { body: 'Comment 1' } },
+      };
+      mockApi.getComment.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'comments', action: 'get', id: '123', include: ['deal'] },
+        credentials,
+      );
+
+      expect(mockApi.getComment).toHaveBeenCalledWith(
+        '123',
+        expect.objectContaining({
+          include: expect.arrayContaining(['creator', 'deal']),
+        }),
+      );
+    });
+  });
+
+  describe('timers', () => {
+    it('should pass user includes for list', async () => {
+      const mockResponse = {
+        data: [{ id: '1', type: 'timers', attributes: { started_at: '2024-01-01T10:00:00Z' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      };
+      mockApi.getTimers.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'timers', action: 'list', include: ['time_entry', 'service'] },
+        credentials,
+      );
+
+      expect(mockApi.getTimers).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: ['time_entry', 'service'],
+        }),
+      );
+    });
+
+    it('should pass user includes for get', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'timers', attributes: { started_at: '2024-01-01T10:00:00Z' } },
+      };
+      mockApi.getTimer.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'timers', action: 'get', id: '123', include: ['time_entry'] },
+        credentials,
+      );
+
+      expect(mockApi.getTimer).toHaveBeenCalledWith(
+        '123',
+        expect.objectContaining({
+          include: ['time_entry'],
+        }),
+      );
+    });
   });
 });

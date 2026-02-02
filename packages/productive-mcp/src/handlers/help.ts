@@ -23,6 +23,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       get: 'Get a single project by ID with full details',
     },
     filters: {
+      query: 'Text search on project name',
       project_type_id: 'Filter by project type',
       company_id: 'Filter by company',
       archived: 'Filter by archived status (true/false)',
@@ -35,6 +36,10 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       budget: 'Project budget amount',
     },
     examples: [
+      {
+        description: 'Search projects by name',
+        params: { resource: 'projects', action: 'list', query: 'website' },
+      },
       {
         description: 'List active projects',
         params: { resource: 'projects', action: 'list', filter: { archived: 'false' } },
@@ -55,6 +60,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       update: 'Update an existing task',
     },
     filters: {
+      query: 'Text search on task title',
       project_id: 'Filter by project',
       assignee_id: 'Filter by assigned person',
       status: 'Filter by status (open, closed, all)',
@@ -81,6 +87,10 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       closed: 'Whether the task is closed',
     },
     examples: [
+      {
+        description: 'Search tasks by title',
+        params: { resource: 'tasks', action: 'list', query: 'bug fix' },
+      },
       {
         description: 'List open tasks for a project',
         params: {
@@ -189,6 +199,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       me: 'Get the currently authenticated user',
     },
     filters: {
+      query: 'Text search on name or email',
       status: 'Filter by status (active, inactive)',
     },
     fields: {
@@ -202,6 +213,10 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     },
     examples: [
       { description: 'Get current user', params: { resource: 'people', action: 'me' } },
+      {
+        description: 'Search people by name',
+        params: { resource: 'people', action: 'list', query: 'john' },
+      },
       {
         description: 'List active team members',
         params: { resource: 'people', action: 'list', filter: { status: 'active' } },
@@ -218,6 +233,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       update: 'Update an existing company',
     },
     filters: {
+      query: 'Text search on company name',
       archived: 'Filter by archived status (true/false)',
     },
     fields: {
@@ -228,6 +244,10 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       vat: 'VAT number',
     },
     examples: [
+      {
+        description: 'Search companies',
+        params: { resource: 'companies', action: 'list', query: 'acme' },
+      },
       {
         description: 'List active companies',
         params: { resource: 'companies', action: 'list', filter: { archived: 'false' } },
@@ -297,6 +317,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       update: 'Update an existing deal',
     },
     filters: {
+      query: 'Text search on deal name',
       company_id: 'Filter by company',
       deal_status_id: 'Filter by status',
     },
@@ -309,6 +330,10 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       status: 'Current status (from deal_status)',
     },
     examples: [
+      {
+        description: 'Search deals',
+        params: { resource: 'deals', action: 'list', query: 'website redesign' },
+      },
       {
         description: 'List deals for a company',
         params: { resource: 'deals', action: 'list', filter: { company_id: '12345' } },

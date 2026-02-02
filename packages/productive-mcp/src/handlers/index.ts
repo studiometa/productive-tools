@@ -45,6 +45,7 @@ interface ProductiveArgs {
   per_page?: number;
   compact?: boolean;
   include?: string[];
+  query?: string;
   // Common fields
   person_id?: string;
   service_id?: string;
@@ -98,14 +99,19 @@ export async function executeToolWithCredentials(
     return errorResult(`Unknown tool: ${name}`);
   }
 
-  const { resource, action, filter, page, per_page, compact, include, ...restArgs } =
+  const { resource, action, filter, page, per_page, compact, include, query, ...restArgs } =
     args as unknown as ProductiveArgs;
 
   // Default compact to false for 'get' action (single resource), true for 'list'
   const isCompact = compact ?? action !== 'get';
   const formatOptions: McpFormatOptions = { compact: isCompact };
-  const stringFilter = toStringFilter(filter);
+  let stringFilter = toStringFilter(filter);
   const perPage = per_page ?? DEFAULT_PER_PAGE;
+
+  // Add query to filter if provided (for text search)
+  if (query) {
+    stringFilter = { ...stringFilter, query };
+  }
 
   // Build handler context
   const ctx: HandlerContext = {
