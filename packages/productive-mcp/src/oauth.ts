@@ -225,8 +225,9 @@ export const authorizePostHandler = defineEventHandler(async (event: H3Event) =>
     redirectUrl.searchParams.set('state', state);
   }
 
-  // Redirect back to Claude
-  return sendRedirect(event, redirectUrl.toString());
+  // Show success page with auto-redirect
+  setResponseHeader(event, 'Content-Type', 'text/html; charset=utf-8');
+  return renderSuccessPage(redirectUrl.toString());
 });
 
 /**
@@ -573,6 +574,116 @@ function renderLoginForm(params: {
       <a href="https://developer.productive.io" target="_blank">Productive.io API Documentation</a>
     </p>
   </div>
+</body>
+</html>`;
+}
+
+/**
+ * Render success page with auto-redirect
+ */
+function renderSuccessPage(redirectUrl: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="2;url=${escapeHtml(redirectUrl)}">
+  <title>Connected - Productive MCP</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 24px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .success-icon svg {
+      width: 32px;
+      height: 32px;
+      stroke: white;
+    }
+    h1 {
+      color: #1a1a2e;
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    .message {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .redirect-text {
+      color: #9ca3af;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .manual-link {
+      color: #667eea;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .manual-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="success-icon">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 6L9 17L4 12" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h1>Successfully Connected!</h1>
+    <p class="message">Your Productive.io credentials have been verified.</p>
+    <div class="spinner"></div>
+    <p class="redirect-text">Redirecting to Claude Desktop...</p>
+    <a href="${escapeHtml(redirectUrl)}" class="manual-link">Click here if not redirected automatically</a>
+  </div>
+  <script>
+    // Redirect after a short delay (backup for meta refresh)
+    setTimeout(function() {
+      window.location.href = ${JSON.stringify(redirectUrl)};
+    }, 2000);
+  </script>
 </body>
 </html>`;
 }
