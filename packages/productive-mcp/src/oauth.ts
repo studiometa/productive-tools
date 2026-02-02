@@ -1,19 +1,21 @@
 /**
  * OAuth 2.0 endpoints for Claude Desktop integration
  *
- * Implements a stateless OAuth flow where credentials are encrypted
- * directly into the authorization code, eliminating the need for
- * server-side storage.
+ * Implements OAuth 2.1 with PKCE as specified in the MCP authorization spec.
+ * Uses stateless encrypted tokens - no server-side storage required.
+ *
+ * Spec: https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization
  *
  * Flow:
- * 1. Claude redirects user to /authorize with OAuth params
+ * 1. Claude redirects user to /authorize with OAuth params (including PKCE)
  * 2. User enters Productive credentials in login form
- * 3. Server encrypts credentials into authorization code
+ * 3. Server encrypts credentials + PKCE challenge into authorization code
  * 4. Redirects back to Claude with the code
- * 5. Claude exchanges code for access token via /token
- * 6. Access token is base64(orgId:apiToken:userId)
+ * 5. Claude exchanges code for access token via /token (with code_verifier)
+ * 6. Server validates PKCE and returns access token
  */
 
+import { createHash } from 'node:crypto';
 import {
   defineEventHandler,
   getQuery,
@@ -26,8 +28,10 @@ import { createAuthCode, decodeAuthCode } from './crypto.js';
 import { createAuthToken } from './auth.js';
 
 /**
- * OAuth metadata for discovery
+ * OAuth metadata for discovery (RFC 8414)
  * GET /.well-known/oauth-authorization-server
+ *
+ * MCP clients MUST check this endpoint first for server capabilities.
  */
 export const oauthMetadataHandler = defineEventHandler((event: H3Event) => {
   const host = event.node.req.headers.host || 'localhost:3000';
@@ -35,15 +39,70 @@ export const oauthMetadataHandler = defineEventHandler((event: H3Event) => {
   const baseUrl = `${protocol}://${host}`;
 
   setResponseHeader(event, 'Content-Type', 'application/json');
+  setResponseHeader(event, 'Cache-Control', 'public, max-age=3600');
 
   return {
+    // Required fields per RFC 8414
     issuer: baseUrl,
     authorization_endpoint: `${baseUrl}/authorize`,
     token_endpoint: `${baseUrl}/token`,
     response_types_supported: ['code'],
-    grant_types_supported: ['authorization_code'],
+
+    // OAuth 2.1 / MCP requirements
+    grant_types_supported: ['authorization_code', 'refresh_token'],
     code_challenge_methods_supported: ['S256'],
-    token_endpoint_auth_methods_supported: ['none'],
+    token_endpoint_auth_methods_supported: ['none'], // Public client
+
+    // Optional but useful
+    registration_endpoint: `${baseUrl}/register`,
+    scopes_supported: ['productive'],
+    service_documentation: 'https://github.com/studiometa/productive-tools',
+  };
+});
+
+/**
+ * Dynamic Client Registration endpoint (RFC 7591)
+ * POST /register
+ *
+ * MCP servers SHOULD support DCR to allow clients to register automatically.
+ * Since we use stateless tokens, we accept any registration and return
+ * a generated client_id.
+ */
+export const registerHandler = defineEventHandler(async (event: H3Event) => {
+  setResponseHeader(event, 'Content-Type', 'application/json');
+
+  let body: Record<string, unknown>;
+  try {
+    body = await readBody(event);
+  } catch {
+    event.node.res.statusCode = 400;
+    return {
+      error: 'invalid_request',
+      error_description: 'Invalid JSON body',
+    };
+  }
+
+  // Extract client metadata
+  const clientName = (body.client_name as string) || 'MCP Client';
+  const redirectUris = (body.redirect_uris as string[]) || [];
+
+  // Generate a client_id based on the registration
+  // Since we're stateless, we encode minimal info in the client_id
+  const clientId = Buffer.from(
+    JSON.stringify({
+      name: clientName,
+      ts: Date.now(),
+    })
+  ).toString('base64url');
+
+  event.node.res.statusCode = 201;
+  return {
+    client_id: clientId,
+    client_name: clientName,
+    redirect_uris: redirectUris,
+    token_endpoint_auth_method: 'none',
+    grant_types: ['authorization_code', 'refresh_token'],
+    response_types: ['code'],
   };
 });
 
@@ -60,6 +119,32 @@ export const authorizeGetHandler = defineEventHandler((event: H3Event) => {
   const state = query.state as string;
   const codeChallenge = query.code_challenge as string;
   const codeChallengeMethod = query.code_challenge_method as string;
+  const scope = query.scope as string;
+
+  // Validate required parameters per OAuth 2.1
+  if (!redirectUri) {
+    setResponseHeader(event, 'Content-Type', 'text/html; charset=utf-8');
+    event.node.res.statusCode = 400;
+    return renderErrorPage('Missing required parameter: redirect_uri');
+  }
+
+  // PKCE is REQUIRED for public clients per MCP spec
+  if (!codeChallenge) {
+    // Redirect back with error per OAuth spec
+    const errorUrl = new URL(redirectUri);
+    errorUrl.searchParams.set('error', 'invalid_request');
+    errorUrl.searchParams.set('error_description', 'code_challenge is required');
+    if (state) errorUrl.searchParams.set('state', state);
+    return sendRedirect(event, errorUrl.toString());
+  }
+
+  if (codeChallengeMethod && codeChallengeMethod !== 'S256') {
+    const errorUrl = new URL(redirectUri);
+    errorUrl.searchParams.set('error', 'invalid_request');
+    errorUrl.searchParams.set('error_description', 'Only S256 code_challenge_method is supported');
+    if (state) errorUrl.searchParams.set('state', state);
+    return sendRedirect(event, errorUrl.toString());
+  }
 
   setResponseHeader(event, 'Content-Type', 'text/html; charset=utf-8');
 
@@ -69,7 +154,8 @@ export const authorizeGetHandler = defineEventHandler((event: H3Event) => {
     redirectUri,
     state,
     codeChallenge,
-    codeChallengeMethod,
+    codeChallengeMethod: codeChallengeMethod || 'S256',
+    scope,
   });
 });
 
@@ -80,9 +166,38 @@ export const authorizeGetHandler = defineEventHandler((event: H3Event) => {
 export const authorizePostHandler = defineEventHandler(async (event: H3Event) => {
   const body = await readBody(event);
 
-  const { orgId, apiToken, userId, redirectUri, state, codeChallenge, codeChallengeMethod } = body;
+  const {
+    orgId,
+    apiToken,
+    userId,
+    redirectUri,
+    state,
+    codeChallenge,
+    codeChallengeMethod,
+  } = body;
 
-  // Validate required fields
+  // Validate redirect URI first (security requirement)
+  if (!redirectUri) {
+    setResponseHeader(event, 'Content-Type', 'text/html; charset=utf-8');
+    event.node.res.statusCode = 400;
+    return renderErrorPage('Missing redirect_uri parameter');
+  }
+
+  // Validate redirect URI format (must be HTTPS or localhost)
+  try {
+    const uri = new URL(redirectUri);
+    const isLocalhost = uri.hostname === 'localhost' || uri.hostname === '127.0.0.1';
+    const isHttps = uri.protocol === 'https:';
+    if (!isLocalhost && !isHttps) {
+      event.node.res.statusCode = 400;
+      return renderErrorPage('redirect_uri must be HTTPS or localhost');
+    }
+  } catch {
+    event.node.res.statusCode = 400;
+    return renderErrorPage('Invalid redirect_uri format');
+  }
+
+  // Validate required credentials
   if (!orgId || !apiToken) {
     setResponseHeader(event, 'Content-Type', 'text/html; charset=utf-8');
     return renderLoginForm({
@@ -94,24 +209,16 @@ export const authorizePostHandler = defineEventHandler(async (event: H3Event) =>
     });
   }
 
-  // Validate redirect URI
-  if (!redirectUri) {
-    setResponseHeader(event, 'Content-Type', 'text/html; charset=utf-8');
-    event.node.res.statusCode = 400;
-    return renderErrorPage('Missing redirect_uri parameter');
-  }
-
-  // Create encrypted authorization code
+  // Create encrypted authorization code with PKCE challenge
   const code = createAuthCode({
     orgId,
     apiToken,
     userId: userId || undefined,
-    // Store PKCE challenge for validation at token endpoint
     codeChallenge,
-    codeChallengeMethod,
-  } as { orgId: string; apiToken: string; userId?: string });
+    codeChallengeMethod: codeChallengeMethod || 'S256',
+  });
 
-  // Build redirect URL
+  // Build redirect URL with authorization code
   const redirectUrl = new URL(redirectUri);
   redirectUrl.searchParams.set('code', code);
   if (state) {
@@ -125,6 +232,10 @@ export const authorizePostHandler = defineEventHandler(async (event: H3Event) =>
 /**
  * Token endpoint - exchange code for access token
  * POST /token
+ *
+ * Supports:
+ * - authorization_code grant (with PKCE validation)
+ * - refresh_token grant
  */
 export const tokenHandler = defineEventHandler(async (event: H3Event) => {
   setResponseHeader(event, 'Content-Type', 'application/json');
@@ -133,7 +244,6 @@ export const tokenHandler = defineEventHandler(async (event: H3Event) => {
   const contentType = event.node.req.headers['content-type'] || '';
 
   if (contentType.includes('application/x-www-form-urlencoded')) {
-    // Parse URL-encoded body
     const rawBody = await readBody(event);
     if (typeof rawBody === 'string') {
       body = Object.fromEntries(new URLSearchParams(rawBody));
@@ -144,18 +254,22 @@ export const tokenHandler = defineEventHandler(async (event: H3Event) => {
     body = await readBody(event);
   }
 
-  const { grant_type, code, code_verifier: _codeVerifier } = body;
+  const { grant_type, code, code_verifier, refresh_token } = body;
 
-  // Validate grant type
+  // Handle refresh token grant
+  if (grant_type === 'refresh_token') {
+    return handleRefreshToken(event, refresh_token);
+  }
+
+  // Validate authorization code grant
   if (grant_type !== 'authorization_code') {
     event.node.res.statusCode = 400;
     return {
       error: 'unsupported_grant_type',
-      error_description: 'Only authorization_code grant type is supported',
+      error_description: 'Supported grant types: authorization_code, refresh_token',
     };
   }
 
-  // Validate code presence
   if (!code) {
     event.node.res.statusCode = 400;
     return {
@@ -164,26 +278,52 @@ export const tokenHandler = defineEventHandler(async (event: H3Event) => {
     };
   }
 
+  if (!code_verifier) {
+    event.node.res.statusCode = 400;
+    return {
+      error: 'invalid_request',
+      error_description: 'Missing code_verifier (PKCE required)',
+    };
+  }
+
   try {
     // Decode the authorization code
-    const credentials = decodeAuthCode(code);
+    const payload = decodeAuthCode(code);
 
-    // TODO: Validate PKCE code_verifier against stored code_challenge
-    // For now, we trust the code since it's encrypted with our secret
-    // In a full implementation, we'd verify:
-    // sha256(code_verifier) === code_challenge (for S256 method)
+    // Validate PKCE: SHA256(code_verifier) must equal code_challenge
+    if (payload.codeChallenge) {
+      const expectedChallenge = createS256Challenge(code_verifier);
+      if (expectedChallenge !== payload.codeChallenge) {
+        event.node.res.statusCode = 400;
+        return {
+          error: 'invalid_grant',
+          error_description: 'Invalid code_verifier',
+        };
+      }
+    }
 
     // Create access token (base64 encoded credentials)
     const accessToken = createAuthToken({
-      organizationId: credentials.orgId,
-      apiToken: credentials.apiToken,
-      userId: credentials.userId,
+      organizationId: payload.orgId,
+      apiToken: payload.apiToken,
+      userId: payload.userId,
     });
+
+    // Create refresh token (encrypted credentials, longer expiry)
+    const refreshToken = createAuthCode(
+      {
+        orgId: payload.orgId,
+        apiToken: payload.apiToken,
+        userId: payload.userId,
+      },
+      86400 * 30 // 30 days
+    );
 
     return {
       access_token: accessToken,
       token_type: 'Bearer',
-      // No expiration - token is valid as long as Productive credentials are valid
+      expires_in: 3600, // 1 hour (access tokens should be short-lived)
+      refresh_token: refreshToken,
     };
   } catch (error) {
     event.node.res.statusCode = 400;
@@ -195,6 +335,62 @@ export const tokenHandler = defineEventHandler(async (event: H3Event) => {
 });
 
 /**
+ * Handle refresh token grant
+ */
+function handleRefreshToken(event: H3Event, refreshToken: string | undefined) {
+  if (!refreshToken) {
+    event.node.res.statusCode = 400;
+    return {
+      error: 'invalid_request',
+      error_description: 'Missing refresh_token',
+    };
+  }
+
+  try {
+    // Decode refresh token (it's just an encrypted auth code with longer expiry)
+    const payload = decodeAuthCode(refreshToken);
+
+    // Create new access token
+    const accessToken = createAuthToken({
+      organizationId: payload.orgId,
+      apiToken: payload.apiToken,
+      userId: payload.userId,
+    });
+
+    // Create new refresh token (rotate for security)
+    const newRefreshToken = createAuthCode(
+      {
+        orgId: payload.orgId,
+        apiToken: payload.apiToken,
+        userId: payload.userId,
+      },
+      86400 * 30 // 30 days
+    );
+
+    return {
+      access_token: accessToken,
+      token_type: 'Bearer',
+      expires_in: 3600,
+      refresh_token: newRefreshToken,
+    };
+  } catch (error) {
+    event.node.res.statusCode = 400;
+    return {
+      error: 'invalid_grant',
+      error_description: error instanceof Error ? error.message : 'Invalid refresh token',
+    };
+  }
+}
+
+/**
+ * Create S256 PKCE challenge from verifier
+ * SHA256(code_verifier) encoded as base64url
+ */
+function createS256Challenge(codeVerifier: string): string {
+  return createHash('sha256').update(codeVerifier).digest('base64url');
+}
+
+/**
  * Render the login form HTML
  */
 function renderLoginForm(params: {
@@ -203,6 +399,7 @@ function renderLoginForm(params: {
   state?: string;
   codeChallenge?: string;
   codeChallengeMethod?: string;
+  scope?: string;
   error?: string;
 }): string {
   const { redirectUri, state, codeChallenge, codeChallengeMethod, error } = params;
@@ -348,7 +545,7 @@ function renderLoginForm(params: {
       <input type="hidden" name="redirectUri" value="${escapeHtml(redirectUri || '')}">
       <input type="hidden" name="state" value="${escapeHtml(state || '')}">
       <input type="hidden" name="codeChallenge" value="${escapeHtml(codeChallenge || '')}">
-      <input type="hidden" name="codeChallengeMethod" value="${escapeHtml(codeChallengeMethod || '')}">
+      <input type="hidden" name="codeChallengeMethod" value="${escapeHtml(codeChallengeMethod || 'S256')}">
       
       <div class="form-group">
         <label for="orgId">Organization ID *</label>

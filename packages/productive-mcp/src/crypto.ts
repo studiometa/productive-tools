@@ -94,14 +94,25 @@ export function decrypt(ciphertext: string, secret: string = getSecret()): strin
 }
 
 /**
- * Create an encrypted authorization code containing credentials
+ * Authorization code payload structure
+ */
+export interface AuthCodePayload {
+  orgId: string;
+  apiToken: string;
+  userId?: string;
+  codeChallenge?: string;
+  codeChallengeMethod?: string;
+}
+
+/**
+ * Create an encrypted authorization code containing credentials and PKCE challenge
  *
- * @param credentials - Object with orgId, apiToken, userId
+ * @param credentials - Object with orgId, apiToken, userId, and optional PKCE params
  * @param expiresInSeconds - Code expiration time (default: 5 minutes)
  * @returns Encrypted authorization code
  */
 export function createAuthCode(
-  credentials: { orgId: string; apiToken: string; userId?: string },
+  credentials: AuthCodePayload,
   expiresInSeconds: number = 300
 ): string {
   const payload = {
@@ -115,21 +126,21 @@ export function createAuthCode(
  * Decode and validate an authorization code
  *
  * @param code - Encrypted authorization code
- * @returns Credentials if valid
+ * @returns Decoded payload with credentials and PKCE challenge
  * @throws Error if code is invalid or expired
  */
-export function decodeAuthCode(code: string): { orgId: string; apiToken: string; userId?: string } {
+export function decodeAuthCode(code: string): AuthCodePayload {
   const payload = JSON.parse(decrypt(code));
 
   if (payload.exp && Date.now() > payload.exp) {
     throw new Error('Authorization code expired');
   }
 
-  const { orgId, apiToken, userId } = payload;
+  const { orgId, apiToken, userId, codeChallenge, codeChallengeMethod } = payload;
 
   if (!orgId || !apiToken) {
     throw new Error('Invalid authorization code: missing credentials');
   }
 
-  return { orgId, apiToken, userId };
+  return { orgId, apiToken, userId, codeChallenge, codeChallengeMethod };
 }
