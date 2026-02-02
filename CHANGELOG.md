@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Companies Resource** - Full CRUD support for companies/clients (86ba32e)
+  - `companies list/get/add/update` commands
+  - Human-readable and JSON output formats
+- **Comments Resource** - Comment management on tasks, deals, and companies (bf263a7)
+  - `comments list/get/add/update` commands
+  - Includes creator information in output
+- **Timers Resource** - Real-time tracking support (8e19f00)
+  - `timers list/get/start/stop` commands
+  - Start timers from service or existing time entry
+- **Deals Resource** - Sales pipeline management (1496a9d)
+  - `deals list/get/add/update` commands
+  - Includes company, status, and responsible person
+- **Bookings Resource** - Resource scheduling (381a9df)
+  - `bookings list/get/add/update` commands
+  - Support for service and event bookings
+- **Reports Resource** - Report generation (c6c0cd4)
+  - `reports time/project/budget/person` commands
+  - Run and retrieve report data
+- **Task Create/Update** - Enhanced task management (f28defc)
+  - `tasks add` command to create tasks
+  - `tasks update` command to modify tasks
+- **Type-Aware Linting** - oxlint with TypeScript type checking (d68dc10)
+  - New script: `npm run lint:types`
+  - Requires `oxlint-tsgolint` package
+
+### Changed
+
+- **oxlint Configuration** - Upgraded to v1.43.0 with enhanced rules (d68dc10)
+  - Added plugins: typescript, import, vitest, promise, node
+  - Configured complexity rules (max: 50, depth: 5, lines: 200)
+  - Enabled suspicious category as warnings
+- **oxfmt Configuration** - Code formatting with Studio Meta preferences (294b323)
+  - printWidth: 100, singleQuote: true, trailingComma: all
+  - Experimental import sorting with grouped imports
+  - Markdown file formatting support
+- **MCP Handlers Refactoring** - Improved maintainability (8a10051)
+  - Split 532-line handler into 13 focused modules
+  - Reduced cyclomatic complexity from 102 to ~10 per handler
+  - New `handlers/` directory structure
+
 ## [0.3.0] - 2026-02-01
 
 ### Added
