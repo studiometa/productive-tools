@@ -14,6 +14,12 @@
 - These scripts update version in root and all workspace packages simultaneously
 - Version is injected at build time from package.json (no manual sync needed)
 
+## Changelogs
+- Both packages have their own CHANGELOG.md in `packages/*/CHANGELOG.md`
+- **Keep changelogs in sync**: when releasing a new version, update BOTH changelogs
+- If a package has no changes for a release, add: `### Changed\n\n- No changes for this release`
+- This ensures both packages always have an entry for each version
+
 ---
 
 # AI Agents & Automation
