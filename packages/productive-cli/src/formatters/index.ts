@@ -23,6 +23,7 @@ export type {
 
 export type { FormattedCompany } from './company.js';
 export type { FormattedComment } from './comment.js';
+export type { FormattedTimer } from './timer.js';
 
 export { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
@@ -35,6 +36,7 @@ export { formatService } from './service.js';
 export { formatBudget } from './budget.js';
 export { formatCompany } from './company.js';
 export { formatComment } from './comment.js';
+export { formatTimer } from './timer.js';
 
 // Pagination
 export { formatPagination, hasMorePages } from './pagination.js';
@@ -126,6 +128,7 @@ import { formatService } from './service.js';
 import { formatBudget } from './budget.js';
 import { formatCompany } from './company.js';
 import { formatComment } from './comment.js';
+import { formatTimer } from './timer.js';
 
 /**
  * Get the appropriate formatter function for a resource type
@@ -150,6 +153,8 @@ function getFormatterForType(
       return formatCompany as (item: JsonApiResource, options?: FormatOptions) => Record<string, unknown>;
     case 'comments':
       return formatComment as (item: JsonApiResource, options?: FormatOptions) => Record<string, unknown>;
+    case 'timers':
+      return formatTimer as (item: JsonApiResource, options?: FormatOptions) => Record<string, unknown>;
     default:
       // Generic formatter: flatten id + attributes
       return (item: JsonApiResource) => ({

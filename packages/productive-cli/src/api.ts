@@ -9,6 +9,7 @@ import type {
   ProductiveBudget,
   ProductiveCompany,
   ProductiveComment,
+  ProductiveTimer,
 } from "./types.js";
 import { getConfig } from "./config.js";
 import { getCache, type CacheStore } from "./utils/cache.js";
@@ -693,6 +694,81 @@ export class ProductiveApi {
             attributes: data,
           },
         },
+      },
+    );
+  }
+
+  // Timers
+  async getTimers(params?: {
+    page?: number;
+    perPage?: number;
+    filter?: Record<string, string>;
+    sort?: string;
+    include?: string[];
+  }): Promise<ProductiveApiResponse<ProductiveTimer[]>> {
+    const query: Record<string, string> = {};
+
+    if (params?.page) query["page[number]"] = String(params.page);
+    if (params?.perPage) query["page[size]"] = String(params.perPage);
+    if (params?.sort) query["sort"] = params.sort;
+    if (params?.filter) {
+      Object.entries(params.filter).forEach(([key, value]) => {
+        query[`filter[${key}]`] = value;
+      });
+    }
+    if (params?.include?.length) {
+      query["include"] = params.include.join(",");
+    }
+
+    return this.request<ProductiveApiResponse<ProductiveTimer[]>>(
+      "/timers",
+      { query },
+    );
+  }
+
+  async getTimer(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductiveTimer>> {
+    const query: Record<string, string> = {};
+    if (params?.include?.length) {
+      query["include"] = params.include.join(",");
+    }
+    return this.request<ProductiveApiResponse<ProductiveTimer>>(
+      `/timers/${id}`,
+      { query },
+    );
+  }
+
+  async startTimer(data: {
+    service_id?: string;
+    time_entry_id?: string;
+  }): Promise<ProductiveApiResponse<ProductiveTimer>> {
+    const relationships: Record<string, { data: { type: string; id: string } }> = {};
+
+    if (data.service_id) {
+      relationships.service = { data: { type: "services", id: data.service_id } };
+    }
+    if (data.time_entry_id) {
+      relationships.time_entry = { data: { type: "time_entries", id: data.time_entry_id } };
+    }
+
+    return this.request<ProductiveApiResponse<ProductiveTimer>>("/timers", {
+      method: "POST",
+      body: {
+        data: {
+          type: "timers",
+          relationships,
+        },
+      },
+    });
+  }
+
+  async stopTimer(id: string): Promise<ProductiveApiResponse<ProductiveTimer>> {
+    return this.request<ProductiveApiResponse<ProductiveTimer>>(
+      `/timers/${id}/stop`,
+      {
+        method: "PATCH",
       },
     );
   }

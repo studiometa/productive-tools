@@ -23,6 +23,10 @@ import {
   handleCommentsCommand,
   showCommentsHelp,
 } from "./commands/comments/index.js";
+import {
+  handleTimersCommand,
+  showTimersHelp,
+} from "./commands/timers/index.js";
 import { handleCacheCommand, showCacheHelp } from "./commands/cache.js";
 import { handleApiCommand, showApiHelp } from "./commands/api.js";
 import {
@@ -87,6 +91,12 @@ ${colors.bold("COMMANDS:")}
     get <id>            Get comment details
     add                 Add a comment
     update <id>         Update comment
+
+  timers              Manage timers (real-time tracking)
+    list, ls            List timers
+    get <id>            Get timer details
+    start               Start a timer
+    stop <id>           Stop a timer
 
   cache               Manage CLI cache
     status              Show cache statistics
@@ -283,6 +293,14 @@ async function main(): Promise<void> {
           process.exit(0);
         }
         await handleCommentsCommand(subcommand || "list", positional, options);
+        break;
+
+      case "timers":
+        if (wantsHelp) {
+          showTimersHelp(subcommand);
+          process.exit(0);
+        }
+        await handleTimersCommand(subcommand || "list", positional, options);
         break;
 
       case "cache":

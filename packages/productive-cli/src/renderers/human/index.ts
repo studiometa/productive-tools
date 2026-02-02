@@ -75,3 +75,11 @@ export {
   humanCommentListRenderer,
   humanCommentDetailRenderer,
 } from './comment.js';
+
+// Timers
+export {
+  HumanTimerListRenderer,
+  HumanTimerDetailRenderer,
+  humanTimerListRenderer,
+  humanTimerDetailRenderer,
+} from './timer.js';

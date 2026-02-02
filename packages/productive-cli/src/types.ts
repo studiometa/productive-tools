@@ -174,6 +174,20 @@ export interface ProductiveCompany {
   relationships?: Record<string, RelationshipData>;
 }
 
+export interface ProductiveTimer {
+  id: string;
+  type: "timers";
+  attributes: {
+    person_id: number;
+    started_at: string;
+    stopped_at?: string;
+    total_time: number;
+  };
+  relationships?: {
+    time_entry?: RelationshipData;
+  };
+}
+
 export interface ProductiveComment {
   id: string;
   type: "comments";
