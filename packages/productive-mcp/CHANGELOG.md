@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-02-02
+
+### Added
+- **OAuth 2.0 Support** - MCP auth spec compliant authentication for Claude Desktop (f46e8bd, #3)
+  - OAuth 2.1 with PKCE (S256) validation
+  - Dynamic Client Registration endpoint (`/register`) per RFC 7591
+  - OAuth metadata discovery (`/.well-known/oauth-authorization-server`) per RFC 8414
+  - Token refresh support with rotation
+  - Stateless implementation using AES-256-GCM encryption
+- **Login Form UI** - User-friendly credential entry for Productive.io
+- **Security Improvements**
+  - Redirect URI validation (HTTPS or localhost only)
+  - Token expiration (1h access, 30d refresh)
+  - PKCE required for all authorization requests
+
+### Changed
+- Updated README with OAuth configuration documentation
+
 ## [0.3.0] - 2026-02-01
 
 ### Added
@@ -49,5 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive deployment documentation
 - Server deployment options (PM2, systemd, Docker)
 
-[Unreleased]: https://github.com/studiometa/productive-cli/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/studiometa/productive-cli/releases/tag/v0.1.0
+[Unreleased]: https://github.com/studiometa/productive-tools/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/studiometa/productive-tools/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/studiometa/productive-tools/compare/v0.1.0...v0.3.0
+[0.1.0]: https://github.com/studiometa/productive-tools/releases/tag/v0.1.0
