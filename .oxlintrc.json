@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "import", "vitest", "promise", "node"],
+  "plugins": ["typescript", "import", "vitest", "promise", "node", "unicorn"],
   "categories": {
     "correctness": "error",
     "suspicious": "warn"
@@ -10,6 +10,14 @@
     "es2024": true
   },
   "rules": {
+    // Security rules - prevent dangerous patterns
+    "no-eval": "error",
+    "no-new-func": "error",
+    "no-script-url": "error",
+    "typescript/no-implied-eval": "error",
+    "unicorn/no-new-buffer": "error",
+    "typescript/no-deprecated": "warn",
+
     // Complexity rules
     "complexity": ["warn", { "max": 50 }],
     "max-depth": ["warn", { "max": 5 }],

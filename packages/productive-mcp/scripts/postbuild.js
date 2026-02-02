@@ -12,9 +12,9 @@ for (const file of files) {
   const distFile = resolve(__dirname, '../dist', file);
   try {
     chmodSync(distFile, 0o755);
-    console.log(`✓ Made dist/${file} executable`);
+    console.log('✓ Made dist/%s executable', file);
   } catch (error) {
-    console.error(`Failed to make dist/${file} executable:`, error.message);
+    console.error('Failed to make dist/%s executable: %s', file, error.message);
     process.exit(1);
   }
 }

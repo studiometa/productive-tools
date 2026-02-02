@@ -82,7 +82,7 @@ export function decrypt(ciphertext: string, secret: string = getSecret()): strin
 
     const key = deriveKey(secret, salt);
 
-    const decipher = createDecipheriv(ALGORITHM, key, iv);
+    const decipher = createDecipheriv(ALGORITHM, key, iv, { authTagLength: AUTH_TAG_LENGTH });
     decipher.setAuthTag(authTag);
 
     const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);

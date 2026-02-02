@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Security Workflow** - Automated security scanning in CI (e0e5197, db471fa)
+  - npm audit for dependency vulnerabilities (fails on high severity)
+  - Semgrep for code security analysis and secret detection (blocking)
+  - Weekly scheduled scans on Sundays
+- **Renovate Configuration** - Automated dependency management (12f79cf)
+  - Weekly updates with auto-merge for security patches
+  - Grouped PRs for dev dependencies and GitHub Actions
+- **CODEOWNERS** - Required reviews for security-sensitive files (d9d8dc5)
+- **Pre-commit Hooks** - Code quality and secret detection (2462b82)
+  - husky + lint-staged for automated linting and formatting
+  - Semgrep secret detection (when installed locally)
+- **Security Lint Rules** - Enhanced oxlint configuration (3f4cb09)
+  - Block eval, new Function, script URLs
+  - Detect deprecated APIs and unsafe Buffer usage
+
+### Fixed
+
+- **Dockerfile** - Run container as non-root user for security (781dd4b)
+- **postbuild.js** - Use safe format strings to prevent log injection (f20c87d)
+- **crypto.ts** - Specify GCM auth tag length to prevent truncation attacks (e75a3f5)
+
+### Added
+
 - **Companies Resource** - Full CRUD support for companies/clients (86ba32e)
   - `companies list/get/add/update` commands
   - Human-readable and JSON output formats

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "security:openssf-scorecard",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":separateMajorReleases"
+  ],
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "schedule": ["before 9am on monday"],
+  "timezone": "Europe/Paris",
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  },
+  "packageRules": [
+    {
+      "description": "Group dev dependencies (minor/patch)",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "dev dependencies (non-major)"
+    },
+    {
+      "description": "Group production dependencies (patch only)",
+      "matchDepTypes": ["dependencies"],
+      "matchUpdateTypes": ["patch"],
+      "groupName": "production dependencies (patch)"
+    },
+    {
+      "description": "Group GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    },
+    {
+      "description": "Automerge patch updates for dev dependencies",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Security updates - high priority",
+      "matchCategories": ["security"],
+      "labels": ["security", "priority:high"],
+      "schedule": ["at any time"],
+      "automerge": true,
+      "automergeType": "pr"
+    }
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 9am on the first day of the month"]
+  }
+}
