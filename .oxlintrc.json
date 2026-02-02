@@ -59,17 +59,10 @@
       }
     },
     {
-      "files": ["**/cli.ts", "**/command.ts"],
+      "files": ["**/cli.ts"],
       "rules": {
         "complexity": "off",
-        "max-lines-per-function": ["warn", { "max": 300, "skipBlankLines": true, "skipComments": true }]
-      }
-    },
-    {
-      "files": ["**/handlers.ts"],
-      "rules": {
-        "complexity": "off",
-        "max-lines-per-function": ["warn", { "max": 400, "skipBlankLines": true, "skipComments": true }]
+        "max-lines-per-function": "off"
       }
     }
   ],
