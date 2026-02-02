@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Version is now dynamically injected from package.json at build time
+
 ### Added
 - **Monorepo Structure** - Restructured as npm workspace with separate packages (f74945b)
 - **Centralized Error Handling** - New error handling and context pattern for commands (07c5302, 1b399c4)

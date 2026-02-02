@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Version is now dynamically injected from package.json at build time
+
 ## [0.4.3] - 2026-02-02
 
 ### Fixed
