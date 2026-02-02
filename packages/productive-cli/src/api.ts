@@ -12,6 +12,7 @@ import type {
   ProductiveTimer,
   ProductiveDeal,
   ProductiveBooking,
+  ProductiveReport,
 } from "./types.js";
 import { getConfig } from "./config.js";
 import { getCache, type CacheStore } from "./utils/cache.js";
@@ -1016,6 +1017,37 @@ export class ProductiveApi {
           },
         },
       },
+    );
+  }
+
+  // Reports
+  async getReports(
+    reportType: string,
+    params?: {
+      page?: number;
+      perPage?: number;
+      filter?: Record<string, string>;
+      group?: string;
+      include?: string[];
+    },
+  ): Promise<ProductiveApiResponse<ProductiveReport[]>> {
+    const query: Record<string, string> = {};
+
+    if (params?.page) query["page[number]"] = String(params.page);
+    if (params?.perPage) query["page[size]"] = String(params.perPage);
+    if (params?.group) query["group"] = params.group;
+    if (params?.filter) {
+      Object.entries(params.filter).forEach(([key, value]) => {
+        query[`filter[${key}]`] = value;
+      });
+    }
+    if (params?.include?.length) {
+      query["include"] = params.include.join(",");
+    }
+
+    return this.request<ProductiveApiResponse<ProductiveReport[]>>(
+      `/reports/${reportType}`,
+      { query },
     );
   }
 }

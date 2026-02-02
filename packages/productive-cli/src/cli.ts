@@ -35,6 +35,10 @@ import {
   handleBookingsCommand,
   showBookingsHelp,
 } from "./commands/bookings/index.js";
+import {
+  handleReportsCommand,
+  showReportsHelp,
+} from "./commands/reports/index.js";
 import { handleCacheCommand, showCacheHelp } from "./commands/cache.js";
 import { handleApiCommand, showApiHelp } from "./commands/api.js";
 import {
@@ -117,6 +121,12 @@ ${colors.bold("COMMANDS:")}
     get <id>            Get booking details
     add                 Create booking
     update <id>         Update booking
+
+  reports             Generate reports
+    time                Time reports
+    project             Project reports
+    budget              Budget reports
+    person              Person reports
 
   cache               Manage CLI cache
     status              Show cache statistics
@@ -337,6 +347,18 @@ async function main(): Promise<void> {
           process.exit(0);
         }
         await handleBookingsCommand(subcommand || "list", positional, options);
+        break;
+
+      case "reports":
+        if (wantsHelp) {
+          showReportsHelp(subcommand);
+          process.exit(0);
+        }
+        if (!subcommand) {
+          showReportsHelp();
+          process.exit(0);
+        }
+        await handleReportsCommand(subcommand, positional, options);
         break;
 
       case "cache":

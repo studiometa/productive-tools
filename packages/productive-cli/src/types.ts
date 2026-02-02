@@ -262,6 +262,13 @@ export interface ProductiveComment {
   };
 }
 
+export interface ProductiveReport {
+  id: string;
+  type: string;
+  attributes: Record<string, unknown>;
+  relationships?: Record<string, RelationshipData>;
+}
+
 // CLI output formats for AI agents
 export type OutputFormat = "json" | "human" | "csv" | "table" | "kanban";
 
