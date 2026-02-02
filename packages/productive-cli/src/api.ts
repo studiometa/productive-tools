@@ -210,7 +210,23 @@ export class ProductiveApi {
     date: string;
     time: number;
     note?: string;
+    task_id?: string;
   }): Promise<ProductiveApiResponse<ProductiveTimeEntry>> {
+    const relationships: Record<string, { data: { type: string; id: string } }> = {
+      person: {
+        data: { type: "people", id: data.person_id },
+      },
+      service: {
+        data: { type: "services", id: data.service_id },
+      },
+    };
+
+    if (data.task_id) {
+      relationships.task = {
+        data: { type: "tasks", id: data.task_id },
+      };
+    }
+
     return this.request<ProductiveApiResponse<ProductiveTimeEntry>>(
       "/time_entries",
       {
@@ -223,14 +239,7 @@ export class ProductiveApi {
               time: data.time,
               note: data.note,
             },
-            relationships: {
-              person: {
-                data: { type: "people", id: data.person_id },
-              },
-              service: {
-                data: { type: "services", id: data.service_id },
-              },
-            },
+            relationships,
           },
         },
       },

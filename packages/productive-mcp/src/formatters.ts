@@ -3,6 +3,9 @@
  *
  * This module re-exports formatters from @studiometa/productive-cli
  * with MCP-specific defaults (no relationship IDs, no timestamps).
+ *
+ * Supports compact mode to reduce token usage by omitting verbose fields
+ * like descriptions and notes from list responses.
  */
 
 import {
@@ -34,13 +37,39 @@ const MCP_FORMAT_OPTIONS: FormatOptions = {
 };
 
 /**
+ * Extended format options for MCP with compact mode
+ */
+export interface McpFormatOptions {
+  compact?: boolean;
+  included?: JsonApiResource[];
+}
+
+/**
+ * Remove verbose fields from an object for compact output
+ */
+function compactify<T extends Record<string, unknown>>(
+  obj: T,
+  fieldsToRemove: string[]
+): T {
+  const result = { ...obj };
+  for (const field of fieldsToRemove) {
+    delete result[field];
+  }
+  return result;
+}
+
+/**
  * Format time entry for agent consumption
  */
 export function formatTimeEntry(
   entry: JsonApiResource,
-  _included?: JsonApiResource[]
+  options?: McpFormatOptions
 ): Record<string, unknown> {
-  return cliFormatTimeEntry(entry, MCP_FORMAT_OPTIONS);
+  const result = cliFormatTimeEntry(entry, MCP_FORMAT_OPTIONS);
+  if (options?.compact) {
+    return compactify(result, ['note', 'billable_time', 'approved']);
+  }
+  return result;
 }
 
 /**
@@ -48,9 +77,13 @@ export function formatTimeEntry(
  */
 export function formatProject(
   project: JsonApiResource,
-  _included?: JsonApiResource[]
+  options?: McpFormatOptions
 ): Record<string, unknown> {
-  return cliFormatProject(project, MCP_FORMAT_OPTIONS);
+  const result = cliFormatProject(project, MCP_FORMAT_OPTIONS);
+  if (options?.compact) {
+    return compactify(result, ['budget']);
+  }
+  return result;
 }
 
 /**
@@ -59,9 +92,20 @@ export function formatProject(
  */
 export function formatTask(
   task: JsonApiResource,
-  included?: JsonApiResource[]
+  options?: McpFormatOptions
 ): Record<string, unknown> {
-  return cliFormatTask(task, { ...MCP_FORMAT_OPTIONS, included });
+  const result = cliFormatTask(task, { ...MCP_FORMAT_OPTIONS, included: options?.included });
+  if (options?.compact) {
+    return compactify(result, [
+      'description',
+      'initial_estimate',
+      'worked_time',
+      'remaining_time',
+      'project', // Keep project_name but remove nested object
+      'company', // Keep company name inline if needed
+    ]);
+  }
+  return result;
 }
 
 /**
@@ -69,9 +113,13 @@ export function formatTask(
  */
 export function formatPerson(
   person: JsonApiResource,
-  _included?: JsonApiResource[]
+  options?: McpFormatOptions
 ): Record<string, unknown> {
-  return cliFormatPerson(person, MCP_FORMAT_OPTIONS);
+  const result = cliFormatPerson(person, MCP_FORMAT_OPTIONS);
+  if (options?.compact) {
+    return compactify(result, ['title', 'first_name', 'last_name']); // Keep 'name' which combines them
+  }
+  return result;
 }
 
 /**
@@ -79,33 +127,37 @@ export function formatPerson(
  */
 export function formatService(
   service: JsonApiResource,
-  _included?: JsonApiResource[]
+  options?: McpFormatOptions
 ): Record<string, unknown> {
-  return cliFormatService(service, MCP_FORMAT_OPTIONS);
+  const result = cliFormatService(service, MCP_FORMAT_OPTIONS);
+  if (options?.compact) {
+    return compactify(result, ['budgeted_time', 'worked_time']);
+  }
+  return result;
 }
 
 /**
  * Format list response with pagination
  *
  * @param data - Array of JSON:API resources
- * @param formatter - Formatter function (item, included?) => T
+ * @param formatter - Formatter function (item, options?) => T
  * @param meta - Pagination metadata
- * @param included - Included resources for relationship resolution
+ * @param options - MCP format options (compact, included)
  */
 export function formatListResponse<T>(
   data: JsonApiResource[],
-  formatter: (item: JsonApiResource, included?: JsonApiResource[]) => T,
+  formatter: (item: JsonApiResource, options?: McpFormatOptions) => T,
   meta?: JsonApiMeta,
-  included?: JsonApiResource[]
+  options?: McpFormatOptions
 ): { data: T[]; meta?: FormattedPagination } {
-  // Create a wrapper that converts (item, options?) signature to (item, included?) signature
-  const wrappedFormatter = (item: JsonApiResource, _options?: FormatOptions) => {
-    return formatter(item, included);
+  // Create a wrapper that passes MCP options to the formatter
+  const wrappedFormatter = (item: JsonApiResource, _cliOptions?: FormatOptions) => {
+    return formatter(item, options);
   };
 
   const result = cliFormatListResponse(data, wrappedFormatter, meta, {
     ...MCP_FORMAT_OPTIONS,
-    included,
+    included: options?.included,
   });
 
   return result as { data: T[]; meta?: FormattedPagination };

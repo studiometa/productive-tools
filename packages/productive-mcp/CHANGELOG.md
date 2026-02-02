@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING**: Consolidated 13 tools into single `productive` tool with `resource` and `action` parameters ([6f3836a], [b9b180b], [#4])
+- **BREAKING**: Old tool names (`productive_list_projects`, etc.) are no longer supported ([#4])
+- Token overhead reduced by 86% (~1,300 → ~180 tokens) ([#4])
+- Compact output mode now enabled by default for list responses ([#4])
+- Default page size reduced from 50 to 20 items ([#4])
+
+### Added
+- New unified `productive(resource, action, ...)` tool API ([#4])
+- `compact` parameter to toggle verbose fields in responses (default: true) ([#4])
+
+[6f3836a]: https://github.com/studiometa/productive-tools/commit/6f3836a
+[b9b180b]: https://github.com/studiometa/productive-tools/commit/b9b180b
+[#4]: https://github.com/studiometa/productive-tools/pull/4
+
 ## [0.4.6] - 2026-02-02
 
 ### Fixed

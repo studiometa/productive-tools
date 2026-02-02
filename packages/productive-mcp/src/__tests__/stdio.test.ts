@@ -43,9 +43,9 @@ describe('stdio handlers', () => {
       expect(Array.isArray(tools)).toBe(true);
       expect(tools.length).toBeGreaterThan(0);
 
-      // Should include regular tools
-      const listProjects = tools.find((t) => t.name === 'productive_list_projects');
-      expect(listProjects).toBeDefined();
+      // Should include single consolidated tool
+      const productive = tools.find((t) => t.name === 'productive');
+      expect(productive).toBeDefined();
 
       // Should include stdio-only tools
       const configure = tools.find((t) => t.name === 'productive_configure');
@@ -53,6 +53,11 @@ describe('stdio handlers', () => {
 
       const getConfig = tools.find((t) => t.name === 'productive_get_config');
       expect(getConfig).toBeDefined();
+    });
+
+    it('should have 3 total tools (1 main + 2 stdio-only)', () => {
+      const tools = getAvailableTools();
+      expect(tools.length).toBe(3);
     });
   });
 
@@ -207,11 +212,11 @@ describe('stdio handlers', () => {
         userId: 'test-user',
       });
 
-      await handleToolCall('productive_list_projects', { page: 1 });
+      await handleToolCall('productive', { resource: 'projects', action: 'list', page: 1 });
 
       expect(executeToolWithCredentials).toHaveBeenCalledWith(
-        'productive_list_projects',
-        { page: 1 },
+        'productive',
+        { resource: 'projects', action: 'list', page: 1 },
         {
           organizationId: 'test-org',
           apiToken: 'test-token',

@@ -13,6 +13,7 @@ MCP (Model Context Protocol) server for [Productive.io](https://productive.io) A
 - 🔑 **OAuth 2.0 support** for Claude Desktop custom connectors
 - 🌐 Deploy once, share with your team via Claude Desktop custom connectors
 - 🐳 Docker-ready for easy deployment
+- ⚡ **Token-optimized** - Single tool design minimizes context usage (~180 tokens)
 - 📦 Built on [@studiometa/productive-cli](../productive-cli)
 
 ## Usage Modes
@@ -192,34 +193,125 @@ echo -n "12345:pk_abc123xyz:67890" | base64
 
 ---
 
-## Available Tools
+## The `productive` Tool
 
-### Projects
-- `productive_list_projects` - List projects with optional filters
-- `productive_get_project` - Get project details by ID
+The MCP server exposes a single unified tool optimized for minimal token usage:
 
-### Tasks
-- `productive_list_tasks` - List tasks with optional filters
-- `productive_get_task` - Get task details by ID
+```
+productive(resource, action, ...)
+```
 
-### Time Entries
-- `productive_list_time_entries` - List time entries with filters
-- `productive_get_time_entry` - Get time entry details by ID
-- `productive_create_time_entry` - Create a new time entry
-- `productive_update_time_entry` - Update an existing time entry
-- `productive_delete_time_entry` - Delete a time entry
+### Resources & Actions
 
-### Services
-- `productive_list_services` - List services (budget line items)
+| Resource | Actions | Description |
+|----------|---------|-------------|
+| `projects` | `list`, `get` | Project management |
+| `time` | `list`, `get`, `create`, `update`, `delete` | Time tracking |
+| `tasks` | `list`, `get` | Task management |
+| `services` | `list` | Budget line items |
+| `people` | `list`, `get`, `me` | Team members |
 
-### People
-- `productive_list_people` - List people in the organization
-- `productive_get_person` - Get person details by ID
-- `productive_get_current_user` - Get current authenticated user
+### Parameters
 
-### Configuration (Local mode only)
-- `productive_configure` - Configure credentials
-- `productive_get_config` - View current configuration
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `resource` | string | **Required**. One of: `projects`, `time`, `tasks`, `services`, `people` |
+| `action` | string | **Required**. Action to perform (see table above) |
+| `id` | string | Resource ID (required for `get`, `update`, `delete`) |
+| `filter` | object | Filter criteria for `list` actions |
+| `page` | number | Page number for pagination |
+| `per_page` | number | Items per page (default: 20, max: 200) |
+| `compact` | boolean | Compact output mode (default: true) |
+| `person_id` | string | Person ID (for time entry creation) |
+| `service_id` | string | Service ID (for time entry creation) |
+| `time` | number | Time in minutes (for time entries) |
+| `date` | string | Date in YYYY-MM-DD format |
+| `note` | string | Note/description |
+
+### Filter Options
+
+#### Projects
+- `company_id` - Filter by company
+- `project_manager_id` - Filter by project manager
+
+#### Time Entries
+- `person_id` - Filter by person
+- `project_id` - Filter by project
+- `service_id` - Filter by service
+- `after` - After date (YYYY-MM-DD)
+- `before` - Before date (YYYY-MM-DD)
+
+#### Tasks
+- `project_id` - Filter by project
+- `assignee_id` - Filter by assignee
+- `task_list_id` - Filter by task list
+
+#### Services
+- `project_id` - Filter by project
+- `deal_id` - Filter by deal
+
+#### People
+- `archived` - Include archived (boolean)
+
+### Configuration Tools (Local mode only)
+
+| Tool | Description |
+|------|-------------|
+| `productive_configure` | Configure credentials (organizationId, apiToken, userId) |
+| `productive_get_config` | View current configuration (token masked) |
+
+---
+
+## Usage Examples
+
+### First Time Setup (Local Mode)
+
+```
+You: "Configure my Productive.io credentials"
+Claude: "I'll help you set up. Please provide your Organization ID and API Token..."
+```
+
+### List Projects
+
+```
+You: "Show me all projects"
+Claude uses: productive(resource="projects", action="list")
+```
+
+### Get Project Details
+
+```
+You: "Get details for project 12345"
+Claude uses: productive(resource="projects", action="get", id="12345")
+```
+
+### Create Time Entry
+
+```
+You: "Log 2 hours today on service 456"
+Claude uses: productive(resource="time", action="create", person_id="...", service_id="456", time=120, date="2024-01-15")
+```
+
+### List My Time Entries
+
+```
+You: "What did I work on last week?"
+Claude uses: productive(resource="time", action="list", filter={person_id: "...", after: "2024-01-08", before: "2024-01-14"})
+```
+
+### Get Current User
+
+```
+You: "Who am I logged in as?"
+Claude uses: productive(resource="people", action="me")
+```
+
+### List Tasks for a Project
+
+```
+You: "Show tasks for project 789"
+Claude uses: productive(resource="tasks", action="list", filter={project_id: "789"})
+```
 
 ---
 
@@ -233,31 +325,12 @@ echo -n "12345:pk_abc123xyz:67890" | base64
 
 ---
 
-## Usage Examples
-
-### First Time Setup (Local Mode)
-
-```
-You: "Configure my Productive.io credentials"
-Claude: "I'll help you set up. Please provide your Organization ID and API Token..."
-```
-
-### Common Queries
-
-- "Show me all active projects in Productive"
-- "Create a time entry for 2 hours today on project X"
-- "List all tasks assigned to me"
-- "What did I work on last week?"
-- "Show me the services/budgets for project 12345"
-
----
-
 ## Development
 
 ```bash
 # Clone the repository
-git clone https://github.com/studiometa/productive-cli
-cd productive-cli
+git clone https://github.com/studiometa/productive-tools
+cd productive-tools
 
 # Install dependencies
 npm install
@@ -270,6 +343,9 @@ npm run build -w @studiometa/productive-mcp
 
 # Development mode (watch)
 npm run dev -w @studiometa/productive-mcp
+
+# Run tests
+npm test -w @studiometa/productive-mcp
 
 # Test local server
 node packages/productive-mcp/dist/index.js
@@ -290,7 +366,7 @@ TOKEN=$(echo -n "YOUR_ORG_ID:YOUR_API_TOKEN:YOUR_USER_ID" | base64)
 # Test health endpoint
 curl http://localhost:3000/health
 
-# Test MCP endpoint
+# Test MCP endpoint - list tools
 curl -X POST http://localhost:3000/mcp \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -300,7 +376,13 @@ curl -X POST http://localhost:3000/mcp \
 curl -X POST http://localhost:3000/mcp \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"productive_list_projects","arguments":{}},"id":2}'
+  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"productive","arguments":{"resource":"projects","action":"list"}},"id":2}'
+
+# Get a specific project
+curl -X POST http://localhost:3000/mcp \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"productive","arguments":{"resource":"projects","action":"get","id":"12345"}},"id":3}'
 ```
 
 ---
@@ -353,12 +435,21 @@ productive-mcp/
 │   ├── http.ts       # HTTP routes and MCP endpoint
 │   ├── oauth.ts      # OAuth 2.0 endpoints
 │   ├── crypto.ts     # Encryption for stateless OAuth tokens
-│   ├── tools.ts      # Tool definitions (shared)
-│   ├── handlers.ts   # Tool execution (shared)
+│   ├── tools.ts      # Tool definitions (single unified tool)
+│   ├── handlers.ts   # Tool execution logic
+│   ├── formatters.ts # Response formatting with compact mode
 │   └── auth.ts       # Bearer token parsing
 ├── Dockerfile
 └── README.md
 ```
+
+### Token Optimization
+
+The server uses a single unified `productive` tool instead of multiple individual tools. This reduces the tool schema from ~1300 tokens to ~180 tokens (86% reduction), which:
+
+- Reduces context window usage
+- Minimizes compaction frequency
+- Improves response times
 
 ### OAuth Flow (Stateless)
 
@@ -386,8 +477,8 @@ MIT © [Studio Meta](https://www.studiometa.fr)
 
 ## Links
 
-- [GitHub Repository](https://github.com/studiometa/productive-cli)
+- [GitHub Repository](https://github.com/studiometa/productive-tools)
 - [Productive.io API Docs](https://developer.productive.io)
 - [MCP Documentation](https://modelcontextprotocol.io)
 - [Claude Desktop Custom Connectors](https://docs.anthropic.com)
-- [Issues](https://github.com/studiometa/productive-cli/issues)
+- [Issues](https://github.com/studiometa/productive-tools/issues)

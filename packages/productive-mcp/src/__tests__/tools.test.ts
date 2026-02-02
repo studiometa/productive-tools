@@ -3,97 +3,64 @@ import { TOOLS, STDIO_ONLY_TOOLS } from '../tools.js';
 
 describe('tools', () => {
   describe('TOOLS', () => {
-    it('should export an array of tools', () => {
+    it('should export a single consolidated tool', () => {
       expect(Array.isArray(TOOLS)).toBe(true);
-      expect(TOOLS.length).toBeGreaterThan(0);
+      expect(TOOLS.length).toBe(1);
+      expect(TOOLS[0].name).toBe('productive');
     });
 
-    it('should have valid tool structure for all tools', () => {
-      for (const tool of TOOLS) {
-        expect(tool).toHaveProperty('name');
-        expect(tool).toHaveProperty('description');
-        expect(tool).toHaveProperty('inputSchema');
-        expect(typeof tool.name).toBe('string');
-        expect(typeof tool.description).toBe('string');
-        expect(tool.inputSchema).toHaveProperty('type', 'object');
-      }
+    it('should have valid tool structure', () => {
+      const tool = TOOLS[0];
+      expect(tool).toHaveProperty('name');
+      expect(tool).toHaveProperty('description');
+      expect(tool).toHaveProperty('inputSchema');
+      expect(typeof tool.name).toBe('string');
+      expect(typeof tool.description).toBe('string');
+      expect(tool.inputSchema).toHaveProperty('type', 'object');
     });
 
-    it('should include project tools', () => {
-      const projectTools = TOOLS.filter(t => t.name.includes('project'));
-      expect(projectTools.length).toBeGreaterThanOrEqual(2);
-
-      const listProjects = TOOLS.find(t => t.name === 'productive_list_projects');
-      expect(listProjects).toBeDefined();
-      expect(listProjects?.inputSchema.properties).toHaveProperty('filter');
-      expect(listProjects?.inputSchema.properties).toHaveProperty('page');
-      expect(listProjects?.inputSchema.properties).toHaveProperty('per_page');
-
-      const getProject = TOOLS.find(t => t.name === 'productive_get_project');
-      expect(getProject).toBeDefined();
-      expect(getProject?.inputSchema.required).toContain('id');
+    it('should have resource enum with all resources', () => {
+      const tool = TOOLS[0];
+      const resourceProp = tool.inputSchema.properties?.resource as { enum?: string[] };
+      expect(resourceProp?.enum).toEqual(['projects', 'time', 'tasks', 'services', 'people']);
     });
 
-    it('should include time entry tools', () => {
-      const timeTools = TOOLS.filter(t => t.name.includes('time_entr'));
-      expect(timeTools.length).toBeGreaterThanOrEqual(5);
-
-      const createTimeEntry = TOOLS.find(t => t.name === 'productive_create_time_entry');
-      expect(createTimeEntry).toBeDefined();
-      expect(createTimeEntry?.inputSchema.required).toEqual(
-        expect.arrayContaining(['person_id', 'service_id', 'time', 'date'])
-      );
-
-      const updateTimeEntry = TOOLS.find(t => t.name === 'productive_update_time_entry');
-      expect(updateTimeEntry).toBeDefined();
-      expect(updateTimeEntry?.inputSchema.required).toContain('id');
-
-      const deleteTimeEntry = TOOLS.find(t => t.name === 'productive_delete_time_entry');
-      expect(deleteTimeEntry).toBeDefined();
-      expect(deleteTimeEntry?.inputSchema.required).toContain('id');
+    it('should have action enum with all actions', () => {
+      const tool = TOOLS[0];
+      const actionProp = tool.inputSchema.properties?.action as { enum?: string[] };
+      expect(actionProp?.enum).toEqual(['list', 'get', 'create', 'update', 'delete', 'me']);
     });
 
-    it('should include task tools', () => {
-      const listTasks = TOOLS.find(t => t.name === 'productive_list_tasks');
-      expect(listTasks).toBeDefined();
-
-      const getTask = TOOLS.find(t => t.name === 'productive_get_task');
-      expect(getTask).toBeDefined();
-      expect(getTask?.inputSchema.required).toContain('id');
+    it('should require resource and action', () => {
+      const tool = TOOLS[0];
+      expect(tool.inputSchema.required).toEqual(['resource', 'action']);
     });
 
-    it('should include people tools', () => {
-      const listPeople = TOOLS.find(t => t.name === 'productive_list_people');
-      expect(listPeople).toBeDefined();
-
-      const getPerson = TOOLS.find(t => t.name === 'productive_get_person');
-      expect(getPerson).toBeDefined();
-      expect(getPerson?.inputSchema.required).toContain('id');
-
-      const getCurrentUser = TOOLS.find(t => t.name === 'productive_get_current_user');
-      expect(getCurrentUser).toBeDefined();
+    it('should have common parameters', () => {
+      const tool = TOOLS[0];
+      const props = tool.inputSchema.properties;
+      expect(props).toHaveProperty('id');
+      expect(props).toHaveProperty('filter');
+      expect(props).toHaveProperty('page');
+      expect(props).toHaveProperty('per_page');
+      expect(props).toHaveProperty('compact');
     });
 
-    it('should include service tools', () => {
-      const listServices = TOOLS.find(t => t.name === 'productive_list_services');
-      expect(listServices).toBeDefined();
-    });
-
-    it('should have proper filter schemas', () => {
-      const listProjects = TOOLS.find(t => t.name === 'productive_list_projects');
-      const filterProps = listProjects?.inputSchema.properties?.filter as { properties?: Record<string, unknown> };
-      
-      expect(filterProps).toBeDefined();
-      expect(filterProps?.properties).toHaveProperty('board_id');
-      expect(filterProps?.properties).toHaveProperty('company_id');
-      expect(filterProps?.properties).toHaveProperty('project_manager_id');
+    it('should have time entry specific parameters', () => {
+      const tool = TOOLS[0];
+      const props = tool.inputSchema.properties;
+      expect(props).toHaveProperty('person_id');
+      expect(props).toHaveProperty('service_id');
+      expect(props).toHaveProperty('time');
+      expect(props).toHaveProperty('date');
+      expect(props).toHaveProperty('note');
     });
   });
 
   describe('STDIO_ONLY_TOOLS', () => {
     it('should export an array of tools', () => {
       expect(Array.isArray(STDIO_ONLY_TOOLS)).toBe(true);
-      expect(STDIO_ONLY_TOOLS.length).toBeGreaterThan(0);
+      expect(STDIO_ONLY_TOOLS.length).toBe(2);
     });
 
     it('should include configure tool', () => {
@@ -108,40 +75,19 @@ describe('tools', () => {
       const getConfigTool = STDIO_ONLY_TOOLS.find(t => t.name === 'productive_get_config');
       expect(getConfigTool).toBeDefined();
     });
-
-    it('should have valid tool structure', () => {
-      for (const tool of STDIO_ONLY_TOOLS) {
-        expect(tool).toHaveProperty('name');
-        expect(tool).toHaveProperty('description');
-        expect(tool).toHaveProperty('inputSchema');
-        expect(tool.name).toMatch(/^productive_/);
-      }
-    });
   });
 
-  describe('tool naming conventions', () => {
-    it('all tools should start with productive_ prefix', () => {
-      const allTools = [...TOOLS, ...STDIO_ONLY_TOOLS];
-      for (const tool of allTools) {
-        expect(tool.name).toMatch(/^productive_/);
-      }
+  describe('token optimization', () => {
+    it('should have minimal tool schema size', () => {
+      const totalSize = JSON.stringify(TOOLS).length;
+      // Single tool should be under 800 bytes
+      expect(totalSize).toBeLessThan(800);
     });
 
-    it('list tools should have _list_ in name', () => {
-      const listTools = TOOLS.filter(t => t.description.toLowerCase().includes('list'));
-      for (const tool of listTools) {
-        expect(tool.name).toMatch(/_list_/);
-      }
-    });
-
-    it('get tools should have _get_ in name', () => {
-      const getTools = TOOLS.filter(t => 
-        t.description.toLowerCase().includes('get details') ||
-        t.description.toLowerCase().includes('get the current')
-      );
-      for (const tool of getTools) {
-        expect(tool.name).toMatch(/_get_/);
-      }
+    it('should estimate under 200 tokens', () => {
+      const totalSize = JSON.stringify(TOOLS).length;
+      const estimatedTokens = Math.ceil(totalSize / 4);
+      expect(estimatedTokens).toBeLessThan(200);
     });
   });
 });
