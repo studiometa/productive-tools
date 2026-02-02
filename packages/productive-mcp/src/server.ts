@@ -47,12 +47,21 @@ export function startHttpServer(
       console.log(`  POST http://${displayHost}:${port}/mcp - MCP JSON-RPC endpoint`);
       console.log(`  GET  http://${displayHost}:${port}/health - Health check`);
       console.log('');
-      console.log('Authentication:');
-      console.log('  Pass Bearer token in Authorization header');
-      console.log('  Token format: base64(organizationId:apiToken:userId)');
+      console.log('OAuth 2.0 (for Claude Desktop):');
+      console.log(`  GET  http://${displayHost}:${port}/.well-known/oauth-authorization-server`);
+      console.log(`  GET  http://${displayHost}:${port}/authorize - Authorization endpoint`);
+      console.log(`  POST http://${displayHost}:${port}/token - Token endpoint`);
       console.log('');
-      console.log('Generate token:');
-      console.log('  echo -n "ORG_ID:API_TOKEN:USER_ID" | base64');
+      console.log('Authentication:');
+      console.log('  Option 1: OAuth flow (Claude Desktop will handle this automatically)');
+      console.log('  Option 2: Bearer token in Authorization header');
+      console.log('            Token format: base64(organizationId:apiToken:userId)');
+      console.log('');
+      if (!process.env.OAUTH_SECRET) {
+        console.log('⚠️  WARNING: OAUTH_SECRET not set. Set it in production!');
+        console.log('   export OAUTH_SECRET="your-random-secret-here"');
+        console.log('');
+      }
       resolve(server);
     });
   });

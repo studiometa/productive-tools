@@ -18,6 +18,12 @@ import {
 import { TOOLS } from './tools.js';
 import { executeToolWithCredentials } from './handlers.js';
 import { parseAuthHeader } from './auth.js';
+import {
+  oauthMetadataHandler,
+  authorizeGetHandler,
+  authorizePostHandler,
+  tokenHandler,
+} from './oauth.js';
 
 /**
  * JSON-RPC error response
@@ -70,6 +76,12 @@ export function handleToolsList() {
 export function createHttpApp(): App {
   const app = createApp();
   const router = createRouter();
+
+  // OAuth 2.0 endpoints for Claude Desktop integration
+  router.get('/.well-known/oauth-authorization-server', oauthMetadataHandler);
+  router.get('/authorize', authorizeGetHandler);
+  router.post('/authorize', authorizePostHandler);
+  router.post('/token', tokenHandler);
 
   // Health check endpoint
   router.get(
