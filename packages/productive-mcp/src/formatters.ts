@@ -14,6 +14,11 @@ import {
   formatTask as cliFormatTask,
   formatPerson as cliFormatPerson,
   formatService as cliFormatService,
+  formatCompany as cliFormatCompany,
+  formatComment as cliFormatComment,
+  formatTimer as cliFormatTimer,
+  formatDeal as cliFormatDeal,
+  formatBooking as cliFormatBooking,
   formatListResponse as cliFormatListResponse,
   type JsonApiResource,
   type JsonApiMeta,
@@ -132,6 +137,70 @@ export function formatService(
   const result = cliFormatService(service, MCP_FORMAT_OPTIONS);
   if (options?.compact) {
     return compactify(result, ['budgeted_time', 'worked_time']);
+  }
+  return result;
+}
+
+/**
+ * Format company for agent consumption
+ */
+export function formatCompany(
+  company: JsonApiResource,
+  options?: McpFormatOptions
+): Record<string, unknown> {
+  const result = cliFormatCompany(company, MCP_FORMAT_OPTIONS);
+  if (options?.compact) {
+    return compactify(result, ['billing_name', 'domain', 'due_days']);
+  }
+  return result;
+}
+
+/**
+ * Format comment for agent consumption
+ */
+export function formatComment(
+  comment: JsonApiResource,
+  options?: McpFormatOptions
+): Record<string, unknown> {
+  const result = cliFormatComment(comment, { ...MCP_FORMAT_OPTIONS, included: options?.included });
+  return result;
+}
+
+/**
+ * Format timer for agent consumption
+ */
+export function formatTimer(
+  timer: JsonApiResource,
+  options?: McpFormatOptions
+): Record<string, unknown> {
+  const result = cliFormatTimer(timer, MCP_FORMAT_OPTIONS);
+  return result;
+}
+
+/**
+ * Format deal for agent consumption
+ */
+export function formatDeal(
+  deal: JsonApiResource,
+  options?: McpFormatOptions
+): Record<string, unknown> {
+  const result = cliFormatDeal(deal, { ...MCP_FORMAT_OPTIONS, included: options?.included });
+  if (options?.compact) {
+    return compactify(result, ['won_at', 'lost_at']);
+  }
+  return result;
+}
+
+/**
+ * Format booking for agent consumption
+ */
+export function formatBooking(
+  booking: JsonApiResource,
+  options?: McpFormatOptions
+): Record<string, unknown> {
+  const result = cliFormatBooking(booking, { ...MCP_FORMAT_OPTIONS, included: options?.included });
+  if (options?.compact) {
+    return compactify(result, ['approved_at', 'rejected_at', 'rejected_reason']);
   }
   return result;
 }

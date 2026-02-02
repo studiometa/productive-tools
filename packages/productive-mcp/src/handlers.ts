@@ -15,6 +15,11 @@ import {
   formatProject,
   formatPerson,
   formatService,
+  formatCompany,
+  formatComment,
+  formatTimer,
+  formatDeal,
+  formatBooking,
   formatListResponse,
   type McpFormatOptions,
 } from './formatters.js';
@@ -61,20 +66,38 @@ function toStringFilter(filter?: Record<string, unknown>): Record<string, string
  * Args interface for the consolidated tool
  */
 interface ProductiveArgs {
-  resource: 'projects' | 'time' | 'tasks' | 'services' | 'people';
-  action: 'list' | 'get' | 'create' | 'update' | 'delete' | 'me';
+  resource: 'projects' | 'time' | 'tasks' | 'services' | 'people' | 'companies' | 'comments' | 'timers' | 'deals' | 'bookings';
+  action: 'list' | 'get' | 'create' | 'update' | 'me' | 'start' | 'stop';
   id?: string;
   filter?: Record<string, unknown>;
   page?: number;
   per_page?: number;
   compact?: boolean;
-  // Time entry fields
+  // Common fields
   person_id?: string;
   service_id?: string;
   task_id?: string;
+  company_id?: string;
   time?: number;
   date?: string;
   note?: string;
+  // Task fields
+  title?: string;
+  project_id?: string;
+  task_list_id?: string;
+  description?: string;
+  assignee_id?: string;
+  // Company fields
+  name?: string;
+  // Comment fields
+  body?: string;
+  deal_id?: string;
+  // Timer fields
+  time_entry_id?: string;
+  // Booking fields
+  started_on?: string;
+  ended_on?: string;
+  event_id?: string;
 }
 
 /**
@@ -105,9 +128,27 @@ export async function executeToolWithCredentials(
       person_id,
       service_id,
       task_id,
+      company_id,
       time,
       date,
       note,
+      // Task fields
+      title,
+      project_id,
+      task_list_id,
+      description,
+      assignee_id,
+      // Company fields
+      name,
+      // Comment fields
+      body,
+      deal_id,
+      // Timer fields
+      time_entry_id,
+      // Booking fields
+      started_on,
+      ended_on,
+      event_id,
     } = args as unknown as ProductiveArgs;
 
     const formatOptions: McpFormatOptions = { compact };
@@ -168,11 +209,7 @@ export async function executeToolWithCredentials(
           return jsonResult({ success: true, ...formatTimeEntry(result.data, formatOptions) });
         }
 
-        if (action === 'delete') {
-          if (!id) return errorResult('id is required for delete action');
-          await api.deleteTimeEntry(id);
-          return jsonResult({ success: true, message: 'Time entry deleted' });
-        }
+
 
         if (action === 'list') {
           const result = await api.getTimeEntries({ filter: stringFilter, page, perPage });
@@ -181,7 +218,7 @@ export async function executeToolWithCredentials(
           );
         }
 
-        return errorResult(`Invalid action "${action}" for time. Use: list, get, create, update, delete`);
+        return errorResult(`Invalid action "${action}" for time. Use: list, get, create, update`);
       }
 
       // ========================================================================
@@ -198,6 +235,30 @@ export async function executeToolWithCredentials(
           );
         }
 
+        if (action === 'create') {
+          if (!title || !project_id || !task_list_id) {
+            return errorResult('title, project_id, and task_list_id are required for create');
+          }
+          const result = await api.createTask({
+            title,
+            project_id,
+            task_list_id,
+            assignee_id,
+            description,
+          });
+          return jsonResult({ success: true, ...formatTask(result.data, formatOptions) });
+        }
+
+        if (action === 'update') {
+          if (!id) return errorResult('id is required for update action');
+          const updateData: Parameters<typeof api.updateTask>[1] = {};
+          if (title !== undefined) updateData.title = title;
+          if (description !== undefined) updateData.description = description;
+          if (assignee_id !== undefined) updateData.assignee_id = assignee_id;
+          const result = await api.updateTask(id, updateData);
+          return jsonResult({ success: true, ...formatTask(result.data, formatOptions) });
+        }
+
         if (action === 'list') {
           const result = await api.getTasks({ filter: stringFilter, page, perPage, include });
           return jsonResult(
@@ -208,7 +269,7 @@ export async function executeToolWithCredentials(
           );
         }
 
-        return errorResult(`Invalid action "${action}" for tasks. Use: list, get`);
+        return errorResult(`Invalid action "${action}" for tasks. Use: list, get, create, update`);
       }
 
       // ========================================================================
@@ -254,6 +315,210 @@ export async function executeToolWithCredentials(
         }
 
         return errorResult(`Invalid action "${action}" for people. Use: list, get, me`);
+      }
+
+      // ========================================================================
+      // Companies
+      // ========================================================================
+      if (resource === 'companies') {
+        if (action === 'get') {
+          if (!id) return errorResult('id is required for get action');
+          const result = await api.getCompany(id);
+          return jsonResult(formatCompany(result.data, formatOptions));
+        }
+
+        if (action === 'create') {
+          if (!name) return errorResult('name is required for create');
+          const result = await api.createCompany({ name });
+          return jsonResult({ success: true, ...formatCompany(result.data, formatOptions) });
+        }
+
+        if (action === 'update') {
+          if (!id) return errorResult('id is required for update action');
+          const updateData: Parameters<typeof api.updateCompany>[1] = {};
+          if (name !== undefined) updateData.name = name;
+          const result = await api.updateCompany(id, updateData);
+          return jsonResult({ success: true, ...formatCompany(result.data, formatOptions) });
+        }
+
+        if (action === 'list') {
+          const result = await api.getCompanies({ filter: stringFilter, page, perPage });
+          return jsonResult(
+            formatListResponse(result.data, formatCompany, result.meta, formatOptions)
+          );
+        }
+
+        return errorResult(`Invalid action "${action}" for companies. Use: list, get, create, update`);
+      }
+
+      // ========================================================================
+      // Comments
+      // ========================================================================
+      if (resource === 'comments') {
+        if (action === 'get') {
+          if (!id) return errorResult('id is required for get action');
+          const result = await api.getComment(id, { include: ['creator'] });
+          return jsonResult(formatComment(result.data, { ...formatOptions, included: result.included }));
+        }
+
+        if (action === 'create') {
+          if (!body) return errorResult('body is required for create');
+          if (!task_id && !deal_id && !company_id) {
+            return errorResult('task_id, deal_id, or company_id is required for create');
+          }
+          const result = await api.createComment({
+            body,
+            task_id,
+            deal_id,
+            company_id,
+          });
+          return jsonResult({ success: true, ...formatComment(result.data, formatOptions) });
+        }
+
+        if (action === 'update') {
+          if (!id) return errorResult('id is required for update action');
+          if (!body) return errorResult('body is required for update');
+          const result = await api.updateComment(id, { body });
+          return jsonResult({ success: true, ...formatComment(result.data, formatOptions) });
+        }
+
+        if (action === 'list') {
+          const result = await api.getComments({ filter: stringFilter, page, perPage, include: ['creator'] });
+          return jsonResult(
+            formatListResponse(result.data, formatComment, result.meta, {
+              ...formatOptions,
+              included: result.included,
+            })
+          );
+        }
+
+        return errorResult(`Invalid action "${action}" for comments. Use: list, get, create, update`);
+      }
+
+      // ========================================================================
+      // Timers
+      // ========================================================================
+      if (resource === 'timers') {
+        if (action === 'get') {
+          if (!id) return errorResult('id is required for get action');
+          const result = await api.getTimer(id);
+          return jsonResult(formatTimer(result.data, formatOptions));
+        }
+
+        if (action === 'start' || action === 'create') {
+          if (!service_id && !time_entry_id) {
+            return errorResult('service_id or time_entry_id is required to start a timer');
+          }
+          const result = await api.startTimer({ service_id, time_entry_id });
+          return jsonResult({ success: true, ...formatTimer(result.data, formatOptions) });
+        }
+
+        if (action === 'stop') {
+          if (!id) return errorResult('id is required to stop a timer');
+          const result = await api.stopTimer(id);
+          return jsonResult({ success: true, ...formatTimer(result.data, formatOptions) });
+        }
+
+        if (action === 'list') {
+          const result = await api.getTimers({ filter: stringFilter, page, perPage });
+          return jsonResult(
+            formatListResponse(result.data, formatTimer, result.meta, formatOptions)
+          );
+        }
+
+        return errorResult(`Invalid action "${action}" for timers. Use: list, get, start, stop`);
+      }
+
+      // ========================================================================
+      // Deals
+      // ========================================================================
+      if (resource === 'deals') {
+        if (action === 'get') {
+          if (!id) return errorResult('id is required for get action');
+          const result = await api.getDeal(id, { include: ['company', 'deal_status', 'responsible'] });
+          return jsonResult(formatDeal(result.data, { ...formatOptions, included: result.included }));
+        }
+
+        if (action === 'create') {
+          if (!name || !company_id) {
+            return errorResult('name and company_id are required for create');
+          }
+          const result = await api.createDeal({ name, company_id });
+          return jsonResult({ success: true, ...formatDeal(result.data, formatOptions) });
+        }
+
+        if (action === 'update') {
+          if (!id) return errorResult('id is required for update action');
+          const updateData: Parameters<typeof api.updateDeal>[1] = {};
+          if (name !== undefined) updateData.name = name;
+          const result = await api.updateDeal(id, updateData);
+          return jsonResult({ success: true, ...formatDeal(result.data, formatOptions) });
+        }
+
+        if (action === 'list') {
+          const result = await api.getDeals({ filter: stringFilter, page, perPage, include: ['company', 'deal_status'] });
+          return jsonResult(
+            formatListResponse(result.data, formatDeal, result.meta, {
+              ...formatOptions,
+              included: result.included,
+            })
+          );
+        }
+
+        return errorResult(`Invalid action "${action}" for deals. Use: list, get, create, update`);
+      }
+
+      // ========================================================================
+      // Bookings
+      // ========================================================================
+      if (resource === 'bookings') {
+        if (action === 'get') {
+          if (!id) return errorResult('id is required for get action');
+          const result = await api.getBooking(id, { include: ['person', 'service'] });
+          return jsonResult(formatBooking(result.data, { ...formatOptions, included: result.included }));
+        }
+
+        if (action === 'create') {
+          if (!person_id || !started_on || !ended_on) {
+            return errorResult('person_id, started_on, and ended_on are required for create');
+          }
+          if (!service_id && !event_id) {
+            return errorResult('service_id or event_id is required for create');
+          }
+          const result = await api.createBooking({
+            person_id,
+            service_id,
+            event_id,
+            started_on,
+            ended_on,
+            time,
+            note,
+          });
+          return jsonResult({ success: true, ...formatBooking(result.data, formatOptions) });
+        }
+
+        if (action === 'update') {
+          if (!id) return errorResult('id is required for update action');
+          const updateData: Parameters<typeof api.updateBooking>[1] = {};
+          if (started_on !== undefined) updateData.started_on = started_on;
+          if (ended_on !== undefined) updateData.ended_on = ended_on;
+          if (time !== undefined) updateData.time = time;
+          if (note !== undefined) updateData.note = note;
+          const result = await api.updateBooking(id, updateData);
+          return jsonResult({ success: true, ...formatBooking(result.data, formatOptions) });
+        }
+
+        if (action === 'list') {
+          const result = await api.getBookings({ filter: stringFilter, page, perPage, include: ['person', 'service'] });
+          return jsonResult(
+            formatListResponse(result.data, formatBooking, result.meta, {
+              ...formatOptions,
+              included: result.included,
+            })
+          );
+        }
+
+        return errorResult(`Invalid action "${action}" for bookings. Use: list, get, create, update`);
       }
 
       return errorResult(`Unknown resource: ${resource}`);
