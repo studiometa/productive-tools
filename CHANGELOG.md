@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **MCP**: `include` parameter to fetch related resources in a single request ([34019d6], [#12])
+- **MCP**: `help` action for resource-specific documentation with filters, fields, and examples ([5c7c67b], [#12])
+- **MCP**: `query` parameter for text search on list actions ([ce971b8], [#12])
 - **CLI**: 7 new report types for advanced reporting ([c851dff], [#11])
   - `invoice` - Invoice amounts, status, outstanding balances
   - `payment` - Payment tracking and cash flow
@@ -19,10 +22,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `timesheet` - Timesheet approval status
 - **MCP**: Reports resource with 11 report types ([97c20e0], [#11])
 
+### Changed
+
+- **MCP**: Smart `compact` defaults - `false` for `get` actions, `true` for `list` ([34019d6], [#12])
+
+[34019d6]: https://github.com/studiometa/productive-tools/commit/34019d6
+[5c7c67b]: https://github.com/studiometa/productive-tools/commit/5c7c67b
+[ce971b8]: https://github.com/studiometa/productive-tools/commit/ce971b8
 [c851dff]: https://github.com/studiometa/productive-tools/commit/c851dff
 [97c20e0]: https://github.com/studiometa/productive-tools/commit/97c20e0
 [43897fa]: https://github.com/studiometa/productive-tools/commit/43897fa
 [#11]: https://github.com/studiometa/productive-tools/pull/11
+[#12]: https://github.com/studiometa/productive-tools/pull/12
 
 ## [0.6.4] - 2026-02-02
 
