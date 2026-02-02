@@ -2,10 +2,11 @@
  * Shell completion installation command
  */
 
-import { existsSync, mkdirSync, writeFileSync, chmodSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
-import { colors } from "../utils/colors.js";
+import { existsSync, mkdirSync, writeFileSync, chmodSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+
+import { colors } from '../utils/colors.js';
 
 const BASH_COMPLETION = `#!/usr/bin/env bash
 
@@ -440,13 +441,13 @@ function getCompletionPath(shell: string): string | null {
   const home = homedir();
 
   switch (shell) {
-    case "bash": {
+    case 'bash': {
       // Check common bash completion directories
       const paths = [
-        "/usr/local/etc/bash_completion.d",
-        "/etc/bash_completion.d",
-        join(home, ".local/share/bash-completion/completions"),
-        join(home, ".bash_completion.d"),
+        '/usr/local/etc/bash_completion.d',
+        '/etc/bash_completion.d',
+        join(home, '.local/share/bash-completion/completions'),
+        join(home, '.bash_completion.d'),
       ];
 
       // Return first writable directory, or create user directory
@@ -454,10 +455,10 @@ function getCompletionPath(shell: string): string | null {
         if (existsSync(dir)) {
           try {
             // Test if directory is writable
-            const testFile = join(dir, ".write-test");
-            writeFileSync(testFile, "");
-            require("fs").unlinkSync(testFile);
-            return join(dir, "productive");
+            const testFile = join(dir, '.write-test');
+            writeFileSync(testFile, '');
+            require('fs').unlinkSync(testFile);
+            return join(dir, 'productive');
           } catch {
             continue;
           }
@@ -465,27 +466,27 @@ function getCompletionPath(shell: string): string | null {
       }
 
       // Create user-local directory if none are writable
-      const userPath = join(home, ".local/share/bash-completion/completions");
+      const userPath = join(home, '.local/share/bash-completion/completions');
       mkdirSync(userPath, { recursive: true });
-      return join(userPath, "productive");
+      return join(userPath, 'productive');
     }
 
-    case "zsh": {
+    case 'zsh': {
       // Check common zsh completion directories
       const paths = [
-        join(home, ".local/share/zsh/site-functions"),
-        join(home, ".zsh/completions"),
-        "/usr/local/share/zsh/site-functions",
+        join(home, '.local/share/zsh/site-functions'),
+        join(home, '.zsh/completions'),
+        '/usr/local/share/zsh/site-functions',
       ];
 
       // Return first writable directory, or create user directory
       for (const dir of paths) {
         if (existsSync(dir)) {
           try {
-            const testFile = join(dir, ".write-test");
-            writeFileSync(testFile, "");
-            require("fs").unlinkSync(testFile);
-            return join(dir, "_productive");
+            const testFile = join(dir, '.write-test');
+            writeFileSync(testFile, '');
+            require('fs').unlinkSync(testFile);
+            return join(dir, '_productive');
           } catch {
             continue;
           }
@@ -493,17 +494,17 @@ function getCompletionPath(shell: string): string | null {
       }
 
       // Create user-local directory if none are writable
-      const userPath = join(home, ".local/share/zsh/site-functions");
+      const userPath = join(home, '.local/share/zsh/site-functions');
       mkdirSync(userPath, { recursive: true });
-      return join(userPath, "_productive");
+      return join(userPath, '_productive');
     }
 
-    case "fish": {
+    case 'fish': {
       // Fish uses XDG directories
-      const configHome = process.env.XDG_CONFIG_HOME || join(home, ".config");
-      const fishPath = join(configHome, "fish/completions");
+      const configHome = process.env.XDG_CONFIG_HOME || join(home, '.config');
+      const fishPath = join(configHome, 'fish/completions');
       mkdirSync(fishPath, { recursive: true });
-      return join(fishPath, "productive.fish");
+      return join(fishPath, 'productive.fish');
     }
 
     default:
@@ -513,55 +514,55 @@ function getCompletionPath(shell: string): string | null {
 
 export function showCompletionHelp(): void {
   console.log(`
-${colors.bold("productive completion")} - Install shell completion
+${colors.bold('productive completion')} - Install shell completion
 
-${colors.bold("USAGE:")}
+${colors.bold('USAGE:')}
   productive completion <shell> [--print]
 
-${colors.bold("SHELLS:")}
+${colors.bold('SHELLS:')}
   bash                Install Bash completion
   zsh                 Install Zsh completion
   fish                Install Fish completion
 
-${colors.bold("OPTIONS:")}
+${colors.bold('OPTIONS:')}
   --print             Print completion script instead of installing
 
-${colors.bold("INSTALLATION:")}
+${colors.bold('INSTALLATION:')}
   The completion script is automatically installed to the appropriate
   standard directory for your shell. After installation, restart your
   shell to activate completions.
 
-  ${colors.bold("Bash:")}
+  ${colors.bold('Bash:')}
     productive completion bash
     # Installs to: ~/.local/share/bash-completion/completions/productive
     # Then run: exec bash
 
-  ${colors.bold("Zsh:")}
+  ${colors.bold('Zsh:')}
     productive completion zsh
     # Installs to: ~/.local/share/zsh/site-functions/_productive
     # Then run: exec zsh
     # Note: Ensure fpath includes the installation directory
 
-  ${colors.bold("Fish:")}
+  ${colors.bold('Fish:')}
     productive completion fish
     # Installs to: ~/.config/fish/completions/productive.fish
     # Completions are loaded automatically
 
-${colors.bold("PRINT ONLY:")}
+${colors.bold('PRINT ONLY:')}
   Use --print to output the script without installing:
 
   productive completion bash --print > my-completion.sh
   productive completion zsh --print | less
 
-${colors.bold("TROUBLESHOOTING:")}
-  ${colors.bold("Bash:")} If completions don't work, ensure bash-completion is installed
+${colors.bold('TROUBLESHOOTING:')}
+  ${colors.bold('Bash:')} If completions don't work, ensure bash-completion is installed
   and add this to your ~/.bashrc if not already present:
 
     if [ -f ~/.local/share/bash-completion/completions/productive ]; then
       . ~/.local/share/bash-completion/completions/productive
     fi
 
-  ${colors.bold("Zsh:")} If completions don't work, ensure the directory is in fpath.
+  ${colors.bold('Zsh:')} If completions don't work, ensure the directory is in fpath.
   Add this to your ~/.zshrc before compinit:
 
     fpath=(~/.local/share/zsh/site-functions $fpath)
@@ -573,9 +574,9 @@ export function handleCompletionCommand(
   options: Record<string, unknown> = {},
 ): void {
   const shell = args[0];
-  const shouldPrint = options.print !== undefined || args.includes("--print");
+  const shouldPrint = options.print !== undefined || args.includes('--print');
 
-  if (!shell || shell === "help" || shell === "--help" || shell === "-h") {
+  if (!shell || shell === 'help' || shell === '--help' || shell === '-h') {
     showCompletionHelp();
     return;
   }
@@ -585,22 +586,20 @@ export function handleCompletionCommand(
   // Get completion script
   let script: string;
   switch (shellLower) {
-    case "bash":
+    case 'bash':
       script = BASH_COMPLETION;
       break;
-    case "zsh":
+    case 'zsh':
       script = ZSH_COMPLETION;
       break;
-    case "fish":
+    case 'fish':
       script = FISH_COMPLETION;
       break;
     default:
       console.error(
-        `${colors.red("✗")} Unknown shell: ${shell}. Supported shells: bash, zsh, fish`,
+        `${colors.red('✗')} Unknown shell: ${shell}. Supported shells: bash, zsh, fish`,
       );
-      console.error(
-        `Run ${colors.cyan("productive completion help")} for usage information.`,
-      );
+      console.error(`Run ${colors.cyan('productive completion help')} for usage information.`);
       process.exit(1);
   }
 
@@ -614,51 +613,43 @@ export function handleCompletionCommand(
   const installPath = getCompletionPath(shellLower);
 
   if (!installPath) {
-    console.error(
-      `${colors.red("✗")} Could not determine installation path for ${shell}`,
-    );
+    console.error(`${colors.red('✗')} Could not determine installation path for ${shell}`);
     process.exit(1);
   }
 
   try {
-    writeFileSync(installPath, script, "utf8");
+    writeFileSync(installPath, script, 'utf8');
 
     // Make executable for bash
-    if (shellLower === "bash") {
+    if (shellLower === 'bash') {
       chmodSync(installPath, 0o755);
     }
 
     console.log(
-      `${colors.green("✓")} Installed ${shell} completion to ${colors.cyan(installPath)}`,
+      `${colors.green('✓')} Installed ${shell} completion to ${colors.cyan(installPath)}`,
     );
     console.log();
-    console.log(`${colors.bold("Next steps:")}`);
+    console.log(`${colors.bold('Next steps:')}`);
 
     switch (shellLower) {
-      case "bash":
-        console.log(`  1. Restart your shell: ${colors.cyan("exec bash")}`);
-        console.log(
-          `  2. Or source your profile: ${colors.cyan("source ~/.bashrc")}`,
-        );
+      case 'bash':
+        console.log(`  1. Restart your shell: ${colors.cyan('exec bash')}`);
+        console.log(`  2. Or source your profile: ${colors.cyan('source ~/.bashrc')}`);
         break;
-      case "zsh":
+      case 'zsh':
         console.log(
-          `  1. Ensure ${colors.cyan("~/.local/share/zsh/site-functions")} is in your $fpath`,
+          `  1. Ensure ${colors.cyan('~/.local/share/zsh/site-functions')} is in your $fpath`,
         );
-        console.log(`  2. Restart your shell: ${colors.cyan("exec zsh")}`);
-        console.log(
-          `  3. Or run: ${colors.cyan("autoload -U compinit && compinit")}`,
-        );
+        console.log(`  2. Restart your shell: ${colors.cyan('exec zsh')}`);
+        console.log(`  3. Or run: ${colors.cyan('autoload -U compinit && compinit')}`);
         break;
-      case "fish":
-        console.log(
-          `  Completions are loaded automatically. Restart fish if needed.`,
-        );
+      case 'fish':
+        console.log(`  Completions are loaded automatically. Restart fish if needed.`);
         break;
     }
   } catch (error) {
     console.error(
-      `${colors.red("✗")} Failed to install completion: ${error instanceof Error ? error.message : String(error)}`,
+      `${colors.red('✗')} Failed to install completion: ${error instanceof Error ? error.message : String(error)}`,
     );
     process.exit(1);
   }

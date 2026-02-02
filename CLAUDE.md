@@ -1,12 +1,14 @@
 # Claude Instructions
 
 ## Git & Commits
+
 - Commit messages: English, simple verb-first sentences (e.g., "Add...", "Fix...", "Update...")
 - Always add `Co-authored-by: Claude <claude@anthropic.com>` trailer
 - **Tags**: Do NOT use `v` prefix (use `0.4.0` not `v0.4.0`)
 - **Releases**: Do NOT create GitHub releases manually with `gh release create` - they are created automatically by GitHub Actions when a tag is pushed
 
 ## Versioning
+
 - Use root npm scripts to bump version across all packages:
   - `npm run version:patch` — bump patch version (e.g., 0.4.3 → 0.4.4)
   - `npm run version:minor` — bump minor version (e.g., 0.4.3 → 0.5.0)
@@ -15,6 +17,7 @@
 - Version is injected at build time from package.json (no manual sync needed)
 
 ## Changelogs
+
 - Both packages have their own CHANGELOG.md in `packages/*/CHANGELOG.md`
 - **Keep changelogs in sync**: when releasing a new version, update BOTH changelogs
 - If a package has no changes for a release, add: `### Changed\n\n- No changes for this release`
@@ -61,6 +64,7 @@ productive tasks list --format json
 ```
 
 Response structure:
+
 ```json
 {
   "data": [...],           // Array of resources
@@ -85,12 +89,14 @@ Errors are returned as structured JSON:
 ```
 
 Exit codes:
+
 - `0` - Success
 - `1` - Error
 
 ### Non-Interactive Commands
 
 All commands are non-interactive:
+
 - No prompts or user input required
 - All parameters via CLI flags or environment variables
 - Deterministic output format
@@ -101,6 +107,7 @@ All commands are non-interactive:
 Three authentication methods with priority order:
 
 Priority order:
+
 1. CLI arguments: `--token`, `--org-id`, `--user-id`
 2. Environment variables: `PRODUCTIVE_API_TOKEN`, `PRODUCTIVE_ORG_ID`, `PRODUCTIVE_USER_ID`
 3. Config file: `~/.config/productive-cli/config.json`
@@ -159,6 +166,7 @@ productive api /time_entries \
 ### Field Type Conversion
 
 The `--field` flag performs automatic type conversion:
+
 - `true`, `false`, `null` → JSON boolean/null
 - Numbers → integers or floats
 - `@filename` → reads value from file
@@ -232,14 +240,14 @@ echo "$projects" | jq -r '.data[] | .id' | while read project_id; do
     --from $(date -d "7 days ago" +%Y-%m-%d) \
     --to $(date +%Y-%m-%d) \
     --format json)
-  
+
   # Calculate total hours
   total_minutes=$(echo "$time_entries" | jq '[.data[].time_minutes] | add')
   total_hours=$(echo "scale=2; $total_minutes / 60" | bc)
-  
+
   # Get project name
   project_name=$(echo "$projects" | jq -r ".data[] | select(.id==\"$project_id\") | .name")
-  
+
   echo "$project_name: ${total_hours}h this week"
 done
 ```
@@ -255,14 +263,14 @@ cat time_entries.json | jq -c '.[]' | while read entry; do
   date=$(echo "$entry" | jq -r '.date')
   time=$(echo "$entry" | jq -r '.time')
   note=$(echo "$entry" | jq -r '.note')
-  
+
   productive time add \
     --service "$service_id" \
     --date "$date" \
     --time "$time" \
     --note "$note" \
     --format json
-  
+
   # Rate limiting
   sleep 0.5
 done
@@ -422,7 +430,7 @@ let allProjects = [];
 while (true) {
   const response = await api.getProjects({ page, perPage: 100 });
   allProjects.push(...response.data);
-  
+
   if (page >= response.meta.total_pages) break;
   page++;
 }
@@ -447,7 +455,7 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
     } catch (error) {
       if (error instanceof ProductiveApiError && error.statusCode === 429) {
         const delay = Math.pow(2, i) * 1000; // Exponential backoff
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
       throw error;
@@ -536,7 +544,7 @@ async function generateDailyReport(date: string): Promise<DailyReport> {
 
     // Get all projects
     const projects = await api.getProjects({ perPage: 200 });
-    const projectMap = new Map(projects.data.map(p => [p.id, p.attributes.name]));
+    const projectMap = new Map(projects.data.map((p) => [p.id, p.attributes.name]));
 
     // Aggregate by project
     const projectHours = new Map<string, number>();

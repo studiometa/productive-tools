@@ -21,6 +21,7 @@ This is a workspace containing two packages:
 CLI tool for interacting with the Productive.io API. Optimized for both AI agents and human users with zero runtime dependencies.
 
 **Features:**
+
 - ✅ AI-optimized with structured JSON output
 - 📊 Multiple output formats (JSON, CSV, Table, Human-readable)
 - 🔐 Secure credential storage (Keychain, libsecret)
@@ -29,6 +30,7 @@ CLI tool for interacting with the Productive.io API. Optimized for both AI agent
 - 🧪 Comprehensive test coverage (92.4%, 210 tests)
 
 **Installation:**
+
 ```bash
 npm install -g @studiometa/productive-cli
 productive --help
@@ -45,6 +47,7 @@ productive --help
 MCP (Model Context Protocol) server for Productive.io API integration. Enables Claude Desktop and other MCP clients to interact with Productive.io.
 
 **Features:**
+
 - 🤖 Full MCP protocol support
 - 🔧 Access to projects, tasks, time entries, people, companies
 - 🚀 Zero-config for Claude Desktop
@@ -52,11 +55,13 @@ MCP (Model Context Protocol) server for Productive.io API integration. Enables C
 - 🔗 Powered by @studiometa/productive-cli
 
 **Installation for Claude Desktop:**
+
 ```bash
 npm install -g @studiometa/productive-mcp
 ```
 
 Then add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
 ```json
 {
   "mcpServers": {
@@ -220,6 +225,7 @@ MIT © [Studio Meta](https://www.studiometa.fr)
 ## Support
 
 For issues, questions, or contributions:
+
 - Open an issue on [GitHub](https://github.com/studiometa/productive-cli/issues)
 - Check the [Productive.io API documentation](https://developer.productive.io)
 - For MCP-specific questions, see [MCP docs](https://modelcontextprotocol.io)

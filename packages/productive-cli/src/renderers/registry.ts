@@ -6,16 +6,22 @@
  */
 
 import type { GenericRenderer, OutputFormat, ResourceType, RenderContext } from './types.js';
-import { jsonRenderer } from './json.js';
+
 import { csvRenderer } from './csv.js';
-import { tableRenderer } from './table.js';
-import { humanTimeEntryListRenderer } from './human/time-entry.js';
-import { humanProjectListRenderer } from './human/project.js';
-import { humanTaskListRenderer } from './human/task.js';
+import { humanBookingListRenderer } from './human/booking.js';
+import { humanBudgetListRenderer } from './human/budget.js';
+import { humanCommentListRenderer } from './human/comment.js';
+import { humanCompanyListRenderer } from './human/company.js';
+import { humanDealListRenderer } from './human/deal.js';
 import { kanbanRenderer } from './human/kanban.js';
 import { humanPersonListRenderer } from './human/person.js';
+import { humanProjectListRenderer } from './human/project.js';
 import { humanServiceListRenderer } from './human/service.js';
-import { humanBudgetListRenderer } from './human/budget.js';
+import { humanTaskListRenderer } from './human/task.js';
+import { humanTimeEntryListRenderer } from './human/time-entry.js';
+import { humanTimerListRenderer } from './human/timer.js';
+import { jsonRenderer } from './json.js';
+import { tableRenderer } from './table.js';
 
 /**
  * Registry key format: "resourceType:format" or "*:format" for fallbacks
@@ -37,7 +43,7 @@ const registry = new Map<RegistryKey, GenericRenderer>();
 export function registerRenderer(
   resourceType: ResourceType | '*',
   format: OutputFormat,
-  renderer: GenericRenderer
+  renderer: GenericRenderer,
 ): void {
   const key: RegistryKey = `${resourceType}:${format}`;
   registry.set(key, renderer);
@@ -54,7 +60,7 @@ export function registerRenderer(
  */
 export function getRenderer(
   resourceType: ResourceType,
-  format: OutputFormat
+  format: OutputFormat,
 ): GenericRenderer | undefined {
   // Try specific renderer first
   const specificKey: RegistryKey = `${resourceType}:${format}`;
@@ -81,7 +87,7 @@ export function render(
   resourceType: ResourceType,
   format: OutputFormat,
   data: unknown,
-  ctx: RenderContext
+  ctx: RenderContext,
 ): void {
   const renderer = getRenderer(resourceType, format);
   if (!renderer) {
@@ -93,10 +99,7 @@ export function render(
 /**
  * Check if a renderer exists for a resource type and format
  */
-export function hasRenderer(
-  resourceType: ResourceType,
-  format: OutputFormat
-): boolean {
+export function hasRenderer(resourceType: ResourceType, format: OutputFormat): boolean {
   return getRenderer(resourceType, format) !== undefined;
 }
 
@@ -133,3 +136,8 @@ registerRenderer('task', 'kanban', kanbanRenderer);
 registerRenderer('person', 'human', humanPersonListRenderer);
 registerRenderer('service', 'human', humanServiceListRenderer);
 registerRenderer('budget', 'human', humanBudgetListRenderer);
+registerRenderer('company', 'human', humanCompanyListRenderer);
+registerRenderer('comment', 'human', humanCommentListRenderer);
+registerRenderer('timer', 'human', humanTimerListRenderer);
+registerRenderer('deal', 'human', humanDealListRenderer);
+registerRenderer('booking', 'human', humanBookingListRenderer);

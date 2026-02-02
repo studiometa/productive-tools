@@ -4,6 +4,7 @@
  */
 
 import { WriteStream } from 'node:tty';
+
 import { colors } from './colors.js';
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
@@ -26,7 +27,7 @@ export class Spinner {
 
     this.frame = 0;
     this.render();
-    
+
     this.interval = setInterval(() => {
       this.frame = (this.frame + 1) % SPINNER_FRAMES.length;
       this.render();
@@ -42,7 +43,7 @@ export class Spinner {
       clearInterval(this.interval);
       this.interval = undefined;
     }
-    
+
     this.clear();
     return this;
   }

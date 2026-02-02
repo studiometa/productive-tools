@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Success page after OAuth authorization with auto-redirect to Claude Desktop ([7ceacd4], [#6])
 
 [7ceacd4]: https://github.com/studiometa/productive-tools/commit/7ceacd4
@@ -16,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.0] - 2026-02-02
 
 ### Changed
+
 - **BREAKING**: Consolidated 13 tools into single `productive` tool with `resource` and `action` parameters ([6f3836a], [b9b180b], [#4])
 - **BREAKING**: Old tool names (`productive_list_projects`, etc.) are no longer supported ([#4])
 - Token overhead reduced by 86% (~1,300 → ~180 tokens) ([#4])
@@ -23,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Default page size reduced from 50 to 20 items ([#4])
 
 ### Added
+
 - New unified `productive(resource, action, ...)` tool API ([#4])
 - `compact` parameter to toggle verbose fields in responses (default: true) ([#4])
 
@@ -33,37 +36,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.6] - 2026-02-02
 
 ### Fixed
+
 - Tool execution now correctly passes credentials to ProductiveApi (e50803d)
 
 ## [0.4.5] - 2026-02-02
 
 ### Fixed
+
 - Repository URL now points to productive-tools monorepo (ce27b36)
 
 ## [0.4.4] - 2026-02-02
 
 ### Changed
+
 - Version is now dynamically injected from package.json at build time (9f66138)
 
 ## [0.4.3] - 2026-02-02
 
 ### Fixed
+
 - CI publish workflow now triggers on tags without `v` prefix (fff06a8)
 
 ## [0.4.2] - 2026-02-02
 
 ### Added
+
 - Server startup logs now display package version and Node.js version for easier debugging (db8bea3)
 
 ## [0.4.1] - 2026-02-02
 
 ### Fixed
+
 - Version now correctly displayed in HTTP server endpoints (was showing 0.1.0) (b51d506)
 - Tests use dynamic VERSION constant to avoid failures on version bumps
 
 ## [0.4.0] - 2026-02-02
 
 ### Added
+
 - **OAuth 2.0 Support** - MCP auth spec compliant authentication for Claude Desktop (f46e8bd, #3)
   - OAuth 2.1 with PKCE (S256) validation
   - Dynamic Client Registration endpoint (`/register`) per RFC 7591
@@ -77,11 +87,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - PKCE required for all authorization requests
 
 ### Changed
+
 - Updated README with OAuth configuration documentation
 
 ## [0.3.0] - 2026-02-01
 
 ### Added
+
 - **HTTP Server Transport** - Remote deployment mode for team sharing (d6d7511)
   - New `productive-mcp-server` binary for HTTP transport
   - Bearer token authentication for secure remote access
@@ -102,6 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Formatter tests
 
 ### Changed
+
 - Refactored stdio transport to use shared modules (f88fe8b)
 - Updated build config for multi-entry output (bc5c066)
 - Rewrote README for dual transport modes documentation (0482245)
@@ -110,6 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-01-28
 
 ### Added
+
 - Initial release of Productive MCP server
 - Full MCP protocol support via @modelcontextprotocol/sdk
 - Integration with @studiometa/productive-cli

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { parseArgs, getOption, hasFlag } from '../args.js';
 
 describe('parseArgs', () => {
@@ -47,15 +48,7 @@ describe('parseArgs', () => {
   });
 
   it('should parse mixed arguments', () => {
-    const result = parseArgs([
-      'time',
-      'list',
-      '--format',
-      'json',
-      '--page',
-      '2',
-      '-v',
-    ]);
+    const result = parseArgs(['time', 'list', '--format', 'json', '--page', '2', '-v']);
     expect(result.command).toEqual(['time', 'list']);
     expect(result.positional).toEqual([]);
     expect(result.options.format).toBe('json');

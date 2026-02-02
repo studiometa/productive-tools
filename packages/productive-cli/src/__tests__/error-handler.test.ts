@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+import { ProductiveApiError } from '../api.js';
 import {
   ExitCode,
   getExitCode,
@@ -16,7 +18,6 @@ import {
   ApiError,
   CliError,
 } from '../errors.js';
-import { ProductiveApiError } from '../api.js';
 import { ok, err } from '../utils/result.js';
 
 describe('error-handler', () => {
@@ -96,7 +97,7 @@ describe('error-handler', () => {
   describe('handleError', () => {
     it('should output error in human format', () => {
       const error = new ValidationError('Invalid input', 'field');
-      
+
       handleError(error, mockFormatter, { exit: false });
 
       expect(mockFormatter.error).toHaveBeenCalledWith('Invalid input');
@@ -105,20 +106,20 @@ describe('error-handler', () => {
     it('should output error in JSON format', () => {
       mockFormatter.format = 'json';
       const error = new ValidationError('Invalid input', 'field');
-      
+
       handleError(error, mockFormatter, { exit: false });
 
       expect(mockFormatter.output).toHaveBeenCalledWith(
         expect.objectContaining({
           error: 'VALIDATION_ERROR',
           message: 'Invalid input',
-        })
+        }),
       );
     });
 
     it('should call process.exit by default', () => {
       const error = new CliError('Error');
-      
+
       handleError(error, mockFormatter);
 
       expect(mockExit).toHaveBeenCalledWith(ExitCode.GENERAL_ERROR);
@@ -126,7 +127,7 @@ describe('error-handler', () => {
 
     it('should not call process.exit when exit: false', () => {
       const error = new CliError('Error');
-      
+
       const exitCode = handleError(error, mockFormatter, { exit: false });
 
       expect(mockExit).not.toHaveBeenCalled();
@@ -135,7 +136,7 @@ describe('error-handler', () => {
 
     it('should convert ProductiveApiError to ApiError', () => {
       const error = new ProductiveApiError('API failed', 401, '{"error":"unauthorized"}');
-      
+
       handleError(error, mockFormatter, { exit: false });
 
       expect(mockFormatter.error).toHaveBeenCalledWith('API failed');
@@ -143,7 +144,7 @@ describe('error-handler', () => {
 
     it('should convert plain Error to CliError', () => {
       const error = new Error('Plain error');
-      
+
       handleError(error, mockFormatter, { exit: false });
 
       expect(mockFormatter.error).toHaveBeenCalledWith('Plain error');
@@ -151,7 +152,7 @@ describe('error-handler', () => {
 
     it('should show missing keys for ConfigError', () => {
       const error = new ConfigError('Missing config', ['apiToken', 'orgId']);
-      
+
       handleError(error, mockFormatter, { exit: false });
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('Missing: apiToken, orgId');
@@ -161,7 +162,7 @@ describe('error-handler', () => {
   describe('handleResult', () => {
     it('should output value on success', () => {
       const result = ok({ data: 'test' });
-      
+
       const success = handleResult(result, mockFormatter);
 
       expect(success).toBe(true);
@@ -171,7 +172,7 @@ describe('error-handler', () => {
     it('should call onSuccess callback on success', () => {
       const result = ok({ data: 'test' });
       const onSuccess = vi.fn();
-      
+
       handleResult(result, mockFormatter, onSuccess);
 
       expect(onSuccess).toHaveBeenCalledWith({ data: 'test' });
@@ -181,7 +182,7 @@ describe('error-handler', () => {
     it('should handle error on failure', () => {
       const error = ValidationError.required('field');
       const result = err(error);
-      
+
       const success = handleResult(result, mockFormatter);
 
       expect(success).toBe(false);
@@ -237,18 +238,16 @@ describe('error-handler', () => {
         // process.exit is mocked, so it won't actually exit
       }
 
+      expect(mockFormatter.error).toHaveBeenCalledWith(expect.stringContaining('id is required'));
       expect(mockFormatter.error).toHaveBeenCalledWith(
-        expect.stringContaining('id is required')
-      );
-      expect(mockFormatter.error).toHaveBeenCalledWith(
-        expect.stringContaining('Usage: productive get <id>')
+        expect.stringContaining('Usage: productive get <id>'),
       );
       expect(mockExit).toHaveBeenCalledWith(ExitCode.VALIDATION_ERROR);
     });
 
     it('should output error in JSON format with usage', () => {
       mockFormatter.format = 'json';
-      
+
       try {
         exitWithValidationError('id', 'productive get <id>', mockFormatter);
       } catch {
@@ -259,7 +258,7 @@ describe('error-handler', () => {
         expect.objectContaining({
           error: 'VALIDATION_ERROR',
           usage: 'productive get <id>',
-        })
+        }),
       );
     });
   });
@@ -273,7 +272,7 @@ describe('error-handler', () => {
       }
 
       expect(mockFormatter.error).toHaveBeenCalledWith(
-        expect.stringContaining('API token not configured')
+        expect.stringContaining('API token not configured'),
       );
       expect(mockExit).toHaveBeenCalledWith(ExitCode.CONFIG_ERROR);
     });
@@ -286,7 +285,7 @@ describe('error-handler', () => {
       }
 
       expect(mockFormatter.error).toHaveBeenCalledWith(
-        expect.stringContaining('Organization ID not configured')
+        expect.stringContaining('Organization ID not configured'),
       );
     });
 
@@ -298,7 +297,7 @@ describe('error-handler', () => {
       }
 
       expect(mockFormatter.error).toHaveBeenCalledWith(
-        expect.stringContaining('User ID not configured')
+        expect.stringContaining('User ID not configured'),
       );
     });
   });

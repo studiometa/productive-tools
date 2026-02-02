@@ -18,8 +18,8 @@ vi.mock('../../config.js', () => ({
   getConfig: vi.fn(),
 }));
 
-import { processRefreshQueue, getRefreshQueueCount } from '../refresh-queue.js';
 import { getConfig } from '../../config.js';
+import { processRefreshQueue, getRefreshQueueCount } from '../refresh-queue.js';
 
 describe('refresh-queue', () => {
   beforeEach(() => {
@@ -214,7 +214,7 @@ describe('refresh-queue', () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('https://api.productive.io/api/v2/projects'),
-        expect.any(Object)
+        expect.any(Object),
       );
 
       vi.unstubAllGlobals();

@@ -2,10 +2,7 @@
  * Budget formatting
  */
 
-import type {
-  JsonApiResource,
-  FormattedBudget,
-} from './types.js';
+import type { JsonApiResource, FormattedBudget } from './types.js';
 
 /**
  * Format a budget resource for output

@@ -1,7 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createHash } from 'node:crypto';
 import { createApp, createRouter, toNodeListener } from 'h3';
+import { createHash } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+
+import { decodeAuthCode } from '../crypto.js';
 import {
   oauthMetadataHandler,
   registerHandler,
@@ -9,14 +11,15 @@ import {
   authorizePostHandler,
   tokenHandler,
 } from '../oauth.js';
-import { decodeAuthCode } from '../crypto.js';
 
 /**
  * Generate PKCE code verifier and challenge
  */
 function generatePKCE() {
   // Generate a random code verifier (43-128 characters)
-  const codeVerifier = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64url');
+  const codeVerifier = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString(
+    'base64url',
+  );
   // Create S256 challenge
   const codeChallenge = createHash('sha256').update(codeVerifier).digest('base64url');
   return { codeVerifier, codeChallenge };
@@ -148,7 +151,7 @@ describe('OAuth endpoints', () => {
     it('returns login form HTML with valid PKCE params', async () => {
       const { codeChallenge } = generatePKCE();
       const response = await fetch(
-        `${baseUrl}/authorize?client_id=test&redirect_uri=https://example.com/callback&state=abc123&code_challenge=${codeChallenge}&code_challenge_method=S256`
+        `${baseUrl}/authorize?client_id=test&redirect_uri=https://example.com/callback&state=abc123&code_challenge=${codeChallenge}&code_challenge_method=S256`,
       );
       expect(response.ok).toBe(true);
       expect(response.headers.get('content-type')).toContain('text/html');
@@ -165,7 +168,7 @@ describe('OAuth endpoints', () => {
     it('redirects with error when code_challenge is missing', async () => {
       const response = await fetch(
         `${baseUrl}/authorize?client_id=test&redirect_uri=https://example.com/callback&state=abc123`,
-        { redirect: 'manual' }
+        { redirect: 'manual' },
       );
 
       expect(response.status).toBe(302);
@@ -186,7 +189,7 @@ describe('OAuth endpoints', () => {
     it('rejects unsupported code_challenge_method', async () => {
       const response = await fetch(
         `${baseUrl}/authorize?client_id=test&redirect_uri=https://example.com/callback&state=abc&code_challenge=test&code_challenge_method=plain`,
-        { redirect: 'manual' }
+        { redirect: 'manual' },
       );
 
       expect(response.status).toBe(302);

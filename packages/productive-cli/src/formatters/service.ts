@@ -2,11 +2,8 @@
  * Service formatting
  */
 
-import type {
-  JsonApiResource,
-  FormatOptions,
-  FormattedService,
-} from './types.js';
+import type { JsonApiResource, FormatOptions, FormattedService } from './types.js';
+
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 /**
@@ -14,7 +11,7 @@ import { DEFAULT_FORMAT_OPTIONS } from './types.js';
  */
 export function formatService(
   service: JsonApiResource,
-  options: FormatOptions = {}
+  options: FormatOptions = {},
 ): FormattedService {
   const opts = { ...DEFAULT_FORMAT_OPTIONS, ...options };
   const attrs = service.attributes;

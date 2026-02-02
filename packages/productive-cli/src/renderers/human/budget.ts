@@ -4,10 +4,11 @@
  * Displays budgets with time and monetary budget information.
  */
 
-import { colors } from '../../utils/colors.js';
-import { linkedId } from '../../utils/productive-links.js';
 import type { FormattedBudget, FormattedPagination } from '../../formatters/types.js';
 import type { ListRenderer, RenderContext } from '../types.js';
+
+import { colors } from '../../utils/colors.js';
+import { linkedId } from '../../utils/productive-links.js';
 
 /**
  * Format time in minutes to human readable format
@@ -36,10 +37,7 @@ function formatCurrency(value: number | undefined): string {
  * Renderer for a list of budgets with pagination
  */
 export class HumanBudgetListRenderer implements ListRenderer<FormattedBudget> {
-  render(
-    data: { data: FormattedBudget[]; meta?: FormattedPagination },
-    ctx: RenderContext
-  ): void {
+  render(data: { data: FormattedBudget[]; meta?: FormattedPagination }, ctx: RenderContext): void {
     for (const budget of data.data) {
       this.renderItem(budget, ctx);
     }
@@ -56,16 +54,14 @@ export class HumanBudgetListRenderer implements ListRenderer<FormattedBudget> {
     if (budget.total_time_budget !== undefined) {
       const total = formatTime(budget.total_time_budget);
       const remaining = formatTime(budget.remaining_time_budget);
-      const used =
-        budget.total_time_budget - (budget.remaining_time_budget || 0);
+      const used = budget.total_time_budget - (budget.remaining_time_budget || 0);
       const usedStr = formatTime(used);
 
       const isOverBudget =
-        budget.remaining_time_budget !== undefined &&
-        budget.remaining_time_budget < 0;
+        budget.remaining_time_budget !== undefined && budget.remaining_time_budget < 0;
 
       console.log(
-        `  ${colors.cyan('Time:')} ${usedStr} / ${total} ${colors.dim('remaining:')} ${isOverBudget ? colors.red(remaining) : remaining}`
+        `  ${colors.cyan('Time:')} ${usedStr} / ${total} ${colors.dim('remaining:')} ${isOverBudget ? colors.red(remaining) : remaining}`,
       );
     }
 
@@ -73,17 +69,14 @@ export class HumanBudgetListRenderer implements ListRenderer<FormattedBudget> {
     if (budget.total_monetary_budget !== undefined) {
       const total = formatCurrency(budget.total_monetary_budget);
       const remaining = formatCurrency(budget.remaining_monetary_budget);
-      const used =
-        budget.total_monetary_budget -
-        (budget.remaining_monetary_budget || 0);
+      const used = budget.total_monetary_budget - (budget.remaining_monetary_budget || 0);
       const usedStr = formatCurrency(used);
 
       const isOverBudget =
-        budget.remaining_monetary_budget !== undefined &&
-        budget.remaining_monetary_budget < 0;
+        budget.remaining_monetary_budget !== undefined && budget.remaining_monetary_budget < 0;
 
       console.log(
-        `  ${colors.cyan('Cost:')} ${usedStr} / ${total} ${colors.dim('remaining:')} ${isOverBudget ? colors.red(remaining) : remaining}`
+        `  ${colors.cyan('Cost:')} ${usedStr} / ${total} ${colors.dim('remaining:')} ${isOverBudget ? colors.red(remaining) : remaining}`,
       );
     }
 
@@ -91,11 +84,7 @@ export class HumanBudgetListRenderer implements ListRenderer<FormattedBudget> {
   }
 
   renderPagination(meta: FormattedPagination, _ctx: RenderContext): void {
-    console.log(
-      colors.dim(
-        `Page ${meta.page}/${meta.total_pages} (Total: ${meta.total_count})`
-      )
-    );
+    console.log(colors.dim(`Page ${meta.page}/${meta.total_pages} (Total: ${meta.total_count})`));
   }
 }
 

@@ -15,7 +15,9 @@ export interface ProductiveCredentials {
  * @param authHeader - Authorization header value (e.g., "Bearer base64...")
  * @returns Parsed credentials or null if invalid
  */
-export function parseAuthHeader(authHeader: string | undefined | null): ProductiveCredentials | null {
+export function parseAuthHeader(
+  authHeader: string | undefined | null,
+): ProductiveCredentials | null {
   if (!authHeader) {
     return null;
   }

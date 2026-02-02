@@ -5,33 +5,31 @@
  * Uses Node.js native sqlite module (Node 22+)
  */
 
-import { existsSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
-import { homedir } from "node:os";
+import { existsSync, mkdirSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 
 // Dynamic import to handle the experimental warning gracefully
-let DatabaseSync: typeof import("node:sqlite").DatabaseSync;
+let DatabaseSync: typeof import('node:sqlite').DatabaseSync;
 
 // Suppress the experimental warning for SQLite globally
 const originalEmit = process.emit;
 // @ts-expect-error - Monkey-patching process.emit to suppress warning
 process.emit = function (event: string, ...args: unknown[]) {
   if (
-    event === "warning" &&
+    event === 'warning' &&
     args[0] &&
-    (args[0] as Error).name === "ExperimentalWarning" &&
-    (args[0] as Error).message.includes("SQLite")
+    (args[0] as Error).name === 'ExperimentalWarning' &&
+    (args[0] as Error).message.includes('SQLite')
   ) {
     return false;
   }
-  return originalEmit.apply(process, [event, ...args] as Parameters<
-    typeof originalEmit
-  >);
+  return originalEmit.apply(process, [event, ...args] as Parameters<typeof originalEmit>);
 };
 
 async function loadSqlite() {
   if (!DatabaseSync) {
-    const sqlite = await import("node:sqlite");
+    const sqlite = await import('node:sqlite');
     DatabaseSync = sqlite.DatabaseSync;
   }
   return DatabaseSync;
@@ -141,15 +139,14 @@ const SCHEMA = `
 const DEFAULT_TTL = 3600 * 1000;
 
 export class SqliteCache {
-  private db: InstanceType<typeof import("node:sqlite").DatabaseSync> | null =
-    null;
+  private db: InstanceType<typeof import('node:sqlite').DatabaseSync> | null = null;
   private dbPath: string;
   private orgId: string;
   private initialized = false;
 
   constructor(orgId: string) {
-    const cacheBase = process.env.XDG_CACHE_HOME || join(homedir(), ".cache");
-    const cacheDir = join(cacheBase, "productive-cli");
+    const cacheBase = process.env.XDG_CACHE_HOME || join(homedir(), '.cache');
+    const cacheDir = join(cacheBase, 'productive-cli');
 
     if (!existsSync(cacheDir)) {
       mkdirSync(cacheDir, { recursive: true });
@@ -226,18 +223,14 @@ export class SqliteCache {
   async getAllProjects(): Promise<CachedProject[]> {
     await this.ensureInitialized();
 
-    const stmt = this.db!.prepare(
-      "SELECT * FROM projects ORDER BY name COLLATE NOCASE",
-    );
+    const stmt = this.db!.prepare('SELECT * FROM projects ORDER BY name COLLATE NOCASE');
     return stmt.all() as unknown as CachedProject[];
   }
 
   async getProjectsSyncTime(): Promise<number | null> {
     await this.ensureInitialized();
 
-    const stmt = this.db!.prepare(
-      "SELECT MAX(synced_at) as max_sync FROM projects",
-    );
+    const stmt = this.db!.prepare('SELECT MAX(synced_at) as max_sync FROM projects');
     const result = stmt.get() as { max_sync: number | null };
     return result?.max_sync || null;
   }
@@ -296,19 +289,14 @@ export class SqliteCache {
     `);
 
     const pattern = `%${query}%`;
-    return stmt.all(
-      pattern,
-      pattern,
-      pattern,
-      limit,
-    ) as unknown as CachedPerson[];
+    return stmt.all(pattern, pattern, pattern, limit) as unknown as CachedPerson[];
   }
 
   async getAllPeople(): Promise<CachedPerson[]> {
     await this.ensureInitialized();
 
     const stmt = this.db!.prepare(
-      "SELECT * FROM people ORDER BY first_name COLLATE NOCASE, last_name COLLATE NOCASE",
+      'SELECT * FROM people ORDER BY first_name COLLATE NOCASE, last_name COLLATE NOCASE',
     );
     return stmt.all() as unknown as CachedPerson[];
   }
@@ -316,9 +304,7 @@ export class SqliteCache {
   async getPeopleSyncTime(): Promise<number | null> {
     await this.ensureInitialized();
 
-    const stmt = this.db!.prepare(
-      "SELECT MAX(synced_at) as max_sync FROM people",
-    );
+    const stmt = this.db!.prepare('SELECT MAX(synced_at) as max_sync FROM people');
     const result = stmt.get() as { max_sync: number | null };
     return result?.max_sync || null;
   }
@@ -379,7 +365,7 @@ export class SqliteCache {
     await this.ensureInitialized();
 
     const stmt = this.db!.prepare(
-      "SELECT * FROM services WHERE project_id = ? ORDER BY name COLLATE NOCASE",
+      'SELECT * FROM services WHERE project_id = ? ORDER BY name COLLATE NOCASE',
     );
     return stmt.all(projectId) as unknown as CachedService[];
   }
@@ -387,9 +373,7 @@ export class SqliteCache {
   async getServicesSyncTime(): Promise<number | null> {
     await this.ensureInitialized();
 
-    const stmt = this.db!.prepare(
-      "SELECT MAX(synced_at) as max_sync FROM services",
-    );
+    const stmt = this.db!.prepare('SELECT MAX(synced_at) as max_sync FROM services');
     const result = stmt.get() as { max_sync: number | null };
     return result?.max_sync || null;
   }
@@ -412,9 +396,7 @@ export class SqliteCache {
   async cacheGet<T>(key: string): Promise<T | null> {
     await this.ensureInitialized();
 
-    const stmt = this.db!.prepare(
-      "SELECT data FROM cache WHERE key = ? AND expires_at > ?",
-    );
+    const stmt = this.db!.prepare('SELECT data FROM cache WHERE key = ? AND expires_at > ?');
     const row = stmt.get(key, Date.now()) as { data: string } | undefined;
 
     if (!row) return null;
@@ -439,7 +421,7 @@ export class SqliteCache {
 
     const now = Date.now();
     const stmt = this.db!.prepare(
-      "SELECT data, endpoint, params, stale_at, expires_at FROM cache WHERE key = ? AND expires_at > ?",
+      'SELECT data, endpoint, params, stale_at, expires_at FROM cache WHERE key = ? AND expires_at > ?',
     );
     const row = stmt.get(key, now) as
       | {
@@ -486,15 +468,7 @@ export class SqliteCache {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
 
-    stmt.run(
-      key,
-      JSON.stringify(data),
-      endpoint,
-      JSON.stringify(params),
-      staleAt,
-      expiresAt,
-      now,
-    );
+    stmt.run(key, JSON.stringify(data), endpoint, JSON.stringify(params), staleAt, expiresAt, now);
 
     // Remove from refresh queue if it was pending
     await this.dequeueRefresh(key);
@@ -506,9 +480,7 @@ export class SqliteCache {
   async cacheHas(key: string): Promise<boolean> {
     await this.ensureInitialized();
 
-    const stmt = this.db!.prepare(
-      "SELECT 1 FROM cache WHERE key = ? AND expires_at > ?",
-    );
+    const stmt = this.db!.prepare('SELECT 1 FROM cache WHERE key = ? AND expires_at > ?');
     const row = stmt.get(key, Date.now());
     return !!row;
   }
@@ -519,7 +491,7 @@ export class SqliteCache {
   async cacheDelete(key: string): Promise<void> {
     await this.ensureInitialized();
 
-    this.db!.prepare("DELETE FROM cache WHERE key = ?").run(key);
+    this.db!.prepare('DELETE FROM cache WHERE key = ?').run(key);
   }
 
   /**
@@ -529,11 +501,11 @@ export class SqliteCache {
     await this.ensureInitialized();
 
     if (endpointPattern) {
-      const stmt = this.db!.prepare("DELETE FROM cache WHERE endpoint LIKE ?");
+      const stmt = this.db!.prepare('DELETE FROM cache WHERE endpoint LIKE ?');
       const result = stmt.run(`%${endpointPattern}%`);
       return Number(result.changes);
     } else {
-      const stmt = this.db!.prepare("DELETE FROM cache");
+      const stmt = this.db!.prepare('DELETE FROM cache');
       const result = stmt.run();
       return Number(result.changes);
     }
@@ -545,7 +517,7 @@ export class SqliteCache {
   async cacheCleanup(): Promise<number> {
     await this.ensureInitialized();
 
-    const stmt = this.db!.prepare("DELETE FROM cache WHERE expires_at < ?");
+    const stmt = this.db!.prepare('DELETE FROM cache WHERE expires_at < ?');
     const result = stmt.run(Date.now());
     return Number(result.changes);
   }
@@ -561,15 +533,15 @@ export class SqliteCache {
     await this.ensureInitialized();
 
     const countResult = this.db!.prepare(
-      "SELECT COUNT(*) as count FROM cache WHERE expires_at > ?",
+      'SELECT COUNT(*) as count FROM cache WHERE expires_at > ?',
     ).get(Date.now()) as { count: number };
 
     const sizeResult = this.db!.prepare(
-      "SELECT COALESCE(SUM(LENGTH(data)), 0) as size FROM cache WHERE expires_at > ?",
+      'SELECT COALESCE(SUM(LENGTH(data)), 0) as size FROM cache WHERE expires_at > ?',
     ).get(Date.now()) as { size: number };
 
     const oldestResult = this.db!.prepare(
-      "SELECT MIN(created_at) as oldest FROM cache WHERE expires_at > ?",
+      'SELECT MIN(created_at) as oldest FROM cache WHERE expires_at > ?',
     ).get(Date.now()) as { oldest: number | null };
 
     const oldestAge = oldestResult.oldest
@@ -609,9 +581,7 @@ export class SqliteCache {
   async dequeueRefresh(cacheKey: string): Promise<void> {
     await this.ensureInitialized();
 
-    this.db!.prepare("DELETE FROM refresh_queue WHERE cache_key = ?").run(
-      cacheKey,
-    );
+    this.db!.prepare('DELETE FROM refresh_queue WHERE cache_key = ?').run(cacheKey);
   }
 
   /**
@@ -628,7 +598,7 @@ export class SqliteCache {
     await this.ensureInitialized();
 
     const stmt = this.db!.prepare(
-      "SELECT cache_key, endpoint, params, queued_at FROM refresh_queue ORDER BY queued_at ASC",
+      'SELECT cache_key, endpoint, params, queued_at FROM refresh_queue ORDER BY queued_at ASC',
     );
     const rows = stmt.all() as Array<{
       cache_key: string;
@@ -651,9 +621,9 @@ export class SqliteCache {
   async getRefreshQueueCount(): Promise<number> {
     await this.ensureInitialized();
 
-    const result = this.db!.prepare(
-      "SELECT COUNT(*) as count FROM refresh_queue",
-    ).get() as { count: number };
+    const result = this.db!.prepare('SELECT COUNT(*) as count FROM refresh_queue').get() as {
+      count: number;
+    };
 
     return result.count;
   }
@@ -664,7 +634,7 @@ export class SqliteCache {
   async clearRefreshQueue(): Promise<number> {
     await this.ensureInitialized();
 
-    const result = this.db!.prepare("DELETE FROM refresh_queue").run();
+    const result = this.db!.prepare('DELETE FROM refresh_queue').run();
     return Number(result.changes);
   }
 
@@ -679,23 +649,23 @@ export class SqliteCache {
     await this.ensureInitialized();
 
     const projectCount = (
-      this.db!.prepare("SELECT COUNT(*) as count FROM projects").get() as {
+      this.db!.prepare('SELECT COUNT(*) as count FROM projects').get() as {
         count: number;
       }
     ).count;
     const peopleCount = (
-      this.db!.prepare("SELECT COUNT(*) as count FROM people").get() as {
+      this.db!.prepare('SELECT COUNT(*) as count FROM people').get() as {
         count: number;
       }
     ).count;
     const servicesCount = (
-      this.db!.prepare("SELECT COUNT(*) as count FROM services").get() as {
+      this.db!.prepare('SELECT COUNT(*) as count FROM services').get() as {
         count: number;
       }
     ).count;
 
     // Get file size
-    const fs = await import("node:fs");
+    const fs = await import('node:fs');
     const stats = fs.statSync(this.dbPath);
 
     return {
@@ -709,13 +679,13 @@ export class SqliteCache {
   async clear(): Promise<void> {
     await this.ensureInitialized();
 
-    this.db!.exec("DELETE FROM cache");
-    this.db!.exec("DELETE FROM refresh_queue");
-    this.db!.exec("DELETE FROM projects");
-    this.db!.exec("DELETE FROM people");
-    this.db!.exec("DELETE FROM services");
-    this.db!.exec("DELETE FROM _meta");
-    this.db!.exec("VACUUM");
+    this.db!.exec('DELETE FROM cache');
+    this.db!.exec('DELETE FROM refresh_queue');
+    this.db!.exec('DELETE FROM projects');
+    this.db!.exec('DELETE FROM people');
+    this.db!.exec('DELETE FROM services');
+    this.db!.exec('DELETE FROM _meta');
+    this.db!.exec('VACUUM');
   }
 
   close(): void {
@@ -728,7 +698,7 @@ export class SqliteCache {
 }
 
 // Factory function
-let instances: Map<string, SqliteCache> = new Map();
+const instances: Map<string, SqliteCache> = new Map();
 
 export function getSqliteCache(orgId: string): SqliteCache {
   if (!instances.has(orgId)) {

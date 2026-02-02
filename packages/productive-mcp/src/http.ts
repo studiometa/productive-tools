@@ -15,10 +15,8 @@ import {
   type App,
 } from 'h3';
 
-import { TOOLS } from './tools.js';
-import { executeToolWithCredentials } from './handlers.js';
 import { parseAuthHeader } from './auth.js';
-import { VERSION } from './version.js';
+import { executeToolWithCredentials } from './handlers.js';
 import {
   oauthMetadataHandler,
   registerHandler,
@@ -26,6 +24,8 @@ import {
   authorizePostHandler,
   tokenHandler,
 } from './oauth.js';
+import { TOOLS } from './tools.js';
+import { VERSION } from './version.js';
 
 /**
  * JSON-RPC error response
@@ -91,14 +91,14 @@ export function createHttpApp(): App {
     '/',
     defineEventHandler(() => {
       return { status: 'ok', service: 'productive-mcp', version: VERSION };
-    })
+    }),
   );
 
   router.get(
     '/health',
     defineEventHandler(() => {
       return { status: 'ok' };
-    })
+    }),
   );
 
   // MCP endpoint - handles JSON-RPC over HTTP
@@ -114,7 +114,7 @@ export function createHttpApp(): App {
         event.node.res.statusCode = 401;
         return jsonRpcError(
           -32001,
-          'Authentication required. Provide Bearer token with base64(organizationId:apiToken:userId)'
+          'Authentication required. Provide Bearer token with base64(organizationId:apiToken:userId)',
         );
       }
 
@@ -160,7 +160,7 @@ export function createHttpApp(): App {
         const message = error instanceof Error ? error.message : String(error);
         return jsonRpcError(-32603, `Internal error: ${message}`, id ?? null);
       }
-    })
+    }),
   );
 
   // SSE endpoint for server-sent events (optional, for streaming responses)
@@ -198,7 +198,7 @@ export function createHttpApp(): App {
 
       // Don't end the response - keep it open for SSE
       return new Promise(() => {});
-    })
+    }),
   );
 
   app.use(router);

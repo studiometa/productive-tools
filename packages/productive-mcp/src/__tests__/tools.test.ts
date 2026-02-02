@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { TOOLS, STDIO_ONLY_TOOLS } from '../tools.js';
 
 describe('tools', () => {
@@ -22,13 +23,24 @@ describe('tools', () => {
     it('should have resource enum with all resources', () => {
       const tool = TOOLS[0];
       const resourceProp = tool.inputSchema.properties?.resource as { enum?: string[] };
-      expect(resourceProp?.enum).toEqual(['projects', 'time', 'tasks', 'services', 'people']);
+      expect(resourceProp?.enum).toEqual([
+        'projects',
+        'time',
+        'tasks',
+        'services',
+        'people',
+        'companies',
+        'comments',
+        'timers',
+        'deals',
+        'bookings',
+      ]);
     });
 
     it('should have action enum with all actions', () => {
       const tool = TOOLS[0];
       const actionProp = tool.inputSchema.properties?.action as { enum?: string[] };
-      expect(actionProp?.enum).toEqual(['list', 'get', 'create', 'update', 'delete', 'me']);
+      expect(actionProp?.enum).toEqual(['list', 'get', 'create', 'update', 'me', 'start', 'stop']);
     });
 
     it('should require resource and action', () => {
@@ -64,30 +76,31 @@ describe('tools', () => {
     });
 
     it('should include configure tool', () => {
-      const configureTool = STDIO_ONLY_TOOLS.find(t => t.name === 'productive_configure');
+      const configureTool = STDIO_ONLY_TOOLS.find((t) => t.name === 'productive_configure');
       expect(configureTool).toBeDefined();
       expect(configureTool?.inputSchema.required).toEqual(
-        expect.arrayContaining(['organizationId', 'apiToken'])
+        expect.arrayContaining(['organizationId', 'apiToken']),
       );
     });
 
     it('should include get_config tool', () => {
-      const getConfigTool = STDIO_ONLY_TOOLS.find(t => t.name === 'productive_get_config');
+      const getConfigTool = STDIO_ONLY_TOOLS.find((t) => t.name === 'productive_get_config');
       expect(getConfigTool).toBeDefined();
     });
   });
 
   describe('token optimization', () => {
-    it('should have minimal tool schema size', () => {
+    it('should have reasonable tool schema size', () => {
       const totalSize = JSON.stringify(TOOLS).length;
-      // Single tool should be under 800 bytes
-      expect(totalSize).toBeLessThan(800);
+      // Single tool with expanded resources should be under 1500 bytes
+      expect(totalSize).toBeLessThan(1500);
     });
 
-    it('should estimate under 200 tokens', () => {
+    it('should estimate under 400 tokens', () => {
       const totalSize = JSON.stringify(TOOLS).length;
       const estimatedTokens = Math.ceil(totalSize / 4);
-      expect(estimatedTokens).toBeLessThan(200);
+      // With more resources, token budget increased
+      expect(estimatedTokens).toBeLessThan(400);
     });
   });
 });

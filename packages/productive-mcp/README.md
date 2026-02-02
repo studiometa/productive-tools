@@ -20,9 +20,9 @@ MCP (Model Context Protocol) server for [Productive.io](https://productive.io) A
 
 This package supports two modes:
 
-| Mode | Command | Use Case |
-|------|---------|----------|
-| **Local (stdio)** | `productive-mcp` | Personal use via Claude Desktop config |
+| Mode              | Command                 | Use Case                                     |
+| ----------------- | ----------------------- | -------------------------------------------- |
+| **Local (stdio)** | `productive-mcp`        | Personal use via Claude Desktop config       |
 | **Remote (HTTP)** | `productive-mcp-server` | Team use via Claude Desktop custom connector |
 
 ---
@@ -40,6 +40,7 @@ npm install -g @studiometa/productive-mcp
 ### Claude Desktop Configuration
 
 Edit your Claude Desktop config:
+
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
 - **Linux**: `~/.config/Claude/claude_desktop_config.json`
@@ -131,22 +132,23 @@ services:
       dockerfile: packages/productive-mcp/Dockerfile
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       PORT: 3000
       HOST: 0.0.0.0
-      OAUTH_SECRET: "your-random-secret-here"  # Required for production!
+      OAUTH_SECRET: 'your-random-secret-here' # Required for production!
 ```
 
 ### Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `PORT` | No | Server port (default: 3000) |
-| `HOST` | No | Bind address (default: 0.0.0.0) |
+| Variable       | Required             | Description                            |
+| -------------- | -------------------- | -------------------------------------- |
+| `PORT`         | No                   | Server port (default: 3000)            |
+| `HOST`         | No                   | Bind address (default: 0.0.0.0)        |
 | `OAUTH_SECRET` | **Yes (production)** | Secret key for encrypting OAuth tokens |
 
 > ⚠️ **Important**: Always set `OAUTH_SECRET` in production. Generate a random secret:
+>
 > ```bash
 > openssl rand -base64 32
 > ```
@@ -174,6 +176,7 @@ echo -n "YOUR_ORG_ID:YOUR_API_TOKEN:YOUR_USER_ID" | base64
 ```
 
 Example:
+
 ```bash
 echo -n "12345:pk_abc123xyz:67890" | base64
 # Output: MTIzNDU6cGtfYWJjMTIzeHl6OjY3ODkw
@@ -181,15 +184,15 @@ echo -n "12345:pk_abc123xyz:67890" | base64
 
 ### Server Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/mcp` | POST | MCP JSON-RPC endpoint |
-| `/health` | GET | Health check |
-| `/` | GET | Server info |
-| `/authorize` | GET | OAuth authorization (login form) |
-| `/authorize` | POST | OAuth authorization (process login) |
-| `/token` | POST | OAuth token exchange |
-| `/.well-known/oauth-authorization-server` | GET | OAuth metadata |
+| Endpoint                                  | Method | Description                         |
+| ----------------------------------------- | ------ | ----------------------------------- |
+| `/mcp`                                    | POST   | MCP JSON-RPC endpoint               |
+| `/health`                                 | GET    | Health check                        |
+| `/`                                       | GET    | Server info                         |
+| `/authorize`                              | GET    | OAuth authorization (login form)    |
+| `/authorize`                              | POST   | OAuth authorization (process login) |
+| `/token`                                  | POST   | OAuth token exchange                |
+| `/.well-known/oauth-authorization-server` | GET    | OAuth metadata                      |
 
 ---
 
@@ -203,38 +206,40 @@ productive(resource, action, ...)
 
 ### Resources & Actions
 
-| Resource | Actions | Description |
-|----------|---------|-------------|
-| `projects` | `list`, `get` | Project management |
-| `time` | `list`, `get`, `create`, `update`, `delete` | Time tracking |
-| `tasks` | `list`, `get` | Task management |
-| `services` | `list` | Budget line items |
-| `people` | `list`, `get`, `me` | Team members |
+| Resource   | Actions                                     | Description        |
+| ---------- | ------------------------------------------- | ------------------ |
+| `projects` | `list`, `get`                               | Project management |
+| `time`     | `list`, `get`, `create`, `update`, `delete` | Time tracking      |
+| `tasks`    | `list`, `get`                               | Task management    |
+| `services` | `list`                                      | Budget line items  |
+| `people`   | `list`, `get`, `me`                         | Team members       |
 
 ### Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `resource` | string | **Required**. One of: `projects`, `time`, `tasks`, `services`, `people` |
-| `action` | string | **Required**. Action to perform (see table above) |
-| `id` | string | Resource ID (required for `get`, `update`, `delete`) |
-| `filter` | object | Filter criteria for `list` actions |
-| `page` | number | Page number for pagination |
-| `per_page` | number | Items per page (default: 20, max: 200) |
-| `compact` | boolean | Compact output mode (default: true) |
-| `person_id` | string | Person ID (for time entry creation) |
-| `service_id` | string | Service ID (for time entry creation) |
-| `time` | number | Time in minutes (for time entries) |
-| `date` | string | Date in YYYY-MM-DD format |
-| `note` | string | Note/description |
+| Parameter    | Type    | Description                                                             |
+| ------------ | ------- | ----------------------------------------------------------------------- |
+| `resource`   | string  | **Required**. One of: `projects`, `time`, `tasks`, `services`, `people` |
+| `action`     | string  | **Required**. Action to perform (see table above)                       |
+| `id`         | string  | Resource ID (required for `get`, `update`, `delete`)                    |
+| `filter`     | object  | Filter criteria for `list` actions                                      |
+| `page`       | number  | Page number for pagination                                              |
+| `per_page`   | number  | Items per page (default: 20, max: 200)                                  |
+| `compact`    | boolean | Compact output mode (default: true)                                     |
+| `person_id`  | string  | Person ID (for time entry creation)                                     |
+| `service_id` | string  | Service ID (for time entry creation)                                    |
+| `time`       | number  | Time in minutes (for time entries)                                      |
+| `date`       | string  | Date in YYYY-MM-DD format                                               |
+| `note`       | string  | Note/description                                                        |
 
 ### Filter Options
 
 #### Projects
+
 - `company_id` - Filter by company
 - `project_manager_id` - Filter by project manager
 
 #### Time Entries
+
 - `person_id` - Filter by person
 - `project_id` - Filter by project
 - `service_id` - Filter by service
@@ -242,23 +247,26 @@ productive(resource, action, ...)
 - `before` - Before date (YYYY-MM-DD)
 
 #### Tasks
+
 - `project_id` - Filter by project
 - `assignee_id` - Filter by assignee
 - `task_list_id` - Filter by task list
 
 #### Services
+
 - `project_id` - Filter by project
 - `deal_id` - Filter by deal
 
 #### People
+
 - `archived` - Include archived (boolean)
 
 ### Configuration Tools (Local mode only)
 
-| Tool | Description |
-|------|-------------|
-| `productive_configure` | Configure credentials (organizationId, apiToken, userId) |
-| `productive_get_config` | View current configuration (token masked) |
+| Tool                    | Description                                              |
+| ----------------------- | -------------------------------------------------------- |
+| `productive_configure`  | Configure credentials (organizationId, apiToken, userId) |
+| `productive_get_config` | View current configuration (token masked)                |
 
 ---
 

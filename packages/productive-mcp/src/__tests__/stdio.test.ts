@@ -18,6 +18,7 @@ vi.mock('../handlers.js', () => ({
   }),
 }));
 
+import { executeToolWithCredentials } from '../handlers.js';
 import {
   getAvailableTools,
   getAvailablePrompts,
@@ -27,7 +28,6 @@ import {
   handleToolCall,
   handlePrompt,
 } from '../stdio.js';
-import { executeToolWithCredentials } from '../handlers.js';
 
 describe('stdio handlers', () => {
   beforeEach(() => {
@@ -221,7 +221,7 @@ describe('stdio handlers', () => {
           organizationId: 'test-org',
           apiToken: 'test-token',
           userId: 'test-user',
-        }
+        },
       );
     });
   });

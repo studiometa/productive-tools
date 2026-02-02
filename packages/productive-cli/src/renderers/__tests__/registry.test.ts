@@ -1,4 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+import type { GenericRenderer, RenderContext } from '../types.js';
+
+import { csvRenderer } from '../csv.js';
+import { kanbanRenderer } from '../human/kanban.js';
+import { humanTaskListRenderer } from '../human/task.js';
+import { humanTimeEntryListRenderer } from '../human/time-entry.js';
+import { jsonRenderer } from '../json.js';
 import {
   registerRenderer,
   getRenderer,
@@ -6,13 +14,7 @@ import {
   hasRenderer,
   getFormatsForResource,
 } from '../registry.js';
-import { jsonRenderer } from '../json.js';
-import { csvRenderer } from '../csv.js';
 import { tableRenderer } from '../table.js';
-import { humanTimeEntryListRenderer } from '../human/time-entry.js';
-import { humanTaskListRenderer } from '../human/task.js';
-import { kanbanRenderer } from '../human/kanban.js';
-import type { GenericRenderer, RenderContext } from '../types.js';
 
 const defaultCtx: RenderContext = {
   noColor: true,

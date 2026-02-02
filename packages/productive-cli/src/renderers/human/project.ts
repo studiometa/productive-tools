@@ -4,19 +4,17 @@
  * Displays projects with name, status, and budget information.
  */
 
-import { colors } from '../../utils/colors.js';
-import { linkedId } from '../../utils/productive-links.js';
 import type { FormattedProject, FormattedPagination } from '../../formatters/types.js';
 import type { ListRenderer, Renderer, RenderContext } from '../types.js';
+
+import { colors } from '../../utils/colors.js';
+import { linkedId } from '../../utils/productive-links.js';
 
 /**
  * Renderer for a list of projects with pagination
  */
 export class HumanProjectListRenderer implements ListRenderer<FormattedProject> {
-  render(
-    data: { data: FormattedProject[]; meta?: FormattedPagination },
-    ctx: RenderContext
-  ): void {
+  render(data: { data: FormattedProject[]; meta?: FormattedPagination }, ctx: RenderContext): void {
     for (const project of data.data) {
       this.renderItem(project, ctx);
     }
@@ -27,13 +25,9 @@ export class HumanProjectListRenderer implements ListRenderer<FormattedProject> 
   }
 
   renderItem(project: FormattedProject, _ctx: RenderContext): void {
-    const status = project.archived
-      ? colors.gray('[archived]')
-      : colors.green('[active]');
+    const status = project.archived ? colors.gray('[archived]') : colors.green('[active]');
 
-    console.log(
-      `${colors.bold(project.name)} ${status} ${linkedId(project.id, 'project')}`
-    );
+    console.log(`${colors.bold(project.name)} ${status} ${linkedId(project.id, 'project')}`);
 
     if (project.number) {
       console.log(colors.dim(`  Number: ${project.number}`));
@@ -45,11 +39,7 @@ export class HumanProjectListRenderer implements ListRenderer<FormattedProject> 
   }
 
   renderPagination(meta: FormattedPagination, _ctx: RenderContext): void {
-    console.log(
-      colors.dim(
-        `Page ${meta.page}/${meta.total_pages} (Total: ${meta.total_count})`
-      )
-    );
+    console.log(colors.dim(`Page ${meta.page}/${meta.total_pages} (Total: ${meta.total_count})`));
   }
 }
 
@@ -67,7 +57,7 @@ export class HumanProjectDetailRenderer implements Renderer<FormattedProject> {
     }
 
     console.log(
-      `${colors.cyan('Status:')}  ${project.archived ? colors.gray('Archived') : colors.green('Active')}`
+      `${colors.cyan('Status:')}  ${project.archived ? colors.gray('Archived') : colors.green('Active')}`,
     );
 
     if (project.budget) {
@@ -75,15 +65,11 @@ export class HumanProjectDetailRenderer implements Renderer<FormattedProject> {
     }
 
     if (project.created_at) {
-      console.log(
-        `${colors.cyan('Created:')} ${new Date(project.created_at).toLocaleString()}`
-      );
+      console.log(`${colors.cyan('Created:')} ${new Date(project.created_at).toLocaleString()}`);
     }
 
     if (project.updated_at) {
-      console.log(
-        `${colors.cyan('Updated:')} ${new Date(project.updated_at).toLocaleString()}`
-      );
+      console.log(`${colors.cyan('Updated:')} ${new Date(project.updated_at).toLocaleString()}`);
     }
   }
 }

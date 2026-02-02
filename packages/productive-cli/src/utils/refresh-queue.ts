@@ -3,8 +3,8 @@
  * Processes stale cache entries queued for refresh on previous CLI invocations.
  */
 
-import { getCache } from "./cache.js";
-import { getConfig } from "../config.js";
+import { getConfig } from '../config.js';
+import { getCache } from './cache.js';
 
 interface RefreshResult {
   processed: number;
@@ -33,7 +33,7 @@ export async function processRefreshQueue(
   };
 
   // Check if cache is enabled
-  if (options["no-cache"]) {
+  if (options['no-cache']) {
     return result;
   }
 
@@ -69,7 +69,7 @@ export async function processRefreshQueue(
 
     try {
       // Build the URL with query params
-      const baseUrl = config.baseUrl || "https://api.productive.io/api/v2";
+      const baseUrl = config.baseUrl || 'https://api.productive.io/api/v2';
       const url = new URL(`${baseUrl}${job.endpoint}`);
 
       // Add query params
@@ -81,11 +81,11 @@ export async function processRefreshQueue(
 
       // Make the API request
       const response = await globalThis.fetch(url.toString(), {
-        method: "GET",
+        method: 'GET',
         headers: {
-          "Content-Type": "application/vnd.api+json",
-          "X-Auth-Token": config.apiToken,
-          "X-Organization-Id": config.organizationId,
+          'Content-Type': 'application/vnd.api+json',
+          'X-Auth-Token': config.apiToken,
+          'X-Organization-Id': config.organizationId,
         },
       });
 
@@ -121,7 +121,7 @@ export async function processRefreshQueue(
 export async function getRefreshQueueCount(
   options: Record<string, string | boolean> = {},
 ): Promise<number> {
-  if (options["no-cache"]) {
+  if (options['no-cache']) {
     return 0;
   }
 

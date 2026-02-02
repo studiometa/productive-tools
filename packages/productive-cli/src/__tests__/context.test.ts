@@ -1,10 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  createContext,
-  createTestContext,
-  withContext,
-  type CommandContext,
-} from '../context.js';
+
+import { createContext, createTestContext, withContext, type CommandContext } from '../context.js';
 import { OutputFormatter } from '../output.js';
 
 // Mock dependencies
@@ -186,7 +182,9 @@ describe('createTestContext', () => {
   it('should throw if mock API method not provided', () => {
     const ctx = createTestContext();
 
-    expect(() => ctx.api.getProjects()).toThrow("Mock API method 'getProjects' was called but not provided");
+    expect(() => ctx.api.getProjects()).toThrow(
+      "Mock API method 'getProjects' was called but not provided",
+    );
   });
 
   it('should create no-op spinner', () => {

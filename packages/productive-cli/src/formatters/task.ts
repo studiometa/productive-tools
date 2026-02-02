@@ -2,13 +2,10 @@
  * Task formatting
  */
 
-import type {
-  JsonApiResource,
-  FormatOptions,
-  FormattedTask,
-} from './types.js';
-import { DEFAULT_FORMAT_OPTIONS } from './types.js';
+import type { JsonApiResource, FormatOptions, FormattedTask } from './types.js';
+
 import { stripHtml } from '../utils/html.js';
+import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 /**
  * Get an included resource by type and ID
@@ -16,7 +13,7 @@ import { stripHtml } from '../utils/html.js';
 function getIncludedResource(
   included: JsonApiResource[] | undefined,
   type: string,
-  id: string | undefined
+  id: string | undefined,
 ): JsonApiResource | undefined {
   if (!included || !id) return undefined;
   return included.find((r) => r.type === type && r.id === id);
@@ -25,10 +22,7 @@ function getIncludedResource(
 /**
  * Format a task resource for output
  */
-export function formatTask(
-  task: JsonApiResource,
-  options: FormatOptions = {}
-): FormattedTask {
+export function formatTask(task: JsonApiResource, options: FormatOptions = {}): FormattedTask {
   const opts = { ...DEFAULT_FORMAT_OPTIONS, ...options };
   const attrs = task.attributes;
   const rels = task.relationships;
@@ -87,7 +81,8 @@ export function formatTask(
       };
 
       // Try to resolve company from project
-      const companyId = (projectResource.relationships?.company?.data as { id?: string } | null)?.id;
+      const companyId = (projectResource.relationships?.company?.data as { id?: string } | null)
+        ?.id;
       const companyResource = getIncludedResource(opts.included, 'companies', companyId);
       if (companyResource) {
         result.company = {

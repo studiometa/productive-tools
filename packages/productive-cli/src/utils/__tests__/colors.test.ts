@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+
 import { colors, setColorEnabled, isColorEnabled } from '../colors.js';
 
 describe('colors', () => {

@@ -1,17 +1,18 @@
-import { OutputFormatter } from "../output.js";
-import { colors } from "../utils/colors.js";
-import { getSqliteCache } from "../utils/sqlite-cache.js";
-import { getCache } from "../utils/cache.js";
-import { ProductiveApi } from "../api.js";
-import { Spinner } from "../utils/spinner.js";
 import type {
   OutputFormat,
   ProductiveProject,
   ProductivePerson,
   ProductiveService,
-} from "../types.js";
-import { runCommand } from "../error-handler.js";
-import { ConfigError, CommandError } from "../errors.js";
+} from '../types.js';
+
+import { ProductiveApi } from '../api.js';
+import { runCommand } from '../error-handler.js';
+import { ConfigError, CommandError } from '../errors.js';
+import { OutputFormatter } from '../output.js';
+import { getCache } from '../utils/cache.js';
+import { colors } from '../utils/colors.js';
+import { Spinner } from '../utils/spinner.js';
+import { getSqliteCache } from '../utils/sqlite-cache.js';
 
 // ============================================================================
 // Exported helper functions (easily testable)
@@ -21,11 +22,11 @@ import { ConfigError, CommandError } from "../errors.js";
  * Format bytes to human-readable string
  */
 export function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
+  if (bytes === 0) return '0 B';
   const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
+  const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
 /**
@@ -43,87 +44,87 @@ export function formatDuration(seconds: number): string {
 // ============================================================================
 
 export function showCacheHelp(subcommand?: string): void {
-  if (subcommand === "status") {
+  if (subcommand === 'status') {
     console.log(`
-${colors.bold("productive cache status")} - Show cache statistics
+${colors.bold('productive cache status')} - Show cache statistics
 
-${colors.bold("USAGE:")}
+${colors.bold('USAGE:')}
   productive cache status
 
-${colors.bold("OPTIONS:")}
+${colors.bold('OPTIONS:')}
   -f, --format <fmt>  Output format: json, human
 
-${colors.bold("EXAMPLES:")}
+${colors.bold('EXAMPLES:')}
   productive cache status
   productive cache status --format json
 `);
-  } else if (subcommand === "clear") {
+  } else if (subcommand === 'clear') {
     console.log(`
-${colors.bold("productive cache clear")} - Clear cached data
+${colors.bold('productive cache clear')} - Clear cached data
 
-${colors.bold("USAGE:")}
+${colors.bold('USAGE:')}
   productive cache clear [pattern]
 
-${colors.bold("ARGUMENTS:")}
+${colors.bold('ARGUMENTS:')}
   [pattern]           Optional: clear only matching endpoints (e.g., "projects", "time")
 
-${colors.bold("EXAMPLES:")}
+${colors.bold('EXAMPLES:')}
   productive cache clear              # Clear all cache
   productive cache clear projects     # Clear only projects cache
   productive cache clear time         # Clear only time entries cache
 `);
-  } else if (subcommand === "sync") {
+  } else if (subcommand === 'sync') {
     console.log(`
-${colors.bold("productive cache sync")} - Sync reference data to local cache
+${colors.bold('productive cache sync')} - Sync reference data to local cache
 
-${colors.bold("USAGE:")}
+${colors.bold('USAGE:')}
   productive cache sync [options]
 
-${colors.bold("DESCRIPTION:")}
+${colors.bold('DESCRIPTION:')}
   Fetches and caches reference data (projects, people, services) locally
   for fast offline search and autocomplete.
 
-${colors.bold("OPTIONS:")}
+${colors.bold('OPTIONS:')}
   -f, --format <fmt>  Output format: json, human
 
-${colors.bold("EXAMPLES:")}
+${colors.bold('EXAMPLES:')}
   productive cache sync
   productive cache sync --format json
 `);
-  } else if (subcommand === "queue") {
+  } else if (subcommand === 'queue') {
     console.log(`
-${colors.bold("productive cache queue")} - Manage background refresh queue
+${colors.bold('productive cache queue')} - Manage background refresh queue
 
-${colors.bold("USAGE:")}
+${colors.bold('USAGE:')}
   productive cache queue [options]
 
-${colors.bold("DESCRIPTION:")}
+${colors.bold('DESCRIPTION:')}
   Shows and manages the background refresh queue. Stale cache entries are
   automatically queued for refresh and processed on the next CLI invocation.
 
-${colors.bold("OPTIONS:")}
+${colors.bold('OPTIONS:')}
   -f, --format <fmt>  Output format: json, human
   --clear             Clear all pending refresh jobs
 
-${colors.bold("EXAMPLES:")}
+${colors.bold('EXAMPLES:')}
   productive cache queue              # Show queue status
   productive cache queue --clear      # Clear the queue
   productive cache queue --format json
 `);
   } else {
     console.log(`
-${colors.bold("productive cache")} - Manage CLI cache
+${colors.bold('productive cache')} - Manage CLI cache
 
-${colors.bold("USAGE:")}
+${colors.bold('USAGE:')}
   productive cache <subcommand> [options]
 
-${colors.bold("SUBCOMMANDS:")}
+${colors.bold('SUBCOMMANDS:')}
   status              Show cache statistics
   clear [pattern]     Clear cached data
   sync                Sync reference data to local cache
   queue               Manage background refresh queue
 
-${colors.bold("CACHE BEHAVIOR:")}
+${colors.bold('CACHE BEHAVIOR:')}
   - GET requests are cached automatically
   - Write operations (create, update, delete) invalidate related cache
   - Different TTLs per data type:
@@ -131,17 +132,17 @@ ${colors.bold("CACHE BEHAVIOR:")}
     • Time entries: 5 minutes
     • Tasks, Budgets: 15 minutes
 
-${colors.bold("GLOBAL OPTIONS:")}
+${colors.bold('GLOBAL OPTIONS:')}
   --no-cache          Bypass cache for a single command
   --refresh           Force refresh (fetch fresh data, update cache)
 
-${colors.bold("EXAMPLES:")}
+${colors.bold('EXAMPLES:')}
   productive cache status
   productive cache clear
   productive projects list --no-cache
   productive time list --refresh
 
-Run ${colors.cyan("productive cache <subcommand> --help")} for subcommand details.
+Run ${colors.cyan('productive cache <subcommand> --help')} for subcommand details.
 `);
   }
 }
@@ -155,25 +156,25 @@ export async function handleCacheCommand(
   args: string[],
   options: Record<string, string | boolean>,
 ): Promise<void> {
-  const format = (options.format || options.f || "human") as OutputFormat;
-  const formatter = new OutputFormatter(format, options["no-color"] === true);
+  const format = (options.format || options.f || 'human') as OutputFormat;
+  const formatter = new OutputFormatter(format, options['no-color'] === true);
 
   await runCommand(async () => {
     switch (subcommand) {
-      case "status":
+      case 'status':
         await cacheStatus(formatter, options);
         break;
-      case "clear":
+      case 'clear':
         await cacheClear(args, formatter, options);
         break;
-      case "sync":
+      case 'sync':
         await cacheSync(formatter, options);
         break;
-      case "queue":
+      case 'queue':
         await cacheQueue(formatter, options);
         break;
       default:
-        throw CommandError.unknownSubcommand("cache", subcommand);
+        throw CommandError.unknownSubcommand('cache', subcommand);
     }
   }, formatter);
 }
@@ -186,7 +187,7 @@ async function cacheStatus(
   formatter: OutputFormatter,
   options: Record<string, string | boolean>,
 ): Promise<void> {
-  const orgId = (options["org-id"] as string) || process.env.PRODUCTIVE_ORG_ID;
+  const orgId = (options['org-id'] as string) || process.env.PRODUCTIVE_ORG_ID;
 
   if (!orgId) {
     throw ConfigError.missingOrganizationId();
@@ -199,7 +200,7 @@ async function cacheStatus(
     const refStats = await sqliteCache.getStats();
     const queueCount = await sqliteCache.getRefreshQueueCount();
 
-    if (formatter["format"] === "json") {
+    if (formatter['format'] === 'json') {
       formatter.output({
         query_cache: {
           entries: queryStats.entries,
@@ -223,37 +224,30 @@ async function cacheStatus(
         },
       });
     } else {
-      console.log(colors.bold("Cache Statistics"));
-      console.log(colors.dim("─".repeat(60)));
+      console.log(colors.bold('Cache Statistics'));
+      console.log(colors.dim('─'.repeat(60)));
 
-      console.log(colors.bold("\nQuery Cache (API Responses):"));
-      console.log(colors.cyan("  Entries:"), queryStats.entries);
-      console.log(colors.cyan("  Size:"), formatBytes(queryStats.size));
+      console.log(colors.bold('\nQuery Cache (API Responses):'));
+      console.log(colors.cyan('  Entries:'), queryStats.entries);
+      console.log(colors.cyan('  Size:'), formatBytes(queryStats.size));
       if (queryStats.entries > 0) {
-        console.log(
-          colors.cyan("  Oldest entry:"),
-          formatDuration(queryStats.oldestAge) + " ago",
-        );
+        console.log(colors.cyan('  Oldest entry:'), formatDuration(queryStats.oldestAge) + ' ago');
       }
 
-      console.log(colors.bold("\nReference Cache (Synced Data):"));
-      console.log(colors.cyan("  Projects:"), refStats.projects);
-      console.log(colors.cyan("  People:"), refStats.people);
-      console.log(colors.cyan("  Services:"), refStats.services);
+      console.log(colors.bold('\nReference Cache (Synced Data):'));
+      console.log(colors.cyan('  Projects:'), refStats.projects);
+      console.log(colors.cyan('  People:'), refStats.people);
+      console.log(colors.cyan('  Services:'), refStats.services);
 
-      console.log(colors.bold("\nRefresh Queue:"));
-      console.log(colors.cyan("  Pending jobs:"), queueCount);
+      console.log(colors.bold('\nRefresh Queue:'));
+      console.log(colors.cyan('  Pending jobs:'), queueCount);
       if (queueCount > 0) {
-        console.log(colors.dim("  (will be processed on next CLI invocation)"));
+        console.log(colors.dim('  (will be processed on next CLI invocation)'));
       }
 
-      console.log(colors.bold("\nDatabase:"));
-      console.log(colors.cyan("  Total size:"), formatBytes(refStats.dbSize));
-      console.log(
-        colors.dim(
-          `  Location: ~/.cache/productive-cli/productive-${orgId}.db`,
-        ),
-      );
+      console.log(colors.bold('\nDatabase:'));
+      console.log(colors.cyan('  Total size:'), formatBytes(refStats.dbSize));
+      console.log(colors.dim(`  Location: ~/.cache/productive-cli/productive-${orgId}.db`));
       console.log();
     }
   } finally {
@@ -266,7 +260,7 @@ async function cacheClear(
   formatter: OutputFormatter,
   options: Record<string, string | boolean>,
 ): Promise<void> {
-  const orgId = (options["org-id"] as string) || process.env.PRODUCTIVE_ORG_ID;
+  const orgId = (options['org-id'] as string) || process.env.PRODUCTIVE_ORG_ID;
 
   if (!orgId) {
     throw ConfigError.missingOrganizationId();
@@ -278,12 +272,10 @@ async function cacheClear(
   try {
     if (pattern) {
       const deleted = await sqliteCache.cacheInvalidate(pattern);
-      formatter.success(
-        `Cache cleared for pattern: ${pattern} (${deleted} entries removed)`,
-      );
+      formatter.success(`Cache cleared for pattern: ${pattern} (${deleted} entries removed)`);
     } else {
       await sqliteCache.clear();
-      formatter.success("All cache cleared");
+      formatter.success('All cache cleared');
     }
   } finally {
     sqliteCache.close();
@@ -298,8 +290,7 @@ async function cacheSync(
 
   try {
     const api = new ProductiveApi(options);
-    const orgId =
-      (options["org-id"] as string) || process.env.PRODUCTIVE_ORG_ID;
+    const orgId = (options['org-id'] as string) || process.env.PRODUCTIVE_ORG_ID;
 
     if (!orgId) {
       throw ConfigError.missingOrganizationId();
@@ -308,9 +299,9 @@ async function cacheSync(
     const sqliteCache = getSqliteCache(orgId);
 
     // Sync projects
-    spinner.setText("Syncing projects...");
+    spinner.setText('Syncing projects...');
     spinner.start();
-    let allProjects: ProductiveProject[] = [];
+    const allProjects: ProductiveProject[] = [];
     let page = 1;
     while (true) {
       const response = await api.getProjects({ page, perPage: 200 });
@@ -324,9 +315,9 @@ async function cacheSync(
     spinner.succeed(`Synced ${allProjects.length} projects`);
 
     // Sync people
-    spinner.setText("Syncing people...");
+    spinner.setText('Syncing people...');
     spinner.start();
-    let allPeople: ProductivePerson[] = [];
+    const allPeople: ProductivePerson[] = [];
     page = 1;
     while (true) {
       const response = await api.getPeople({ page, perPage: 200 });
@@ -340,9 +331,9 @@ async function cacheSync(
     spinner.succeed(`Synced ${allPeople.length} people`);
 
     // Sync services
-    spinner.setText("Syncing services...");
+    spinner.setText('Syncing services...');
     spinner.start();
-    let allServices: ProductiveService[] = [];
+    const allServices: ProductiveService[] = [];
     page = 1;
     while (true) {
       const response = await api.getServices({ page, perPage: 200 });
@@ -358,7 +349,7 @@ async function cacheSync(
     const stats = await sqliteCache.getStats();
     sqliteCache.close();
 
-    if (formatter["format"] === "json") {
+    if (formatter['format'] === 'json') {
       formatter.output({
         success: true,
         synced: {
@@ -370,11 +361,11 @@ async function cacheSync(
       });
     } else {
       console.log();
-      console.log(colors.green("✓"), "Cache sync completed");
+      console.log(colors.green('✓'), 'Cache sync completed');
       console.log(colors.dim(`  Database size: ${formatBytes(stats.dbSize)}`));
     }
   } catch (error: unknown) {
-    spinner.fail("Cache sync failed");
+    spinner.fail('Cache sync failed');
     throw error;
   }
 }
@@ -383,7 +374,7 @@ async function cacheQueue(
   formatter: OutputFormatter,
   options: Record<string, string | boolean>,
 ): Promise<void> {
-  const orgId = (options["org-id"] as string) || process.env.PRODUCTIVE_ORG_ID;
+  const orgId = (options['org-id'] as string) || process.env.PRODUCTIVE_ORG_ID;
 
   if (!orgId) {
     throw ConfigError.missingOrganizationId();
@@ -395,7 +386,7 @@ async function cacheQueue(
   // Handle --clear flag
   if (options.clear) {
     const cleared = await cache.clearRefreshQueueAsync();
-    if (formatter["format"] === "json") {
+    if (formatter['format'] === 'json') {
       formatter.output({ success: true, cleared });
     } else {
       formatter.success(`Cleared ${cleared} pending refresh job(s)`);
@@ -406,7 +397,7 @@ async function cacheQueue(
   // Show queue status
   const jobs = await cache.getPendingRefreshJobsAsync();
 
-  if (formatter["format"] === "json") {
+  if (formatter['format'] === 'json') {
     formatter.output({
       pending_jobs: jobs.length,
       jobs: jobs.map((job) => ({
@@ -418,11 +409,11 @@ async function cacheQueue(
       })),
     });
   } else {
-    console.log(colors.bold("Refresh Queue"));
-    console.log(colors.dim("─".repeat(60)));
+    console.log(colors.bold('Refresh Queue'));
+    console.log(colors.dim('─'.repeat(60)));
 
     if (jobs.length === 0) {
-      console.log(colors.dim("\nNo pending refresh jobs."));
+      console.log(colors.dim('\nNo pending refresh jobs.'));
     } else {
       console.log(colors.cyan(`\n${jobs.length} pending job(s):\n`));
 
@@ -430,20 +421,16 @@ async function cacheQueue(
         const ageSeconds = Math.round((Date.now() - job.queuedAt) / 1000);
         console.log(colors.bold(`  ${job.endpoint}`));
         console.log(colors.dim(`    Key: ${job.cacheKey}`));
-        console.log(
-          colors.dim(`    Queued: ${formatDuration(ageSeconds)} ago`),
-        );
+        console.log(colors.dim(`    Queued: ${formatDuration(ageSeconds)} ago`));
         if (Object.keys(job.params).length > 0) {
           console.log(colors.dim(`    Params: ${JSON.stringify(job.params)}`));
         }
         console.log();
       }
 
-      console.log(colors.dim("Jobs will be processed on next CLI invocation."));
+      console.log(colors.dim('Jobs will be processed on next CLI invocation.'));
       console.log(
-        colors.dim(
-          `Run ${colors.cyan("productive cache queue --clear")} to clear the queue.`,
-        ),
+        colors.dim(`Run ${colors.cyan('productive cache queue --clear')} to clear the queue.`),
       );
     }
     console.log();

@@ -2,9 +2,10 @@
  * Handler implementations for services command
  */
 
-import type { OutputFormat } from '../../types.js';
-import { runCommand } from '../../error-handler.js';
 import type { CommandContext } from '../../context.js';
+import type { OutputFormat } from '../../types.js';
+
+import { runCommand } from '../../error-handler.js';
 import { formatService, formatListResponse } from '../../formatters/index.js';
 import { render, createRenderContext } from '../../renderers/index.js';
 

@@ -4,20 +4,18 @@
  * Displays tasks grouped by workflow status in a multi-column board layout.
  */
 
-import { colors } from '../../utils/colors.js';
-import { linkedId } from '../../utils/productive-links.js';
 import type { FormattedTask, FormattedPagination } from '../../formatters/types.js';
 import type { ListRenderer, RenderContext } from '../types.js';
+
+import { colors } from '../../utils/colors.js';
+import { linkedId } from '../../utils/productive-links.js';
 
 /**
  * Strip ANSI codes for length calculation
  */
 function stripAnsi(str: string): string {
   // eslint-disable-next-line no-control-regex
-  return str.replace(
-    /\x1b\[[0-9;]*m|\x1b\]8;;[^\x1b]*\x1b\\|\x1b\]8;;\x1b\\/g,
-    ''
-  );
+  return str.replace(/\x1b\[[0-9;]*m|\x1b\]8;;[^\x1b]*\x1b\\|\x1b\]8;;\x1b\\/g, '');
 }
 
 /**
@@ -48,7 +46,7 @@ function truncateText(text: string, maxWidth: number): string {
       break;
     }
   }
-  return text.slice(0, cutIndex) + '…' + '\x1b[0m';
+  return text.slice(0, cutIndex) + '…\x1b[0m';
 }
 
 /**
@@ -85,10 +83,7 @@ interface KanbanColumn {
  * Kanban board renderer - displays tasks in columns by status
  */
 export class KanbanRenderer implements ListRenderer<FormattedTask> {
-  render(
-    data: { data: FormattedTask[]; meta?: FormattedPagination },
-    ctx: RenderContext
-  ): void {
+  render(data: { data: FormattedTask[]; meta?: FormattedPagination }, ctx: RenderContext): void {
     const columns = this.buildColumns(data.data);
     this.renderBoard(columns, ctx.terminalWidth);
 
@@ -140,9 +135,7 @@ export class KanbanRenderer implements ListRenderer<FormattedTask> {
       }
     }
 
-    const columns = Array.from(statusMap.values()).sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
+    const columns = Array.from(statusMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
     if (defaultColumn.tasks.length > 0) {
       columns.push(defaultColumn);
@@ -192,8 +185,7 @@ export class KanbanRenderer implements ListRenderer<FormattedTask> {
         if (!task) return ' '.repeat(columnWidth);
 
         const numberPart = task.number
-          ? linkedId(task.id, 'task').replace(`#${task.id}`, `#${task.number}`) +
-            ' '
+          ? linkedId(task.id, 'task').replace(`#${task.id}`, `#${task.number}`) + ' '
           : '';
         const titleText = `${numberPart}${task.title}`;
         return padText(truncateText(titleText, columnWidth), columnWidth);
@@ -219,9 +211,7 @@ export class KanbanRenderer implements ListRenderer<FormattedTask> {
 
       // Empty line between tasks
       if (taskIndex < maxTasks - 1) {
-        console.log(
-          columns.map(() => ' '.repeat(columnWidth)).join(' '.repeat(columnGap))
-        );
+        console.log(columns.map(() => ' '.repeat(columnWidth)).join(' '.repeat(columnGap)));
       }
     }
   }

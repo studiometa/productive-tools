@@ -1,53 +1,57 @@
 {
   "name": "@studiometa/productive",
   "version": "0.5.0",
-  "description": "Productive.io tools - CLI and MCP server for AI agents and humans",
   "private": true,
-  "type": "module",
+  "description": "Productive.io tools - CLI and MCP server for AI agents and humans",
+  "keywords": [
+    "ai-agent",
+    "api",
+    "automation",
+    "cli",
+    "mcp",
+    "model-context-protocol",
+    "productive",
+    "project-management"
+  ],
+  "license": "MIT",
+  "author": "Studio Meta",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/studiometa/productive-cli"
+  },
   "workspaces": [
     "packages/*"
   ],
+  "type": "module",
   "scripts": {
     "dev": "npm run dev --workspaces",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
     "test:watch": "npm run test:watch --workspaces",
     "test:ci": "npm run test:ci --workspaces --if-present",
-    "lint": "npm run lint --workspaces",
-    "format": "npm run format --workspaces",
-    "format:check": "npm run format:check --workspaces",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "lint:types": "oxlint --type-aware",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
     "typecheck": "npm run typecheck --workspaces",
     "clean": "rm -rf packages/*/dist packages/*/node_modules node_modules",
     "version:patch": "npm version --include-workspace-root --workspaces --no-git-tag-version patch",
     "version:minor": "npm version --include-workspace-root --workspaces --no-git-tag-version minor",
     "version:major": "npm version --include-workspace-root --workspaces --no-git-tag-version major"
   },
-  "keywords": [
-    "productive",
-    "cli",
-    "mcp",
-    "model-context-protocol",
-    "project-management",
-    "api",
-    "ai-agent",
-    "automation"
-  ],
-  "author": "Studio Meta",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/studiometa/productive-cli"
-  },
-  "engines": {
-    "node": ">=24.0.0"
-  },
   "devDependencies": {
     "@types/node": "^22.10.5",
     "@vitest/coverage-v8": "^2.1.9",
     "memfs": "4.56.2",
-    "oxlint": "^0.16.1",
+    "oxfmt": "0.28.0",
+    "oxlint": "1.43.0",
+    "oxlint-tsgolint": "0.11.4",
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
     "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

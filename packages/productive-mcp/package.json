@@ -2,50 +2,67 @@
   "name": "@studiometa/productive-mcp",
   "version": "0.5.0",
   "description": "MCP server for Productive.io API - Model Context Protocol integration for Claude Desktop",
-  "type": "module",
-  "publishConfig": {
-    "access": "public"
+  "keywords": [
+    "ai",
+    "claude",
+    "http",
+    "mcp",
+    "model-context-protocol",
+    "productive",
+    "project-management",
+    "remote"
+  ],
+  "license": "MIT",
+  "author": "Studio Meta",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/studiometa/productive-tools",
+    "directory": "packages/productive-mcp"
   },
   "bin": {
     "productive-mcp": "./dist/index.js",
     "productive-mcp-server": "./dist/server.js"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    },
-    "./server": {
-      "import": "./dist/server.js",
-      "types": "./dist/server.d.ts"
-    },
-    "./auth": {
-      "import": "./dist/auth.js",
-      "types": "./dist/auth.d.ts"
-    },
-    "./crypto": {
-      "import": "./dist/crypto.js",
-      "types": "./dist/crypto.d.ts"
-    },
-    "./oauth": {
-      "import": "./dist/oauth.js",
-      "types": "./dist/oauth.d.ts"
-    },
-    "./tools": {
-      "import": "./dist/tools.js",
-      "types": "./dist/tools.d.ts"
-    },
-    "./handlers": {
-      "import": "./dist/handlers.js",
-      "types": "./dist/handlers.d.ts"
-    }
-  },
   "files": [
     "dist",
     "Dockerfile"
   ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    },
+    "./auth": {
+      "types": "./dist/auth.d.ts",
+      "import": "./dist/auth.js"
+    },
+    "./crypto": {
+      "types": "./dist/crypto.d.ts",
+      "import": "./dist/crypto.js"
+    },
+    "./oauth": {
+      "types": "./dist/oauth.d.ts",
+      "import": "./dist/oauth.js"
+    },
+    "./tools": {
+      "types": "./dist/tools.d.ts",
+      "import": "./dist/tools.js"
+    },
+    "./handlers": {
+      "types": "./dist/handlers.d.ts",
+      "import": "./dist/handlers.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "vite build --watch",
     "dev:server": "node --watch dist/server.js",
@@ -55,29 +72,9 @@
     "test:watch": "vitest",
     "test:ci": "vitest run --coverage",
     "lint": "oxlint src",
-    "format": "oxlint --fix src",
-    "format:check": "oxlint src",
+    "format": "oxfmt --write src",
+    "format:check": "oxfmt --check src",
     "typecheck": "tsc --noEmit"
-  },
-  "keywords": [
-    "mcp",
-    "model-context-protocol",
-    "productive",
-    "claude",
-    "ai",
-    "project-management",
-    "http",
-    "remote"
-  ],
-  "author": "Studio Meta",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/studiometa/productive-tools",
-    "directory": "packages/productive-mcp"
-  },
-  "engines": {
-    "node": ">=20.0.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
@@ -87,9 +84,12 @@
   "devDependencies": {
     "@types/node": "^22.10.5",
     "@vitest/coverage-v8": "2.1.9",
-    "oxlint": "^0.16.1",
+    "oxlint": "^1.43.0",
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
     "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

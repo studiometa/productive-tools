@@ -28,7 +28,10 @@
  * ```
  */
 
-import type { OutputFormatter } from "./output.js";
+import type { OutputFormatter } from './output.js';
+import type { Result } from './utils/result.js';
+
+import { ProductiveApiError } from './api.js';
 import {
   CliError,
   ApiError,
@@ -37,9 +40,7 @@ import {
   ValidationError,
   isCliError,
   fromLegacyError,
-} from "./errors.js";
-import { ProductiveApiError } from "./api.js";
-import type { Result } from "./utils/result.js";
+} from './errors.js';
 
 /**
  * Exit codes for different error categories
@@ -109,14 +110,14 @@ export function handleError(
 
   // Output error in appropriate format
   const format = (formatter as unknown as { format: string }).format;
-  if (format === "json") {
+  if (format === 'json') {
     formatter.output(cliError.toJSON());
   } else {
     formatter.error(cliError.message);
 
     // Show additional context for certain error types
     if (cliError instanceof ConfigError && cliError.missingKeys?.length) {
-      console.error(`Missing: ${cliError.missingKeys.join(", ")}`);
+      console.error(`Missing: ${cliError.missingKeys.join(', ')}`);
     }
   }
 
@@ -185,10 +186,7 @@ export async function runCommand<T>(
 /**
  * Wraps a synchronous command function with automatic error handling.
  */
-export function runCommandSync<T>(
-  fn: () => T,
-  formatter: OutputFormatter,
-): T | undefined {
+export function runCommandSync<T>(fn: () => T, formatter: OutputFormatter): T | undefined {
   try {
     return fn();
   } catch (error) {
@@ -216,7 +214,7 @@ export function exitWithValidationError(
   const error = ValidationError.required(field);
   const format = (formatter as unknown as { format: string }).format;
 
-  if (format === "json") {
+  if (format === 'json') {
     formatter.output({
       ...error.toJSON(),
       usage,
@@ -232,7 +230,7 @@ export function exitWithValidationError(
  * Creates a formatted config error and exits.
  */
 export function exitWithConfigError(
-  missingKey: "apiToken" | "organizationId" | "userId",
+  missingKey: 'apiToken' | 'organizationId' | 'userId',
   formatter: OutputFormatter,
 ): never {
   const errorMap = {

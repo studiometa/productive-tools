@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite';
-import { builtinModules } from 'node:module';
 import { readFileSync } from 'node:fs';
+import { builtinModules } from 'node:module';
+import { defineConfig } from 'vite';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 
@@ -18,10 +18,7 @@ export default defineConfig({
       fileName: (format, entryName) => `${entryName}.js`,
     },
     rollupOptions: {
-      external: [
-        ...builtinModules,
-        ...builtinModules.map((m) => `node:${m}`),
-      ],
+      external: [...builtinModules, ...builtinModules.map((m) => `node:${m}`)],
       output: {
         preserveModules: false,
       },

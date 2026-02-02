@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { ConfigStore } from '../config-store.js';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { describe, it, expect, beforeEach } from 'vitest';
+
+import { ConfigStore } from '../config-store.js';
 
 function getConfigDir(): string {
   const platform = process.platform;

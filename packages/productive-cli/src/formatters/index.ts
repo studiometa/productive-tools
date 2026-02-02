@@ -21,6 +21,12 @@ export type {
   FormattedBudget,
 } from './types.js';
 
+export type { FormattedCompany } from './company.js';
+export type { FormattedComment } from './comment.js';
+export type { FormattedTimer } from './timer.js';
+export type { FormattedDeal } from './deal.js';
+export type { FormattedBooking } from './booking.js';
+
 export { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 // Formatters
@@ -30,6 +36,11 @@ export { formatTask } from './task.js';
 export { formatPerson } from './person.js';
 export { formatService } from './service.js';
 export { formatBudget } from './budget.js';
+export { formatCompany } from './company.js';
+export { formatComment } from './comment.js';
+export { formatTimer } from './timer.js';
+export { formatDeal } from './deal.js';
+export { formatBooking } from './booking.js';
 
 // Pagination
 export { formatPagination, hasMorePages } from './pagination.js';
@@ -47,6 +58,7 @@ import type {
   FormatOptions,
   FormattedListResponse,
 } from './types.js';
+
 import { formatPagination } from './pagination.js';
 
 /**
@@ -73,7 +85,7 @@ export function formatListResponse<T>(
   data: JsonApiResource[],
   formatter: (item: JsonApiResource, options?: FormatOptions) => T,
   meta?: JsonApiMeta,
-  options?: FormatOptions
+  options?: FormatOptions,
 ): FormattedListResponse<T> {
   // Pass included resources to formatter via options
   const formatOptions: FormatOptions = {
@@ -104,7 +116,7 @@ export function formatListResponse<T>(
 export function formatSingleResponse<T>(
   data: JsonApiResource,
   formatter: (item: JsonApiResource, options?: FormatOptions) => T,
-  options?: FormatOptions
+  options?: FormatOptions,
 ): T {
   return formatter(data, options);
 }
@@ -113,32 +125,80 @@ export function formatSingleResponse<T>(
 // Generic formatter (auto-detect type)
 // ============================================================================
 
-import { formatTimeEntry } from './time-entry.js';
-import { formatProject } from './project.js';
-import { formatTask } from './task.js';
-import { formatPerson } from './person.js';
-import { formatService } from './service.js';
+import { formatBooking } from './booking.js';
 import { formatBudget } from './budget.js';
+import { formatComment } from './comment.js';
+import { formatCompany } from './company.js';
+import { formatDeal } from './deal.js';
+import { formatPerson } from './person.js';
+import { formatProject } from './project.js';
+import { formatService } from './service.js';
+import { formatTask } from './task.js';
+import { formatTimeEntry } from './time-entry.js';
+import { formatTimer } from './timer.js';
 
 /**
  * Get the appropriate formatter function for a resource type
  */
 function getFormatterForType(
-  type?: string
+  type?: string,
 ): (item: JsonApiResource, options?: FormatOptions) => Record<string, unknown> {
   switch (type) {
     case 'time_entries':
-      return formatTimeEntry as (item: JsonApiResource, options?: FormatOptions) => Record<string, unknown>;
+      return formatTimeEntry as (
+        item: JsonApiResource,
+        options?: FormatOptions,
+      ) => Record<string, unknown>;
     case 'tasks':
-      return formatTask as (item: JsonApiResource, options?: FormatOptions) => Record<string, unknown>;
+      return formatTask as (
+        item: JsonApiResource,
+        options?: FormatOptions,
+      ) => Record<string, unknown>;
     case 'projects':
-      return formatProject as (item: JsonApiResource, options?: FormatOptions) => Record<string, unknown>;
+      return formatProject as (
+        item: JsonApiResource,
+        options?: FormatOptions,
+      ) => Record<string, unknown>;
     case 'people':
-      return formatPerson as (item: JsonApiResource, options?: FormatOptions) => Record<string, unknown>;
+      return formatPerson as (
+        item: JsonApiResource,
+        options?: FormatOptions,
+      ) => Record<string, unknown>;
     case 'services':
-      return formatService as (item: JsonApiResource, options?: FormatOptions) => Record<string, unknown>;
+      return formatService as (
+        item: JsonApiResource,
+        options?: FormatOptions,
+      ) => Record<string, unknown>;
     case 'budgets':
-      return formatBudget as (item: JsonApiResource, options?: FormatOptions) => Record<string, unknown>;
+      return formatBudget as (
+        item: JsonApiResource,
+        options?: FormatOptions,
+      ) => Record<string, unknown>;
+    case 'companies':
+      return formatCompany as (
+        item: JsonApiResource,
+        options?: FormatOptions,
+      ) => Record<string, unknown>;
+    case 'comments':
+      return formatComment as (
+        item: JsonApiResource,
+        options?: FormatOptions,
+      ) => Record<string, unknown>;
+    case 'timers':
+      return formatTimer as (
+        item: JsonApiResource,
+        options?: FormatOptions,
+      ) => Record<string, unknown>;
+    case 'deals':
+      return formatDeal as (
+        item: JsonApiResource,
+        options?: FormatOptions,
+      ) => Record<string, unknown>;
+    case 'bookings':
+      return formatBooking as (
+        item: JsonApiResource,
+        options?: FormatOptions,
+      ) => Record<string, unknown>;
     default:
       // Generic formatter: flatten id + attributes
       return (item: JsonApiResource) => ({
@@ -156,8 +216,12 @@ function getFormatterForType(
  * @returns Formatted data (single resource or list with pagination)
  */
 export function formatResponse(
-  response: { data: JsonApiResource | JsonApiResource[]; meta?: JsonApiMeta; included?: JsonApiResource[] },
-  options?: FormatOptions
+  response: {
+    data: JsonApiResource | JsonApiResource[];
+    meta?: JsonApiMeta;
+    included?: JsonApiResource[];
+  },
+  options?: FormatOptions,
 ): unknown {
   const formatOptions: FormatOptions = {
     ...options,

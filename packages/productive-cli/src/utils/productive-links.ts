@@ -2,11 +2,11 @@
  * Generate clickable links to Productive.io web interface
  */
 
-import { getConfig } from "../config.js";
-import { link } from "./html.js";
-import { colors } from "./colors.js";
+import { getConfig } from '../config.js';
+import { colors } from './colors.js';
+import { link } from './html.js';
 
-const PRODUCTIVE_BASE_URL = "https://app.productive.io";
+const PRODUCTIVE_BASE_URL = 'https://app.productive.io';
 
 /**
  * Get the organization ID for URL building
@@ -20,7 +20,7 @@ function getOrgId(): string | undefined {
  */
 export function projectUrl(projectId: string): string {
   const orgId = getOrgId();
-  if (!orgId) return "";
+  if (!orgId) return '';
   return `${PRODUCTIVE_BASE_URL}/${orgId}/projects/${projectId}`;
 }
 
@@ -29,7 +29,7 @@ export function projectUrl(projectId: string): string {
  */
 export function taskUrl(taskId: string): string {
   const orgId = getOrgId();
-  if (!orgId) return "";
+  if (!orgId) return '';
   return `${PRODUCTIVE_BASE_URL}/${orgId}/tasks/${taskId}`;
 }
 
@@ -38,7 +38,7 @@ export function taskUrl(taskId: string): string {
  */
 export function serviceUrl(serviceId: string, dealId?: string): string {
   const orgId = getOrgId();
-  if (!orgId) return "";
+  if (!orgId) return '';
   if (dealId) {
     return `${PRODUCTIVE_BASE_URL}/${orgId}/deals/${dealId}/budget?service=${serviceId}`;
   }
@@ -50,7 +50,7 @@ export function serviceUrl(serviceId: string, dealId?: string): string {
  */
 export function timeEntriesUrl(date?: string): string {
   const orgId = getOrgId();
-  if (!orgId) return "";
+  if (!orgId) return '';
   const base = `${PRODUCTIVE_BASE_URL}/${orgId}/time`;
   if (date) {
     return `${base}?date=${date}`;
@@ -63,7 +63,7 @@ export function timeEntriesUrl(date?: string): string {
  */
 export function personUrl(personId: string): string {
   const orgId = getOrgId();
-  if (!orgId) return "";
+  if (!orgId) return '';
   return `${PRODUCTIVE_BASE_URL}/${orgId}/people/${personId}`;
 }
 
@@ -72,7 +72,7 @@ export function personUrl(personId: string): string {
  */
 export function budgetUrl(budgetId: string): string {
   const orgId = getOrgId();
-  if (!orgId) return "";
+  if (!orgId) return '';
   return `${PRODUCTIVE_BASE_URL}/${orgId}/budgets/${budgetId}`;
 }
 
@@ -82,31 +82,31 @@ export function budgetUrl(budgetId: string): string {
  */
 export function linkedId(
   id: string,
-  type: "project" | "task" | "service" | "person" | "time" | "budget",
+  type: 'project' | 'task' | 'service' | 'person' | 'time' | 'budget',
 ): string {
   let url: string;
 
   switch (type) {
-    case "project":
+    case 'project':
       url = projectUrl(id);
       break;
-    case "task":
+    case 'task':
       url = taskUrl(id);
       break;
-    case "service":
+    case 'service':
       url = serviceUrl(id);
       break;
-    case "person":
+    case 'person':
       url = personUrl(id);
       break;
-    case "time":
+    case 'time':
       url = timeEntriesUrl();
       break;
-    case "budget":
+    case 'budget':
       url = budgetUrl(id);
       break;
     default:
-      url = "";
+      url = '';
   }
 
   const idText = colors.dim(`#${id}`);
@@ -145,11 +145,7 @@ export function linkedPerson(text: string, personId: string): string {
 /**
  * Format text as a clickable link to a service
  */
-export function linkedService(
-  text: string,
-  serviceId: string,
-  dealId?: string,
-): string {
+export function linkedService(text: string, serviceId: string, dealId?: string): string {
   const url = serviceUrl(serviceId, dealId);
   if (!url) return text;
   return link(text, url);

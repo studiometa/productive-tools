@@ -43,16 +43,12 @@ export class TableRenderer implements GenericRenderer {
 
     // Calculate column widths
     const colWidths = headers.map((header) => {
-      const maxDataWidth = Math.max(
-        ...data.map((row) => String(row[header] ?? '').length)
-      );
+      const maxDataWidth = Math.max(...data.map((row) => String(row[header] ?? '').length));
       return Math.max(header.length, maxDataWidth);
     });
 
     // Output header row
-    const headerRow = headers
-      .map((h, i) => h.padEnd(colWidths[i]))
-      .join(' | ');
+    const headerRow = headers.map((h, i) => h.padEnd(colWidths[i])).join(' | ');
     console.log(headerRow);
 
     // Output separator
@@ -60,9 +56,7 @@ export class TableRenderer implements GenericRenderer {
 
     // Output data rows
     for (const row of data) {
-      const rowStr = headers
-        .map((h, i) => String(row[h] ?? '').padEnd(colWidths[i]))
-        .join(' | ');
+      const rowStr = headers.map((h, i) => String(row[h] ?? '').padEnd(colWidths[i])).join(' | ');
       console.log(rowStr);
     }
   }

@@ -4,9 +4,10 @@
  * Handles command routing and dispatches to appropriate handlers.
  */
 
-import { OutputFormatter } from '../../output.js';
 import type { OutputFormat } from '../../types.js';
+
 import { createContext, type CommandOptions } from '../../context.js';
+import { OutputFormatter } from '../../output.js';
 import { timeList, timeGet, timeAdd, timeUpdate, timeDelete } from './handlers.js';
 
 /**
@@ -15,7 +16,7 @@ import { timeList, timeGet, timeAdd, timeUpdate, timeDelete } from './handlers.j
 export async function handleTimeCommand(
   subcommand: string,
   args: string[],
-  options: Record<string, string | boolean>
+  options: Record<string, string | boolean>,
 ): Promise<void> {
   const format = (options.format || options.f || 'human') as OutputFormat;
   const formatter = new OutputFormatter(format, options['no-color'] === true);

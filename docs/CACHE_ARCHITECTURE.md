@@ -3,6 +3,7 @@
 ## Overview
 
 The Productive CLI implements a two-tier caching system:
+
 1. **File Cache** - For API query responses (short TTL)
 2. **SQLite Cache** - For reference data with local search capabilities (long TTL)
 
@@ -50,6 +51,7 @@ The Productive CLI implements a two-tier caching system:
 **Location:** `~/.cache/productive-cli/queries/{hash}.json`
 
 **Characteristics:**
+
 - Caches any GET request response
 - Uses SHA256 hash of endpoint + params + orgId as key
 - TTL-based expiration (varies by endpoint)
@@ -57,6 +59,7 @@ The Productive CLI implements a two-tier caching system:
 - Invalidated on write operations (POST/PUT/DELETE)
 
 **TTL Configuration:**
+
 ```
 ┌────────────────┬─────────┬─────────────────┐
 │ Endpoint       │ TTL     │ Reason          │
@@ -71,9 +74,12 @@ The Productive CLI implements a two-tier caching system:
 ```
 
 **File Structure:**
+
 ```json
 {
-  "data": { /* API response */ },
+  "data": {
+    /* API response */
+  },
   "timestamp": 1705930800000,
   "ttl": 3600,
   "endpoint": "/projects",
@@ -90,6 +96,7 @@ The Productive CLI implements a two-tier caching system:
 **Location:** `~/.cache/productive-cli/productive-{orgId}.db`
 
 **Characteristics:**
+
 - Separate database per organization
 - Structured tables with indexes for fast search
 - Case-insensitive search
@@ -340,7 +347,7 @@ Write operations (POST, PUT, DELETE) automatically invalidate related cache:
 
 ```typescript
 // Creating a time entry
-api.createTimeEntry(...) 
+api.createTimeEntry(...)
 // → Invalidates all /time_entries/* cache entries
 ```
 
@@ -363,13 +370,13 @@ $ productive cache clear time
 ```typescript
 class FileCache {
   private cacheDir: string;
-  
+
   // Get cache key from endpoint + params
   private getCacheKey(endpoint, params, orgId): string {
     const hash = SHA256(endpoint + orgId + JSON.stringify(params));
     return hash.substring(0, 16);
   }
-  
+
   // Check TTL and return cached data
   get<T>(endpoint, params, orgId): T | null {
     const entry = readCacheFile(key);
@@ -378,7 +385,7 @@ class FileCache {
     }
     return entry.data;
   }
-  
+
   // Store with TTL
   set<T>(endpoint, params, orgId, data, options): void {
     const ttl = this.getTTL(endpoint, options?.ttl);
@@ -392,31 +399,31 @@ class FileCache {
 ```typescript
 class SqliteCache {
   private db: DatabaseSync;
-  
+
   // Upsert projects with transaction
   async upsertProjects(projects): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO projects (id, name, ..., data, synced_at)
       VALUES (?, ?, ..., ?, ?)
     `);
-    
+
     const now = Date.now();
     for (const p of projects) {
       stmt.run(p.id, p.attributes.name, ..., JSON.stringify(p), now);
     }
   }
-  
+
   // Case-insensitive search
   async searchProjects(query, limit = 50): Promise<CachedProject[]> {
     const stmt = this.db.prepare(`
-      SELECT * FROM projects 
+      SELECT * FROM projects
       WHERE name LIKE ? OR project_number LIKE ?
       ORDER BY name COLLATE NOCASE
       LIMIT ?
     `);
     return stmt.all(`%${query}%`, `%${query}%`, limit);
   }
-  
+
   // Check cache freshness
   async isProjectsCacheValid(ttl = 3600000): Promise<boolean> {
     const syncTime = await this.getProjectsSyncTime();
@@ -431,23 +438,23 @@ class SqliteCache {
 
 ### File Cache
 
-| Operation | Time Complexity | Notes |
-|-----------|----------------|-------|
-| get() | O(1) | File read by hash |
-| set() | O(1) | File write |
-| invalidate() | O(n) | Scans all files |
-| cleanup() | O(n log n) | Sorts by timestamp |
+| Operation    | Time Complexity | Notes              |
+| ------------ | --------------- | ------------------ |
+| get()        | O(1)            | File read by hash  |
+| set()        | O(1)            | File write         |
+| invalidate() | O(n)            | Scans all files    |
+| cleanup()    | O(n log n)      | Sorts by timestamp |
 
 **Space:** Up to 50MB, up to 1000 files
 
 ### SQLite Cache
 
-| Operation | Time Complexity | Notes |
-|-----------|----------------|-------|
-| upsertProjects() | O(n) | Batch INSERT |
-| searchProjects() | O(log n) | Indexed LIKE search |
-| getProjectById() | O(1) | Primary key lookup |
-| getAllProjects() | O(n) | Full table scan |
+| Operation        | Time Complexity | Notes               |
+| ---------------- | --------------- | ------------------- |
+| upsertProjects() | O(n)            | Batch INSERT        |
+| searchProjects() | O(log n)        | Indexed LIKE search |
+| getProjectById() | O(1)            | Primary key lookup  |
+| getAllProjects() | O(n)            | Full table scan     |
 
 **Space:** Typically 500KB - 5MB depending on org size
 
@@ -462,12 +469,13 @@ class SqliteCache {
    - Flag to force offline mode
 
 2. **Smart Search Command**
+
    ```bash
    $ productive search "acme corp"
    Projects:
      • ACME Website Redesign (PRJ-001)
      • ACME Mobile App (PRJ-042)
-   
+
    People:
      • John Doe (john@acme.com)
    ```
@@ -572,6 +580,7 @@ The Productive CLI implements a **dual-cache architecture**:
 2. **SQLite Cache** - Structured, searchable reference data with offline capabilities
 
 This approach provides:
+
 - ⚡ Fast response times (cache hits)
 - 🔍 Local search capabilities
 - 📡 Reduced API calls
@@ -579,6 +588,7 @@ This approach provides:
 - 🎯 Optimized for common CLI workflows
 
 The architecture is designed to be:
+
 - **Simple**: Zero configuration for basic use
 - **Fast**: Indexed searches, minimal overhead
 - **Reliable**: Graceful degradation if cache unavailable

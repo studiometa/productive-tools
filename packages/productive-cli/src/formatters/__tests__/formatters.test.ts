@@ -1,4 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
+
+import type { JsonApiResource } from '../types.js';
+
 import {
   formatTimeEntry,
   formatProject,
@@ -10,7 +13,6 @@ import {
   formatPagination,
   formatResponse,
 } from '../index.js';
-import type { JsonApiResource } from '../types.js';
 
 // Mock colors to disable ANSI codes in tests
 vi.mock('../../utils/colors.js', () => ({
@@ -407,9 +409,7 @@ describe('formatListResponse', () => {
 describe('formatResponse', () => {
   it('auto-detects type and formats list', () => {
     const response = {
-      data: [
-        { id: '1', type: 'projects', attributes: { name: 'Test', archived: false } },
-      ],
+      data: [{ id: '1', type: 'projects', attributes: { name: 'Test', archived: false } }],
       meta: { total_pages: 1, total_count: 1 },
     };
 
@@ -438,9 +438,7 @@ describe('formatResponse', () => {
           relationships: { project: { data: { type: 'projects', id: '2' } } },
         },
       ],
-      included: [
-        { id: '2', type: 'projects', attributes: { name: 'Project Name' } },
-      ],
+      included: [{ id: '2', type: 'projects', attributes: { name: 'Project Name' } }],
     };
 
     const result = formatResponse(response) as { data: Array<{ project_name: string }> };

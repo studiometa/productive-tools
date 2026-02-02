@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { handleServicesCommand } from '../services/index.js';
+
 import { ProductiveApi, ProductiveApiError } from '../../api.js';
+import { handleServicesCommand } from '../services/index.js';
 
 // Mock dependencies
 vi.mock('../../api.js');
@@ -59,7 +60,7 @@ describe('services command', () => {
         () =>
           ({
             getServices: vi.fn().mockResolvedValue(mockServices),
-          }) as any
+          }) as any,
       );
 
       await handleServicesCommand('list', [], {});

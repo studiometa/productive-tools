@@ -1,5 +1,6 @@
-import { createHash } from "node:crypto";
-import { getSqliteCache, type SqliteCache } from "./sqlite-cache.js";
+import { createHash } from 'node:crypto';
+
+import { getSqliteCache, type SqliteCache } from './sqlite-cache.js';
 
 interface CacheOptions {
   ttl?: number; // TTL in seconds
@@ -12,12 +13,12 @@ interface CacheGetResult<T> {
 
 // Default TTLs by endpoint pattern (in seconds)
 const DEFAULT_TTLS: Record<string, number> = {
-  "/projects": 3600, // 1 hour
-  "/people": 3600, // 1 hour
-  "/services": 3600, // 1 hour
-  "/time_entries": 300, // 5 minutes
-  "/tasks": 900, // 15 minutes
-  "/budgets": 900, // 15 minutes
+  '/projects': 3600, // 1 hour
+  '/people': 3600, // 1 hour
+  '/services': 3600, // 1 hour
+  '/time_entries': 300, // 5 minutes
+  '/tasks': 900, // 15 minutes
+  '/budgets': 900, // 15 minutes
 };
 
 /**
@@ -58,11 +59,7 @@ export class CacheStore {
   /**
    * Generate a cache key from endpoint and params
    */
-  private getCacheKey(
-    endpoint: string,
-    params: Record<string, unknown>,
-    orgId: string,
-  ): string {
+  private getCacheKey(endpoint: string, params: Record<string, unknown>, orgId: string): string {
     // Sort params keys for consistent hashing
     const sortedParams = Object.keys(params)
       .sort()
@@ -79,18 +76,14 @@ export class CacheStore {
       orgId,
       params: sortedParams,
     });
-    return createHash("sha256")
-      .update(normalized)
-      .digest("hex")
-      .substring(0, 16);
+    return createHash('sha256').update(normalized).digest('hex').substring(0, 16);
   }
 
   /**
    * Get the TTL for an endpoint (in milliseconds)
    */
   private getTTL(endpoint: string, customTTL?: number): number {
-    const ttlSeconds =
-      customTTL !== undefined ? customTTL : this.getDefaultTTL(endpoint);
+    const ttlSeconds = customTTL !== undefined ? customTTL : this.getDefaultTTL(endpoint);
     return ttlSeconds * 1000; // Convert to milliseconds
   }
 
@@ -109,11 +102,7 @@ export class CacheStore {
   /**
    * Get cached data if valid
    */
-  get<T>(
-    endpoint: string,
-    params: Record<string, unknown>,
-    orgId: string,
-  ): T | null {
+  get<T>(endpoint: string, params: Record<string, unknown>, orgId: string): T | null {
     if (!this.enabled) return null;
 
     this.setOrgId(orgId);

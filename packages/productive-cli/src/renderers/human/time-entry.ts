@@ -4,11 +4,12 @@
  * Displays time entries with formatted dates, durations, and notes.
  */
 
+import type { FormattedTimeEntry, FormattedPagination } from '../../formatters/types.js';
+import type { ListRenderer, Renderer, RenderContext } from '../types.js';
+
 import { colors } from '../../utils/colors.js';
 import { link } from '../../utils/html.js';
 import { timeEntriesUrl } from '../../utils/productive-links.js';
-import type { FormattedTimeEntry, FormattedPagination } from '../../formatters/types.js';
-import type { ListRenderer, Renderer, RenderContext } from '../types.js';
 
 /**
  * Format minutes as "Xh YYm"
@@ -22,12 +23,10 @@ function formatDuration(minutes: number): string {
 /**
  * Renderer for a list of time entries with totals and pagination
  */
-export class HumanTimeEntryListRenderer
-  implements ListRenderer<FormattedTimeEntry>
-{
+export class HumanTimeEntryListRenderer implements ListRenderer<FormattedTimeEntry> {
   render(
     data: { data: FormattedTimeEntry[]; meta?: FormattedPagination },
-    ctx: RenderContext
+    ctx: RenderContext,
   ): void {
     let totalMinutes = 0;
 
@@ -49,9 +48,7 @@ export class HumanTimeEntryListRenderer
     const duration = colors.green(formatDuration(entry.time_minutes));
 
     const dateUrl = timeEntriesUrl(entry.date);
-    const dateDisplay = dateUrl
-      ? link(colors.bold(entry.date), dateUrl)
-      : colors.bold(entry.date);
+    const dateDisplay = dateUrl ? link(colors.bold(entry.date), dateUrl) : colors.bold(entry.date);
 
     console.log(`${dateDisplay}  ${duration}  ${colors.dim(`#${entry.id}`)}`);
 
@@ -63,16 +60,12 @@ export class HumanTimeEntryListRenderer
 
   renderPagination(meta: FormattedPagination, _ctx: RenderContext): void {
     console.log(
-      colors.dim(
-        `Page ${meta.page}/${meta.total_pages} (Total: ${meta.total_count} entries)`
-      )
+      colors.dim(`Page ${meta.page}/${meta.total_pages} (Total: ${meta.total_count} entries)`),
     );
   }
 
   private renderTotal(totalMinutes: number): void {
-    console.log(
-      colors.bold(colors.cyan(`Total: ${formatDuration(totalMinutes)}`))
-    );
+    console.log(colors.bold(colors.cyan(`Total: ${formatDuration(totalMinutes)}`)));
   }
 }
 
@@ -86,7 +79,7 @@ export class HumanTimeEntryDetailRenderer implements Renderer<FormattedTimeEntry
     console.log(`${colors.cyan('ID:')}       ${entry.id}`);
     console.log(`${colors.cyan('Date:')}     ${entry.date}`);
     console.log(
-      `${colors.cyan('Duration:')} ${colors.green(formatDuration(entry.time_minutes))} ${colors.dim(`(${entry.time_minutes} minutes)`)}`
+      `${colors.cyan('Duration:')} ${colors.green(formatDuration(entry.time_minutes))} ${colors.dim(`(${entry.time_minutes} minutes)`)}`,
     );
     if (entry.note) {
       console.log(`${colors.cyan('Note:')}     ${entry.note}`);

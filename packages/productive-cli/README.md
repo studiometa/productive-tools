@@ -68,6 +68,7 @@ productive config validate
 ```
 
 **Credential Priority:**
+
 1. CLI arguments (`--token`, `--org-id`, `--user-id`)
 2. Environment variables (`PRODUCTIVE_API_TOKEN`, `PRODUCTIVE_ORG_ID`, `PRODUCTIVE_USER_ID`)
 3. Config file (`~/.config/productive-cli/config.json`)
@@ -110,15 +111,18 @@ After installation, restart your shell to activate completions.
 ### Installation Details
 
 **Bash:**
+
 - Installs to: `~/.local/share/bash-completion/completions/productive`
 - Restart shell: `exec bash`
 
 **Zsh:**
+
 - Installs to: `~/.local/share/zsh/site-functions/_productive`
 - Restart shell: `exec zsh`
 - Note: Ensure the directory is in your `$fpath`
 
 **Fish:**
+
 - Installs to: `~/.config/fish/completions/productive.fish`
 - Completions load automatically
 
@@ -171,6 +175,7 @@ productive config clear
 ```
 
 **Configuration Location:**
+
 - **Linux/Unix**: `~/.config/productive-cli/config.json`
 - **macOS**: `~/Library/Application Support/productive-cli/config.json`
 - **Windows**: `%APPDATA%\productive-cli\config.json`
@@ -178,6 +183,7 @@ productive config clear
 **Secure Credential Storage:**
 
 Sensitive values (like `apiToken`) are automatically stored in the system keychain when available:
+
 - **macOS**: Keychain Access (via `security` CLI)
 - **Linux**: libsecret (via `secret-tool` CLI, requires `libsecret-tools` package)
 - **Fallback**: Config file (when keychain is unavailable)
@@ -246,6 +252,7 @@ productive time get <entry-id>
 ```
 
 **Time Values:**
+
 - Time is specified in **minutes**
 - Example: `--time 480` = 8 hours
 - Example: `--time 90` = 1.5 hours
@@ -340,6 +347,7 @@ productive api /projects --include
 **Field Type Conversion:**
 
 The `--field` flag performs automatic type conversion:
+
 - `true`, `false`, `null` → JSON boolean/null
 - Numbers (`123`, `45.67`) → integers or floats
 - `@filename` → reads value from file
@@ -349,17 +357,18 @@ Use `--raw-field` to always treat values as strings (no conversion).
 
 **API Command Options:**
 
-| Option | Alias | Description |
-|--------|-------|-------------|
-| `-X, --method <method>` | | HTTP method (GET, POST, PATCH, DELETE, PUT) |
-| `-F, --field <key=value>` | | Add parameter with type conversion (repeatable) |
-| `-f, --raw-field <key=value>` | | Add string parameter (repeatable) |
-| `-H, --header <header>` | | Add custom header (repeatable) |
-| `--input <file>` | | Read request body from file |
-| `--paginate` | | Fetch all pages automatically |
-| `--include` | | Include response headers in output |
+| Option                        | Alias | Description                                     |
+| ----------------------------- | ----- | ----------------------------------------------- |
+| `-X, --method <method>`       |       | HTTP method (GET, POST, PATCH, DELETE, PUT)     |
+| `-F, --field <key=value>`     |       | Add parameter with type conversion (repeatable) |
+| `-f, --raw-field <key=value>` |       | Add string parameter (repeatable)               |
+| `-H, --header <header>`       |       | Add custom header (repeatable)                  |
+| `--input <file>`              |       | Read request body from file                     |
+| `--paginate`                  |       | Fetch all pages automatically                   |
+| `--include`                   |       | Include response headers in output              |
 
 **Features:**
+
 - Automatic authentication using configured credentials
 - Smart method detection (GET by default, POST when fields provided)
 - Automatic pagination with `--paginate`
@@ -371,28 +380,29 @@ See full documentation: `productive api --help`
 
 ### Global Options
 
-| Option | Alias | Description | Default |
-|--------|-------|-------------|---------|
-| `--format <fmt>` | `-f` | Output format: `json`, `human`, `csv`, `table` | `human` |
-| `--page <num>` | `-p` | Page number for pagination | `1` |
-| `--size <num>` | `-s` | Items per page | `100` |
-| `--sort <field>` | | Sort by field (prefix with `-` for descending) | |
-| `--no-color` | | Disable colored output | |
-| `--help` | `-h` | Show help | |
-| `--version` | `-v` | Show version | |
+| Option           | Alias | Description                                    | Default |
+| ---------------- | ----- | ---------------------------------------------- | ------- |
+| `--format <fmt>` | `-f`  | Output format: `json`, `human`, `csv`, `table` | `human` |
+| `--page <num>`   | `-p`  | Page number for pagination                     | `1`     |
+| `--size <num>`   | `-s`  | Items per page                                 | `100`   |
+| `--sort <field>` |       | Sort by field (prefix with `-` for descending) |         |
+| `--no-color`     |       | Disable colored output                         |         |
+| `--help`         | `-h`  | Show help                                      |         |
+| `--version`      | `-v`  | Show version                                   |         |
 
 ### Authentication Options
 
-| Option | Alias | Description |
-|--------|-------|-------------|
-| `--token <token>` | `--api-token` | API token (overrides config and env) |
-| `--org-id <id>` | `--organization-id` | Organization ID (overrides config and env) |
-| `--user-id <id>` | | User ID (overrides config and env) |
-| `--base-url <url>` | | Custom API base URL |
+| Option             | Alias               | Description                                |
+| ------------------ | ------------------- | ------------------------------------------ |
+| `--token <token>`  | `--api-token`       | API token (overrides config and env)       |
+| `--org-id <id>`    | `--organization-id` | Organization ID (overrides config and env) |
+| `--user-id <id>`   |                     | User ID (overrides config and env)         |
+| `--base-url <url>` |                     | Custom API base URL                        |
 
 ### Output Formats
 
 #### Human (Default)
+
 Beautiful, colored output optimized for terminal viewing:
 
 ```bash
@@ -418,6 +428,7 @@ Page 1/120 (Total: 358 projects)
 ```
 
 #### JSON (AI-Optimized)
+
 Structured JSON for programmatic consumption:
 
 ```bash
@@ -432,7 +443,7 @@ productive projects list --format json
       "name": "Build | Artflo",
       "project_number": "326",
       "archived": false,
-      "budget": 50000.00,
+      "budget": 50000.0,
       "created_at": "2024-12-09T11:11:07.434+01:00",
       "updated_at": "2024-12-09T11:11:07.434+01:00"
     }
@@ -446,6 +457,7 @@ productive projects list --format json
 ```
 
 #### CSV (Spreadsheet Export)
+
 Comma-separated values for Excel/Google Sheets:
 
 ```bash
@@ -453,6 +465,7 @@ productive time list --format csv > time-entries.csv
 ```
 
 #### Table (ASCII Table)
+
 Clean table format for reports:
 
 ```bash
@@ -598,14 +611,14 @@ api.getBudgets(params?)
 
 ## Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `PRODUCTIVE_API_TOKEN` | Your Productive.io API token | Yes |
-| `PRODUCTIVE_ORG_ID` | Your organization ID | Yes |
-| `PRODUCTIVE_USER_ID` | Your user ID (for time entries) | Yes* |
-| `PRODUCTIVE_BASE_URL` | Custom API base URL | No |
-| `XDG_CONFIG_HOME` | Custom config directory | No |
-| `NO_COLOR` | Disable colored output | No |
+| Variable               | Description                     | Required |
+| ---------------------- | ------------------------------- | -------- |
+| `PRODUCTIVE_API_TOKEN` | Your Productive.io API token    | Yes      |
+| `PRODUCTIVE_ORG_ID`    | Your organization ID            | Yes      |
+| `PRODUCTIVE_USER_ID`   | Your user ID (for time entries) | Yes\*    |
+| `PRODUCTIVE_BASE_URL`  | Custom API base URL             | No       |
+| `XDG_CONFIG_HOME`      | Custom config directory         | No       |
+| `NO_COLOR`             | Disable colored output          | No       |
 
 \* Required only for time entry creation
 
@@ -775,6 +788,7 @@ DEBUG=productive:* productive projects list
 - **Token-Based Auth**: Secure token authentication with Productive.io
 
 Security best practices:
+
 - Never commit API tokens to version control
 - Use environment variables in CI/CD environments
 - Rotate API tokens regularly
@@ -784,11 +798,11 @@ Security best practices:
 
 On supported platforms, sensitive values are automatically stored in the system keychain:
 
-| Platform | Backend | Requirement |
-|----------|---------|-------------|
-| macOS | Keychain Access | Built-in |
-| Linux | libsecret (Secret Service) | `libsecret-tools` package |
-| Windows | Not supported | Falls back to config file |
+| Platform | Backend                    | Requirement               |
+| -------- | -------------------------- | ------------------------- |
+| macOS    | Keychain Access            | Built-in                  |
+| Linux    | libsecret (Secret Service) | `libsecret-tools` package |
+| Windows  | Not supported              | Falls back to config file |
 
 The CLI automatically detects keychain availability and falls back to config file storage when needed.
 

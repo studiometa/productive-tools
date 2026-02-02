@@ -2,7 +2,7 @@
  * HTML text utilities for cleaning up API responses
  */
 
-import { isColorEnabled, colors } from "./colors.js";
+import { isColorEnabled, colors } from './colors.js';
 
 // URL regex pattern
 const URL_REGEX = /https?:\/\/[^\s<>"']+/g;
@@ -53,35 +53,33 @@ function extractLinks(html: string): {
  * - Trims and normalizes whitespace
  */
 export function stripHtml(html: string | null | undefined): string {
-  if (!html) return "";
+  if (!html) return '';
 
   // First extract links to preserve them
   const { text: htmlWithPlaceholders, links } = extractLinks(html);
 
   let text = htmlWithPlaceholders
     // Convert line-breaking tags to newlines
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/(p|div|li|tr)>/gi, "\n")
-    .replace(/<\/?(ul|ol)>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|tr)>/gi, '\n')
+    .replace(/<\/?(ul|ol)>/gi, '\n')
     // Convert list items to bullet points
-    .replace(/<li[^>]*>/gi, "• ")
+    .replace(/<li[^>]*>/gi, '• ')
     // Strip remaining HTML tags (including images with data-uri)
-    .replace(/<[^>]+>/g, "")
+    .replace(/<[^>]+>/g, '')
     // Decode common HTML entities
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/gi, "'")
     .replace(/&apos;/gi, "'")
     .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, code) =>
-      String.fromCharCode(parseInt(code, 16)),
-    )
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)))
     // Normalize whitespace
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 
   // Restore links as clickable terminal links
@@ -104,5 +102,5 @@ export function stripHtml(html: string | null | undefined): string {
  */
 export function truncate(text: string, maxLength: number): string {
   if (!text || text.length <= maxLength) return text;
-  return text.slice(0, maxLength - 1) + "…";
+  return text.slice(0, maxLength - 1) + '…';
 }

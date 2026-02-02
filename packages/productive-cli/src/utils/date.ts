@@ -4,21 +4,21 @@
  * - Keywords: today, yesterday, tomorrow
  * - Relative: "2 days ago", "1 week ago", "3 months ago"
  * - Shortcuts: "last week", "last month", "this week", "this month"
- * 
+ *
  * @param input - Date string to parse
  * @returns ISO date string (YYYY-MM-DD) or null if invalid
  */
 export function parseDate(input: string): string | null {
   if (!input) return null;
-  
+
   const normalized = input.toLowerCase().trim();
   const now = new Date();
-  
+
   // ISO date format (YYYY-MM-DD)
   if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
     return normalized;
   }
-  
+
   // Keywords
   switch (normalized) {
     case 'today':
@@ -28,13 +28,13 @@ export function parseDate(input: string): string | null {
     case 'tomorrow':
       return formatDate(addDays(now, 1));
   }
-  
+
   // Relative dates: "X days/weeks/months ago"
   const relativeMatch = normalized.match(/^(\d+)\s+(day|days|week|weeks|month|months)\s+ago$/);
   if (relativeMatch) {
     const amount = parseInt(relativeMatch[1], 10);
     const unit = relativeMatch[2];
-    
+
     if (unit.startsWith('day')) {
       return formatDate(addDays(now, -amount));
     } else if (unit.startsWith('week')) {
@@ -43,7 +43,7 @@ export function parseDate(input: string): string | null {
       return formatDate(addMonths(now, -amount));
     }
   }
-  
+
   // Shortcuts
   switch (normalized) {
     case 'last week': {
@@ -62,7 +62,7 @@ export function parseDate(input: string): string | null {
       return formatDate(new Date(now.getFullYear(), now.getMonth(), 1));
     }
   }
-  
+
   return null;
 }
 
@@ -72,10 +72,10 @@ export function parseDate(input: string): string | null {
  */
 export function parseDateRange(input: string): { from: string; to: string } | null {
   if (!input) return null;
-  
+
   const normalized = input.toLowerCase().trim();
   const now = new Date();
-  
+
   // Range shortcuts
   switch (normalized) {
     case 'today':
@@ -105,13 +105,13 @@ export function parseDateRange(input: string): { from: string; to: string } | nu
       return { from: formatDate(start), to: formatDate(end) };
     }
   }
-  
+
   // Single date - use parseDate for other formats
   const singleDate = parseDate(input);
   if (singleDate) {
     return { from: singleDate, to: singleDate };
   }
-  
+
   return null;
 }
 

@@ -1,0 +1,73 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "vitest", "promise", "node"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "env": {
+    "node": true,
+    "es2024": true
+  },
+  "rules": {
+    // Complexity rules
+    "complexity": ["warn", { "max": 50 }],
+    "max-depth": ["warn", { "max": 5 }],
+    "max-lines-per-function": [
+      "warn",
+      { "max": 200, "skipBlankLines": true, "skipComments": true }
+    ],
+    "max-nested-callbacks": ["warn", { "max": 4 }],
+    "max-params": ["warn", { "max": 6 }],
+
+    // Code quality
+    "no-console": "off",
+    "no-control-regex": "off",
+    "no-useless-escape": "off",
+    "eqeqeq": ["warn", "always", { "null": "ignore" }],
+    "no-var": "error",
+    "prefer-const": "warn",
+
+    // TypeScript
+    "typescript/no-explicit-any": "warn",
+    "typescript/no-non-null-assertion": "off",
+    "typescript/consistent-type-imports": "off",
+    "typescript/no-import-type-side-effects": "off",
+
+    // Import
+    "import/no-cycle": "error",
+    "import/no-self-import": "error",
+    "import/no-duplicates": "warn",
+    "import/no-default-export": "off",
+
+    // Promise
+    "promise/catch-or-return": "off",
+    "promise/always-return": "off",
+    "promise/no-return-wrap": "warn",
+
+    // Vitest
+    "vitest/no-conditional-tests": "error",
+    "vitest/no-import-node-test": "error",
+    "vitest/prefer-to-be-truthy": "off",
+    "vitest/prefer-to-be-falsy": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.spec.ts", "**/__tests__/**/*.ts"],
+      "rules": {
+        "typescript/no-explicit-any": "off",
+        "max-lines-per-function": "off",
+        "max-nested-callbacks": "off",
+        "promise/catch-or-return": "off"
+      }
+    },
+    {
+      "files": ["**/cli.ts"],
+      "rules": {
+        "complexity": "off",
+        "max-lines-per-function": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["dist", "node_modules", "coverage", "*.config.js", "*.config.ts"]
+}

@@ -1,20 +1,21 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { ProductiveApi, ProductiveApiError } from "../api.js";
-import { setConfig, clearConfig } from "../config.js";
-import { disableCache, resetCache } from "../utils/cache.js";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+import { ProductiveApi, ProductiveApiError } from '../api.js';
+import { setConfig, clearConfig } from '../config.js';
+import { disableCache, resetCache } from '../utils/cache.js';
 
 // Mock keychain to avoid reading real keychain values in tests
-vi.mock("../utils/keychain-store.js", () => ({
+vi.mock('../utils/keychain-store.js', () => ({
   isKeychainAvailable: vi.fn().mockReturnValue(false),
-  getKeychainBackend: vi.fn().mockReturnValue("none"),
+  getKeychainBackend: vi.fn().mockReturnValue('none'),
   getKeychainValue: vi.fn().mockReturnValue(null),
   setKeychainValue: vi.fn().mockReturnValue(false),
   deleteKeychainValue: vi.fn().mockReturnValue(false),
-  isSecureKey: vi.fn().mockImplementation((key: string) => key === "apiToken"),
-  SECURE_KEYS: ["apiToken"],
+  isSecureKey: vi.fn().mockImplementation((key: string) => key === 'apiToken'),
+  SECURE_KEYS: ['apiToken'],
 }));
 
-describe("ProductiveApi", () => {
+describe('ProductiveApi', () => {
   const originalEnv = { ...process.env };
   const originalFetch = globalThis.fetch;
 
@@ -29,8 +30,8 @@ describe("ProductiveApi", () => {
     disableCache();
 
     // Set up test configuration
-    setConfig("apiToken", "test-token");
-    setConfig("organizationId", "test-org-id");
+    setConfig('apiToken', 'test-token');
+    setConfig('organizationId', 'test-org-id');
 
     // Mock fetch
     globalThis.fetch = vi.fn();
@@ -45,38 +46,38 @@ describe("ProductiveApi", () => {
     resetCache();
   });
 
-  it("should throw error if apiToken not configured", () => {
+  it('should throw error if apiToken not configured', () => {
     clearConfig();
     delete process.env.PRODUCTIVE_API_TOKEN;
     delete process.env.PRODUCTIVE_ORG_ID;
-    expect(() => new ProductiveApi()).toThrow("API token not configured");
+    expect(() => new ProductiveApi()).toThrow('API token not configured');
   });
 
-  it("should throw error if organizationId not configured", () => {
+  it('should throw error if organizationId not configured', () => {
     clearConfig();
     delete process.env.PRODUCTIVE_API_TOKEN;
     delete process.env.PRODUCTIVE_ORG_ID;
-    setConfig("apiToken", "test-token");
-    expect(() => new ProductiveApi()).toThrow("Organization ID not configured");
+    setConfig('apiToken', 'test-token');
+    expect(() => new ProductiveApi()).toThrow('Organization ID not configured');
   });
 
-  it("should create API instance with config", () => {
+  it('should create API instance with config', () => {
     const api = new ProductiveApi();
     expect(api).toBeDefined();
   });
 
-  it("should fetch projects", async () => {
+  it('should fetch projects', async () => {
     const mockResponse = {
       data: [
         {
-          id: "1",
-          type: "projects",
+          id: '1',
+          type: 'projects',
           attributes: {
-            name: "Test Project",
-            project_number: "PRJ-001",
+            name: 'Test Project',
+            project_number: 'PRJ-001',
             archived: false,
-            created_at: "2024-01-01T00:00:00Z",
-            updated_at: "2024-01-01T00:00:00Z",
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z',
           },
         },
       ],
@@ -92,29 +93,29 @@ describe("ProductiveApi", () => {
     const result = await api.getProjects();
 
     expect(result.data).toHaveLength(1);
-    expect(result.data[0].attributes.name).toBe("Test Project");
+    expect(result.data[0].attributes.name).toBe('Test Project');
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/projects"),
+      expect.stringContaining('/projects'),
       expect.objectContaining({
         headers: expect.objectContaining({
-          "X-Auth-Token": "test-token",
-          "X-Organization-Id": "test-org-id",
+          'X-Auth-Token': 'test-token',
+          'X-Organization-Id': 'test-org-id',
         }),
       }),
     );
   });
 
-  it("should fetch single project", async () => {
+  it('should fetch single project', async () => {
     const mockResponse = {
       data: {
-        id: "1",
-        type: "projects",
+        id: '1',
+        type: 'projects',
         attributes: {
-          name: "Test Project",
-          project_number: "PRJ-001",
+          name: 'Test Project',
+          project_number: 'PRJ-001',
           archived: false,
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
         },
       },
     };
@@ -125,52 +126,49 @@ describe("ProductiveApi", () => {
     });
 
     const api = new ProductiveApi();
-    const result = await api.getProject("1");
+    const result = await api.getProject('1');
 
-    expect(result.data.id).toBe("1");
-    expect(result.data.attributes.name).toBe("Test Project");
+    expect(result.data.id).toBe('1');
+    expect(result.data.attributes.name).toBe('Test Project');
   });
 
-  it("should handle API errors", async () => {
+  it('should handle API errors', async () => {
     (globalThis.fetch as any).mockResolvedValueOnce({
       ok: false,
       status: 401,
-      statusText: "Unauthorized",
-      text: async () =>
-        JSON.stringify({ errors: [{ detail: "Invalid token" }] }),
+      statusText: 'Unauthorized',
+      text: async () => JSON.stringify({ errors: [{ detail: 'Invalid token' }] }),
     });
 
     const api = new ProductiveApi();
 
-    await expect(api.getProjects()).rejects.toThrow("Invalid token");
+    await expect(api.getProjects()).rejects.toThrow('Invalid token');
   });
 
-  it("should handle non-JSON error responses", async () => {
+  it('should handle non-JSON error responses', async () => {
     (globalThis.fetch as any).mockResolvedValueOnce({
       ok: false,
       status: 500,
-      statusText: "Internal Server Error",
-      text: async () => "Server error",
+      statusText: 'Internal Server Error',
+      text: async () => 'Server error',
     });
 
     const api = new ProductiveApi();
 
-    await expect(api.getProjects()).rejects.toThrow(
-      "500 Internal Server Error",
-    );
+    await expect(api.getProjects()).rejects.toThrow('500 Internal Server Error');
   });
 
-  it("should create time entry", async () => {
+  it('should create time entry', async () => {
     const mockResponse = {
       data: {
-        id: "1",
-        type: "time_entries",
+        id: '1',
+        type: 'time_entries',
         attributes: {
-          date: "2024-01-16",
+          date: '2024-01-16',
           time: 480,
-          note: "Test work",
-          created_at: "2024-01-16T00:00:00Z",
-          updated_at: "2024-01-16T00:00:00Z",
+          note: 'Test work',
+          created_at: '2024-01-16T00:00:00Z',
+          updated_at: '2024-01-16T00:00:00Z',
         },
       },
     };
@@ -182,33 +180,33 @@ describe("ProductiveApi", () => {
 
     const api = new ProductiveApi();
     const result = await api.createTimeEntry({
-      person_id: "person-1",
-      service_id: "service-1",
-      date: "2024-01-16",
+      person_id: 'person-1',
+      service_id: 'service-1',
+      date: '2024-01-16',
       time: 480,
-      note: "Test work",
+      note: 'Test work',
     });
 
     expect(result.data.attributes.time).toBe(480);
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/time_entries"),
+      expect.stringContaining('/time_entries'),
       expect.objectContaining({
-        method: "POST",
+        method: 'POST',
       }),
     );
   });
 
-  it("should update time entry", async () => {
+  it('should update time entry', async () => {
     const mockResponse = {
       data: {
-        id: "1",
-        type: "time_entries",
+        id: '1',
+        type: 'time_entries',
         attributes: {
-          date: "2024-01-16",
+          date: '2024-01-16',
           time: 360,
-          note: "Updated work",
-          created_at: "2024-01-16T00:00:00Z",
-          updated_at: "2024-01-16T00:00:00Z",
+          note: 'Updated work',
+          created_at: '2024-01-16T00:00:00Z',
+          updated_at: '2024-01-16T00:00:00Z',
         },
       },
     };
@@ -219,38 +217,38 @@ describe("ProductiveApi", () => {
     });
 
     const api = new ProductiveApi();
-    const result = await api.updateTimeEntry("1", {
+    const result = await api.updateTimeEntry('1', {
       time: 360,
-      note: "Updated work",
+      note: 'Updated work',
     });
 
     expect(result.data.attributes.time).toBe(360);
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/time_entries/1"),
+      expect.stringContaining('/time_entries/1'),
       expect.objectContaining({
-        method: "PATCH",
+        method: 'PATCH',
       }),
     );
   });
 
-  it("should delete time entry", async () => {
+  it('should delete time entry', async () => {
     (globalThis.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => ({}),
     });
 
     const api = new ProductiveApi();
-    await api.deleteTimeEntry("1");
+    await api.deleteTimeEntry('1');
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/time_entries/1"),
+      expect.stringContaining('/time_entries/1'),
       expect.objectContaining({
-        method: "DELETE",
+        method: 'DELETE',
       }),
     );
   });
 
-  it("should handle pagination parameters", async () => {
+  it('should handle pagination parameters', async () => {
     (globalThis.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ data: [], meta: {} }),
@@ -263,11 +261,11 @@ describe("ProductiveApi", () => {
     });
 
     const callUrl = (globalThis.fetch as any).mock.calls[0][0];
-    expect(callUrl).toContain("page%5Bnumber%5D=2"); // URL encoded [number]
-    expect(callUrl).toContain("page%5Bsize%5D=50"); // URL encoded [size]
+    expect(callUrl).toContain('page%5Bnumber%5D=2'); // URL encoded [number]
+    expect(callUrl).toContain('page%5Bsize%5D=50'); // URL encoded [size]
   });
 
-  it("should handle filter parameters", async () => {
+  it('should handle filter parameters', async () => {
     (globalThis.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ data: [], meta: {} }),
@@ -275,14 +273,14 @@ describe("ProductiveApi", () => {
 
     const api = new ProductiveApi();
     await api.getProjects({
-      filter: { archived: "false" },
+      filter: { archived: 'false' },
     });
 
     const callUrl = (globalThis.fetch as any).mock.calls[0][0];
-    expect(callUrl).toContain("filter%5Barchived%5D=false"); // URL encoded [archived]
+    expect(callUrl).toContain('filter%5Barchived%5D=false'); // URL encoded [archived]
   });
 
-  it("should handle sort parameter", async () => {
+  it('should handle sort parameter', async () => {
     (globalThis.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ data: [], meta: {} }),
@@ -290,43 +288,43 @@ describe("ProductiveApi", () => {
 
     const api = new ProductiveApi();
     await api.getProjects({
-      sort: "name",
+      sort: 'name',
     });
 
     const callUrl = (globalThis.fetch as any).mock.calls[0][0];
-    expect(callUrl).toContain("sort=name");
+    expect(callUrl).toContain('sort=name');
   });
 });
 
-describe("ProductiveApiError", () => {
-  it("should create error with message", () => {
-    const error = new ProductiveApiError("Test error");
-    expect(error.message).toBe("Test error");
-    expect(error.name).toBe("ProductiveApiError");
+describe('ProductiveApiError', () => {
+  it('should create error with message', () => {
+    const error = new ProductiveApiError('Test error');
+    expect(error.message).toBe('Test error');
+    expect(error.name).toBe('ProductiveApiError');
   });
 
-  it("should create error with status code", () => {
-    const error = new ProductiveApiError("Test error", 404);
+  it('should create error with status code', () => {
+    const error = new ProductiveApiError('Test error', 404);
     expect(error.statusCode).toBe(404);
   });
 
-  it("should create error with response", () => {
-    const response = { errors: [{ detail: "Not found" }] };
-    const error = new ProductiveApiError("Test error", 404, response);
+  it('should create error with response', () => {
+    const response = { errors: [{ detail: 'Not found' }] };
+    const error = new ProductiveApiError('Test error', 404, response);
     expect(error.response).toEqual(response);
   });
 
-  it("should serialize to JSON", () => {
-    const error = new ProductiveApiError("Test error", 404, {
-      detail: "Not found",
+  it('should serialize to JSON', () => {
+    const error = new ProductiveApiError('Test error', 404, {
+      detail: 'Not found',
     });
     const json = error.toJSON();
 
     expect(json).toEqual({
-      error: "ProductiveApiError",
-      message: "Test error",
+      error: 'ProductiveApiError',
+      message: 'Test error',
       statusCode: 404,
-      response: { detail: "Not found" },
+      response: { detail: 'Not found' },
     });
   });
 });

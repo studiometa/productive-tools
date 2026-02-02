@@ -3,8 +3,8 @@
  * This is called by shell completion scripts to provide context-aware suggestions
  */
 
-import { getConfig } from "../config.js";
-import { getSqliteCache } from "../utils/sqlite-cache.js";
+import { getConfig } from '../config.js';
+import { getSqliteCache } from '../utils/sqlite-cache.js';
 
 /**
  * Get project names/IDs for completion
@@ -16,7 +16,7 @@ async function getProjects(): Promise<void> {
   }
 
   const cache = getSqliteCache(config.organizationId);
-  const projects = await cache.searchProjects("");
+  const projects = await cache.searchProjects('');
 
   // Output format: "id:name" for easy parsing
   for (const project of projects.slice(0, 50)) {
@@ -35,7 +35,7 @@ async function getPeople(): Promise<void> {
   }
 
   const cache = getSqliteCache(config.organizationId);
-  const people = await cache.searchPeople("");
+  const people = await cache.searchPeople('');
 
   for (const person of people.slice(0, 50)) {
     const name = `${person.first_name} ${person.last_name}`.trim();
@@ -53,7 +53,7 @@ async function getServices(): Promise<void> {
   }
 
   const cache = getSqliteCache(config.organizationId);
-  const services = await cache.searchServices("");
+  const services = await cache.searchServices('');
 
   for (const service of services.slice(0, 50)) {
     console.log(`${service.id}:${service.name}`);
@@ -64,13 +64,7 @@ async function getServices(): Promise<void> {
  * Get config keys for completion
  */
 function getConfigKeys(): void {
-  const keys = [
-    "apiToken",
-    "organizationId",
-    "userId",
-    "baseUrl",
-    "useKeychain",
-  ];
+  const keys = ['apiToken', 'organizationId', 'userId', 'baseUrl', 'useKeychain'];
   for (const key of keys) {
     console.log(key);
   }
@@ -84,16 +78,16 @@ export async function handleCompletionHelper(args: string[]): Promise<void> {
 
   try {
     switch (type) {
-      case "projects":
+      case 'projects':
         await getProjects();
         break;
-      case "people":
+      case 'people':
         await getPeople();
         break;
-      case "services":
+      case 'services':
         await getServices();
         break;
-      case "config-keys":
+      case 'config-keys':
         getConfigKeys();
         break;
       default:

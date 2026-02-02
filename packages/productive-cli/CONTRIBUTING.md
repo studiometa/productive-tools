@@ -104,6 +104,7 @@ src/
 ## Adding a New Command
 
 1. Create a new file in `src/commands/`:
+
    ```typescript
    import { ProductiveApi, ProductiveApiError } from '../api.js';
    import { OutputFormatter, createSpinner } from '../output.js';
@@ -113,7 +114,7 @@ src/
    export async function handleYourCommand(
      subcommand: string,
      args: string[],
-     options: Record<string, string | boolean>
+     options: Record<string, string | boolean>,
    ): Promise<void> {
      const format = (options.format || options.f || 'human') as OutputFormat;
      const formatter = new OutputFormatter(format, options['no-color'] === true);
@@ -123,6 +124,7 @@ src/
    ```
 
 2. Add the command to `src/cli.ts`:
+
    ```typescript
    import { handleYourCommand } from './commands/your-command.js';
 
@@ -141,6 +143,7 @@ src/
 ## Adding a New API Method
 
 1. Add the TypeScript type to `src/types.ts`:
+
    ```typescript
    export interface ProductiveYourResource {
      id: string;
@@ -152,6 +155,7 @@ src/
    ```
 
 2. Add the method to `src/api.ts`:
+
    ```typescript
    async getYourResources(params?: {
      page?: number;
@@ -160,7 +164,7 @@ src/
      sort?: string;
    }): Promise<ProductiveApiResponse<ProductiveYourResource[]>> {
      const query: Record<string, string> = {};
-     
+
      if (params?.page) query['page[number]'] = String(params.page);
      if (params?.perPage) query['page[size]'] = String(params.perPage);
      if (params?.sort) query['sort'] = params.sort;
@@ -188,6 +192,7 @@ src/
 - Test error handling
 
 Example test:
+
 ```typescript
 import { describe, it, expect, vi } from 'vitest';
 import { handleYourCommand } from '../commands/your-command.js';
@@ -221,6 +226,7 @@ footer (optional)
 ```
 
 Types:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -230,6 +236,7 @@ Types:
 - `chore`: Build process or tooling changes
 
 Examples:
+
 ```
 feat(projects): add archive command
 fix(time): handle missing service ID error

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import {
   ok,
   err,
@@ -137,7 +138,7 @@ describe('Result type', () => {
     it('should return Ok for successful async operation', async () => {
       const result = await tryCatch(
         async () => 42,
-        (e) => new Error(String(e))
+        (e) => new Error(String(e)),
       );
       expect(isOk(result) && result.value).toBe(42);
     });
@@ -147,7 +148,7 @@ describe('Result type', () => {
         async () => {
           throw new Error('async error');
         },
-        (e) => e as Error
+        (e) => e as Error,
       );
       expect(isErr(result) && result.error.message).toBe('async error');
     });
@@ -157,7 +158,7 @@ describe('Result type', () => {
         async () => {
           throw new Error('original');
         },
-        (e) => new Error(`wrapped: ${(e as Error).message}`)
+        (e) => new Error(`wrapped: ${(e as Error).message}`),
       );
       expect(isErr(result) && result.error.message).toBe('wrapped: original');
     });
@@ -167,7 +168,7 @@ describe('Result type', () => {
     it('should return Ok for successful sync operation', () => {
       const result = tryCatchSync(
         () => 42,
-        (e) => new Error(String(e))
+        (e) => new Error(String(e)),
       );
       expect(isOk(result) && result.value).toBe(42);
     });
@@ -177,7 +178,7 @@ describe('Result type', () => {
         () => {
           throw new Error('sync error');
         },
-        (e) => e as Error
+        (e) => e as Error,
       );
       expect(isErr(result) && result.error.message).toBe('sync error');
     });
@@ -205,11 +206,7 @@ describe('Result type', () => {
 
   describe('combineAsync', () => {
     it('should combine all successful async operations', async () => {
-      const operations = [
-        async () => ok(1),
-        async () => ok(2),
-        async () => ok(3),
-      ];
+      const operations = [async () => ok(1), async () => ok(2), async () => ok(3)];
       const combined = await combineAsync(operations);
       expect(isOk(combined) && combined.value).toEqual([1, 2, 3]);
     });
@@ -228,11 +225,7 @@ describe('Result type', () => {
 
   describe('combineParallel', () => {
     it('should combine all successful parallel operations', async () => {
-      const operations = [
-        async () => ok(1),
-        async () => ok(2),
-        async () => ok(3),
-      ];
+      const operations = [async () => ok(1), async () => ok(2), async () => ok(3)];
       const combined = await combineParallel(operations);
       expect(isOk(combined) && combined.value).toEqual([1, 2, 3]);
     });

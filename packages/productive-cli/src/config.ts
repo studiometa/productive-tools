@@ -1,4 +1,6 @@
-import { ConfigStore } from "./utils/config-store.js";
+import type { ProductiveConfig } from './types.js';
+
+import { ConfigStore } from './utils/config-store.js';
 import {
   getKeychainValue,
   setKeychainValue,
@@ -6,10 +8,9 @@ import {
   isSecureKey,
   isKeychainAvailable,
   getKeychainBackend,
-} from "./utils/keychain-store.js";
-import type { ProductiveConfig } from "./types.js";
+} from './utils/keychain-store.js';
 
-const config = new ConfigStore<ProductiveConfig>("productive-cli");
+const config = new ConfigStore<ProductiveConfig>('productive-cli');
 
 /**
  * Get a config value, checking keychain first for secure keys
@@ -34,29 +35,27 @@ function getConfigValue(key: keyof ProductiveConfig): string | undefined {
  * 3. Keychain (for secure keys)
  * 4. Config file (lowest priority)
  */
-export function getConfig(
-  cliOptions?: Record<string, string | boolean>,
-): ProductiveConfig {
+export function getConfig(cliOptions?: Record<string, string | boolean>): ProductiveConfig {
   return {
     apiToken:
-      (cliOptions?.["api-token"] as string) ||
+      (cliOptions?.['api-token'] as string) ||
       (cliOptions?.token as string) ||
       process.env.PRODUCTIVE_API_TOKEN ||
-      getConfigValue("apiToken"),
+      getConfigValue('apiToken'),
     organizationId:
-      (cliOptions?.["org-id"] as string) ||
-      (cliOptions?.["organization-id"] as string) ||
+      (cliOptions?.['org-id'] as string) ||
+      (cliOptions?.['organization-id'] as string) ||
       process.env.PRODUCTIVE_ORG_ID ||
-      getConfigValue("organizationId"),
+      getConfigValue('organizationId'),
     userId:
-      (cliOptions?.["user-id"] as string) ||
+      (cliOptions?.['user-id'] as string) ||
       process.env.PRODUCTIVE_USER_ID ||
-      getConfigValue("userId"),
+      getConfigValue('userId'),
     baseUrl:
-      (cliOptions?.["base-url"] as string) ||
+      (cliOptions?.['base-url'] as string) ||
       process.env.PRODUCTIVE_BASE_URL ||
-      getConfigValue("baseUrl") ||
-      "https://api.productive.io/api/v2",
+      getConfigValue('baseUrl') ||
+      'https://api.productive.io/api/v2',
   };
 }
 
@@ -85,7 +84,7 @@ export function setConfig(
 
   // Fall back to config file
   config.set(key, value);
-  return { stored: true, location: "config file" };
+  return { stored: true, location: 'config file' };
 }
 
 /**
@@ -104,7 +103,7 @@ export function deleteConfigValue(key: keyof ProductiveConfig): void {
 export function clearConfig(): void {
   // Clear secure keys from keychain
   if (isKeychainAvailable()) {
-    deleteKeychainValue("apiToken");
+    deleteKeychainValue('apiToken');
   }
   config.clear();
 }
@@ -114,18 +113,15 @@ export function showConfig(): ProductiveConfig {
 }
 
 // Re-export keychain utilities for use in commands
-export {
-  isKeychainAvailable,
-  getKeychainBackend,
-} from "./utils/keychain-store.js";
+export { isKeychainAvailable, getKeychainBackend } from './utils/keychain-store.js';
 
 export function validateConfig(): { valid: boolean; missing: string[] } {
   const cfg = getConfig();
   const missing: string[] = [];
 
-  if (!cfg.apiToken) missing.push("apiToken");
-  if (!cfg.organizationId) missing.push("organizationId");
-  if (!cfg.userId) missing.push("userId");
+  if (!cfg.apiToken) missing.push('apiToken');
+  if (!cfg.organizationId) missing.push('organizationId');
+  if (!cfg.userId) missing.push('userId');
 
   return {
     valid: missing.length === 0,

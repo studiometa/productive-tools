@@ -15,7 +15,6 @@
  * 6. Server validates PKCE and returns access token
  */
 
-import { createHash } from 'node:crypto';
 import {
   defineEventHandler,
   getQuery,
@@ -24,8 +23,10 @@ import {
   setResponseHeader,
   type H3Event,
 } from 'h3';
-import { createAuthCode, decodeAuthCode } from './crypto.js';
+import { createHash } from 'node:crypto';
+
 import { createAuthToken } from './auth.js';
+import { createAuthCode, decodeAuthCode } from './crypto.js';
 
 /**
  * OAuth metadata for discovery (RFC 8414)
@@ -92,7 +93,7 @@ export const registerHandler = defineEventHandler(async (event: H3Event) => {
     JSON.stringify({
       name: clientName,
       ts: Date.now(),
-    })
+    }),
   ).toString('base64url');
 
   event.node.res.statusCode = 201;
@@ -166,15 +167,7 @@ export const authorizeGetHandler = defineEventHandler((event: H3Event) => {
 export const authorizePostHandler = defineEventHandler(async (event: H3Event) => {
   const body = await readBody(event);
 
-  const {
-    orgId,
-    apiToken,
-    userId,
-    redirectUri,
-    state,
-    codeChallenge,
-    codeChallengeMethod,
-  } = body;
+  const { orgId, apiToken, userId, redirectUri, state, codeChallenge, codeChallengeMethod } = body;
 
   // Validate redirect URI first (security requirement)
   if (!redirectUri) {
@@ -317,7 +310,7 @@ export const tokenHandler = defineEventHandler(async (event: H3Event) => {
         apiToken: payload.apiToken,
         userId: payload.userId,
       },
-      86400 * 30 // 30 days
+      86400 * 30, // 30 days
     );
 
     return {
@@ -365,7 +358,7 @@ function handleRefreshToken(event: H3Event, refreshToken: string | undefined) {
         apiToken: payload.apiToken,
         userId: payload.userId,
       },
-      86400 * 30 // 30 days
+      86400 * 30, // 30 days
     );
 
     return {

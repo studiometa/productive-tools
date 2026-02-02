@@ -27,7 +27,7 @@ export function parseArgs(argv: string[] = process.argv.slice(2)): ParsedArgs {
       } else {
         const key = arg.slice(2);
         const nextArg = argv[i + 1];
-        
+
         if (nextArg && !nextArg.startsWith('-')) {
           options[key] = nextArg;
           i++;
@@ -40,7 +40,7 @@ export function parseArgs(argv: string[] = process.argv.slice(2)): ParsedArgs {
       if (arg.length === 2) {
         const key = arg[1];
         const nextArg = argv[i + 1];
-        
+
         if (nextArg && !nextArg.startsWith('-')) {
           options[key] = nextArg;
           i++;
@@ -70,7 +70,7 @@ export function parseArgs(argv: string[] = process.argv.slice(2)): ParsedArgs {
 export function getOption(
   options: Record<string, string | boolean>,
   names: string[],
-  defaultValue?: string
+  defaultValue?: string,
 ): string | undefined {
   for (const name of names) {
     if (name in options) {
@@ -81,9 +81,6 @@ export function getOption(
   return defaultValue;
 }
 
-export function hasFlag(
-  options: Record<string, string | boolean>,
-  names: string[]
-): boolean {
+export function hasFlag(options: Record<string, string | boolean>, names: string[]): boolean {
   return names.some((name) => options[name] === true);
 }

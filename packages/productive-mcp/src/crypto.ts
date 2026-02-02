@@ -28,7 +28,7 @@ export function getSecret(): string {
   const secret = process.env.OAUTH_SECRET;
   if (!secret) {
     console.warn(
-      'WARNING: OAUTH_SECRET not set. Using default secret. Set OAUTH_SECRET in production!'
+      'WARNING: OAUTH_SECRET not set. Using default secret. Set OAUTH_SECRET in production!',
     );
     return 'productive-mcp-default-secret-change-me';
   }
@@ -76,7 +76,7 @@ export function decrypt(ciphertext: string, secret: string = getSecret()): strin
     const iv = combined.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
     const authTag = combined.subarray(
       SALT_LENGTH + IV_LENGTH,
-      SALT_LENGTH + IV_LENGTH + AUTH_TAG_LENGTH
+      SALT_LENGTH + IV_LENGTH + AUTH_TAG_LENGTH,
     );
     const encrypted = combined.subarray(SALT_LENGTH + IV_LENGTH + AUTH_TAG_LENGTH);
 
@@ -113,7 +113,7 @@ export interface AuthCodePayload {
  */
 export function createAuthCode(
   credentials: AuthCodePayload,
-  expiresInSeconds: number = 300
+  expiresInSeconds: number = 300,
 ): string {
   const payload = {
     ...credentials,

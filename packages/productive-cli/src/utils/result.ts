@@ -75,10 +75,7 @@ export function isErr<E, T>(result: Result<E, T>): result is Err<E> {
 /**
  * Maps a function over the value in Ok, leaving Err unchanged
  */
-export function map<E, T, U>(
-  result: Result<E, T>,
-  fn: (value: T) => U,
-): Result<E, U> {
+export function map<E, T, U>(result: Result<E, T>, fn: (value: T) => U): Result<E, U> {
   if (result.ok) {
     return ok(fn(result.value));
   }
@@ -88,10 +85,7 @@ export function map<E, T, U>(
 /**
  * Maps a function over the error in Err, leaving Ok unchanged
  */
-export function mapErr<E, T, F>(
-  result: Result<E, T>,
-  fn: (error: E) => F,
-): Result<F, T> {
+export function mapErr<E, T, F>(result: Result<E, T>, fn: (error: E) => F): Result<F, T> {
   if (!result.ok) {
     return err(fn(result.error));
   }
@@ -134,10 +128,7 @@ export function unwrapOr<E, T>(result: Result<E, T>, defaultValue: T): T {
 /**
  * Unwraps a Result, returning the value or computing a default from the error
  */
-export function unwrapOrElse<E, T>(
-  result: Result<E, T>,
-  fn: (error: E) => T,
-): T {
+export function unwrapOrElse<E, T>(result: Result<E, T>, fn: (error: E) => T): T {
   if (result.ok) {
     return result.value;
   }
@@ -170,10 +161,7 @@ export async function tryCatch<E, T>(
 /**
  * Synchronous version of tryCatch
  */
-export function tryCatchSync<E, T>(
-  fn: () => T,
-  mapError: (error: unknown) => E,
-): Result<E, T> {
+export function tryCatchSync<E, T>(fn: () => T, mapError: (error: unknown) => E): Result<E, T> {
   try {
     const value = fn();
     return ok(value);

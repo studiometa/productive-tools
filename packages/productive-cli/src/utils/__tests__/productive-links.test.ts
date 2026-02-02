@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { projectUrl, taskUrl, serviceUrl, timeEntriesUrl, personUrl, linkedId } from '../productive-links.js';
+
 import { setColorEnabled } from '../colors.js';
+import {
+  projectUrl,
+  taskUrl,
+  serviceUrl,
+  timeEntriesUrl,
+  personUrl,
+  linkedId,
+} from '../productive-links.js';
 
 // Mock the config module
 vi.mock('../../config.js', () => ({

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
 import { Spinner, spinner } from '../spinner.js';
 
 describe('Spinner', () => {
@@ -47,10 +48,10 @@ describe('Spinner', () => {
 
     s.start();
     expect(writeSpy).toHaveBeenCalled();
-    
+
     vi.advanceTimersByTime(160); // 80ms per frame, so 2 frames
     expect(writeSpy).toHaveBeenCalledTimes(3); // Initial render + 2 interval ticks
-    
+
     s.stop();
     expect(clearLineSpy).toHaveBeenCalled();
     expect(cursorToSpy).toHaveBeenCalled();
@@ -58,11 +59,11 @@ describe('Spinner', () => {
 
   it('should succeed with custom text', () => {
     const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    
+
     const s = new Spinner('Loading...');
     s.start();
     s.succeed('Done!');
-    
+
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Done!'));
     consoleLogSpy.mockRestore();
   });
@@ -72,18 +73,18 @@ describe('Spinner', () => {
     const s = new Spinner('Loading...');
     s.start();
     s.succeed();
-    
+
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Loading...'));
     consoleLogSpy.mockRestore();
   });
 
   it('should fail with custom text', () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     const s = new Spinner('Loading...');
     s.start();
     s.fail('Error!');
-    
+
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Error!'));
     consoleErrorSpy.mockRestore();
   });
@@ -93,7 +94,7 @@ describe('Spinner', () => {
     const s = new Spinner('Loading...');
     s.start();
     s.fail();
-    
+
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Loading...'));
     consoleErrorSpy.mockRestore();
   });
@@ -108,10 +109,10 @@ describe('Spinner', () => {
     const s = new Spinner('Loading...');
     s.start();
     writeSpy.mockClear();
-    
+
     s.setText('Updated text');
     expect(writeSpy).toHaveBeenCalled();
-    
+
     s.stop();
   });
 
@@ -126,19 +127,19 @@ describe('Spinner', () => {
     writeSpy.mockClear();
     const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     const s = new Spinner('Loading...');
     s.start();
     expect(writeSpy).not.toHaveBeenCalled();
-    
+
     s.succeed('Done!');
     expect(consoleLogSpy).not.toHaveBeenCalled();
-    
+
     const s2 = new Spinner('Loading...');
     s2.start();
     s2.fail('Error!');
     expect(consoleErrorSpy).not.toHaveBeenCalled();
-    
+
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
   });
@@ -146,11 +147,11 @@ describe('Spinner', () => {
   it('should not render when in CI', () => {
     process.env.CI = 'true';
     writeSpy.mockClear();
-    
+
     const s = new Spinner('Loading...');
     s.start();
     expect(writeSpy).not.toHaveBeenCalled();
-    
+
     s.stop();
   });
 
@@ -164,15 +165,15 @@ describe('Spinner', () => {
 
   it('should handle multiple starts', () => {
     const s = new Spinner('Loading...');
-    
+
     s.start();
     const firstCallCount = writeSpy.mock.calls.length;
-    
+
     s.start();
     const secondCallCount = writeSpy.mock.calls.length;
-    
+
     expect(secondCallCount).toBeGreaterThan(firstCallCount);
-    
+
     s.stop();
   });
 

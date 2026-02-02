@@ -1,5 +1,5 @@
-import { beforeEach, vi } from 'vitest';
 import { vol } from 'memfs';
+import { beforeEach, vi } from 'vitest';
 
 // Mock node:fs and node:fs/promises globally
 vi.mock('node:fs');

@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest';
+
+import type { JsonApiResource, JsonApiMeta } from '../formatters.js';
+
 import {
   formatTimeEntry,
   formatProject,
@@ -7,7 +10,6 @@ import {
   formatService,
   formatListResponse,
 } from '../formatters.js';
-import type { JsonApiResource, JsonApiMeta } from '../formatters.js';
 
 describe('formatters', () => {
   describe('formatTimeEntry', () => {

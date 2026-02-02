@@ -2,9 +2,10 @@
  * Budgets command entry point
  */
 
-import { OutputFormatter } from '../../output.js';
 import type { OutputFormat } from '../../types.js';
+
 import { createContext, type CommandOptions } from '../../context.js';
+import { OutputFormatter } from '../../output.js';
 import { budgetsList } from './handlers.js';
 
 /**
@@ -13,7 +14,7 @@ import { budgetsList } from './handlers.js';
 export async function handleBudgetsCommand(
   subcommand: string,
   args: string[],
-  options: Record<string, string | boolean>
+  options: Record<string, string | boolean>,
 ): Promise<void> {
   const format = (options.format || options.f || 'human') as OutputFormat;
   const formatter = new OutputFormatter(format, options['no-color'] === true);

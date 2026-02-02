@@ -4,8 +4,8 @@
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { homedir } from 'node:os';
+import { join } from 'node:path';
 
 export class ConfigStore<T extends Record<string, unknown>> {
   private configPath: string;
@@ -18,7 +18,7 @@ export class ConfigStore<T extends Record<string, unknown>> {
 
   private getConfigDir(): string {
     const platform = process.platform;
-    
+
     // Respect XDG Base Directory specification
     if (platform === 'win32') {
       // Windows: use APPDATA or fallback

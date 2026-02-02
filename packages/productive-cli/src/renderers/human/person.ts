@@ -4,19 +4,17 @@
  * Displays people with name, email, and status information.
  */
 
-import { colors } from '../../utils/colors.js';
-import { linkedPerson } from '../../utils/productive-links.js';
 import type { FormattedPerson, FormattedPagination } from '../../formatters/types.js';
 import type { ListRenderer, Renderer, RenderContext } from '../types.js';
+
+import { colors } from '../../utils/colors.js';
+import { linkedPerson } from '../../utils/productive-links.js';
 
 /**
  * Renderer for a list of people with pagination
  */
 export class HumanPersonListRenderer implements ListRenderer<FormattedPerson> {
-  render(
-    data: { data: FormattedPerson[]; meta?: FormattedPagination },
-    ctx: RenderContext
-  ): void {
+  render(data: { data: FormattedPerson[]; meta?: FormattedPagination }, ctx: RenderContext): void {
     for (const person of data.data) {
       this.renderItem(person, ctx);
     }
@@ -27,12 +25,10 @@ export class HumanPersonListRenderer implements ListRenderer<FormattedPerson> {
   }
 
   renderItem(person: FormattedPerson, _ctx: RenderContext): void {
-    const status = person.active
-      ? colors.green('[active]')
-      : colors.gray('[inactive]');
+    const status = person.active ? colors.green('[active]') : colors.gray('[inactive]');
 
     console.log(
-      `${colors.bold(person.name)} ${status} ${linkedPerson(person.name, person.id).replace(person.name, colors.dim(`#${person.id}`))}`
+      `${colors.bold(person.name)} ${status} ${linkedPerson(person.name, person.id).replace(person.name, colors.dim(`#${person.id}`))}`,
     );
     console.log(`  ${colors.dim(person.email)}`);
 
@@ -43,11 +39,7 @@ export class HumanPersonListRenderer implements ListRenderer<FormattedPerson> {
   }
 
   renderPagination(meta: FormattedPagination, _ctx: RenderContext): void {
-    console.log(
-      colors.dim(
-        `Page ${meta.page}/${meta.total_pages} (Total: ${meta.total_count})`
-      )
-    );
+    console.log(colors.dim(`Page ${meta.page}/${meta.total_pages} (Total: ${meta.total_count})`));
   }
 }
 
@@ -61,7 +53,7 @@ export class HumanPersonDetailRenderer implements Renderer<FormattedPerson> {
     console.log(`${colors.cyan('ID:')}     ${person.id}`);
     console.log(`${colors.cyan('Email:')}  ${person.email}`);
     console.log(
-      `${colors.cyan('Status:')} ${person.active ? colors.green('Active') : colors.gray('Inactive')}`
+      `${colors.cyan('Status:')} ${person.active ? colors.green('Active') : colors.gray('Inactive')}`,
     );
 
     if (person.title) {
@@ -69,15 +61,11 @@ export class HumanPersonDetailRenderer implements Renderer<FormattedPerson> {
     }
 
     if (person.created_at) {
-      console.log(
-        `${colors.cyan('Created:')} ${new Date(person.created_at).toLocaleString()}`
-      );
+      console.log(`${colors.cyan('Created:')} ${new Date(person.created_at).toLocaleString()}`);
     }
 
     if (person.updated_at) {
-      console.log(
-        `${colors.cyan('Updated:')} ${new Date(person.updated_at).toLocaleString()}`
-      );
+      console.log(`${colors.cyan('Updated:')} ${new Date(person.updated_at).toLocaleString()}`);
     }
   }
 }

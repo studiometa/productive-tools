@@ -4,10 +4,11 @@
  * Displays services with name and time budget information.
  */
 
-import { colors } from '../../utils/colors.js';
-import { linkedId } from '../../utils/productive-links.js';
 import type { FormattedService, FormattedPagination } from '../../formatters/types.js';
 import type { ListRenderer, RenderContext } from '../types.js';
+
+import { colors } from '../../utils/colors.js';
+import { linkedId } from '../../utils/productive-links.js';
 
 /**
  * Format time in minutes to human readable format
@@ -25,10 +26,7 @@ function formatTime(minutes: number | undefined): string {
  * Renderer for a list of services with pagination
  */
 export class HumanServiceListRenderer implements ListRenderer<FormattedService> {
-  render(
-    data: { data: FormattedService[]; meta?: FormattedPagination },
-    ctx: RenderContext
-  ): void {
+  render(data: { data: FormattedService[]; meta?: FormattedPagination }, ctx: RenderContext): void {
     for (const service of data.data) {
       this.renderItem(service, ctx);
     }
@@ -39,9 +37,7 @@ export class HumanServiceListRenderer implements ListRenderer<FormattedService> 
   }
 
   renderItem(service: FormattedService, _ctx: RenderContext): void {
-    console.log(
-      `${colors.bold(service.name)} ${linkedId(service.id, 'service')}`
-    );
+    console.log(`${colors.bold(service.name)} ${linkedId(service.id, 'service')}`);
 
     const timeInfo: string[] = [];
 
@@ -66,11 +62,7 @@ export class HumanServiceListRenderer implements ListRenderer<FormattedService> 
   }
 
   renderPagination(meta: FormattedPagination, _ctx: RenderContext): void {
-    console.log(
-      colors.dim(
-        `Page ${meta.page}/${meta.total_pages} (Total: ${meta.total_count})`
-      )
-    );
+    console.log(colors.dim(`Page ${meta.page}/${meta.total_pages} (Total: ${meta.total_count})`));
   }
 }
 

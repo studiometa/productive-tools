@@ -29,12 +29,7 @@ import {
   GetPromptRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
-import {
-  getAvailableTools,
-  getAvailablePrompts,
-  handleToolCall,
-  handlePrompt,
-} from './stdio.js';
+import { getAvailableTools, getAvailablePrompts, handleToolCall, handlePrompt } from './stdio.js';
 import { VERSION } from './version.js';
 
 /**
@@ -51,7 +46,7 @@ export function createStdioServer(): Server {
         tools: {},
         prompts: {},
       },
-    }
+    },
   );
 
   // List available tools (including stdio-only configuration tools)
@@ -98,7 +93,8 @@ export async function startStdioServer(): Promise<void> {
 }
 
 // Start server when run directly
-const isMainModule = import.meta.url === `file://${process.argv[1]}` ||
+const isMainModule =
+  import.meta.url === `file://${process.argv[1]}` ||
   process.argv[1]?.endsWith('/productive-mcp') ||
   process.argv[1]?.endsWith('\\productive-mcp');
 

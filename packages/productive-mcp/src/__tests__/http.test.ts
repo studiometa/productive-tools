@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
-import { createServer, type Server as HttpServer } from 'node:http';
 import { toNodeListener } from 'h3';
+import { createServer, type Server as HttpServer } from 'node:http';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 
 // Mock the handlers
 vi.mock('../handlers.js', () => ({
@@ -14,6 +14,7 @@ vi.mock('../handlers.js', () => ({
   }),
 }));
 
+import { executeToolWithCredentials } from '../handlers.js';
 import {
   createHttpApp,
   jsonRpcError,
@@ -21,7 +22,6 @@ import {
   handleInitialize,
   handleToolsList,
 } from '../http.js';
-import { executeToolWithCredentials } from '../handlers.js';
 import { VERSION } from '../version.js';
 
 describe('http module', () => {
@@ -263,7 +263,7 @@ describe('HTTP Server Integration', () => {
 
       // Verify single consolidated tool
       const productiveTool = data.result.tools.find(
-        (t: { name: string }) => t.name === 'productive'
+        (t: { name: string }) => t.name === 'productive',
       );
       expect(productiveTool).toBeDefined();
       expect(productiveTool.inputSchema).toBeDefined();
@@ -299,7 +299,7 @@ describe('HTTP Server Integration', () => {
           organizationId: 'test-org',
           apiToken: 'test-token',
           userId: 'test-user',
-        }
+        },
       );
     });
 

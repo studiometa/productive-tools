@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { handleTimeCommand } from '../time/index.js';
+
 import * as api from '../../api.js';
 import * as config from '../../config.js';
+import { handleTimeCommand } from '../time/index.js';
 
 // Mock the API
 vi.mock('../../api.js', () => ({
@@ -13,7 +14,10 @@ vi.mock('../../api.js', () => ({
     deleteTimeEntry: vi.fn(),
   })),
   ProductiveApiError: class ProductiveApiError extends Error {
-    constructor(message: string, public statusCode?: number) {
+    constructor(
+      message: string,
+      public statusCode?: number,
+    ) {
       super(message);
       this.name = 'ProductiveApiError';
     }
@@ -173,12 +177,12 @@ describe('handleTimeCommand', () => {
 
     it('should handle API errors', async () => {
       mockApi.getTimeEntries.mockRejectedValue(
-        new (api as any).ProductiveApiError('API error', 500)
+        new (api as any).ProductiveApiError('API error', 500),
       );
 
-      await expect(
-        handleTimeCommand('list', [], { format: 'json' })
-      ).rejects.toThrow('process.exit(1)');
+      await expect(handleTimeCommand('list', [], { format: 'json' })).rejects.toThrow(
+        'process.exit(1)',
+      );
     });
 
     it('should support ls alias', async () => {
@@ -240,23 +244,19 @@ describe('handleTimeCommand', () => {
     });
 
     it('should require time entry ID', async () => {
-      await expect(
-        handleTimeCommand('get', [], { format: 'json' })
-      ).rejects.toThrow('process.exit(3)'); // Exit code 3 for validation errors
+      await expect(handleTimeCommand('get', [], { format: 'json' })).rejects.toThrow(
+        'process.exit(3)',
+      ); // Exit code 3 for validation errors
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('id')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('id'));
     });
 
     it('should handle API errors', async () => {
-      mockApi.getTimeEntry.mockRejectedValue(
-        new (api as any).ProductiveApiError('Not found', 404)
-      );
+      mockApi.getTimeEntry.mockRejectedValue(new (api as any).ProductiveApiError('Not found', 404));
 
-      await expect(
-        handleTimeCommand('get', ['999'], { format: 'json' })
-      ).rejects.toThrow('process.exit(5)'); // Exit code 5 for not found errors
+      await expect(handleTimeCommand('get', ['999'], { format: 'json' })).rejects.toThrow(
+        'process.exit(5)',
+      ); // Exit code 5 for not found errors
     });
   });
 
@@ -317,7 +317,7 @@ describe('handleTimeCommand', () => {
       expect(mockApi.createTimeEntry).toHaveBeenCalledWith(
         expect.objectContaining({
           person_id: 'test-user',
-        })
+        }),
       );
     });
 
@@ -345,7 +345,7 @@ describe('handleTimeCommand', () => {
       expect(mockApi.createTimeEntry).toHaveBeenCalledWith(
         expect.objectContaining({
           date: new Date().toISOString().split('T')[0],
-        })
+        }),
       );
     });
 
@@ -385,12 +385,10 @@ describe('handleTimeCommand', () => {
           format: 'json',
           service: 'service-1',
           time: '480',
-        })
+        }),
       ).rejects.toThrow('process.exit(4)'); // Exit code 4 for config errors
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Person ID required')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Person ID required'));
     });
 
     it('should require service ID', async () => {
@@ -399,12 +397,10 @@ describe('handleTimeCommand', () => {
           format: 'json',
           person: 'person-1',
           time: '480',
-        })
+        }),
       ).rejects.toThrow('process.exit(3)'); // Exit code 3 for validation errors
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('service is required')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('service is required'));
     });
 
     it('should require time', async () => {
@@ -413,17 +409,15 @@ describe('handleTimeCommand', () => {
           format: 'json',
           person: 'person-1',
           service: 'service-1',
-        })
+        }),
       ).rejects.toThrow('process.exit(3)'); // Exit code 3 for validation errors
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('time is required')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('time is required'));
     });
 
     it('should handle API errors', async () => {
       mockApi.createTimeEntry.mockRejectedValue(
-        new (api as any).ProductiveApiError('Validation error', 422)
+        new (api as any).ProductiveApiError('Validation error', 422),
       );
 
       await expect(
@@ -432,7 +426,7 @@ describe('handleTimeCommand', () => {
           person: 'person-1',
           service: 'service-1',
           time: '480',
-        })
+        }),
       ).rejects.toThrow('process.exit(1)');
     });
   });
@@ -478,34 +472,30 @@ describe('handleTimeCommand', () => {
 
     it('should require time entry ID', async () => {
       await expect(
-        handleTimeCommand('update', [], { format: 'json', time: '360' })
+        handleTimeCommand('update', [], { format: 'json', time: '360' }),
       ).rejects.toThrow('process.exit(3)'); // Exit code 3 for validation errors
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('id')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('id'));
     });
 
     it('should require at least one update field', async () => {
-      await expect(
-        handleTimeCommand('update', ['1'], { format: 'json' })
-      ).rejects.toThrow('process.exit(3)'); // Exit code 3 for validation errors
+      await expect(handleTimeCommand('update', ['1'], { format: 'json' })).rejects.toThrow(
+        'process.exit(3)',
+      ); // Exit code 3 for validation errors
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('No updates specified')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('No updates specified'));
     });
 
     it('should handle API errors', async () => {
       mockApi.updateTimeEntry.mockRejectedValue(
-        new (api as any).ProductiveApiError('Not found', 404)
+        new (api as any).ProductiveApiError('Not found', 404),
       );
 
       await expect(
         handleTimeCommand('update', ['999'], {
           format: 'json',
           time: '360',
-        })
+        }),
       ).rejects.toThrow('process.exit(5)'); // Exit code 5 for not found errors
     });
   });
@@ -537,34 +527,32 @@ describe('handleTimeCommand', () => {
     });
 
     it('should require time entry ID', async () => {
-      await expect(
-        handleTimeCommand('delete', [], { format: 'json' })
-      ).rejects.toThrow('process.exit(3)'); // Exit code 3 for validation errors
+      await expect(handleTimeCommand('delete', [], { format: 'json' })).rejects.toThrow(
+        'process.exit(3)',
+      ); // Exit code 3 for validation errors
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('id')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('id'));
     });
 
     it('should handle API errors', async () => {
       mockApi.deleteTimeEntry.mockRejectedValue(
-        new (api as any).ProductiveApiError('Not found', 404)
+        new (api as any).ProductiveApiError('Not found', 404),
       );
 
-      await expect(
-        handleTimeCommand('delete', ['999'], { format: 'json' })
-      ).rejects.toThrow('process.exit(5)'); // Exit code 5 for not found errors
+      await expect(handleTimeCommand('delete', ['999'], { format: 'json' })).rejects.toThrow(
+        'process.exit(5)',
+      ); // Exit code 5 for not found errors
     });
   });
 
   describe('unknown subcommand', () => {
     it('should handle unknown subcommand', async () => {
-      await expect(
-        handleTimeCommand('unknown', [], { format: 'json' })
-      ).rejects.toThrow('process.exit(1)');
+      await expect(handleTimeCommand('unknown', [], { format: 'json' })).rejects.toThrow(
+        'process.exit(1)',
+      );
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Unknown time subcommand: unknown')
+        expect.stringContaining('Unknown time subcommand: unknown'),
       );
     });
   });
@@ -573,23 +561,21 @@ describe('handleTimeCommand', () => {
     it('should handle non-API errors', async () => {
       mockApi.getTimeEntries.mockRejectedValue(new Error('Unexpected error'));
 
-      await expect(
-        handleTimeCommand('list', [], { format: 'json' })
-      ).rejects.toThrow('process.exit(1)');
+      await expect(handleTimeCommand('list', [], { format: 'json' })).rejects.toThrow(
+        'process.exit(1)',
+      );
     });
 
     it('should format API errors as JSON', async () => {
       mockApi.getTimeEntries.mockRejectedValue(
-        new (api as any).ProductiveApiError('API error', 500)
+        new (api as any).ProductiveApiError('API error', 500),
       );
 
-      await expect(
-        handleTimeCommand('list', [], { format: 'json' })
-      ).rejects.toThrow('process.exit(1)');
-
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('"error"')
+      await expect(handleTimeCommand('list', [], { format: 'json' })).rejects.toThrow(
+        'process.exit(1)',
       );
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('"error"'));
     });
   });
 });

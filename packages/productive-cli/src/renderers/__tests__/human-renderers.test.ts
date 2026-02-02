@@ -1,22 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  HumanTimeEntryListRenderer,
-  HumanTimeEntryDetailRenderer,
-} from '../human/time-entry.js';
-import {
-  HumanProjectListRenderer,
-} from '../human/project.js';
-import {
-  HumanTaskListRenderer,
-  formatTime,
-} from '../human/task.js';
-import {
-  KanbanRenderer,
-  stripAnsi,
-  truncateText,
-  padText,
-} from '../human/kanban.js';
+
 import type { RenderContext } from '../types.js';
+
+import { KanbanRenderer, stripAnsi, truncateText, padText } from '../human/kanban.js';
+import { HumanProjectListRenderer } from '../human/project.js';
+import { HumanTaskListRenderer, formatTime } from '../human/task.js';
+import { HumanTimeEntryListRenderer, HumanTimeEntryDetailRenderer } from '../human/time-entry.js';
 
 const defaultCtx: RenderContext = {
   noColor: true,
@@ -52,12 +41,8 @@ describe('HumanTimeEntryListRenderer', () => {
     renderer.render(data, defaultCtx);
 
     // Should output date and duration
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('2024-01-15')
-    );
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('8h 00m')
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('2024-01-15'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('8h 00m'));
   });
 
   it('should render total when there are entries', () => {
@@ -71,9 +56,7 @@ describe('HumanTimeEntryListRenderer', () => {
 
     renderer.render(data, defaultCtx);
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Total: 8h 00m')
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Total: 8h 00m'));
   });
 
   it('should render pagination info', () => {
@@ -85,9 +68,7 @@ describe('HumanTimeEntryListRenderer', () => {
 
     renderer.render(data, defaultCtx);
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Page 2/5')
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Page 2/5'));
   });
 });
 
@@ -114,12 +95,8 @@ describe('HumanTimeEntryDetailRenderer', () => {
 
     renderer.render(entry, defaultCtx);
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Time Entry')
-    );
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('123')
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Time Entry'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('123'));
   });
 });
 
@@ -150,12 +127,8 @@ describe('HumanProjectListRenderer', () => {
 
     renderer.render(data, defaultCtx);
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Project A')
-    );
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[active]')
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Project A'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[active]'));
   });
 
   it('should show archived status', () => {
@@ -173,9 +146,7 @@ describe('HumanProjectListRenderer', () => {
 
     renderer.render(data, defaultCtx);
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[archived]')
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[archived]'));
   });
 });
 
@@ -206,12 +177,8 @@ describe('HumanTaskListRenderer', () => {
 
     renderer.render(data, defaultCtx);
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Fix bug')
-    );
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('#42')
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Fix bug'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('#42'));
   });
 
   it('should show time tracking info', () => {
@@ -231,9 +198,7 @@ describe('HumanTaskListRenderer', () => {
 
     renderer.render(data, defaultCtx);
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('2h/4h')
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('2h/4h'));
   });
 });
 
@@ -335,12 +300,8 @@ describe('KanbanRenderer', () => {
     renderer.render(data, { ...defaultCtx, terminalWidth: 80 });
 
     // Should have column headers
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('In Progress')
-    );
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Done')
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('In Progress'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Done'));
   });
 
   it('should handle empty data', () => {
@@ -349,8 +310,6 @@ describe('KanbanRenderer', () => {
 
     renderer.render(data, defaultCtx);
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('No columns to display')
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('No columns to display'));
   });
 });

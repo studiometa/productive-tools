@@ -1,11 +1,12 @@
+import type { OutputFormat } from './types.js';
+
 import { colors } from './utils/colors.js';
 import { Spinner } from './utils/spinner.js';
-import type { OutputFormat } from './types.js';
 
 export class OutputFormatter {
   constructor(
     private format: OutputFormat = 'human',
-    private noColor: boolean = false
+    private noColor: boolean = false,
   ) {
     if (noColor) {
       // Colors are already handled by the colors module
@@ -89,24 +90,18 @@ export class OutputFormatter {
     if (Array.isArray(data) && data.length > 0) {
       const headers = Object.keys(data[0]);
       const colWidths = headers.map((h) => {
-        const maxDataWidth = Math.max(
-          ...data.map((row) => String(row[h] || '').length)
-        );
+        const maxDataWidth = Math.max(...data.map((row) => String(row[h] || '').length));
         return Math.max(h.length, maxDataWidth);
       });
 
       // Header
-      const headerRow = headers
-        .map((h, i) => h.padEnd(colWidths[i]))
-        .join(' | ');
+      const headerRow = headers.map((h, i) => h.padEnd(colWidths[i])).join(' | ');
       console.log(headerRow);
       console.log(colWidths.map((w) => '-'.repeat(w)).join('-+-'));
 
       // Rows
       data.forEach((row) => {
-        const rowStr = headers
-          .map((h, i) => String(row[h] || '').padEnd(colWidths[i]))
-          .join(' | ');
+        const rowStr = headers.map((h, i) => String(row[h] || '').padEnd(colWidths[i])).join(' | ');
         console.log(rowStr);
       });
     }
@@ -121,11 +116,21 @@ export function createSpinner(message: string, format: OutputFormat = 'human'): 
   if (format === 'json') {
     // No-op spinner for JSON output
     const noopSpinner = {
-      start() { return this; },
-      succeed() { return this; },
-      fail() { return this; },
-      stop() { return this; },
-      setText() { return this; },
+      start() {
+        return this;
+      },
+      succeed() {
+        return this;
+      },
+      fail() {
+        return this;
+      },
+      stop() {
+        return this;
+      },
+      setText() {
+        return this;
+      },
     } as unknown as Spinner;
     return noopSpinner;
   }

@@ -25,12 +25,13 @@
  * ```
  */
 
-import { ProductiveApi } from "./api.js";
-import { OutputFormatter, createSpinner } from "./output.js";
-import { getConfig } from "./config.js";
-import { getCache, CacheStore } from "./utils/cache.js";
-import type { OutputFormat, ProductiveConfig } from "./types.js";
-import type { Spinner } from "./utils/spinner.js";
+import type { OutputFormat, ProductiveConfig } from './types.js';
+import type { Spinner } from './utils/spinner.js';
+
+import { ProductiveApi } from './api.js';
+import { getConfig } from './config.js';
+import { OutputFormatter, createSpinner } from './output.js';
+import { getCache, CacheStore } from './utils/cache.js';
 
 /**
  * Options passed to command context creation
@@ -39,8 +40,8 @@ export interface CommandOptions {
   [key: string]: string | boolean | number | undefined;
   format?: string;
   f?: string;
-  "no-color"?: boolean;
-  "no-cache"?: boolean;
+  'no-color'?: boolean;
+  'no-cache'?: boolean;
   refresh?: boolean;
   page?: string | number;
   p?: string | number;
@@ -93,13 +94,13 @@ export interface CommandContext {
  * ```
  */
 export function createContext(options: CommandOptions = {}): CommandContext {
-  const format = (options.format || options.f || "human") as OutputFormat;
-  const noColor = options["no-color"] === true;
+  const format = (options.format || options.f || 'human') as OutputFormat;
+  const noColor = options['no-color'] === true;
 
   const config = getConfig(options as Record<string, string | boolean>);
   const formatter = new OutputFormatter(format, noColor);
   const api = new ProductiveApi(options as Record<string, string | boolean>);
-  const cache = getCache(options["no-cache"] !== true);
+  const cache = getCache(options['no-cache'] !== true);
 
   return {
     api,
@@ -114,13 +115,13 @@ export function createContext(options: CommandOptions = {}): CommandContext {
 
     getPagination(): { page: number; perPage: number } {
       return {
-        page: parseInt(String(options.page || options.p || "1")),
-        perPage: parseInt(String(options.size || options.s || "100")),
+        page: parseInt(String(options.page || options.p || '1')),
+        perPage: parseInt(String(options.size || options.s || '100')),
       };
     },
 
     getSort(): string {
-      return String(options.sort || "");
+      return String(options.sort || '');
     },
   };
 }
@@ -144,19 +145,17 @@ export function createContext(options: CommandOptions = {}): CommandContext {
  * expect(mockApi.getProjects).toHaveBeenCalled();
  * ```
  */
-export function createTestContext(
-  overrides: Partial<CommandContext> = {},
-): CommandContext {
+export function createTestContext(overrides: Partial<CommandContext> = {}): CommandContext {
   const defaultConfig: ProductiveConfig = {
-    apiToken: "test-token",
-    organizationId: "test-org",
-    userId: "test-user",
-    baseUrl: "https://api.productive.io/api/v2",
+    apiToken: 'test-token',
+    organizationId: 'test-org',
+    userId: 'test-user',
+    baseUrl: 'https://api.productive.io/api/v2',
   };
 
   const defaultOptions: CommandOptions = {
-    format: "json",
-    "no-color": true,
+    format: 'json',
+    'no-color': true,
   };
 
   // Create no-op spinner for tests
@@ -168,7 +167,7 @@ export function createTestContext(
     setText: () => noopSpinner,
   } as unknown as Spinner;
 
-  const defaultFormatter = new OutputFormatter("json", true);
+  const defaultFormatter = new OutputFormatter('json', true);
 
   // Create a mock cache (disabled)
   const mockCache = new CacheStore(false);
@@ -178,7 +177,7 @@ export function createTestContext(
     {},
     {
       get(_, prop) {
-        if (typeof prop === "string") {
+        if (typeof prop === 'string') {
           return () => {
             throw new Error(
               `Mock API method '${prop}' was called but not provided in test context`,
@@ -197,7 +196,7 @@ export function createTestContext(
     options: overrides.options ?? defaultOptions,
     createSpinner: overrides.createSpinner ?? (() => noopSpinner),
     getPagination: overrides.getPagination ?? (() => ({ page: 1, perPage: 100 })),
-    getSort: overrides.getSort ?? (() => ""),
+    getSort: overrides.getSort ?? (() => ''),
   };
 }
 

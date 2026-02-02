@@ -2,12 +2,9 @@
  * Time entry formatting
  */
 
+import type { JsonApiResource, FormatOptions, FormattedTimeEntry } from './types.js';
+
 import { stripHtml } from '../utils/html.js';
-import type {
-  JsonApiResource,
-  FormatOptions,
-  FormattedTimeEntry,
-} from './types.js';
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 /**
@@ -15,7 +12,7 @@ import { DEFAULT_FORMAT_OPTIONS } from './types.js';
  */
 export function formatTimeEntry(
   entry: JsonApiResource,
-  options: FormatOptions = {}
+  options: FormatOptions = {},
 ): FormattedTimeEntry {
   const opts = { ...DEFAULT_FORMAT_OPTIONS, ...options };
   const attrs = entry.attributes;
@@ -56,5 +53,3 @@ export function formatTimeEntry(
 
   return result;
 }
-
-

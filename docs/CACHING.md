@@ -23,11 +23,11 @@ This document outlines the caching strategy for the Productive CLI to improve pe
 
 ## Approach Comparison
 
-| Complexity | Solution | Pros | Cons |
-|------------|----------|------|------|
-| **Minimale** | `keyv` + `@keyv/sqlite` | 0 code custom, TTL intégré, API simple | Dépendance externe |
-| **Moyenne** | `node:sqlite` seul avec table `cache` + TTL | Zero deps, flexible, local search | Plus de code |
-| **Maximale** | Hybrid file + SQLite | — | Complexité inutile, à éviter |
+| Complexity   | Solution                                    | Pros                                   | Cons                         |
+| ------------ | ------------------------------------------- | -------------------------------------- | ---------------------------- |
+| **Minimale** | `keyv` + `@keyv/sqlite`                     | 0 code custom, TTL intégré, API simple | Dépendance externe           |
+| **Moyenne**  | `node:sqlite` seul avec table `cache` + TTL | Zero deps, flexible, local search      | Plus de code                 |
+| **Maximale** | Hybrid file + SQLite                        | —                                      | Complexité inutile, à éviter |
 
 ## Option 1: Keyv (Recommandé pour démarrer)
 
@@ -52,7 +52,7 @@ const cache = new Keyv({
 });
 
 // Usage simple
-await cache.set('projects', data, 3600_000);  // 1h TTL
+await cache.set('projects', data, 3600_000); // 1h TTL
 await cache.set('time_entries', data, 300_000); // 5min TTL
 
 const projects = await cache.get('projects');
@@ -326,24 +326,26 @@ for (const item of items) {
 }
 
 // ✅ Préférer
-cache.setMany(items.map(item => ({
-  key: `key:${item.id}`,
-  data: item,
-  ttlMs: ttl,
-})));
+cache.setMany(
+  items.map((item) => ({
+    key: `key:${item.id}`,
+    data: item,
+    ttlMs: ttl,
+  })),
+);
 ```
 
 ## TTL par type de données
 
-| Data Type | TTL | Raison |
-|-----------|-----|--------|
-| Projects | 1h | Change rarement |
-| People | 1h | Change rarement |
-| Services | 1h | Change rarement |
-| Companies | 1h | Change rarement |
-| Time entries | 5min | Change souvent |
-| Tasks | 15min | Change modérément |
-| Budgets | 15min | Change modérément |
+| Data Type    | TTL   | Raison            |
+| ------------ | ----- | ----------------- |
+| Projects     | 1h    | Change rarement   |
+| People       | 1h    | Change rarement   |
+| Services     | 1h    | Change rarement   |
+| Companies    | 1h    | Change rarement   |
+| Time entries | 5min  | Change souvent    |
+| Tasks        | 15min | Change modérément |
+| Budgets      | 15min | Change modérément |
 
 ## CLI Flags
 

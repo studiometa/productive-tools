@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { JsonRenderer } from '../json.js';
-import { CsvRenderer } from '../csv.js';
-import { TableRenderer } from '../table.js';
+
 import type { RenderContext } from '../types.js';
+
+import { CsvRenderer } from '../csv.js';
+import { JsonRenderer } from '../json.js';
+import { TableRenderer } from '../table.js';
 
 const defaultCtx: RenderContext = {
   noColor: true,

@@ -2,11 +2,8 @@
  * Person formatting
  */
 
-import type {
-  JsonApiResource,
-  FormatOptions,
-  FormattedPerson,
-} from './types.js';
+import type { JsonApiResource, FormatOptions, FormattedPerson } from './types.js';
+
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 /**
@@ -14,7 +11,7 @@ import { DEFAULT_FORMAT_OPTIONS } from './types.js';
  */
 export function formatPerson(
   person: JsonApiResource,
-  options: FormatOptions = {}
+  options: FormatOptions = {},
 ): FormattedPerson {
   const opts = { ...DEFAULT_FORMAT_OPTIONS, ...options };
   const attrs = person.attributes;

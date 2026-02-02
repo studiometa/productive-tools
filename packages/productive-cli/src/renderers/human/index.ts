@@ -31,13 +31,7 @@ export {
 } from './task.js';
 
 // Kanban
-export {
-  KanbanRenderer,
-  kanbanRenderer,
-  stripAnsi,
-  truncateText,
-  padText,
-} from './kanban.js';
+export { KanbanRenderer, kanbanRenderer, stripAnsi, truncateText, padText } from './kanban.js';
 export type { KanbanTask, KanbanColumn } from './kanban.js';
 
 // People
@@ -49,13 +43,47 @@ export {
 } from './person.js';
 
 // Services
-export {
-  HumanServiceListRenderer,
-  humanServiceListRenderer,
-} from './service.js';
+export { HumanServiceListRenderer, humanServiceListRenderer } from './service.js';
 
 // Budgets
+export { HumanBudgetListRenderer, humanBudgetListRenderer } from './budget.js';
+
+// Companies
 export {
-  HumanBudgetListRenderer,
-  humanBudgetListRenderer,
-} from './budget.js';
+  HumanCompanyListRenderer,
+  HumanCompanyDetailRenderer,
+  humanCompanyListRenderer,
+  humanCompanyDetailRenderer,
+} from './company.js';
+
+// Comments
+export {
+  HumanCommentListRenderer,
+  HumanCommentDetailRenderer,
+  humanCommentListRenderer,
+  humanCommentDetailRenderer,
+} from './comment.js';
+
+// Timers
+export {
+  HumanTimerListRenderer,
+  HumanTimerDetailRenderer,
+  humanTimerListRenderer,
+  humanTimerDetailRenderer,
+} from './timer.js';
+
+// Deals
+export {
+  HumanDealListRenderer,
+  HumanDealDetailRenderer,
+  humanDealListRenderer,
+  humanDealDetailRenderer,
+} from './deal.js';
+
+// Bookings
+export {
+  HumanBookingListRenderer,
+  HumanBookingDetailRenderer,
+  humanBookingListRenderer,
+  humanBookingDetailRenderer,
+} from './booking.js';

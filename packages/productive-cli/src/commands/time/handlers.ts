@@ -2,18 +2,19 @@
  * Handler implementations for time command
  */
 
-import { colors } from '../../utils/colors.js';
-import { parseDate, parseDateRange } from '../../utils/date.js';
+import type { CommandContext } from '../../context.js';
 import type { OutputFormat } from '../../types.js';
+
 import { handleError, exitWithValidationError, runCommand } from '../../error-handler.js';
 import { ValidationError, ConfigError } from '../../errors.js';
-import type { CommandContext } from '../../context.js';
 import { formatTimeEntry, formatListResponse } from '../../formatters/index.js';
 import {
   render,
   createRenderContext,
   humanTimeEntryDetailRenderer,
 } from '../../renderers/index.js';
+import { colors } from '../../utils/colors.js';
+import { parseDate, parseDateRange } from '../../utils/date.js';
 
 /**
  * Parse filter string into key-value pairs
@@ -153,7 +154,7 @@ export async function timeAdd(ctx: CommandContext): Promise<void> {
     spinner.fail();
     handleError(
       new ConfigError('Person ID required. Specify --person or set userId in config', ['userId']),
-      ctx.formatter
+      ctx.formatter,
     );
     return;
   }
@@ -226,7 +227,11 @@ export async function timeUpdate(args: string[], ctx: CommandContext): Promise<v
 
     if (Object.keys(data).length === 0) {
       spinner.fail();
-      throw ValidationError.invalid('options', data, 'No updates specified. Use --time, --note, or --date');
+      throw ValidationError.invalid(
+        'options',
+        data,
+        'No updates specified. Use --time, --note, or --date',
+      );
     }
 
     const response = await ctx.api.updateTimeEntry(id, data);

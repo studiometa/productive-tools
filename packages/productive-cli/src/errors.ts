@@ -48,9 +48,7 @@ export abstract class CliError extends Error {
       name: this.name,
       message: this.message,
       isRecoverable: this.isRecoverable,
-      ...(this.cause instanceof Error
-        ? { cause: { message: this.cause.message } }
-        : {}),
+      ...(this.cause instanceof Error ? { cause: { message: this.cause.message } } : {}),
     };
   }
 }
@@ -60,7 +58,7 @@ export abstract class CliError extends Error {
 // ============================================================================
 
 export class ConfigError extends CliError {
-  readonly code = "CONFIG_ERROR";
+  readonly code = 'CONFIG_ERROR';
   readonly isRecoverable = true;
 
   constructor(
@@ -80,22 +78,22 @@ export class ConfigError extends CliError {
 
   static missingToken(): ConfigError {
     return new ConfigError(
-      "API token not configured. Set via: --token <token>, productive config set apiToken <token>, or PRODUCTIVE_API_TOKEN env var",
-      ["apiToken"],
+      'API token not configured. Set via: --token <token>, productive config set apiToken <token>, or PRODUCTIVE_API_TOKEN env var',
+      ['apiToken'],
     );
   }
 
   static missingOrganizationId(): ConfigError {
     return new ConfigError(
-      "Organization ID not configured. Set via: --org-id <id>, productive config set organizationId <id>, or PRODUCTIVE_ORG_ID env var",
-      ["organizationId"],
+      'Organization ID not configured. Set via: --org-id <id>, productive config set organizationId <id>, or PRODUCTIVE_ORG_ID env var',
+      ['organizationId'],
     );
   }
 
   static missingUserId(): ConfigError {
     return new ConfigError(
-      "User ID not configured. Set via: --user-id <id>, productive config set userId <id>, or PRODUCTIVE_USER_ID env var",
-      ["userId"],
+      'User ID not configured. Set via: --user-id <id>, productive config set userId <id>, or PRODUCTIVE_USER_ID env var',
+      ['userId'],
     );
   }
 
@@ -109,7 +107,7 @@ export class ConfigError extends CliError {
 // ============================================================================
 
 export class ValidationError extends CliError {
-  readonly code = "VALIDATION_ERROR";
+  readonly code = 'VALIDATION_ERROR';
   readonly isRecoverable = true;
 
   constructor(
@@ -134,27 +132,19 @@ export class ValidationError extends CliError {
   }
 
   static invalid(field: string, value: unknown, reason: string): ValidationError {
-    return new ValidationError(
-      `Invalid ${field}: ${reason}`,
-      field,
-      value,
-    );
+    return new ValidationError(`Invalid ${field}: ${reason}`, field, value);
   }
 
   static invalidDate(value: string): ValidationError {
     return new ValidationError(
       `Invalid date format: '${value}'. Use YYYY-MM-DD, 'today', 'yesterday', or relative formats like '2 days ago'`,
-      "date",
+      'date',
       value,
     );
   }
 
   static invalidId(field: string, value: string): ValidationError {
-    return new ValidationError(
-      `Invalid ${field}: '${value}' is not a valid ID`,
-      field,
-      value,
-    );
+    return new ValidationError(`Invalid ${field}: '${value}' is not a valid ID`, field, value);
   }
 }
 
@@ -166,18 +156,18 @@ export class ValidationError extends CliError {
  * API error codes
  */
 export type ApiErrorCode =
-  | "API_ERROR"
-  | "AUTHENTICATION_ERROR"
-  | "AUTHORIZATION_ERROR"
-  | "NOT_FOUND_ERROR"
-  | "RATE_LIMIT_ERROR"
-  | "SERVER_ERROR";
+  | 'API_ERROR'
+  | 'AUTHENTICATION_ERROR'
+  | 'AUTHORIZATION_ERROR'
+  | 'NOT_FOUND_ERROR'
+  | 'RATE_LIMIT_ERROR'
+  | 'SERVER_ERROR';
 
 /**
  * Base class for API-related errors
  */
 export class ApiError extends CliError {
-  readonly code: ApiErrorCode = "API_ERROR";
+  readonly code: ApiErrorCode = 'API_ERROR';
   readonly isRecoverable: boolean;
 
   constructor(
@@ -189,8 +179,7 @@ export class ApiError extends CliError {
   ) {
     super(message, cause);
     // 5xx errors and network errors are potentially recoverable with retry
-    this.isRecoverable =
-      statusCode === undefined || (statusCode >= 500 && statusCode < 600);
+    this.isRecoverable = statusCode === undefined || (statusCode >= 500 && statusCode < 600);
   }
 
   override toJSON() {
@@ -229,8 +218,7 @@ export class ApiError extends CliError {
   }
 
   static networkError(endpoint: string, cause: unknown): ApiError {
-    const message =
-      cause instanceof Error ? cause.message : "Network request failed";
+    const message = cause instanceof Error ? cause.message : 'Network request failed';
     return new ApiError(
       `Network error while requesting ${endpoint}: ${message}`,
       undefined,
@@ -242,12 +230,12 @@ export class ApiError extends CliError {
 }
 
 export class AuthenticationError extends ApiError {
-  override readonly code: ApiErrorCode = "AUTHENTICATION_ERROR";
+  override readonly code: ApiErrorCode = 'AUTHENTICATION_ERROR';
   override readonly isRecoverable = false;
 
   constructor(message: string, endpoint?: string, response?: unknown) {
     super(
-      message || "Authentication failed. Please check your API token.",
+      message || 'Authentication failed. Please check your API token.',
       401,
       endpoint,
       response,
@@ -256,13 +244,12 @@ export class AuthenticationError extends ApiError {
 }
 
 export class AuthorizationError extends ApiError {
-  override readonly code: ApiErrorCode = "AUTHORIZATION_ERROR";
+  override readonly code: ApiErrorCode = 'AUTHORIZATION_ERROR';
   override readonly isRecoverable = false;
 
   constructor(message: string, endpoint?: string, response?: unknown) {
     super(
-      message ||
-        "Access denied. You do not have permission to perform this action.",
+      message || 'Access denied. You do not have permission to perform this action.',
       403,
       endpoint,
       response,
@@ -271,16 +258,16 @@ export class AuthorizationError extends ApiError {
 }
 
 export class NotFoundError extends ApiError {
-  override readonly code: ApiErrorCode = "NOT_FOUND_ERROR";
+  override readonly code: ApiErrorCode = 'NOT_FOUND_ERROR';
   override readonly isRecoverable = false;
 
   constructor(message: string, endpoint?: string, response?: unknown) {
-    super(message || "The requested resource was not found.", 404, endpoint, response);
+    super(message || 'The requested resource was not found.', 404, endpoint, response);
   }
 }
 
 export class RateLimitError extends ApiError {
-  override readonly code: ApiErrorCode = "RATE_LIMIT_ERROR";
+  override readonly code: ApiErrorCode = 'RATE_LIMIT_ERROR';
   override readonly isRecoverable = true;
 
   constructor(
@@ -290,7 +277,7 @@ export class RateLimitError extends ApiError {
     public readonly retryAfter?: number,
   ) {
     super(
-      message || "Rate limit exceeded. Please wait before making more requests.",
+      message || 'Rate limit exceeded. Please wait before making more requests.',
       429,
       endpoint,
       response,
@@ -306,17 +293,12 @@ export class RateLimitError extends ApiError {
 }
 
 export class ServerError extends ApiError {
-  override readonly code: ApiErrorCode = "SERVER_ERROR";
+  override readonly code: ApiErrorCode = 'SERVER_ERROR';
   override readonly isRecoverable = true;
 
-  constructor(
-    message: string,
-    statusCode: number,
-    endpoint?: string,
-    response?: unknown,
-  ) {
+  constructor(message: string, statusCode: number, endpoint?: string, response?: unknown) {
     super(
-      message || "The server encountered an error. Please try again later.",
+      message || 'The server encountered an error. Please try again later.',
       statusCode,
       endpoint,
       response,
@@ -329,7 +311,7 @@ export class ServerError extends ApiError {
 // ============================================================================
 
 export class CacheError extends CliError {
-  readonly code = "CACHE_ERROR";
+  readonly code = 'CACHE_ERROR';
   readonly isRecoverable = true;
 
   constructor(
@@ -348,15 +330,15 @@ export class CacheError extends CliError {
   }
 
   static readFailed(cause: unknown): CacheError {
-    return new CacheError("Failed to read from cache", "read", cause);
+    return new CacheError('Failed to read from cache', 'read', cause);
   }
 
   static writeFailed(cause: unknown): CacheError {
-    return new CacheError("Failed to write to cache", "write", cause);
+    return new CacheError('Failed to write to cache', 'write', cause);
   }
 
   static invalidateFailed(cause: unknown): CacheError {
-    return new CacheError("Failed to invalidate cache", "invalidate", cause);
+    return new CacheError('Failed to invalidate cache', 'invalidate', cause);
   }
 }
 
@@ -365,7 +347,7 @@ export class CacheError extends CliError {
 // ============================================================================
 
 export class CommandError extends CliError {
-  readonly code = "COMMAND_ERROR";
+  readonly code = 'COMMAND_ERROR';
   readonly isRecoverable = false;
 
   constructor(
@@ -390,22 +372,11 @@ export class CommandError extends CliError {
   }
 
   static unknownSubcommand(command: string, subcommand: string): CommandError {
-    return new CommandError(
-      `Unknown subcommand: ${subcommand}`,
-      command,
-      subcommand,
-    );
+    return new CommandError(`Unknown subcommand: ${subcommand}`, command, subcommand);
   }
 
-  static missingArgument(
-    command: string,
-    argument: string,
-    usage: string,
-  ): CommandError {
-    return new CommandError(
-      `Missing required argument: ${argument}\nUsage: ${usage}`,
-      command,
-    );
+  static missingArgument(command: string, argument: string, usage: string): CommandError {
+    return new CommandError(`Missing required argument: ${argument}\nUsage: ${usage}`, command);
   }
 }
 
@@ -442,11 +413,7 @@ export function fromLegacyError(error: unknown): CliError {
   }
 
   // Handle legacy ProductiveApiError
-  if (
-    error instanceof Error &&
-    error.name === "ProductiveApiError" &&
-    "statusCode" in error
-  ) {
+  if (error instanceof Error && error.name === 'ProductiveApiError' && 'statusCode' in error) {
     const legacyError = error as Error & {
       statusCode?: number;
       response?: unknown;

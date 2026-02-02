@@ -2,15 +2,12 @@
  * Handler implementations for people command
  */
 
-import type { OutputFormat } from '../../types.js';
-import { exitWithValidationError, runCommand } from '../../error-handler.js';
 import type { CommandContext } from '../../context.js';
+import type { OutputFormat } from '../../types.js';
+
+import { exitWithValidationError, runCommand } from '../../error-handler.js';
 import { formatPerson, formatListResponse } from '../../formatters/index.js';
-import {
-  render,
-  createRenderContext,
-  humanPersonDetailRenderer,
-} from '../../renderers/index.js';
+import { render, createRenderContext, humanPersonDetailRenderer } from '../../renderers/index.js';
 
 /**
  * Parse filter string into key-value pairs

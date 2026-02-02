@@ -2,11 +2,8 @@
  * Project formatting
  */
 
-import type {
-  JsonApiResource,
-  FormatOptions,
-  FormattedProject,
-} from './types.js';
+import type { JsonApiResource, FormatOptions, FormattedProject } from './types.js';
+
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 /**
@@ -14,7 +11,7 @@ import { DEFAULT_FORMAT_OPTIONS } from './types.js';
  */
 export function formatProject(
   project: JsonApiResource,
-  options: FormatOptions = {}
+  options: FormatOptions = {},
 ): FormattedProject {
   const opts = { ...DEFAULT_FORMAT_OPTIONS, ...options };
   const attrs = project.attributes;

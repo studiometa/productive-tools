@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { handleProjectsCommand } from '../projects/index.js';
+
 import { ProductiveApi, ProductiveApiError } from '../../api.js';
+import { handleProjectsCommand } from '../projects/index.js';
 
 // Mock dependencies with proper ProductiveApiError implementation
 vi.mock('../../api.js', () => ({
@@ -205,7 +206,7 @@ describe('projects command', () => {
         () =>
           ({
             getProjects: vi.fn().mockResolvedValue(mockProjects),
-          }) as any
+          }) as any,
       );
 
       await handleProjectsCommand('list', [], {});

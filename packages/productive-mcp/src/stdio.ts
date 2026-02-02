@@ -6,10 +6,11 @@
  */
 
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+
 import { getConfig, setConfig } from '@studiometa/productive-cli';
 
-import { TOOLS, STDIO_ONLY_TOOLS } from './tools.js';
 import { executeToolWithCredentials } from './handlers.js';
+import { TOOLS, STDIO_ONLY_TOOLS } from './tools.js';
 
 export type ToolResult = CallToolResult;
 
@@ -88,7 +89,7 @@ export async function handleConfigureTool(args: {
             },
           },
           null,
-          2
+          2,
         ),
       },
     ],
@@ -114,7 +115,7 @@ export async function handleGetConfigTool(): Promise<ToolResult> {
             configured: !!(currentConfig.organizationId && currentConfig.apiToken),
           },
           null,
-          2
+          2,
         ),
       },
     ],
@@ -126,7 +127,7 @@ export async function handleGetConfigTool(): Promise<ToolResult> {
  */
 export async function handleToolCall(
   name: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
 ): Promise<ToolResult> {
   // Handle stdio-only configuration tools
   if (name === 'productive_configure') {

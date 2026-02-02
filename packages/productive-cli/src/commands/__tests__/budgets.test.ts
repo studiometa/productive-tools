@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { handleBudgetsCommand } from '../budgets/index.js';
+
 import { ProductiveApi, ProductiveApiError } from '../../api.js';
+import { handleBudgetsCommand } from '../budgets/index.js';
 
 // Mock dependencies
 vi.mock('../../api.js');
@@ -61,7 +62,7 @@ describe('budgets command', () => {
         () =>
           ({
             getBudgets: vi.fn().mockResolvedValue(mockBudgets),
-          }) as any
+          }) as any,
       );
 
       await handleBudgetsCommand('list', [], {});
@@ -165,7 +166,7 @@ describe('budgets command', () => {
         () =>
           ({
             getBudgets: vi.fn().mockResolvedValue(mockBudgets),
-          }) as any
+          }) as any,
       );
 
       await handleBudgetsCommand('list', [], {});

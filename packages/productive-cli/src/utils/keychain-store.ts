@@ -6,31 +6,31 @@
  * - Fallback: Returns null (caller should use config file)
  */
 
-import { execSync, spawnSync } from "node:child_process";
+import { execSync, spawnSync } from 'node:child_process';
 
-const SERVICE_NAME = "productive-cli";
+const SERVICE_NAME = 'productive-cli';
 
-type Platform = "darwin" | "linux" | "unsupported";
+type Platform = 'darwin' | 'linux' | 'unsupported';
 
 /**
  * Detect the current platform and available secret storage
  */
 function detectPlatform(): Platform {
-  if (process.platform === "darwin") {
-    return "darwin";
+  if (process.platform === 'darwin') {
+    return 'darwin';
   }
 
-  if (process.platform === "linux") {
+  if (process.platform === 'linux') {
     // Check if secret-tool is available
     try {
-      execSync("which secret-tool", { stdio: "ignore" });
-      return "linux";
+      execSync('which secret-tool', { stdio: 'ignore' });
+      return 'linux';
     } catch {
-      return "unsupported";
+      return 'unsupported';
     }
   }
 
-  return "unsupported";
+  return 'unsupported';
 }
 
 /**
@@ -39,28 +39,15 @@ function detectPlatform(): Platform {
 function setKeychainMacOS(key: string, value: string): boolean {
   try {
     // Delete existing entry first (ignore errors if it doesn't exist)
-    spawnSync(
-      "security",
-      ["delete-generic-password", "-s", SERVICE_NAME, "-a", key],
-      {
-        stdio: "ignore",
-      },
-    );
+    spawnSync('security', ['delete-generic-password', '-s', SERVICE_NAME, '-a', key], {
+      stdio: 'ignore',
+    });
 
     // Add the new password
     const result = spawnSync(
-      "security",
-      [
-        "add-generic-password",
-        "-s",
-        SERVICE_NAME,
-        "-a",
-        key,
-        "-w",
-        value,
-        "-U",
-      ],
-      { stdio: "ignore" },
+      'security',
+      ['add-generic-password', '-s', SERVICE_NAME, '-a', key, '-w', value, '-U'],
+      { stdio: 'ignore' },
     );
 
     return result.status === 0;
@@ -75,9 +62,9 @@ function setKeychainMacOS(key: string, value: string): boolean {
 function getKeychainMacOS(key: string): string | null {
   try {
     const result = spawnSync(
-      "security",
-      ["find-generic-password", "-s", SERVICE_NAME, "-a", key, "-w"],
-      { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] },
+      'security',
+      ['find-generic-password', '-s', SERVICE_NAME, '-a', key, '-w'],
+      { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] },
     );
 
     if (result.status === 0 && result.stdout) {
@@ -95,9 +82,9 @@ function getKeychainMacOS(key: string): string | null {
 function deleteKeychainMacOS(key: string): boolean {
   try {
     const result = spawnSync(
-      "security",
-      ["delete-generic-password", "-s", SERVICE_NAME, "-a", key],
-      { stdio: "ignore" },
+      'security',
+      ['delete-generic-password', '-s', SERVICE_NAME, '-a', key],
+      { stdio: 'ignore' },
     );
     return result.status === 0;
   } catch {
@@ -112,17 +99,9 @@ function setKeychainLinux(key: string, value: string): boolean {
   try {
     // secret-tool reads password from stdin
     const result = spawnSync(
-      "secret-tool",
-      [
-        "store",
-        "--label",
-        `${SERVICE_NAME} ${key}`,
-        "service",
-        SERVICE_NAME,
-        "account",
-        key,
-      ],
-      { input: value, encoding: "utf-8", stdio: ["pipe", "ignore", "ignore"] },
+      'secret-tool',
+      ['store', '--label', `${SERVICE_NAME} ${key}`, 'service', SERVICE_NAME, 'account', key],
+      { input: value, encoding: 'utf-8', stdio: ['pipe', 'ignore', 'ignore'] },
     );
 
     return result.status === 0;
@@ -136,11 +115,10 @@ function setKeychainLinux(key: string, value: string): boolean {
  */
 function getKeychainLinux(key: string): string | null {
   try {
-    const result = spawnSync(
-      "secret-tool",
-      ["lookup", "service", SERVICE_NAME, "account", key],
-      { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] },
-    );
+    const result = spawnSync('secret-tool', ['lookup', 'service', SERVICE_NAME, 'account', key], {
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
 
     if (result.status === 0 && result.stdout) {
       return result.stdout.trim();
@@ -156,11 +134,9 @@ function getKeychainLinux(key: string): string | null {
  */
 function deleteKeychainLinux(key: string): boolean {
   try {
-    const result = spawnSync(
-      "secret-tool",
-      ["clear", "service", SERVICE_NAME, "account", key],
-      { stdio: "ignore" },
-    );
+    const result = spawnSync('secret-tool', ['clear', 'service', SERVICE_NAME, 'account', key], {
+      stdio: 'ignore',
+    });
     return result.status === 0;
   } catch {
     return false;
@@ -188,7 +164,7 @@ export function resetPlatformCache(): void {
  * Check if secure storage is available on this platform
  */
 export function isKeychainAvailable(): boolean {
-  return getPlatform() !== "unsupported";
+  return getPlatform() !== 'unsupported';
 }
 
 /**
@@ -197,12 +173,12 @@ export function isKeychainAvailable(): boolean {
 export function getKeychainBackend(): string {
   const platform = getPlatform();
   switch (platform) {
-    case "darwin":
-      return "macOS Keychain";
-    case "linux":
-      return "libsecret (Secret Service)";
+    case 'darwin':
+      return 'macOS Keychain';
+    case 'linux':
+      return 'libsecret (Secret Service)';
     default:
-      return "none";
+      return 'none';
   }
 }
 
@@ -214,9 +190,9 @@ export function setKeychainValue(key: string, value: string): boolean {
   const platform = getPlatform();
 
   switch (platform) {
-    case "darwin":
+    case 'darwin':
       return setKeychainMacOS(key, value);
-    case "linux":
+    case 'linux':
       return setKeychainLinux(key, value);
     default:
       return false;
@@ -231,9 +207,9 @@ export function getKeychainValue(key: string): string | null {
   const platform = getPlatform();
 
   switch (platform) {
-    case "darwin":
+    case 'darwin':
       return getKeychainMacOS(key);
-    case "linux":
+    case 'linux':
       return getKeychainLinux(key);
     default:
       return null;
@@ -248,9 +224,9 @@ export function deleteKeychainValue(key: string): boolean {
   const platform = getPlatform();
 
   switch (platform) {
-    case "darwin":
+    case 'darwin':
       return deleteKeychainMacOS(key);
-    case "linux":
+    case 'linux':
       return deleteKeychainLinux(key);
     default:
       return false;
@@ -260,7 +236,7 @@ export function deleteKeychainValue(key: string): boolean {
 /**
  * List of config keys that should be stored securely
  */
-export const SECURE_KEYS = ["apiToken"] as const;
+export const SECURE_KEYS = ['apiToken'] as const;
 
 /**
  * Check if a key should be stored securely

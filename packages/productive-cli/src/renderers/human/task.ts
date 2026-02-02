@@ -4,14 +4,11 @@
  * Displays tasks with status, assignee, project, and time tracking info.
  */
 
-import { colors } from '../../utils/colors.js';
-import {
-  linkedId,
-  linkedProject,
-  linkedPerson,
-} from '../../utils/productive-links.js';
 import type { FormattedTask, FormattedPagination } from '../../formatters/types.js';
 import type { ListRenderer, Renderer, RenderContext } from '../types.js';
+
+import { colors } from '../../utils/colors.js';
+import { linkedId, linkedProject, linkedPerson } from '../../utils/productive-links.js';
 
 /**
  * Format time in minutes to human readable format
@@ -29,10 +26,7 @@ export function formatTime(minutes: number | undefined): string {
  * Renderer for a list of tasks with pagination
  */
 export class HumanTaskListRenderer implements ListRenderer<FormattedTask> {
-  render(
-    data: { data: FormattedTask[]; meta?: FormattedPagination },
-    ctx: RenderContext
-  ): void {
+  render(data: { data: FormattedTask[]; meta?: FormattedPagination }, ctx: RenderContext): void {
     for (const task of data.data) {
       this.renderItem(task, ctx);
     }
@@ -49,19 +43,13 @@ export class HumanTaskListRenderer implements ListRenderer<FormattedTask> {
     const taskNumber = task.number ? `#${task.number}` : '';
 
     const numberPart = taskNumber ? colors.dim(taskNumber) + ' ' : '';
-    console.log(
-      `${statusIcon} ${numberPart}${colors.bold(title)} ${linkedId(task.id, 'task')}`
-    );
+    console.log(`${statusIcon} ${numberPart}${colors.bold(title)} ${linkedId(task.id, 'task')}`);
 
     // Project and assignee info
     const parts: string[] = [];
     if (task.project_name) {
       const projectName = colors.cyan(task.project_name);
-      parts.push(
-        task.project_id
-          ? linkedProject(projectName, task.project_id)
-          : projectName
-      );
+      parts.push(task.project_id ? linkedProject(projectName, task.project_id) : projectName);
     }
     if (task.assignee_name) {
       const assigneeText = task.assignee_id
@@ -87,9 +75,7 @@ export class HumanTaskListRenderer implements ListRenderer<FormattedTask> {
         const estimateStr = formatTime(estimate);
         const isOverBudget = worked > estimate;
         const ratio = `${workedStr}/${estimateStr}`;
-        timeInfo.push(
-          `${colors.dim('Time:')} ${isOverBudget ? colors.red(ratio) : ratio}`
-        );
+        timeInfo.push(`${colors.dim('Time:')} ${isOverBudget ? colors.red(ratio) : ratio}`);
       } else {
         timeInfo.push(`${colors.dim('Time:')} ${workedStr}`);
       }
@@ -102,9 +88,7 @@ export class HumanTaskListRenderer implements ListRenderer<FormattedTask> {
       const now = new Date();
       const isOverdue = !isClosed && dueDate < now;
       const dueDateStr = task.due_date;
-      timeInfo.push(
-        `${colors.dim('Due:')} ${isOverdue ? colors.red(dueDateStr) : dueDateStr}`
-      );
+      timeInfo.push(`${colors.dim('Due:')} ${isOverdue ? colors.red(dueDateStr) : dueDateStr}`);
     }
 
     if (timeInfo.length > 0) {
@@ -116,9 +100,7 @@ export class HumanTaskListRenderer implements ListRenderer<FormattedTask> {
 
   renderPagination(meta: FormattedPagination, _ctx: RenderContext): void {
     console.log(
-      colors.dim(
-        `Page ${meta.page}/${meta.total_pages} (Total: ${meta.total_count} tasks)`
-      )
+      colors.dim(`Page ${meta.page}/${meta.total_pages} (Total: ${meta.total_count} tasks)`),
     );
   }
 }
@@ -129,9 +111,7 @@ export class HumanTaskListRenderer implements ListRenderer<FormattedTask> {
 export class HumanTaskDetailRenderer implements Renderer<FormattedTask> {
   render(task: FormattedTask, _ctx: RenderContext): void {
     const isClosed = task.closed;
-    const statusIcon = isClosed
-      ? colors.green('✓ Completed')
-      : colors.yellow('○ Active');
+    const statusIcon = isClosed ? colors.green('✓ Completed') : colors.yellow('○ Active');
     const taskNumber = task.number ? colors.dim(`#${task.number} `) : '';
 
     console.log(`${taskNumber}${colors.bold(task.title)}`);
@@ -140,9 +120,7 @@ export class HumanTaskDetailRenderer implements Renderer<FormattedTask> {
     console.log(`${colors.cyan('Status:')}   ${statusIcon}`);
 
     if (task.status_name) {
-      console.log(
-        `${colors.cyan('Workflow:')} ${colors.dim(`[${task.status_name}]`)}`
-      );
+      console.log(`${colors.cyan('Workflow:')} ${colors.dim(`[${task.status_name}]`)}`);
     }
 
     if (task.project_name) {
@@ -169,9 +147,7 @@ export class HumanTaskDetailRenderer implements Renderer<FormattedTask> {
         const estimateStr = formatTime(estimate);
         const isOverBudget = worked > estimate;
         const ratio = `${workedStr} / ${estimateStr}`;
-        console.log(
-          `${colors.cyan('Time:')}     ${isOverBudget ? colors.red(ratio) : ratio}`
-        );
+        console.log(`${colors.cyan('Time:')}     ${isOverBudget ? colors.red(ratio) : ratio}`);
       } else {
         console.log(`${colors.cyan('Time:')}     ${workedStr}`);
       }
@@ -184,9 +160,7 @@ export class HumanTaskDetailRenderer implements Renderer<FormattedTask> {
       const now = new Date();
       const isOverdue = !isClosed && dueDate < now;
       const dueDateStr = task.due_date;
-      console.log(
-        `${colors.cyan('Due:')}      ${isOverdue ? colors.red(dueDateStr) : dueDateStr}`
-      );
+      console.log(`${colors.cyan('Due:')}      ${isOverdue ? colors.red(dueDateStr) : dueDateStr}`);
     }
 
     // Description
@@ -200,14 +174,10 @@ export class HumanTaskDetailRenderer implements Renderer<FormattedTask> {
     // Timestamps
     console.log();
     if (task.created_at) {
-      console.log(
-        `${colors.dim('Created:')} ${new Date(task.created_at).toLocaleString()}`
-      );
+      console.log(`${colors.dim('Created:')} ${new Date(task.created_at).toLocaleString()}`);
     }
     if (task.updated_at) {
-      console.log(
-        `${colors.dim('Updated:')} ${new Date(task.updated_at).toLocaleString()}`
-      );
+      console.log(`${colors.dim('Updated:')} ${new Date(task.updated_at).toLocaleString()}`);
     }
   }
 }
