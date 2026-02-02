@@ -83,47 +83,14 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Extract release notes from changelogs
-        id: release_notes
+      - name: Create release notes
         run: |
-          # Extract the [Unreleased] or current version section from each changelog
-          extract_section() {
-            local file=$1
-            local version=$2
-            
-            # Try to find the version section, fallback to Unreleased
-            awk -v ver="$version" '
-              /^## \[/ {
-                if (found) exit
-                if ($0 ~ "\\[" ver "\\]" || $0 ~ "\\[Unreleased\\]") {
-                  found = 1
-                  next
-                }
-              }
-              found && /^## \[/ { exit }
-              found { print }
-            ' "$file"
-          }
-          
           {
-            echo "## @studiometa/productive-cli"
+            echo "See CHANGELOG.md for details:"
             echo ""
-            extract_section "packages/productive-cli/CHANGELOG.md" "$VERSION"
-            echo ""
-            echo "---"
-            echo ""
-            echo "## @studiometa/productive-mcp"
-            echo ""
-            extract_section "packages/productive-mcp/CHANGELOG.md" "$VERSION"
-            echo ""
-            echo "---"
-            echo ""
-            echo "**Full Changelogs:**"
-            echo "- [productive-cli/CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/packages/productive-cli/CHANGELOG.md)"
-            echo "- [productive-mcp/CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/packages/productive-mcp/CHANGELOG.md)"
+            echo "- [@studiometa/productive-cli](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/packages/productive-cli/CHANGELOG.md)"
+            echo "- [@studiometa/productive-mcp](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/packages/productive-mcp/CHANGELOG.md)"
           } > release_notes.md
-          
-          cat release_notes.md
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
