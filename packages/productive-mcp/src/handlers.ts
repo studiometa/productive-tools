@@ -50,9 +50,11 @@ export async function executeToolWithCredentials(
   credentials: ProductiveCredentials
 ): Promise<ToolResult> {
   // Initialize API client with provided credentials
+  // Note: getConfig expects CLI-style keys (token, org-id) not camelCase
   const api = new ProductiveApi({
-    apiToken: credentials.apiToken,
-    organizationId: credentials.organizationId,
+    token: credentials.apiToken,
+    'org-id': credentials.organizationId,
+    'user-id': credentials.userId,
   } as Record<string, string>);
 
   try {
