@@ -25,6 +25,14 @@
       "import": "./dist/auth.js",
       "types": "./dist/auth.d.ts"
     },
+    "./crypto": {
+      "import": "./dist/crypto.js",
+      "types": "./dist/crypto.d.ts"
+    },
+    "./oauth": {
+      "import": "./dist/oauth.js",
+      "types": "./dist/oauth.d.ts"
+    },
     "./tools": {
       "import": "./dist/tools.js",
       "types": "./dist/tools.d.ts"

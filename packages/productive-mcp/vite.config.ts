@@ -8,6 +8,8 @@ export default defineConfig({
         index: resolve(__dirname, 'src/index.ts'),
         server: resolve(__dirname, 'src/server.ts'),
         auth: resolve(__dirname, 'src/auth.ts'),
+        crypto: resolve(__dirname, 'src/crypto.ts'),
+        oauth: resolve(__dirname, 'src/oauth.ts'),
         tools: resolve(__dirname, 'src/tools.ts'),
         handlers: resolve(__dirname, 'src/handlers.ts'),
         stdio: resolve(__dirname, 'src/stdio.ts'),
