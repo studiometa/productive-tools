@@ -1,205 +1,171 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 /**
- * Tool definitions for Productive.io MCP server
- * These are shared between stdio and HTTP transports
+ * Consolidated tool definitions for Productive.io MCP server
+ *
+ * Tools are consolidated to reduce token overhead:
+ * - 5 tools instead of 13 (70% reduction in tool list size)
+ * - Each tool uses an `action` parameter to specify the operation
+ * - Compact output mode available via `compact` parameter
  */
 export const TOOLS: Tool[] = [
   {
-    name: 'productive_list_projects',
-    description: 'List projects from Productive.io with optional filters',
+    name: 'productive_projects',
+    description:
+      'Manage Productive.io projects. Actions: list (with filters), get (by ID).',
     inputSchema: {
       type: 'object',
       properties: {
+        action: {
+          type: 'string',
+          enum: ['list', 'get'],
+          description: 'Action: list or get',
+        },
+        id: {
+          type: 'string',
+          description: 'Project ID (required for get)',
+        },
         filter: {
           type: 'object',
-          description: 'Filters to apply',
+          description: 'Filters for list action',
           properties: {
-            board_id: { type: 'string', description: 'Filter by board ID' },
-            company_id: { type: 'string', description: 'Filter by company ID' },
-            project_manager_id: { type: 'string', description: 'Filter by project manager ID' },
-            workflow_status: { type: 'string', description: 'Filter by workflow status' },
+            company_id: { type: 'string' },
+            project_manager_id: { type: 'string' },
           },
         },
-        page: { type: 'number', description: 'Page number (default: 1)' },
-        per_page: { type: 'number', description: 'Items per page (default: 50, max: 200)' },
+        page: { type: 'number' },
+        per_page: { type: 'number', description: 'Items per page (default: 20, max: 200)' },
+        compact: { type: 'boolean', description: 'Compact output (fewer fields)' },
       },
+      required: ['action'],
     },
   },
   {
-    name: 'productive_get_project',
-    description: 'Get details for a specific project by ID',
+    name: 'productive_time',
+    description:
+      'Manage time entries. Actions: list, get, create, update, delete.',
     inputSchema: {
       type: 'object',
       properties: {
-        id: { type: 'string', description: 'Project ID' },
-      },
-      required: ['id'],
-    },
-  },
-  {
-    name: 'productive_list_time_entries',
-    description: 'List time entries with optional filters',
-    inputSchema: {
-      type: 'object',
-      properties: {
+        action: {
+          type: 'string',
+          enum: ['list', 'get', 'create', 'update', 'delete'],
+          description: 'Action to perform',
+        },
+        id: {
+          type: 'string',
+          description: 'Time entry ID (required for get/update/delete)',
+        },
         filter: {
           type: 'object',
-          description: 'Filters to apply',
+          description: 'Filters for list action',
           properties: {
-            person_id: { type: 'string', description: 'Filter by person ID' },
-            project_id: { type: 'string', description: 'Filter by project ID' },
-            service_id: { type: 'string', description: 'Filter by service ID' },
-            task_id: { type: 'string', description: 'Filter by task ID' },
+            person_id: { type: 'string' },
+            project_id: { type: 'string' },
+            service_id: { type: 'string' },
             after: { type: 'string', description: 'After date (YYYY-MM-DD)' },
             before: { type: 'string', description: 'Before date (YYYY-MM-DD)' },
           },
         },
-        page: { type: 'number', description: 'Page number (default: 1)' },
-        per_page: { type: 'number', description: 'Items per page (default: 50, max: 200)' },
+        // Create/update fields
+        person_id: { type: 'string', description: 'Person ID (for create)' },
+        service_id: { type: 'string', description: 'Service ID (for create)' },
+        time: { type: 'number', description: 'Time in minutes (for create/update)' },
+        date: { type: 'string', description: 'Date YYYY-MM-DD (for create/update)' },
+        note: { type: 'string', description: 'Note (for create/update)' },
+        task_id: { type: 'string', description: 'Task ID (for create)' },
+        page: { type: 'number' },
+        per_page: { type: 'number', description: 'Items per page (default: 20, max: 200)' },
+        compact: { type: 'boolean', description: 'Compact output (fewer fields)' },
       },
+      required: ['action'],
     },
   },
   {
-    name: 'productive_get_time_entry',
-    description: 'Get details for a specific time entry by ID',
+    name: 'productive_tasks',
+    description: 'View tasks. Actions: list (with filters), get (by ID).',
     inputSchema: {
       type: 'object',
       properties: {
-        id: { type: 'string', description: 'Time entry ID' },
-      },
-      required: ['id'],
-    },
-  },
-  {
-    name: 'productive_create_time_entry',
-    description: 'Create a new time entry',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        person_id: { type: 'string', description: 'Person ID' },
-        service_id: { type: 'string', description: 'Service ID' },
-        time: { type: 'number', description: 'Time in minutes' },
-        date: { type: 'string', description: 'Date (YYYY-MM-DD)' },
-        note: { type: 'string', description: 'Note/description' },
-        task_id: { type: 'string', description: 'Task ID (optional)' },
-      },
-      required: ['person_id', 'service_id', 'time', 'date'],
-    },
-  },
-  {
-    name: 'productive_update_time_entry',
-    description: 'Update an existing time entry',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', description: 'Time entry ID' },
-        time: { type: 'number', description: 'Time in minutes' },
-        date: { type: 'string', description: 'Date (YYYY-MM-DD)' },
-        note: { type: 'string', description: 'Note/description' },
-        service_id: { type: 'string', description: 'Service ID' },
-        task_id: { type: 'string', description: 'Task ID' },
-      },
-      required: ['id'],
-    },
-  },
-  {
-    name: 'productive_delete_time_entry',
-    description: 'Delete a time entry',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', description: 'Time entry ID' },
-      },
-      required: ['id'],
-    },
-  },
-  {
-    name: 'productive_list_tasks',
-    description: 'List tasks with optional filters',
-    inputSchema: {
-      type: 'object',
-      properties: {
+        action: {
+          type: 'string',
+          enum: ['list', 'get'],
+          description: 'Action: list or get',
+        },
+        id: {
+          type: 'string',
+          description: 'Task ID (required for get)',
+        },
         filter: {
           type: 'object',
-          description: 'Filters to apply',
+          description: 'Filters for list action',
           properties: {
-            project_id: { type: 'string', description: 'Filter by project ID' },
-            assignee_id: { type: 'string', description: 'Filter by assignee ID' },
-            task_list_id: { type: 'string', description: 'Filter by task list ID' },
-            workflow_status_id: { type: 'string', description: 'Filter by workflow status ID' },
+            project_id: { type: 'string' },
+            assignee_id: { type: 'string' },
+            task_list_id: { type: 'string' },
           },
         },
-        page: { type: 'number', description: 'Page number (default: 1)' },
-        per_page: { type: 'number', description: 'Items per page (default: 50, max: 200)' },
+        page: { type: 'number' },
+        per_page: { type: 'number', description: 'Items per page (default: 20, max: 200)' },
+        compact: { type: 'boolean', description: 'Compact output (omits description)' },
       },
+      required: ['action'],
     },
   },
   {
-    name: 'productive_get_task',
-    description: 'Get details for a specific task by ID',
+    name: 'productive_services',
+    description: 'List services (budget line items) with optional project filter.',
     inputSchema: {
       type: 'object',
       properties: {
-        id: { type: 'string', description: 'Task ID' },
-      },
-      required: ['id'],
-    },
-  },
-  {
-    name: 'productive_list_services',
-    description: 'List services (budget line items) with optional filters',
-    inputSchema: {
-      type: 'object',
-      properties: {
+        action: {
+          type: 'string',
+          enum: ['list'],
+          description: 'Action: list',
+        },
         filter: {
           type: 'object',
-          description: 'Filters to apply',
+          description: 'Filters',
           properties: {
-            project_id: { type: 'string', description: 'Filter by project ID' },
-            deal_id: { type: 'string', description: 'Filter by deal ID' },
+            project_id: { type: 'string' },
+            deal_id: { type: 'string' },
           },
         },
-        page: { type: 'number', description: 'Page number (default: 1)' },
-        per_page: { type: 'number', description: 'Items per page (default: 50, max: 200)' },
+        page: { type: 'number' },
+        per_page: { type: 'number', description: 'Items per page (default: 20, max: 200)' },
+        compact: { type: 'boolean', description: 'Compact output (fewer fields)' },
       },
+      required: ['action'],
     },
   },
   {
-    name: 'productive_list_people',
-    description: 'List people from the organization',
+    name: 'productive_people',
+    description:
+      'View people. Actions: list, get (by ID), me (current user).',
     inputSchema: {
       type: 'object',
       properties: {
+        action: {
+          type: 'string',
+          enum: ['list', 'get', 'me'],
+          description: 'Action: list, get, or me',
+        },
+        id: {
+          type: 'string',
+          description: 'Person ID (required for get)',
+        },
         filter: {
           type: 'object',
-          description: 'Filters to apply',
+          description: 'Filters for list action',
           properties: {
-            archived: { type: 'boolean', description: 'Filter by archived status' },
+            archived: { type: 'boolean' },
           },
         },
-        page: { type: 'number', description: 'Page number (default: 1)' },
-        per_page: { type: 'number', description: 'Items per page (default: 50, max: 200)' },
+        page: { type: 'number' },
+        per_page: { type: 'number', description: 'Items per page (default: 20, max: 200)' },
+        compact: { type: 'boolean', description: 'Compact output (fewer fields)' },
       },
-    },
-  },
-  {
-    name: 'productive_get_person',
-    description: 'Get details for a specific person by ID',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', description: 'Person ID' },
-      },
-      required: ['id'],
-    },
-  },
-  {
-    name: 'productive_get_current_user',
-    description: 'Get the current authenticated user information',
-    inputSchema: {
-      type: 'object',
-      properties: {},
+      required: ['action'],
     },
   },
 ];
@@ -211,20 +177,21 @@ export const TOOLS: Tool[] = [
 export const STDIO_ONLY_TOOLS: Tool[] = [
   {
     name: 'productive_configure',
-    description: 'Configure Productive.io credentials (organization ID, API token, and optionally user ID)',
+    description:
+      'Configure Productive.io credentials (organization ID, API token, user ID)',
     inputSchema: {
       type: 'object',
       properties: {
-        organizationId: { type: 'string', description: 'Your Productive.io organization ID' },
-        apiToken: { type: 'string', description: 'Your Productive.io API token' },
-        userId: { type: 'string', description: 'Your Productive.io user ID (optional, for time entries)' },
+        organizationId: { type: 'string', description: 'Organization ID' },
+        apiToken: { type: 'string', description: 'API token' },
+        userId: { type: 'string', description: 'User ID (optional)' },
       },
       required: ['organizationId', 'apiToken'],
     },
   },
   {
     name: 'productive_get_config',
-    description: 'Get current Productive.io configuration (without exposing the API token)',
+    description: 'Get current configuration (without exposing API token)',
     inputSchema: {
       type: 'object',
       properties: {},
