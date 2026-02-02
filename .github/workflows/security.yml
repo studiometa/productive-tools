@@ -37,8 +37,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run Semgrep
-        # TODO: Add --error flag once existing findings are fixed to make this blocking
-        run: semgrep scan --config auto --config p/secrets --json --output semgrep-results.json .
+        run: semgrep scan --config auto --config p/secrets --error --json --output semgrep-results.json .
 
       - name: Upload results
         uses: actions/upload-artifact@v4
