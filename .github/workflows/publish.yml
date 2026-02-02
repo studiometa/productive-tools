@@ -3,7 +3,7 @@ name: Publish
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - '*.*.*'
 
 jobs:
   test:
@@ -58,7 +58,7 @@ jobs:
 
       - name: Determine npm tag and version
         run: |
-          VERSION=${GITHUB_REF_NAME#v}
+          VERSION=${GITHUB_REF_NAME}
           NPM_TAG='latest'
           IS_PRERELEASE=false
 
