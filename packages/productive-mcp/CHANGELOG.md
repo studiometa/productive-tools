@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-02-02
+
+### Added
+- Server startup logs now display package version and Node.js version for easier debugging (db8bea3)
+
 ## [0.4.1] - 2026-02-02
 
 ### Fixed
@@ -73,7 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive deployment documentation
 - Server deployment options (PM2, systemd, Docker)
 
-[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.4.1...HEAD
+[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.4.2...HEAD
+[0.4.2]: https://github.com/studiometa/productive-tools/compare/0.4.1...0.4.2
 [0.4.1]: https://github.com/studiometa/productive-tools/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/studiometa/productive-tools/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/studiometa/productive-tools/compare/0.1.0...0.3.0
