@@ -19,6 +19,7 @@ vi.mock('@studiometa/productive-cli', () => {
     getServices: vi.fn(),
     getPeople: vi.fn(),
     getPerson: vi.fn(),
+    getReports: vi.fn(),
   };
 
   return {
@@ -360,6 +361,393 @@ describe('handlers', () => {
         expect(result.isError).toBeUndefined();
         const content = JSON.parse(result.content[0].text as string);
         expect(content.message).toContain('User ID not configured');
+      });
+    });
+
+    describe('reports resource', () => {
+      it('should handle get action with time_reports', async () => {
+        const mockResponse = {
+          data: [
+            {
+              id: 'report-1',
+              type: 'time_reports',
+              attributes: { total_worked_time: 480, group: 'Person 1' },
+            },
+          ],
+          meta: { current_page: 1, total_pages: 1 },
+        };
+        mockApi.getReports.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'reports', action: 'get', report_type: 'time_reports' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getReports).toHaveBeenCalledWith(
+          'time_reports',
+          expect.objectContaining({ group: 'person' }),
+        );
+      });
+
+      it('should handle get action with invoice_reports and filters', async () => {
+        const mockResponse = {
+          data: [
+            {
+              id: 'report-1',
+              type: 'invoice_reports',
+              attributes: { total_amount: 10000 },
+            },
+          ],
+          meta: { current_page: 1, total_pages: 1 },
+        };
+        mockApi.getReports.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          {
+            resource: 'reports',
+            action: 'get',
+            report_type: 'invoice_reports',
+            from: '2024-01-01',
+            to: '2024-01-31',
+            company_id: '123',
+            status: 'overdue',
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getReports).toHaveBeenCalledWith(
+          'invoice_reports',
+          expect.objectContaining({
+            filter: expect.objectContaining({
+              invoice_date_after: '2024-01-01',
+              invoice_date_before: '2024-01-31',
+              company_id: '123',
+              status: 'overdue',
+            }),
+          }),
+        );
+      });
+
+      it('should handle get action with deal_reports and filters', async () => {
+        const mockResponse = {
+          data: [
+            {
+              id: 'report-1',
+              type: 'deal_reports',
+              attributes: { total_value: 50000 },
+            },
+          ],
+          meta: { current_page: 1, total_pages: 1 },
+        };
+        mockApi.getReports.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          {
+            resource: 'reports',
+            action: 'get',
+            report_type: 'deal_reports',
+            from: '2024-01-01',
+            to: '2024-12-31',
+            status: '456',
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getReports).toHaveBeenCalledWith(
+          'deal_reports',
+          expect.objectContaining({
+            filter: expect.objectContaining({
+              date_after: '2024-01-01',
+              date_before: '2024-12-31',
+              deal_status_id: '456',
+            }),
+          }),
+        );
+      });
+
+      it('should handle get action with task_reports and person filter', async () => {
+        const mockResponse = {
+          data: [
+            {
+              id: 'report-1',
+              type: 'task_reports',
+              attributes: { total_tasks: 10 },
+            },
+          ],
+          meta: { current_page: 1, total_pages: 1 },
+        };
+        mockApi.getReports.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          {
+            resource: 'reports',
+            action: 'get',
+            report_type: 'task_reports',
+            person_id: '123',
+            project_id: '456',
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getReports).toHaveBeenCalledWith(
+          'task_reports',
+          expect.objectContaining({
+            filter: expect.objectContaining({
+              assignee_id: '123',
+              project_id: '456',
+            }),
+          }),
+        );
+      });
+
+      it('should handle custom group parameter', async () => {
+        const mockResponse = {
+          data: [],
+          meta: { current_page: 1, total_pages: 1 },
+        };
+        mockApi.getReports.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          {
+            resource: 'reports',
+            action: 'get',
+            report_type: 'time_reports',
+            group: 'project',
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getReports).toHaveBeenCalledWith(
+          'time_reports',
+          expect.objectContaining({ group: 'project' }),
+        );
+      });
+
+      it('should return error for missing report_type', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'reports', action: 'get' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('report_type is required');
+      });
+
+      it('should return error for invalid report_type', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'reports', action: 'get', report_type: 'invalid_reports' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Invalid report_type');
+      });
+
+      it('should return error for invalid action', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'reports', action: 'list', report_type: 'time_reports' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Invalid action');
+      });
+
+      it('should handle all report types', async () => {
+        const reportTypes = [
+          'time_reports',
+          'project_reports',
+          'budget_reports',
+          'person_reports',
+          'invoice_reports',
+          'payment_reports',
+          'service_reports',
+          'task_reports',
+          'company_reports',
+          'deal_reports',
+          'timesheet_reports',
+        ];
+
+        for (const reportType of reportTypes) {
+          const mockResponse = {
+            data: [{ id: 'report-1', type: reportType, attributes: {} }],
+            meta: { current_page: 1, total_pages: 1 },
+          };
+          mockApi.getReports.mockResolvedValue(mockResponse);
+
+          const result = await executeToolWithCredentials(
+            'productive',
+            { resource: 'reports', action: 'get', report_type: reportType },
+            credentials,
+          );
+
+          expect(result.isError).toBeUndefined();
+          expect(mockApi.getReports).toHaveBeenCalledWith(reportType, expect.anything());
+        }
+      });
+
+      it('should handle person_id filter for non-task reports', async () => {
+        const mockResponse = {
+          data: [],
+          meta: { current_page: 1, total_pages: 1 },
+        };
+        mockApi.getReports.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          {
+            resource: 'reports',
+            action: 'get',
+            report_type: 'time_reports',
+            person_id: '123',
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getReports).toHaveBeenCalledWith(
+          'time_reports',
+          expect.objectContaining({
+            filter: expect.objectContaining({
+              person_id: '123',
+            }),
+          }),
+        );
+      });
+
+      it('should handle deal_id filter for non-deal reports', async () => {
+        const mockResponse = {
+          data: [],
+          meta: { current_page: 1, total_pages: 1 },
+        };
+        mockApi.getReports.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          {
+            resource: 'reports',
+            action: 'get',
+            report_type: 'service_reports',
+            deal_id: '456',
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getReports).toHaveBeenCalledWith(
+          'service_reports',
+          expect.objectContaining({
+            filter: expect.objectContaining({
+              deal_id: '456',
+            }),
+          }),
+        );
+      });
+
+      it('should handle deal_id filter for deal_reports (maps to deal_status_id)', async () => {
+        const mockResponse = {
+          data: [],
+          meta: { current_page: 1, total_pages: 1 },
+        };
+        mockApi.getReports.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          {
+            resource: 'reports',
+            action: 'get',
+            report_type: 'deal_reports',
+            deal_id: '789',
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getReports).toHaveBeenCalledWith(
+          'deal_reports',
+          expect.objectContaining({
+            filter: expect.objectContaining({
+              deal_status_id: '789',
+            }),
+          }),
+        );
+      });
+
+      it('should handle payment_reports date filters', async () => {
+        const mockResponse = {
+          data: [],
+          meta: { current_page: 1, total_pages: 1 },
+        };
+        mockApi.getReports.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          {
+            resource: 'reports',
+            action: 'get',
+            report_type: 'payment_reports',
+            from: '2024-01-01',
+            to: '2024-12-31',
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getReports).toHaveBeenCalledWith(
+          'payment_reports',
+          expect.objectContaining({
+            filter: expect.objectContaining({
+              date_after: '2024-01-01',
+              date_before: '2024-12-31',
+            }),
+          }),
+        );
+      });
+
+      it('should handle timesheet_reports with date filters', async () => {
+        const mockResponse = {
+          data: [],
+          meta: { current_page: 1, total_pages: 1 },
+        };
+        mockApi.getReports.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          {
+            resource: 'reports',
+            action: 'get',
+            report_type: 'timesheet_reports',
+            from: '2024-01-01',
+            to: '2024-01-31',
+            status: 'pending',
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getReports).toHaveBeenCalledWith(
+          'timesheet_reports',
+          expect.objectContaining({
+            filter: expect.objectContaining({
+              after: '2024-01-01',
+              before: '2024-01-31',
+              status: 'pending',
+            }),
+          }),
+        );
       });
     });
 
