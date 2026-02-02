@@ -4,6 +4,7 @@
 - Commit messages: English, simple verb-first sentences (e.g., "Add...", "Fix...", "Update...")
 - Always add `Co-authored-by: Claude <claude@anthropic.com>` trailer
 - **Tags**: Do NOT use `v` prefix (use `0.4.0` not `v0.4.0`)
+- **Releases**: Do NOT create GitHub releases manually with `gh release create` - they are created automatically by GitHub Actions when a tag is pushed
 
 ---
 
