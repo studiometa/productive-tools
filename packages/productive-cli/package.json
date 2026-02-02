@@ -1,6 +1,6 @@
 {
   "name": "@studiometa/productive-cli",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "CLI tool for interacting with Productive.io API - optimized for AI agents and humans",
   "keywords": [
     "ai-agent",
