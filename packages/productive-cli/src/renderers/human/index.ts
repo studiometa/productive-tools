@@ -91,3 +91,11 @@ export {
   humanDealListRenderer,
   humanDealDetailRenderer,
 } from './deal.js';
+
+// Bookings
+export {
+  HumanBookingListRenderer,
+  HumanBookingDetailRenderer,
+  humanBookingListRenderer,
+  humanBookingDetailRenderer,
+} from './booking.js';

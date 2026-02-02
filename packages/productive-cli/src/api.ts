@@ -11,6 +11,7 @@ import type {
   ProductiveComment,
   ProductiveTimer,
   ProductiveDeal,
+  ProductiveBooking,
 } from "./types.js";
 import { getConfig } from "./config.js";
 import { getCache, type CacheStore } from "./utils/cache.js";
@@ -891,6 +892,129 @@ export class ProductiveApi {
       {
         method: "PATCH",
         body,
+      },
+    );
+  }
+
+  // Bookings
+  async getBookings(params?: {
+    page?: number;
+    perPage?: number;
+    filter?: Record<string, string>;
+    sort?: string;
+    include?: string[];
+  }): Promise<ProductiveApiResponse<ProductiveBooking[]>> {
+    const query: Record<string, string> = {};
+
+    if (params?.page) query["page[number]"] = String(params.page);
+    if (params?.perPage) query["page[size]"] = String(params.perPage);
+    if (params?.sort) query["sort"] = params.sort;
+    if (params?.filter) {
+      Object.entries(params.filter).forEach(([key, value]) => {
+        query[`filter[${key}]`] = value;
+      });
+    }
+    if (params?.include?.length) {
+      query["include"] = params.include.join(",");
+    }
+
+    return this.request<ProductiveApiResponse<ProductiveBooking[]>>(
+      "/bookings",
+      { query },
+    );
+  }
+
+  async getBooking(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductiveBooking>> {
+    const query: Record<string, string> = {};
+    if (params?.include?.length) {
+      query["include"] = params.include.join(",");
+    }
+    return this.request<ProductiveApiResponse<ProductiveBooking>>(
+      `/bookings/${id}`,
+      { query },
+    );
+  }
+
+  async createBooking(data: {
+    person_id: string;
+    service_id?: string;
+    event_id?: string;
+    started_on: string;
+    ended_on: string;
+    time?: number;
+    total_time?: number;
+    percentage?: number;
+    booking_method_id?: number;
+    draft?: boolean;
+    note?: string;
+  }): Promise<ProductiveApiResponse<ProductiveBooking>> {
+    const relationships: Record<string, { data: { type: string; id: string } }> = {
+      person: { data: { type: "people", id: data.person_id } },
+    };
+
+    if (data.service_id) {
+      relationships.service = { data: { type: "services", id: data.service_id } };
+    }
+    if (data.event_id) {
+      relationships.event = { data: { type: "events", id: data.event_id } };
+    }
+
+    return this.request<ProductiveApiResponse<ProductiveBooking>>("/bookings", {
+      method: "POST",
+      body: {
+        data: {
+          type: "bookings",
+          attributes: {
+            started_on: data.started_on,
+            ended_on: data.ended_on,
+            time: data.time,
+            total_time: data.total_time,
+            percentage: data.percentage,
+            booking_method_id: data.booking_method_id || 1, // Default to "per day"
+            draft: data.draft,
+            note: data.note,
+          },
+          relationships,
+        },
+      },
+    });
+  }
+
+  async updateBooking(
+    id: string,
+    data: {
+      started_on?: string;
+      ended_on?: string;
+      time?: number;
+      total_time?: number;
+      percentage?: number;
+      draft?: boolean;
+      note?: string;
+    },
+  ): Promise<ProductiveApiResponse<ProductiveBooking>> {
+    const attributes: Record<string, unknown> = {};
+    if (data.started_on !== undefined) attributes.started_on = data.started_on;
+    if (data.ended_on !== undefined) attributes.ended_on = data.ended_on;
+    if (data.time !== undefined) attributes.time = data.time;
+    if (data.total_time !== undefined) attributes.total_time = data.total_time;
+    if (data.percentage !== undefined) attributes.percentage = data.percentage;
+    if (data.draft !== undefined) attributes.draft = data.draft;
+    if (data.note !== undefined) attributes.note = data.note;
+
+    return this.request<ProductiveApiResponse<ProductiveBooking>>(
+      `/bookings/${id}`,
+      {
+        method: "PATCH",
+        body: {
+          data: {
+            type: "bookings",
+            id,
+            attributes,
+          },
+        },
       },
     );
   }

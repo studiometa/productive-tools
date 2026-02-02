@@ -174,6 +174,32 @@ export interface ProductiveCompany {
   relationships?: Record<string, RelationshipData>;
 }
 
+export interface ProductiveBooking {
+  id: string;
+  type: "bookings";
+  attributes: {
+    started_on: string;
+    ended_on: string;
+    time?: number;
+    total_time?: number;
+    percentage?: number;
+    booking_method_id: number;
+    draft?: boolean;
+    note?: string;
+    approved_at?: string;
+    rejected_at?: string;
+    rejected_reason?: string;
+    created_at: string;
+    updated_at: string;
+  };
+  relationships?: {
+    person?: RelationshipData;
+    service?: RelationshipData;
+    event?: RelationshipData;
+    approver?: RelationshipData;
+  };
+}
+
 export interface ProductiveDeal {
   id: string;
   type: "deals";

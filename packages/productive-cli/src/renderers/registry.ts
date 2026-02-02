@@ -20,6 +20,7 @@ import { humanCompanyListRenderer } from './human/company.js';
 import { humanCommentListRenderer } from './human/comment.js';
 import { humanTimerListRenderer } from './human/timer.js';
 import { humanDealListRenderer } from './human/deal.js';
+import { humanBookingListRenderer } from './human/booking.js';
 
 /**
  * Registry key format: "resourceType:format" or "*:format" for fallbacks
@@ -141,3 +142,4 @@ registerRenderer('company', 'human', humanCompanyListRenderer);
 registerRenderer('comment', 'human', humanCommentListRenderer);
 registerRenderer('timer', 'human', humanTimerListRenderer);
 registerRenderer('deal', 'human', humanDealListRenderer);
+registerRenderer('booking', 'human', humanBookingListRenderer);

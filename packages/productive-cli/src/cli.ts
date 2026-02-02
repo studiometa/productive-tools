@@ -31,6 +31,10 @@ import {
   handleDealsCommand,
   showDealsHelp,
 } from "./commands/deals/index.js";
+import {
+  handleBookingsCommand,
+  showBookingsHelp,
+} from "./commands/bookings/index.js";
 import { handleCacheCommand, showCacheHelp } from "./commands/cache.js";
 import { handleApiCommand, showApiHelp } from "./commands/api.js";
 import {
@@ -107,6 +111,12 @@ ${colors.bold("COMMANDS:")}
     get <id>            Get deal details
     add                 Create deal/budget
     update <id>         Update deal
+
+  bookings            Manage resource bookings
+    list, ls            List bookings
+    get <id>            Get booking details
+    add                 Create booking
+    update <id>         Update booking
 
   cache               Manage CLI cache
     status              Show cache statistics
@@ -319,6 +329,14 @@ async function main(): Promise<void> {
           process.exit(0);
         }
         await handleDealsCommand(subcommand || "list", positional, options);
+        break;
+
+      case "bookings":
+        if (wantsHelp) {
+          showBookingsHelp(subcommand);
+          process.exit(0);
+        }
+        await handleBookingsCommand(subcommand || "list", positional, options);
         break;
 
       case "cache":
