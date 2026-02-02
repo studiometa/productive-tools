@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Success page after OAuth authorization with auto-redirect to Claude Desktop ([7ceacd4], [#6])
+
+[7ceacd4]: https://github.com/studiometa/productive-tools/commit/7ceacd4
+[#6]: https://github.com/studiometa/productive-tools/pull/6
+
 ## [0.5.0] - 2026-02-02
 
 ### Changed
