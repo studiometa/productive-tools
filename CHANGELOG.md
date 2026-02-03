@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **CLI**: Extended filters for time entries - `status`, `task`, `company`, `deal`, `budget`, `billing-type`, `invoicing-status` ([e5b3d7f], [#17])
+- **CLI**: Extended filters for tasks - `workflow-status`, `board`, `company`, `creator`, `parent`, `overdue`, `due-date` ([ea85a0b], [#17])
+- **CLI**: Extended filters for projects - `type`, `responsible`, `person`, `status` ([d2910fe], [#17])
+- **CLI**: Extended filters for services - `budget-status`, `billing-type`, `time-tracking`, `task`, `person` ([c06cc55], [#17])
+- **CLI**: Extended filters for people - `type`, `status`, `project`, `role`, `team` ([fd593e0], [#17])
+- **CLI**: Extended filters for deals - `project`, `responsible`, `pipeline`, `budget-status` ([fd593e0], [#17])
+- **CLI**: Extended filters for bookings - `project`, `company`, `service`, `event`, `type`, `tentative` ([fd593e0], [#17])
+- **CLI**: Extended filters for comments - `page`, `discussion` ([fd593e0], [#17])
+- **CLI**: Extended filters for timers - `time-entry` ([fd593e0], [#17])
+- **MCP**: Updated skill documentation with all new filter options ([d18d2e9], [#17])
+
+[e5b3d7f]: https://github.com/studiometa/productive-tools/commit/e5b3d7f
+[ea85a0b]: https://github.com/studiometa/productive-tools/commit/ea85a0b
+[d2910fe]: https://github.com/studiometa/productive-tools/commit/d2910fe
+[c06cc55]: https://github.com/studiometa/productive-tools/commit/c06cc55
+[fd593e0]: https://github.com/studiometa/productive-tools/commit/fd593e0
+[d18d2e9]: https://github.com/studiometa/productive-tools/commit/d18d2e9
+[#17]: https://github.com/studiometa/productive-tools/pull/17
+
 ## [0.8.1] - 2026-02-03
 
 ### Fixed
