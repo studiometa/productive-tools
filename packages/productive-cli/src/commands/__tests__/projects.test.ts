@@ -310,7 +310,11 @@ describe('projects command', () => {
     });
 
     it('should exit with error when id is missing', async () => {
-      await handleProjectsCommand('get', [], {});
+      try {
+        await handleProjectsCommand('get', [], {});
+      } catch {
+        // exitWithValidationError throws after process.exit (which is mocked)
+      }
 
       expect(processExitSpy).toHaveBeenCalledWith(3); // Exit code 3 for validation errors
     });

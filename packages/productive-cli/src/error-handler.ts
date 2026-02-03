@@ -113,12 +113,8 @@ export function handleError(
   if (format === 'json') {
     formatter.output(cliError.toJSON());
   } else {
-    formatter.error(cliError.message);
-
-    // Show additional context for certain error types
-    if (cliError instanceof ConfigError && cliError.missingKeys?.length) {
-      console.error(`Missing: ${cliError.missingKeys.join(', ')}`);
-    }
+    // Use toFormattedMessage() for human-readable output with hints
+    formatter.error(cliError.toFormattedMessage());
   }
 
   const exitCode = getExitCode(cliError);
@@ -210,20 +206,15 @@ export function exitWithValidationError(
   field: string,
   usage: string,
   formatter: OutputFormatter,
+  hints?: string[],
 ): never {
-  const error = ValidationError.required(field);
-  const format = (formatter as unknown as { format: string }).format;
+  const defaultHints = [`Usage: ${usage}`];
+  const error = ValidationError.required(field, hints ? [...defaultHints, ...hints] : defaultHints);
 
-  if (format === 'json') {
-    formatter.output({
-      ...error.toJSON(),
-      usage,
-    });
-  } else {
-    formatter.error(`${error.message}\nUsage: ${usage}`);
-  }
+  handleError(error, formatter);
 
-  process.exit(ExitCode.VALIDATION_ERROR);
+  // This is unreachable due to process.exit in handleError, but TypeScript needs it
+  throw error;
 }
 
 /**

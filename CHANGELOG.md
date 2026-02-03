@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **CLI**: Shareable skill (`skills/SKILL.md`) for AI agents with commands reference and best practices ([1d8336c], [#14])
+- **CLI**: Hints support for all error classes with `toFormattedMessage()` method ([5557df1], [#16])
+- **CLI**: `ErrorMessages` factory for consistent, helpful error messages ([3559391], [#16])
+- **CLI**: Export all error classes and `ErrorMessages` from main package ([3559391], [#16])
+- **CLI**: Tests for timers command ([0f65f07], [#16])
 - **MCP**: Shareable skill (`skills/SKILL.md`) for AI agents with tool documentation and examples ([3d40f18], [#14])
 - **MCP**: Native `instructions` support for Claude Desktop - skill content sent during initialization ([d20ff5f], [#14])
 - **MCP**: MCP annotations for directory compliance (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`) ([8a29b74], [#15])
@@ -18,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **CLI**: Error messages now include hints to guide users on how to resolve issues ([5557df1], [#16])
 - **MCP**: Error messages now include hints to guide LLMs on how to resolve issues ([2dfe416], [#15])
 
 [1d8336c]: https://github.com/studiometa/productive-tools/commit/1d8336c
@@ -26,8 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [8a29b74]: https://github.com/studiometa/productive-tools/commit/8a29b74
 [3c9d6e6]: https://github.com/studiometa/productive-tools/commit/3c9d6e6
 [2dfe416]: https://github.com/studiometa/productive-tools/commit/2dfe416
+[5557df1]: https://github.com/studiometa/productive-tools/commit/5557df1
+[3559391]: https://github.com/studiometa/productive-tools/commit/3559391
+[0f65f07]: https://github.com/studiometa/productive-tools/commit/0f65f07
 [#14]: https://github.com/studiometa/productive-tools/pull/14
 [#15]: https://github.com/studiometa/productive-tools/pull/15
+[#16]: https://github.com/studiometa/productive-tools/pull/16
 
 ## [0.7.0] - 2026-02-02
 

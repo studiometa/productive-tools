@@ -18,6 +18,78 @@ import {
 } from '../errors.js';
 
 describe('Error classes', () => {
+  describe('Hints support', () => {
+    it('should include hints in ValidationError', () => {
+      const error = ValidationError.required('service', [
+        'Find services using: productive services list',
+      ]);
+      expect(error.hints).toContain('Find services using: productive services list');
+    });
+
+    it('should include hints in ConfigError static methods', () => {
+      const error = ConfigError.missingToken();
+      expect(error.hints).toBeDefined();
+      expect(error.hints?.length).toBeGreaterThan(0);
+      expect(error.hints).toContain('Set via CLI flag: --token <token>');
+    });
+
+    it('should include hints in JSON output', () => {
+      const error = ValidationError.required('field', ['Hint 1', 'Hint 2']);
+      const json = error.toJSON();
+      expect(json.hints).toEqual(['Hint 1', 'Hint 2']);
+    });
+
+    it('should not include hints in JSON when empty', () => {
+      const error = new ValidationError('Error without hints', 'field');
+      const json = error.toJSON();
+      expect(json.hints).toBeUndefined();
+    });
+
+    it('should format message with hints using toFormattedMessage', () => {
+      const error = ValidationError.required('field', ['Try this', 'Or this']);
+      const formatted = error.toFormattedMessage();
+      expect(formatted).toContain('field is required');
+      expect(formatted).toContain('Hints:');
+      expect(formatted).toContain('• Try this');
+      expect(formatted).toContain('• Or this');
+    });
+
+    it('should return plain message when no hints', () => {
+      const error = new ValidationError('Simple error');
+      const formatted = error.toFormattedMessage();
+      expect(formatted).toBe('Simple error');
+      expect(formatted).not.toContain('Hints:');
+    });
+
+    it('should auto-generate hints for API errors based on status code', () => {
+      const error401 = new ApiError('Unauthorized', 401);
+      expect(error401.hints).toContain('Check that your API token is valid and not expired');
+
+      const error403 = new ApiError('Forbidden', 403);
+      expect(error403.hints).toContain('You may not have permission to access this resource');
+
+      const error404 = new ApiError('Not found', 404);
+      expect(error404.hints).toContain("Use 'list' command to find valid resource IDs");
+
+      const error422 = new ApiError('Unprocessable', 422);
+      expect(error422.hints).toContain('The request data may be invalid');
+      expect(error422.hints).toContain('Run command with --help for field documentation');
+
+      const error429 = new ApiError('Rate limited', 429);
+      expect(error429.hints).toContain('Too many requests - wait before retrying');
+
+      const error500 = new ApiError('Server error', 500);
+      expect(error500.hints).toContain('This is a server error - try again later');
+
+      const error502 = new ApiError('Bad gateway', 502);
+      expect(error502.hints).toContain('If the issue persists, contact support');
+
+      // No hints for unknown status codes
+      const error418 = new ApiError('Teapot', 418);
+      expect(error418.hints).toEqual([]);
+    });
+  });
+
   describe('ConfigError', () => {
     it('should create with message and missing keys', () => {
       const error = new ConfigError('Missing config', ['apiToken', 'orgId']);
@@ -51,6 +123,14 @@ describe('Error classes', () => {
       expect(json.error).toBe('CONFIG_ERROR');
       expect(json.message).toBe('Missing config');
       expect(json.missingKeys).toEqual(['apiToken']);
+    });
+
+    it('should create invalid config error with hints', () => {
+      const error = ConfigError.invalid('apiToken', 'must not be empty');
+      expect(error.message).toBe("Invalid configuration for 'apiToken': must not be empty");
+      expect(error.missingKeys).toEqual(['apiToken']);
+      expect(error.hints).toContain("Check the value of 'apiToken' in your config");
+      expect(error.hints).toContain('Run: productive config get to see current values');
     });
   });
 
@@ -205,10 +285,30 @@ describe('Error classes', () => {
       expect(error.isRecoverable).toBe(true);
     });
 
-    it('should create read/write/invalidate errors', () => {
-      expect(CacheError.readFailed(new Error('test')).operation).toBe('read');
-      expect(CacheError.writeFailed(new Error('test')).operation).toBe('write');
-      expect(CacheError.invalidateFailed(new Error('test')).operation).toBe('invalidate');
+    it('should create with hints', () => {
+      const error = new CacheError('Cache error', 'read', ['Try this']);
+      expect(error.hints).toEqual(['Try this']);
+    });
+
+    it('should serialize to JSON with operation', () => {
+      const error = new CacheError('Cache error', 'write', ['Hint']);
+      const json = error.toJSON();
+      expect(json.operation).toBe('write');
+      expect(json.hints).toEqual(['Hint']);
+    });
+
+    it('should create read/write/invalidate errors with hints', () => {
+      const readError = CacheError.readFailed(new Error('test'));
+      expect(readError.operation).toBe('read');
+      expect(readError.hints).toContain('Try running with --no-cache to bypass cache');
+
+      const writeError = CacheError.writeFailed(new Error('test'));
+      expect(writeError.operation).toBe('write');
+      expect(writeError.hints).toContain('Check disk space and permissions');
+
+      const invalidateError = CacheError.invalidateFailed(new Error('test'));
+      expect(invalidateError.operation).toBe('invalidate');
+      expect(invalidateError.hints).toContain('Try running: productive cache clear');
     });
   });
 
@@ -222,23 +322,38 @@ describe('Error classes', () => {
       expect(error.isRecoverable).toBe(false);
     });
 
-    it('should create unknown command error', () => {
+    it('should create with hints', () => {
+      const error = new CommandError('Test error', 'cmd', 'sub', ['Hint 1', 'Hint 2']);
+      expect(error.hints).toEqual(['Hint 1', 'Hint 2']);
+    });
+
+    it('should serialize to JSON with command and subcommand', () => {
+      const error = new CommandError('Test error', 'cmd', 'sub', ['Hint']);
+      const json = error.toJSON();
+      expect(json.command).toBe('cmd');
+      expect(json.subcommand).toBe('sub');
+      expect(json.hints).toEqual(['Hint']);
+    });
+
+    it('should create unknown command error with hints', () => {
       const error = CommandError.unknownCommand('foo');
       expect(error.message).toContain('Unknown command');
       expect(error.command).toBe('foo');
+      expect(error.hints).toContain('Run: productive --help to see available commands');
     });
 
-    it('should create unknown subcommand error', () => {
+    it('should create unknown subcommand error with hints', () => {
       const error = CommandError.unknownSubcommand('time', 'foo');
       expect(error.message).toContain('Unknown subcommand');
       expect(error.command).toBe('time');
       expect(error.subcommand).toBe('foo');
+      expect(error.hints).toContain('Run: productive time --help to see available subcommands');
     });
 
     it('should create missing argument error', () => {
       const error = CommandError.missingArgument('time get', 'id', 'productive time get <id>');
       expect(error.message).toContain('Missing required argument');
-      expect(error.message).toContain('productive time get <id>');
+      expect(error.hints).toContain('Usage: productive time get <id>');
     });
   });
 
@@ -317,7 +432,7 @@ describe('Error classes', () => {
 
     it('should include cause message if cause is Error', () => {
       const cause = new Error('original error');
-      const error = new CacheError('Cache failed', 'read', cause);
+      const error = new CacheError('Cache failed', 'read', undefined, cause);
       const json = error.toJSON();
       expect(json.cause).toEqual({ message: 'original error' });
     });

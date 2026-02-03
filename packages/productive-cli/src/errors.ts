@@ -16,11 +16,17 @@
  *     - ServerError (5xx)
  *   - CacheError (cache operations)
  *   - CommandError (command execution issues)
+ *
+ * All errors support optional hints for recovery guidance,
+ * making them more useful for both humans and AI agents.
  */
 
 /**
  * Base error class for all CLI errors.
  * Provides a consistent structure for error information.
+ *
+ * Supports optional hints for recovery guidance, which are displayed
+ * in human-readable format and included in JSON output for AI agents.
  */
 export abstract class CliError extends Error {
   abstract readonly code: string;
@@ -28,6 +34,7 @@ export abstract class CliError extends Error {
 
   constructor(
     message: string,
+    public readonly hints?: string[],
     public readonly cause?: unknown,
   ) {
     super(message);
@@ -48,8 +55,21 @@ export abstract class CliError extends Error {
       name: this.name,
       message: this.message,
       isRecoverable: this.isRecoverable,
+      ...(this.hints && this.hints.length > 0 ? { hints: this.hints } : {}),
       ...(this.cause instanceof Error ? { cause: { message: this.cause.message } } : {}),
     };
+  }
+
+  /**
+   * Format error message with hints for human/LLM consumption.
+   * Used for human-readable output with recovery guidance.
+   */
+  toFormattedMessage(): string {
+    let msg = this.message;
+    if (this.hints && this.hints.length > 0) {
+      msg += '\n\nHints:\n' + this.hints.map((h) => `  • ${h}`).join('\n');
+    }
+    return msg;
   }
 }
 
@@ -64,9 +84,10 @@ export class ConfigError extends CliError {
   constructor(
     message: string,
     public readonly missingKeys?: string[],
+    hints?: string[],
     cause?: unknown,
   ) {
-    super(message, cause);
+    super(message, hints, cause);
   }
 
   override toJSON() {
@@ -78,27 +99,51 @@ export class ConfigError extends CliError {
 
   static missingToken(): ConfigError {
     return new ConfigError(
-      'API token not configured. Set via: --token <token>, productive config set apiToken <token>, or PRODUCTIVE_API_TOKEN env var',
+      'API token not configured',
       ['apiToken'],
+      [
+        'Set via CLI flag: --token <token>',
+        'Set via config: productive config set apiToken <token>',
+        'Set via environment: export PRODUCTIVE_API_TOKEN=<token>',
+      ],
     );
   }
 
   static missingOrganizationId(): ConfigError {
     return new ConfigError(
-      'Organization ID not configured. Set via: --org-id <id>, productive config set organizationId <id>, or PRODUCTIVE_ORG_ID env var',
+      'Organization ID not configured',
       ['organizationId'],
+      [
+        'Set via CLI flag: --org-id <id>',
+        'Set via config: productive config set organizationId <id>',
+        'Set via environment: export PRODUCTIVE_ORG_ID=<id>',
+        'Find your org ID in Productive settings or API response headers',
+      ],
     );
   }
 
   static missingUserId(): ConfigError {
     return new ConfigError(
-      'User ID not configured. Set via: --user-id <id>, productive config set userId <id>, or PRODUCTIVE_USER_ID env var',
+      'User ID not configured',
       ['userId'],
+      [
+        'Set via CLI flag: --user-id <id>',
+        'Set via config: productive config set userId <id>',
+        'Set via environment: export PRODUCTIVE_USER_ID=<id>',
+        'Find your user ID with: productive people list --format json',
+      ],
     );
   }
 
   static invalid(key: string, reason: string): ConfigError {
-    return new ConfigError(`Invalid configuration for '${key}': ${reason}`);
+    return new ConfigError(
+      `Invalid configuration for '${key}': ${reason}`,
+      [key],
+      [
+        `Check the value of '${key}' in your config`,
+        'Run: productive config get to see current values',
+      ],
+    );
   }
 }
 
@@ -114,9 +159,10 @@ export class ValidationError extends CliError {
     message: string,
     public readonly field?: string,
     public readonly value?: unknown,
+    hints?: string[],
     cause?: unknown,
   ) {
-    super(message, cause);
+    super(message, hints, cause);
   }
 
   override toJSON() {
@@ -127,24 +173,26 @@ export class ValidationError extends CliError {
     };
   }
 
-  static required(field: string): ValidationError {
-    return new ValidationError(`${field} is required`, field);
+  static required(field: string, hints?: string[]): ValidationError {
+    return new ValidationError(`${field} is required`, field, undefined, hints);
   }
 
-  static invalid(field: string, value: unknown, reason: string): ValidationError {
-    return new ValidationError(`Invalid ${field}: ${reason}`, field, value);
+  static invalid(field: string, value: unknown, reason: string, hints?: string[]): ValidationError {
+    return new ValidationError(`Invalid ${field}: ${reason}`, field, value, hints);
   }
 
   static invalidDate(value: string): ValidationError {
-    return new ValidationError(
-      `Invalid date format: '${value}'. Use YYYY-MM-DD, 'today', 'yesterday', or relative formats like '2 days ago'`,
-      'date',
-      value,
-    );
+    return new ValidationError(`Invalid date format: '${value}'`, 'date', value, [
+      'Use YYYY-MM-DD format (e.g., 2024-01-15)',
+      "Use relative formats: 'today', 'yesterday', '2 days ago'",
+      'Use month names: 2024-jan-15',
+    ]);
   }
 
   static invalidId(field: string, value: string): ValidationError {
-    return new ValidationError(`Invalid ${field}: '${value}' is not a valid ID`, field, value);
+    return new ValidationError(`Invalid ${field}: '${value}' is not a valid ID`, field, value, [
+      `Use 'productive ${field.replace('_id', 's')} list' to find valid IDs`,
+    ]);
   }
 }
 
@@ -164,6 +212,49 @@ export type ApiErrorCode =
   | 'SERVER_ERROR';
 
 /**
+ * Get hints for an API error based on status code
+ */
+function getApiErrorHints(statusCode?: number): string[] {
+  if (statusCode === 401) {
+    return [
+      'Check that your API token is valid and not expired',
+      'Verify the organization ID is correct',
+      'Run: productive config validate',
+    ];
+  }
+  if (statusCode === 403) {
+    return [
+      'You may not have permission to access this resource',
+      'Check your API token permissions in Productive settings',
+    ];
+  }
+  if (statusCode === 404) {
+    return [
+      'The resource may not exist or you may not have access',
+      'Verify the resource ID is correct',
+      "Use 'list' command to find valid resource IDs",
+    ];
+  }
+  if (statusCode === 422) {
+    return [
+      'The request data may be invalid',
+      'Check the field values and types',
+      'Run command with --help for field documentation',
+    ];
+  }
+  if (statusCode === 429) {
+    return [
+      'Too many requests - wait before retrying',
+      'Consider using pagination with smaller page sizes',
+    ];
+  }
+  if (statusCode && statusCode >= 500) {
+    return ['This is a server error - try again later', 'If the issue persists, contact support'];
+  }
+  return [];
+}
+
+/**
  * Base class for API-related errors
  */
 export class ApiError extends CliError {
@@ -175,9 +266,10 @@ export class ApiError extends CliError {
     public readonly statusCode?: number,
     public readonly endpoint?: string,
     public readonly response?: unknown,
+    hints?: string[],
     cause?: unknown,
   ) {
-    super(message, cause);
+    super(message, hints ?? getApiErrorHints(statusCode), cause);
     // 5xx errors and network errors are potentially recoverable with retry
     this.isRecoverable = statusCode === undefined || (statusCode >= 500 && statusCode < 600);
   }
@@ -224,6 +316,7 @@ export class ApiError extends CliError {
       undefined,
       endpoint,
       undefined,
+      ['Check your internet connection', 'Verify the API base URL is correct'],
       cause,
     );
   }
@@ -317,9 +410,10 @@ export class CacheError extends CliError {
   constructor(
     message: string,
     public readonly operation?: string,
+    hints?: string[],
     cause?: unknown,
   ) {
-    super(message, cause);
+    super(message, hints, cause);
   }
 
   override toJSON() {
@@ -330,15 +424,30 @@ export class CacheError extends CliError {
   }
 
   static readFailed(cause: unknown): CacheError {
-    return new CacheError('Failed to read from cache', 'read', cause);
+    return new CacheError(
+      'Failed to read from cache',
+      'read',
+      ['Try running with --no-cache to bypass cache', 'Run: productive cache clear to reset cache'],
+      cause,
+    );
   }
 
   static writeFailed(cause: unknown): CacheError {
-    return new CacheError('Failed to write to cache', 'write', cause);
+    return new CacheError(
+      'Failed to write to cache',
+      'write',
+      ['Check disk space and permissions', 'Try running with --no-cache to bypass cache'],
+      cause,
+    );
   }
 
   static invalidateFailed(cause: unknown): CacheError {
-    return new CacheError('Failed to invalidate cache', 'invalidate', cause);
+    return new CacheError(
+      'Failed to invalidate cache',
+      'invalidate',
+      ['Try running: productive cache clear'],
+      cause,
+    );
   }
 }
 
@@ -354,9 +463,10 @@ export class CommandError extends CliError {
     message: string,
     public readonly command?: string,
     public readonly subcommand?: string,
+    hints?: string[],
     cause?: unknown,
   ) {
-    super(message, cause);
+    super(message, hints, cause);
   }
 
   override toJSON() {
@@ -368,15 +478,22 @@ export class CommandError extends CliError {
   }
 
   static unknownCommand(command: string): CommandError {
-    return new CommandError(`Unknown command: ${command}`, command);
+    return new CommandError(`Unknown command: ${command}`, command, undefined, [
+      'Run: productive --help to see available commands',
+      'Available commands: projects, time, tasks, people, services, budgets, companies, comments, timers, deals, bookings, reports',
+    ]);
   }
 
   static unknownSubcommand(command: string, subcommand: string): CommandError {
-    return new CommandError(`Unknown subcommand: ${subcommand}`, command, subcommand);
+    return new CommandError(`Unknown subcommand: ${subcommand}`, command, subcommand, [
+      `Run: productive ${command} --help to see available subcommands`,
+    ]);
   }
 
   static missingArgument(command: string, argument: string, usage: string): CommandError {
-    return new CommandError(`Missing required argument: ${argument}\nUsage: ${usage}`, command);
+    return new CommandError(`Missing required argument: ${argument}`, command, undefined, [
+      `Usage: ${usage}`,
+    ]);
   }
 }
 
@@ -428,7 +545,7 @@ export function fromLegacyError(error: unknown): CliError {
 
   // Wrap unknown errors
   if (error instanceof Error) {
-    return new ApiError(error.message, undefined, undefined, undefined, error);
+    return new ApiError(error.message, undefined, undefined, undefined, undefined, error);
   }
 
   return new ApiError(String(error));

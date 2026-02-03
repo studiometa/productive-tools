@@ -28,7 +28,6 @@ describe('error-handler', () => {
   };
   let mockExit: ReturnType<typeof vi.fn>;
   let originalExit: typeof process.exit;
-  let consoleErrorSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     mockFormatter = {
@@ -43,7 +42,7 @@ describe('error-handler', () => {
     process.exit = mockExit as unknown as typeof process.exit;
 
     // Mock console.error
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -139,7 +138,8 @@ describe('error-handler', () => {
 
       handleError(error, mockFormatter, { exit: false });
 
-      expect(mockFormatter.error).toHaveBeenCalledWith('API failed');
+      // Error message includes hints in formatted output
+      expect(mockFormatter.error).toHaveBeenCalledWith(expect.stringContaining('API failed'));
     });
 
     it('should convert plain Error to CliError', () => {
@@ -150,12 +150,16 @@ describe('error-handler', () => {
       expect(mockFormatter.error).toHaveBeenCalledWith('Plain error');
     });
 
-    it('should show missing keys for ConfigError', () => {
-      const error = new ConfigError('Missing config', ['apiToken', 'orgId']);
+    it('should format ConfigError with hints', () => {
+      const error = ConfigError.missingToken();
 
       handleError(error, mockFormatter, { exit: false });
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Missing: apiToken, orgId');
+      // Error message includes hints in formatted output
+      expect(mockFormatter.error).toHaveBeenCalledWith(
+        expect.stringContaining('API token not configured'),
+      );
+      expect(mockFormatter.error).toHaveBeenCalledWith(expect.stringContaining('Hints:'));
     });
   });
 
@@ -245,7 +249,7 @@ describe('error-handler', () => {
       expect(mockExit).toHaveBeenCalledWith(ExitCode.VALIDATION_ERROR);
     });
 
-    it('should output error in JSON format with usage', () => {
+    it('should output error in JSON format with hints including usage', () => {
       mockFormatter.format = 'json';
 
       try {
@@ -257,7 +261,7 @@ describe('error-handler', () => {
       expect(mockFormatter.output).toHaveBeenCalledWith(
         expect.objectContaining({
           error: 'VALIDATION_ERROR',
-          usage: 'productive get <id>',
+          hints: expect.arrayContaining(['Usage: productive get <id>']),
         }),
       );
     });

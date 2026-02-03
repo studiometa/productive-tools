@@ -1,6 +1,24 @@
 export { ProductiveApi, ProductiveApiError } from './api.js';
 export { getConfig, setConfig, clearConfig, showConfig, validateConfig } from './config.js';
 export { OutputFormatter, createSpinner } from './output.js';
+export { ErrorMessages } from './error-messages.js';
+export {
+  CliError,
+  ConfigError,
+  ValidationError,
+  ApiError,
+  AuthenticationError,
+  AuthorizationError,
+  NotFoundError,
+  RateLimitError,
+  ServerError,
+  CacheError,
+  CommandError,
+  isCliError,
+  isApiError,
+  isRecoverable,
+  fromLegacyError,
+} from './errors.js';
 export type {
   ProductiveConfig,
   ProductiveApiResponse,

@@ -234,7 +234,11 @@ describe('people command', () => {
     });
 
     it('should exit with error when id is missing', async () => {
-      await handlePeopleCommand('get', [], {});
+      try {
+        await handlePeopleCommand('get', [], {});
+      } catch {
+        // exitWithValidationError throws after process.exit (which is mocked)
+      }
 
       expect(processExitSpy).toHaveBeenCalledWith(3);
     });
