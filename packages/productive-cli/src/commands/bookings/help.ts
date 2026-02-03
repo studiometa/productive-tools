@@ -15,8 +15,15 @@ ${colors.bold('USAGE:')}
 ${colors.bold('OPTIONS:')}
   --mine              Filter by configured user ID
   --person <id>       Filter by person ID
+  --project <id>      Filter by project ID
+  --company <id>      Filter by company ID
+  --service <id>      Filter by service ID
+  --event <id>        Filter by event ID
   --from <date>       Filter bookings starting after date (YYYY-MM-DD)
   --to <date>         Filter bookings ending before date (YYYY-MM-DD)
+  --type <type>       Filter by type: absence, budget
+  --tentative         Filter tentative bookings only
+  --no-tentative      Filter confirmed bookings only
   --filter <filters>  Generic filters (comma-separated key=value pairs)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
@@ -26,6 +33,8 @@ ${colors.bold('OPTIONS:')}
 ${colors.bold('EXAMPLES:')}
   productive bookings list --mine
   productive bookings list --person 12345 --from 2024-01-01 --to 2024-01-31
+  productive bookings list --project 123 --type budget
+  productive bookings list --tentative
   productive bookings list --format json
 `);
   } else if (subcommand === 'get') {

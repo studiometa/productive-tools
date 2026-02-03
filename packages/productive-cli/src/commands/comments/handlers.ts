@@ -45,6 +45,8 @@ export async function commentsList(ctx: CommandContext): Promise<void> {
     if (ctx.options.task) filter.task_id = String(ctx.options.task);
     if (ctx.options.deal) filter.deal_id = String(ctx.options.deal);
     if (ctx.options.project) filter.project_id = String(ctx.options.project);
+    if (ctx.options.page) filter.page_id = String(ctx.options.page);
+    if (ctx.options.discussion) filter.discussion_id = String(ctx.options.discussion);
 
     const { page, perPage } = ctx.getPagination();
     const response = await ctx.api.getComments({

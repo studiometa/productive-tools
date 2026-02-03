@@ -127,6 +127,117 @@ describe('handleTimeCommand', () => {
       });
     });
 
+    it('should list time entries with extended filters', async () => {
+      mockApi.getTimeEntries.mockResolvedValue({
+        data: [],
+        meta: { page: 1, per_page: 100, total: 0 },
+      });
+
+      await handleTimeCommand('list', [], {
+        format: 'json',
+        service: 'service-1',
+        task: 'task-1',
+        company: 'company-1',
+        deal: 'deal-1',
+        status: 'approved',
+        'billing-type': 'actuals',
+        'invoicing-status': 'not_invoiced',
+      });
+
+      expect(mockApi.getTimeEntries).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: {
+          service_id: 'service-1',
+          task_id: 'task-1',
+          company_id: 'company-1',
+          deal_id: 'deal-1',
+          status: '1',
+          billing_type_id: '2',
+          invoicing_status: '1',
+        },
+        sort: '',
+      });
+    });
+
+    it('should list time entries with budget filter', async () => {
+      mockApi.getTimeEntries.mockResolvedValue({
+        data: [],
+        meta: { page: 1, per_page: 100, total: 0 },
+      });
+
+      await handleTimeCommand('list', [], {
+        format: 'json',
+        budget: 'budget-1',
+      });
+
+      expect(mockApi.getTimeEntries).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: {
+          budget_id: 'budget-1',
+        },
+        sort: '',
+      });
+    });
+
+    it('should map status filter values correctly', async () => {
+      mockApi.getTimeEntries.mockResolvedValue({
+        data: [],
+        meta: { page: 1, per_page: 100, total: 0 },
+      });
+
+      // Test unapproved
+      await handleTimeCommand('list', [], { format: 'json', status: 'unapproved' });
+      expect(mockApi.getTimeEntries).toHaveBeenLastCalledWith(
+        expect.objectContaining({ filter: { status: '2' } }),
+      );
+
+      // Test rejected
+      await handleTimeCommand('list', [], { format: 'json', status: 'rejected' });
+      expect(mockApi.getTimeEntries).toHaveBeenLastCalledWith(
+        expect.objectContaining({ filter: { status: '3' } }),
+      );
+    });
+
+    it('should map billing-type filter values correctly', async () => {
+      mockApi.getTimeEntries.mockResolvedValue({
+        data: [],
+        meta: { page: 1, per_page: 100, total: 0 },
+      });
+
+      // Test fixed
+      await handleTimeCommand('list', [], { format: 'json', 'billing-type': 'fixed' });
+      expect(mockApi.getTimeEntries).toHaveBeenLastCalledWith(
+        expect.objectContaining({ filter: { billing_type_id: '1' } }),
+      );
+
+      // Test non_billable
+      await handleTimeCommand('list', [], { format: 'json', 'billing-type': 'non_billable' });
+      expect(mockApi.getTimeEntries).toHaveBeenLastCalledWith(
+        expect.objectContaining({ filter: { billing_type_id: '3' } }),
+      );
+    });
+
+    it('should map invoicing-status filter values correctly', async () => {
+      mockApi.getTimeEntries.mockResolvedValue({
+        data: [],
+        meta: { page: 1, per_page: 100, total: 0 },
+      });
+
+      // Test drafted
+      await handleTimeCommand('list', [], { format: 'json', 'invoicing-status': 'drafted' });
+      expect(mockApi.getTimeEntries).toHaveBeenLastCalledWith(
+        expect.objectContaining({ filter: { invoicing_status: '2' } }),
+      );
+
+      // Test finalized
+      await handleTimeCommand('list', [], { format: 'json', 'invoicing-status': 'finalized' });
+      expect(mockApi.getTimeEntries).toHaveBeenLastCalledWith(
+        expect.objectContaining({ filter: { invoicing_status: '3' } }),
+      );
+    });
+
     it('should list time entries in human format', async () => {
       mockApi.getTimeEntries.mockResolvedValue({
         data: [

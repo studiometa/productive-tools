@@ -123,6 +123,27 @@ describe('timers command', () => {
         }),
       );
     });
+
+    it('should filter by time-entry with --time-entry flag', async () => {
+      const mockTimers = {
+        data: [],
+        meta: { total: 0, page: 1, per_page: 100 },
+        included: [],
+      };
+
+      const mockApi = {
+        getTimers: vi.fn().mockResolvedValue(mockTimers),
+      };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleTimersCommand('list', [], { 'time-entry': 'entry-123' });
+
+      expect(mockApi.getTimers).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: { time_entry_id: 'entry-123' },
+        }),
+      );
+    });
   });
 
   describe('get command', () => {

@@ -396,6 +396,104 @@ describe('tasks command', () => {
       });
     });
 
+    it('should filter tasks with extended filters', async () => {
+      const mockTasks = {
+        data: [],
+        meta: { total: 0 },
+      };
+
+      const mockApi = {
+        getTasks: vi.fn().mockResolvedValue(mockTasks),
+      };
+      mockApiInstance.getTasks = mockApi.getTasks;
+      mockApiInstance.getTask = mockApi.getTask;
+
+      await handleTasksCommand('list', [], {
+        assignee: 'person-1',
+        creator: 'person-2',
+        company: 'company-1',
+        board: 'board-1',
+        'task-list': 'list-1',
+        'workflow-status': 'status-1',
+        parent: 'parent-1',
+        status: 'all',
+      });
+
+      expect(mockApi.getTasks).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: {
+          assignee_id: 'person-1',
+          creator_id: 'person-2',
+          company_id: 'company-1',
+          board_id: 'board-1',
+          task_list_id: 'list-1',
+          workflow_status_id: 'status-1',
+          parent_task_id: 'parent-1',
+        },
+        sort: '',
+        include: ['project', 'assignee', 'workflow_status'],
+      });
+    });
+
+    it('should filter overdue tasks', async () => {
+      const mockTasks = {
+        data: [],
+        meta: { total: 0 },
+      };
+
+      const mockApi = {
+        getTasks: vi.fn().mockResolvedValue(mockTasks),
+      };
+      mockApiInstance.getTasks = mockApi.getTasks;
+      mockApiInstance.getTask = mockApi.getTask;
+
+      await handleTasksCommand('list', [], {
+        overdue: true,
+        status: 'all',
+      });
+
+      expect(mockApi.getTasks).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: { overdue_status: '2' },
+        sort: '',
+        include: ['project', 'assignee', 'workflow_status'],
+      });
+    });
+
+    it('should filter tasks by due date', async () => {
+      const mockTasks = {
+        data: [],
+        meta: { total: 0 },
+      };
+
+      const mockApi = {
+        getTasks: vi.fn().mockResolvedValue(mockTasks),
+      };
+      mockApiInstance.getTasks = mockApi.getTasks;
+      mockApiInstance.getTask = mockApi.getTask;
+
+      await handleTasksCommand('list', [], {
+        'due-date': '2024-12-31',
+        'due-before': '2025-01-15',
+        'due-after': '2024-01-01',
+        status: 'all',
+      });
+
+      expect(mockApi.getTasks).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: {
+          due_date_on: '2024-12-31',
+          due_date_before: '2025-01-15',
+          due_date_after: '2024-01-01',
+        },
+        sort: '',
+        include: ['project', 'assignee', 'workflow_status'],
+      });
+    });
+
     it('should handle pagination and sorting', async () => {
       const mockTasks = {
         data: [],

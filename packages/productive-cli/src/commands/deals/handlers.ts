@@ -41,27 +41,55 @@ export async function dealsList(ctx: CommandContext): Promise<void> {
       Object.assign(filter, parseFilters(String(ctx.options.filter)));
     }
 
-    // Filter by company
+    // Resource filtering
     if (ctx.options.company) {
       filter.company_id = String(ctx.options.company);
     }
-
-    // Filter by stage status (open, won, lost)
-    const status = ctx.options.status ? String(ctx.options.status).toLowerCase() : undefined;
-    if (status === 'open') {
-      filter.stage_status_id = '1';
-    } else if (status === 'won') {
-      filter.stage_status_id = '2';
-    } else if (status === 'lost') {
-      filter.stage_status_id = '3';
+    if (ctx.options.project) {
+      filter.project_id = String(ctx.options.project);
+    }
+    if (ctx.options.responsible) {
+      filter.responsible_id = String(ctx.options.responsible);
+    }
+    if (ctx.options.pipeline) {
+      filter.pipeline_id = String(ctx.options.pipeline);
     }
 
-    // Filter by type (deal vs budget)
-    const type = ctx.options.type ? String(ctx.options.type).toLowerCase() : undefined;
-    if (type === 'deal') {
-      filter.type = '1';
-    } else if (type === 'budget') {
-      filter.type = '2';
+    // Stage status filtering (open, won, lost)
+    if (ctx.options.status) {
+      const statusMap: Record<string, string> = {
+        open: '1',
+        won: '2',
+        lost: '3',
+      };
+      const statusValue = statusMap[String(ctx.options.status).toLowerCase()];
+      if (statusValue) {
+        filter.stage_status_id = statusValue;
+      }
+    }
+
+    // Type filtering (deal vs budget)
+    if (ctx.options.type) {
+      const typeMap: Record<string, string> = {
+        deal: '1',
+        budget: '2',
+      };
+      const typeValue = typeMap[String(ctx.options.type).toLowerCase()];
+      if (typeValue) {
+        filter.type = typeValue;
+      }
+    }
+
+    // Budget status filtering (open/closed) - only for budgets
+    if (ctx.options['budget-status']) {
+      const budgetStatusMap: Record<string, string> = {
+        open: '1',
+        closed: '2',
+      };
+      const budgetStatusValue = budgetStatusMap[String(ctx.options['budget-status']).toLowerCase()];
+      if (budgetStatusValue) {
+        filter.budget_status = budgetStatusValue;
+      }
     }
 
     const { page, perPage } = ctx.getPagination();

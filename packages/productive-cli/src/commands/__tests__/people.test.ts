@@ -165,6 +165,104 @@ describe('people command', () => {
       });
     });
 
+    it('should filter people with extended filters', async () => {
+      const mockPeople = {
+        data: [],
+        meta: { total: 0 },
+      };
+
+      const mockApi = {
+        getPeople: vi.fn().mockResolvedValue(mockPeople),
+      };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handlePeopleCommand('list', [], {
+        company: 'company-1',
+        project: 'project-1',
+        role: 'role-1',
+        team: 'Engineering',
+        type: 'user',
+        status: 'active',
+      });
+
+      expect(mockApi.getPeople).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: {
+          company_id: 'company-1',
+          project_id: 'project-1',
+          role_id: 'role-1',
+          team: 'Engineering',
+          person_type: '1',
+          status: '1',
+        },
+        sort: '',
+      });
+    });
+
+    it('should filter people by type contact', async () => {
+      const mockPeople = {
+        data: [],
+        meta: { total: 0 },
+      };
+
+      const mockApi = {
+        getPeople: vi.fn().mockResolvedValue(mockPeople),
+      };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handlePeopleCommand('list', [], { type: 'contact' });
+
+      expect(mockApi.getPeople).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: { person_type: '2' },
+        sort: '',
+      });
+    });
+
+    it('should filter people by type placeholder', async () => {
+      const mockPeople = {
+        data: [],
+        meta: { total: 0 },
+      };
+
+      const mockApi = {
+        getPeople: vi.fn().mockResolvedValue(mockPeople),
+      };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handlePeopleCommand('list', [], { type: 'placeholder' });
+
+      expect(mockApi.getPeople).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: { person_type: '3' },
+        sort: '',
+      });
+    });
+
+    it('should filter people by status deactivated', async () => {
+      const mockPeople = {
+        data: [],
+        meta: { total: 0 },
+      };
+
+      const mockApi = {
+        getPeople: vi.fn().mockResolvedValue(mockPeople),
+      };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handlePeopleCommand('list', [], { status: 'deactivated' });
+
+      expect(mockApi.getPeople).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: { status: '2' },
+        sort: '',
+      });
+    });
+
     it('should handle API errors', async () => {
       const mockError = new ProductiveApiError('API Error', 500);
       const mockApi = {

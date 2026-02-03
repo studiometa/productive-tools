@@ -53,14 +53,28 @@ export async function bookingsList(ctx: CommandContext): Promise<void> {
       Object.assign(filter, parseFilters(String(ctx.options.filter)));
     }
 
-    // Filter by person
+    // Person filtering
     if (ctx.options.mine && ctx.config.userId) {
       filter.person_id = ctx.config.userId;
     } else if (ctx.options.person) {
       filter.person_id = String(ctx.options.person);
     }
 
-    // Filter by date range
+    // Resource filtering
+    if (ctx.options.project) {
+      filter.project_id = String(ctx.options.project);
+    }
+    if (ctx.options.company) {
+      filter.company_id = String(ctx.options.company);
+    }
+    if (ctx.options.service) {
+      filter.service_id = String(ctx.options.service);
+    }
+    if (ctx.options.event) {
+      filter.event_id = String(ctx.options.event);
+    }
+
+    // Date range filtering
     if (ctx.options.from) {
       filter.after = String(ctx.options.from);
     }
@@ -68,8 +82,25 @@ export async function bookingsList(ctx: CommandContext): Promise<void> {
       filter.before = String(ctx.options.to);
     }
 
-    // Include tentative bookings by default
-    filter.with_draft = 'true';
+    // Booking type filtering (event=absence, service=budget)
+    if (ctx.options.type) {
+      const typeValue = String(ctx.options.type).toLowerCase();
+      if (typeValue === 'absence' || typeValue === 'event') {
+        filter.booking_type = 'event';
+      } else if (typeValue === 'budget' || typeValue === 'service') {
+        filter.booking_type = 'service';
+      }
+    }
+
+    // Draft/tentative filtering
+    if (ctx.options.tentative !== undefined) {
+      filter.draft = ctx.options.tentative ? 'true' : 'false';
+    }
+
+    // Include tentative bookings by default unless explicitly filtered
+    if (filter.draft === undefined) {
+      filter.with_draft = 'true';
+    }
 
     const { page, perPage } = ctx.getPagination();
     const response = await ctx.api.getBookings({

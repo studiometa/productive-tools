@@ -15,8 +15,18 @@ ${colors.bold('USAGE:')}
 ${colors.bold('OPTIONS:')}
   --mine              Filter by configured user ID (assignee)
   --status <status>   Filter by status: open, completed, all (default: open)
-  --person <id>       Filter by assignee person ID
+  --assignee <id>     Filter by assignee person ID
+  --creator <id>      Filter by creator person ID
   --project <id>      Filter by project ID
+  --company <id>      Filter by company ID
+  --board <id>        Filter by board ID
+  --task-list <id>    Filter by task list ID
+  --workflow-status   Filter by workflow status ID
+  --parent <id>       Filter by parent task ID (subtasks)
+  --overdue           Filter overdue tasks only
+  --due-date <date>   Filter by exact due date (YYYY-MM-DD)
+  --due-before <date> Filter by due date before (YYYY-MM-DD)
+  --due-after <date>  Filter by due date after (YYYY-MM-DD)
   --filter <filters>  Generic filters (comma-separated key=value pairs)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
@@ -28,7 +38,10 @@ ${colors.bold('EXAMPLES:')}
   productive tasks list --mine
   productive tasks list --mine --status completed
   productive tasks list --status all --project 12345
-  productive tasks list --filter assignee_id=123
+  productive tasks list --overdue --mine
+  productive tasks list --due-before 2024-01-31
+  productive tasks list --workflow-status 123
+  productive tasks list --parent 456 --project 12345
   productive tasks list --format kanban --project 12345
 `);
   } else if (subcommand === 'get') {

@@ -162,6 +162,44 @@ describe('deals command', () => {
         }),
       );
     });
+
+    it('should filter deals with extended filters', async () => {
+      const mockDeals = { data: [], meta: {}, included: [] };
+      const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleDealsCommand('list', [], {
+        project: 'project-1',
+        responsible: 'person-1',
+        pipeline: 'pipeline-1',
+        'budget-status': 'open',
+      });
+
+      expect(mockApi.getDeals).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: {
+            project_id: 'project-1',
+            responsible_id: 'person-1',
+            pipeline_id: 'pipeline-1',
+            budget_status: '1',
+          },
+        }),
+      );
+    });
+
+    it('should filter deals by budget-status closed', async () => {
+      const mockDeals = { data: [], meta: {}, included: [] };
+      const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleDealsCommand('list', [], { 'budget-status': 'closed' });
+
+      expect(mockApi.getDeals).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: { budget_status: '2' },
+        }),
+      );
+    });
   });
 
   describe('get command', () => {

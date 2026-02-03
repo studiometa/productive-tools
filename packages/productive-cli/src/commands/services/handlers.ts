@@ -39,11 +39,48 @@ export async function servicesList(ctx: CommandContext): Promise<void> {
       Object.assign(filter, parseFilters(String(ctx.options.filter)));
     }
 
+    // Resource filtering
     if (ctx.options.project) {
       filter.project_id = String(ctx.options.project);
     }
     if (ctx.options.deal) {
       filter.deal_id = String(ctx.options.deal);
+    }
+    if (ctx.options.task) {
+      filter.task_id = String(ctx.options.task);
+    }
+    if (ctx.options.person) {
+      filter.person_id = String(ctx.options.person);
+    }
+
+    // Budget status filtering (open/delivered)
+    if (ctx.options['budget-status']) {
+      const statusMap: Record<string, string> = {
+        open: '1',
+        delivered: '2',
+      };
+      const statusValue = statusMap[String(ctx.options['budget-status']).toLowerCase()];
+      if (statusValue) {
+        filter.budget_status = statusValue;
+      }
+    }
+
+    // Billing type filtering (fixed/actuals/none)
+    if (ctx.options['billing-type']) {
+      const billingMap: Record<string, string> = {
+        fixed: '1',
+        actuals: '2',
+        none: '3',
+      };
+      const billingValue = billingMap[String(ctx.options['billing-type']).toLowerCase()];
+      if (billingValue) {
+        filter.billing_type = billingValue;
+      }
+    }
+
+    // Boolean filters
+    if (ctx.options['time-tracking'] !== undefined) {
+      filter.time_tracking_enabled = ctx.options['time-tracking'] ? 'true' : 'false';
     }
 
     const { page, perPage } = ctx.getPagination();

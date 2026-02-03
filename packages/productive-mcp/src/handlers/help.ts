@@ -24,9 +24,11 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     },
     filters: {
       query: 'Text search on project name',
-      project_type_id: 'Filter by project type',
+      project_type: 'Filter by project type: 1=internal, 2=client',
       company_id: 'Filter by company',
-      archived: 'Filter by archived status (true/false)',
+      responsible_id: 'Filter by project manager',
+      person_id: 'Filter by team member',
+      status: 'Filter by status: 1=active, 2=archived',
     },
     fields: {
       id: 'Unique project identifier',
@@ -62,9 +64,18 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     filters: {
       query: 'Text search on task title',
       project_id: 'Filter by project',
+      company_id: 'Filter by company',
       assignee_id: 'Filter by assigned person',
-      status: 'Filter by status (open, closed, all)',
+      creator_id: 'Filter by task creator',
+      status: 'Filter by status: 1=open, 2=closed (or "open", "closed", "all")',
       task_list_id: 'Filter by task list',
+      board_id: 'Filter by board',
+      workflow_status_id: 'Filter by workflow status (kanban column)',
+      parent_task_id: 'Filter by parent task (for subtasks)',
+      overdue_status: 'Filter by overdue: 1=not overdue, 2=overdue',
+      due_date_on: 'Filter by exact due date (YYYY-MM-DD)',
+      due_date_before: 'Filter by due date before (YYYY-MM-DD)',
+      due_date_after: 'Filter by due date after (YYYY-MM-DD)',
     },
     includes: [
       'project',
@@ -130,11 +141,18 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       update: 'Update an existing time entry',
     },
     filters: {
-      person_id: 'Filter by person',
+      person_id: 'Filter by person (use "me" for current user)',
       service_id: 'Filter by service',
       project_id: 'Filter by project',
+      task_id: 'Filter by task',
+      company_id: 'Filter by company',
+      deal_id: 'Filter by deal',
+      budget_id: 'Filter by budget',
       after: 'Filter entries after date (YYYY-MM-DD)',
       before: 'Filter entries before date (YYYY-MM-DD)',
+      status: 'Filter by approval status: 1=approved, 2=unapproved, 3=rejected',
+      billing_type_id: 'Filter by billing type: 1=fixed, 2=actuals, 3=non_billable',
+      invoicing_status: 'Filter by invoicing: 1=not_invoiced, 2=drafted, 3=finalized',
     },
     fields: {
       id: 'Unique time entry identifier',
@@ -176,6 +194,11 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     filters: {
       project_id: 'Filter by project',
       deal_id: 'Filter by deal',
+      task_id: 'Filter by task',
+      person_id: 'Filter by person (trackable by)',
+      budget_status: 'Filter by budget status: 1=open, 2=delivered',
+      billing_type: 'Filter by billing type: 1=fixed, 2=actuals, 3=none',
+      time_tracking_enabled: 'Filter by time tracking: true/false',
     },
     fields: {
       id: 'Unique service identifier',
@@ -200,7 +223,12 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     },
     filters: {
       query: 'Text search on name or email',
-      status: 'Filter by status (active, inactive)',
+      status: 'Filter by status: 1=active, 2=deactivated',
+      person_type: 'Filter by type: 1=user, 2=contact, 3=placeholder',
+      company_id: 'Filter by company',
+      project_id: 'Filter by project',
+      role_id: 'Filter by role',
+      team: 'Filter by team name',
     },
     fields: {
       id: 'Unique person identifier',
@@ -266,6 +294,9 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     filters: {
       task_id: 'Filter by task',
       deal_id: 'Filter by deal',
+      project_id: 'Filter by project',
+      page_id: 'Filter by page',
+      discussion_id: 'Filter by discussion',
     },
     includes: ['creator', 'task', 'deal'],
     fields: {
@@ -293,6 +324,10 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       start: 'Start a new timer (requires service_id or time_entry_id)',
       stop: 'Stop an active timer by ID',
     },
+    filters: {
+      person_id: 'Filter by person',
+      time_entry_id: 'Filter by time entry',
+    },
     fields: {
       id: 'Unique timer identifier',
       started_at: 'When the timer started (ISO 8601)',
@@ -319,7 +354,12 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     filters: {
       query: 'Text search on deal name',
       company_id: 'Filter by company',
-      deal_status_id: 'Filter by status',
+      project_id: 'Filter by project',
+      responsible_id: 'Filter by responsible person',
+      pipeline_id: 'Filter by pipeline',
+      stage_status_id: 'Filter by stage: 1=open, 2=won, 3=lost',
+      type: 'Filter by type: 1=deal, 2=budget',
+      budget_status: 'Filter by budget status: 1=open, 2=closed',
     },
     includes: ['company', 'deal_status', 'responsible', 'project'],
     fields: {
@@ -353,8 +393,13 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     filters: {
       person_id: 'Filter by person',
       service_id: 'Filter by service',
+      project_id: 'Filter by project',
+      company_id: 'Filter by company',
+      event_id: 'Filter by event',
       after: 'Filter bookings after date (YYYY-MM-DD)',
       before: 'Filter bookings before date (YYYY-MM-DD)',
+      booking_type: 'Filter by type: event (absence) or service (budget)',
+      draft: 'Filter by tentative status: true/false',
     },
     includes: ['person', 'service', 'event'],
     fields: {

@@ -14,6 +14,11 @@ ${colors.bold('USAGE:')}
 
 ${colors.bold('OPTIONS:')}
   --company <id>      Filter by company ID
+  --project <id>      Filter by project ID
+  --role <id>         Filter by role ID
+  --team <name>       Filter by team name
+  --type <type>       Filter by person type: user, contact, placeholder
+  --status <status>   Filter by status: active, deactivated
   --filter <filters>  Generic filters (comma-separated key=value pairs)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
@@ -23,6 +28,8 @@ ${colors.bold('OPTIONS:')}
 ${colors.bold('EXAMPLES:')}
   productive people list
   productive people list --company 12345
+  productive people list --type user --status active
+  productive people list --project 123
   productive people list --filter active=true
   productive people list --format json -p 2 -s 50
 `);

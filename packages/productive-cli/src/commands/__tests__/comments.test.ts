@@ -117,6 +117,34 @@ describe('comments command', () => {
         }),
       );
     });
+
+    it('should filter by page', async () => {
+      const mockComments = { data: [], meta: {}, included: [] };
+      const mockApi = { getComments: vi.fn().mockResolvedValue(mockComments) };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleCommentsCommand('list', [], { page: '101' });
+
+      expect(mockApi.getComments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: { page_id: '101' },
+        }),
+      );
+    });
+
+    it('should filter by discussion', async () => {
+      const mockComments = { data: [], meta: {}, included: [] };
+      const mockApi = { getComments: vi.fn().mockResolvedValue(mockComments) };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleCommentsCommand('list', [], { discussion: '202' });
+
+      expect(mockApi.getComments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: { discussion_id: '202' },
+        }),
+      );
+    });
   });
 
   describe('get command', () => {

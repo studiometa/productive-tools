@@ -14,6 +14,10 @@ ${colors.bold('USAGE:')}
 
 ${colors.bold('OPTIONS:')}
   --company <id>      Filter by company ID
+  --responsible <id>  Filter by project manager ID
+  --person <id>       Filter by team member ID
+  --type <type>       Filter by project type: internal, client
+  --status <status>   Filter by status: active, archived
   --filter <filters>  Generic filters (comma-separated key=value pairs)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
@@ -23,6 +27,9 @@ ${colors.bold('OPTIONS:')}
 ${colors.bold('EXAMPLES:')}
   productive projects list
   productive projects list --company 12345
+  productive projects list --type client
+  productive projects list --status active
+  productive projects list --responsible 456
   productive projects list --filter archived=false
   productive projects list --format json
   productive projects list --sort -created_at

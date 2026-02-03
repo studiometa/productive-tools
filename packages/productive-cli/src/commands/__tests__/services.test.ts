@@ -121,6 +121,102 @@ describe('services command', () => {
       });
     });
 
+    it('should filter services with extended filters', async () => {
+      const mockServices = {
+        data: [],
+        meta: { total: 0 },
+      };
+
+      const mockApi = {
+        getServices: vi.fn().mockResolvedValue(mockServices),
+      };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleServicesCommand('list', [], {
+        project: 'project-1',
+        deal: 'deal-1',
+        task: 'task-1',
+        person: 'person-1',
+        'budget-status': 'open',
+        'billing-type': 'actuals',
+        'time-tracking': true,
+      });
+
+      expect(mockApi.getServices).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: {
+          project_id: 'project-1',
+          deal_id: 'deal-1',
+          task_id: 'task-1',
+          person_id: 'person-1',
+          budget_status: '1',
+          billing_type: '2',
+          time_tracking_enabled: 'true',
+        },
+      });
+    });
+
+    it('should filter services by budget-status delivered', async () => {
+      const mockServices = {
+        data: [],
+        meta: { total: 0 },
+      };
+
+      const mockApi = {
+        getServices: vi.fn().mockResolvedValue(mockServices),
+      };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleServicesCommand('list', [], { 'budget-status': 'delivered' });
+
+      expect(mockApi.getServices).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: { budget_status: '2' },
+      });
+    });
+
+    it('should filter services by billing-type fixed', async () => {
+      const mockServices = {
+        data: [],
+        meta: { total: 0 },
+      };
+
+      const mockApi = {
+        getServices: vi.fn().mockResolvedValue(mockServices),
+      };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleServicesCommand('list', [], { 'billing-type': 'fixed' });
+
+      expect(mockApi.getServices).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: { billing_type: '1' },
+      });
+    });
+
+    it('should filter services by billing-type none', async () => {
+      const mockServices = {
+        data: [],
+        meta: { total: 0 },
+      };
+
+      const mockApi = {
+        getServices: vi.fn().mockResolvedValue(mockServices),
+      };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleServicesCommand('list', [], { 'billing-type': 'none' });
+
+      expect(mockApi.getServices).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: { billing_type: '3' },
+      });
+    });
+
     it('should handle API errors', async () => {
       const mockError = new ProductiveApiError('API Error', 500);
       const mockApi = {

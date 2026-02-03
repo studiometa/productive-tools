@@ -108,6 +108,74 @@ describe('bookings command', () => {
         }),
       );
     });
+
+    it('should filter bookings with extended filters', async () => {
+      const mockBookings = { data: [], meta: {}, included: [] };
+      const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleBookingsCommand('list', [], {
+        project: 'project-1',
+        company: 'company-1',
+        service: 'service-1',
+        event: 'event-1',
+        type: 'absence',
+      });
+
+      expect(mockApi.getBookings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({
+            project_id: 'project-1',
+            company_id: 'company-1',
+            service_id: 'service-1',
+            event_id: 'event-1',
+            booking_type: 'event',
+          }),
+        }),
+      );
+    });
+
+    it('should filter bookings by type budget', async () => {
+      const mockBookings = { data: [], meta: {}, included: [] };
+      const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleBookingsCommand('list', [], { type: 'budget' });
+
+      expect(mockApi.getBookings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ booking_type: 'service' }),
+        }),
+      );
+    });
+
+    it('should filter tentative bookings only', async () => {
+      const mockBookings = { data: [], meta: {}, included: [] };
+      const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleBookingsCommand('list', [], { tentative: true });
+
+      expect(mockApi.getBookings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ draft: 'true' }),
+        }),
+      );
+    });
+
+    it('should filter confirmed bookings only', async () => {
+      const mockBookings = { data: [], meta: {}, included: [] };
+      const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleBookingsCommand('list', [], { tentative: false });
+
+      expect(mockApi.getBookings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ draft: 'false' }),
+        }),
+      );
+    });
   });
 
   describe('get command', () => {

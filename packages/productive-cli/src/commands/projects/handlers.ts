@@ -44,6 +44,36 @@ export async function projectsList(ctx: CommandContext): Promise<void> {
     if (ctx.options.company) {
       filter.company_id = String(ctx.options.company);
     }
+    if (ctx.options.responsible) {
+      filter.responsible_id = String(ctx.options.responsible);
+    }
+    if (ctx.options.person) {
+      filter.person_id = String(ctx.options.person);
+    }
+
+    // Project type filtering (internal/client)
+    if (ctx.options.type) {
+      const typeMap: Record<string, string> = {
+        internal: '1',
+        client: '2',
+      };
+      const typeValue = typeMap[String(ctx.options.type).toLowerCase()];
+      if (typeValue) {
+        filter.project_type = typeValue;
+      }
+    }
+
+    // Status filtering (active/archived)
+    if (ctx.options.status) {
+      const statusMap: Record<string, string> = {
+        active: '1',
+        archived: '2',
+      };
+      const statusValue = statusMap[String(ctx.options.status).toLowerCase()];
+      if (statusValue) {
+        filter.status = statusValue;
+      }
+    }
 
     const { page, perPage } = ctx.getPagination();
     const response = await ctx.api.getProjects({

@@ -13,19 +13,25 @@ ${colors.bold('USAGE:')}
   productive deals list [options]
 
 ${colors.bold('OPTIONS:')}
-  --company <id>      Filter by company ID
-  --status <status>   Filter by status: open, won, lost
-  --type <type>       Filter by type: deal, budget
-  --filter <filters>  Generic filters (comma-separated key=value pairs)
-  -p, --page <num>    Page number (default: 1)
-  -s, --size <num>    Page size (default: 100)
-  --sort <field>      Sort by field (prefix with - for descending)
-  -f, --format <fmt>  Output format: json, human, csv, table
+  --company <id>        Filter by company ID
+  --project <id>        Filter by project ID
+  --responsible <id>    Filter by responsible person ID
+  --pipeline <id>       Filter by pipeline ID
+  --status <status>     Filter by stage status: open, won, lost
+  --type <type>         Filter by type: deal, budget
+  --budget-status <s>   Filter by budget status: open, closed
+  --filter <filters>    Generic filters (comma-separated key=value pairs)
+  -p, --page <num>      Page number (default: 1)
+  -s, --size <num>      Page size (default: 100)
+  --sort <field>        Sort by field (prefix with - for descending)
+  -f, --format <fmt>    Output format: json, human, csv, table
 
 ${colors.bold('EXAMPLES:')}
   productive deals list
   productive deals list --status open
   productive deals list --type budget --company 12345
+  productive deals list --type budget --budget-status open
+  productive deals list --responsible 456
   productive deals list --status won --format json
 `);
   } else if (subcommand === 'get') {

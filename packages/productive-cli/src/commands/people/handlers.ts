@@ -39,8 +39,44 @@ export async function peopleList(ctx: CommandContext): Promise<void> {
       Object.assign(filter, parseFilters(String(ctx.options.filter)));
     }
 
+    // Resource filtering
     if (ctx.options.company) {
       filter.company_id = String(ctx.options.company);
+    }
+    if (ctx.options.project) {
+      filter.project_id = String(ctx.options.project);
+    }
+    if (ctx.options.role) {
+      filter.role_id = String(ctx.options.role);
+    }
+    if (ctx.options.team) {
+      filter.team = String(ctx.options.team);
+    }
+
+    // Person type filtering (user/contact/placeholder)
+    if (ctx.options.type) {
+      const typeMap: Record<string, string> = {
+        user: '1',
+        contact: '2',
+        placeholder: '3',
+      };
+      const typeValue = typeMap[String(ctx.options.type).toLowerCase()];
+      if (typeValue) {
+        filter.person_type = typeValue;
+      }
+    }
+
+    // Status filtering (active/deactivated)
+    if (ctx.options.status) {
+      const statusMap: Record<string, string> = {
+        active: '1',
+        deactivated: '2',
+        inactive: '2',
+      };
+      const statusValue = statusMap[String(ctx.options.status).toLowerCase()];
+      if (statusValue) {
+        filter.status = statusValue;
+      }
     }
 
     const { page, perPage } = ctx.getPagination();

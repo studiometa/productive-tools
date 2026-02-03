@@ -184,6 +184,81 @@ describe('projects command', () => {
       });
     });
 
+    it('should filter projects with extended filters', async () => {
+      const mockProjects = {
+        data: [],
+        meta: { total: 0 },
+      };
+
+      const mockApi = {
+        getProjects: vi.fn().mockResolvedValue(mockProjects),
+      };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleProjectsCommand('list', [], {
+        company: 'company-1',
+        responsible: 'person-1',
+        person: 'person-2',
+        type: 'client',
+        status: 'active',
+      });
+
+      expect(mockApi.getProjects).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: {
+          company_id: 'company-1',
+          responsible_id: 'person-1',
+          person_id: 'person-2',
+          project_type: '2',
+          status: '1',
+        },
+        sort: '',
+      });
+    });
+
+    it('should filter projects by type internal', async () => {
+      const mockProjects = {
+        data: [],
+        meta: { total: 0 },
+      };
+
+      const mockApi = {
+        getProjects: vi.fn().mockResolvedValue(mockProjects),
+      };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleProjectsCommand('list', [], { type: 'internal' });
+
+      expect(mockApi.getProjects).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: { project_type: '1' },
+        sort: '',
+      });
+    });
+
+    it('should filter projects by status archived', async () => {
+      const mockProjects = {
+        data: [],
+        meta: { total: 0 },
+      };
+
+      const mockApi = {
+        getProjects: vi.fn().mockResolvedValue(mockProjects),
+      };
+      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+
+      await handleProjectsCommand('list', [], { status: 'archived' });
+
+      expect(mockApi.getProjects).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: { status: '2' },
+        sort: '',
+      });
+    });
+
     it('should handle projects without optional fields', async () => {
       const mockProjects = {
         data: [

@@ -60,6 +60,11 @@ export async function timersList(ctx: CommandContext): Promise<void> {
       filter.person_id = String(ctx.options.person);
     }
 
+    // Filter by time entry
+    if (ctx.options['time-entry']) {
+      filter.time_entry_id = String(ctx.options['time-entry']);
+    }
+
     const { page, perPage } = ctx.getPagination();
     const response = await ctx.api.getTimers({
       page,
