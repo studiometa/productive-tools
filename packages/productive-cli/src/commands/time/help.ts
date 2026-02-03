@@ -19,6 +19,14 @@ ${colors.bold('OPTIONS:')}
   --mine              Filter by configured user ID (shortcut for --person)
   --person <id>       Filter by person ID
   --project <id>      Filter by project ID
+  --service <id>      Filter by service ID
+  --task <id>         Filter by task ID
+  --company <id>      Filter by company ID
+  --deal <id>         Filter by deal ID
+  --budget <id>       Filter by budget ID
+  --status <status>   Filter by approval status: approved, unapproved, rejected
+  --billing-type <t>  Filter by billing type: fixed, actuals, non_billable
+  --invoicing-status  Filter by invoicing: not_invoiced, drafted, finalized
   --filter <filters>  Generic filters (comma-separated key=value pairs)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
@@ -38,6 +46,11 @@ ${colors.bold('EXAMPLES:')}
   productive time list --date "this month" --project 123
   productive time list --from "3 days ago" --to today
   productive time list --from 2024-01-01 --to 2024-01-31
+  productive time list --status approved --mine
+  productive time list --status unapproved --date "this week"
+  productive time list --task 12345
+  productive time list --billing-type actuals --project 123
+  productive time list --invoicing-status not_invoiced
   productive time list --filter service_id=123,project_id=456
 `);
   } else if (subcommand === 'get') {

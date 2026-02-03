@@ -71,7 +71,53 @@ export async function timeList(ctx: CommandContext): Promise<void> {
     } else if (ctx.options.person) {
       filter.person_id = String(ctx.options.person);
     }
+
+    // Resource filtering
     if (ctx.options.project) filter.project_id = String(ctx.options.project);
+    if (ctx.options.service) filter.service_id = String(ctx.options.service);
+    if (ctx.options.task) filter.task_id = String(ctx.options.task);
+    if (ctx.options.company) filter.company_id = String(ctx.options.company);
+    if (ctx.options.deal) filter.deal_id = String(ctx.options.deal);
+    if (ctx.options.budget) filter.budget_id = String(ctx.options.budget);
+
+    // Status filtering (approved, unapproved, rejected)
+    if (ctx.options.status) {
+      const statusMap: Record<string, string> = {
+        approved: '1',
+        unapproved: '2',
+        rejected: '3',
+      };
+      const statusValue = statusMap[String(ctx.options.status).toLowerCase()];
+      if (statusValue) {
+        filter.status = statusValue;
+      }
+    }
+
+    // Billing type filtering (fixed, actuals, non_billable)
+    if (ctx.options['billing-type']) {
+      const billingMap: Record<string, string> = {
+        fixed: '1',
+        actuals: '2',
+        non_billable: '3',
+      };
+      const billingValue = billingMap[String(ctx.options['billing-type']).toLowerCase()];
+      if (billingValue) {
+        filter.billing_type_id = billingValue;
+      }
+    }
+
+    // Invoicing status filtering (not_invoiced, drafted, finalized)
+    if (ctx.options['invoicing-status']) {
+      const invoicingMap: Record<string, string> = {
+        not_invoiced: '1',
+        drafted: '2',
+        finalized: '3',
+      };
+      const invoicingValue = invoicingMap[String(ctx.options['invoicing-status']).toLowerCase()];
+      if (invoicingValue) {
+        filter.invoicing_status = invoicingValue;
+      }
+    }
 
     const { page, perPage } = ctx.getPagination();
     const response = await ctx.api.getTimeEntries({
