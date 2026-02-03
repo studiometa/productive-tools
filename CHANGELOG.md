@@ -12,11 +12,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI**: Shareable skill (`skills/SKILL.md`) for AI agents with commands reference and best practices ([1d8336c], [#14])
 - **MCP**: Shareable skill (`skills/SKILL.md`) for AI agents with tool documentation and examples ([3d40f18], [#14])
 - **MCP**: Native `instructions` support for Claude Desktop - skill content sent during initialization ([d20ff5f], [#14])
+- **MCP**: MCP annotations for directory compliance (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`) ([8a29b74], [#15])
+- **MCP**: Zod schemas for input validation with LLM-friendly descriptions ([3c9d6e6], [#15])
+- **MCP**: `UserInputError` class with actionable hints for LLM agents ([3c9d6e6], [#15])
+
+### Changed
+
+- **MCP**: Error messages now include hints to guide LLMs on how to resolve issues ([2dfe416], [#15])
 
 [1d8336c]: https://github.com/studiometa/productive-tools/commit/1d8336c
 [3d40f18]: https://github.com/studiometa/productive-tools/commit/3d40f18
 [d20ff5f]: https://github.com/studiometa/productive-tools/commit/d20ff5f
+[8a29b74]: https://github.com/studiometa/productive-tools/commit/8a29b74
+[3c9d6e6]: https://github.com/studiometa/productive-tools/commit/3c9d6e6
+[2dfe416]: https://github.com/studiometa/productive-tools/commit/2dfe416
 [#14]: https://github.com/studiometa/productive-tools/pull/14
+[#15]: https://github.com/studiometa/productive-tools/pull/15
 
 ## [0.7.0] - 2026-02-02
 
