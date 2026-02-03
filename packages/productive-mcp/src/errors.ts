@@ -44,10 +44,13 @@ export const ErrorMessages = {
     ]),
 
   missingRequiredFields: (resource: string, fields: string[]) =>
-    new UserInputError(`${fields.join(', ')} are required for creating ${resource}`, [
-      `Provide all required fields: ${fields.join(', ')}`,
-      `Use action="help" for detailed documentation on ${resource}`,
-    ]),
+    new UserInputError(
+      `${fields.join(', ')} ${fields.length === 1 ? 'is' : 'are'} required for creating ${resource}`,
+      [
+        `Provide all required fields: ${fields.join(', ')}`,
+        `Use action="help" for detailed documentation on ${resource}`,
+      ],
+    ),
 
   // Invalid action errors
   invalidAction: (action: string, resource: string, validActions: string[]) =>

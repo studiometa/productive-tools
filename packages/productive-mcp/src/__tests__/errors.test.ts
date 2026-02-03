@@ -81,7 +81,7 @@ describe('errors', () => {
       it('should format single field error', () => {
         const error = ErrorMessages.missingRequiredFields('company', ['name']);
         expect(error.toFormattedMessage()).toMatchInlineSnapshot(`
-          "**Input Error:** name are required for creating company
+          "**Input Error:** name is required for creating company
 
           **Hints:**
           - Provide all required fields: name

@@ -1035,7 +1035,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBe(true);
-        expect(result.content[0].text).toContain('are required for creating company');
+        expect(result.content[0].text).toContain('is required for creating company');
       });
 
       it('should handle update action', async () => {
@@ -1086,7 +1086,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBe(true);
-        expect(result.content[0].text).toContain('are required for creating comment');
+        expect(result.content[0].text).toContain('is required for creating comment');
       });
 
       it('should return error for create without target', async () => {
@@ -1135,7 +1135,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBe(true);
-        expect(result.content[0].text).toContain('are required for creating comment update');
+        expect(result.content[0].text).toContain('is required for creating comment update');
       });
 
       it('should handle update action', async () => {
