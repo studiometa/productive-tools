@@ -7,11 +7,40 @@ description: MCP server for Productive.io - use with Claude Desktop or MCP-compa
 
 MCP (Model Context Protocol) server for Productive.io. Provides a single unified tool for all operations.
 
+## Installation
+
+```bash
+# Global install
+npm install -g @studiometa/productive-mcp
+
+# Or run directly with npx (no install needed)
+npx @studiometa/productive-mcp
+npx @studiometa/productive-mcp-server
+```
+
 ## Setup
 
 ### Claude Desktop (Local/stdio mode)
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "productive": {
+      "command": "npx",
+      "args": ["@studiometa/productive-mcp"],
+      "env": {
+        "PRODUCTIVE_ORG_ID": "your-org-id",
+        "PRODUCTIVE_API_TOKEN": "your-api-token",
+        "PRODUCTIVE_USER_ID": "your-user-id"
+      }
+    }
+  }
+}
+```
+
+Or with global install:
 
 ```json
 {
@@ -33,6 +62,8 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 For team deployments with OAuth:
 
 ```bash
+npx @studiometa/productive-mcp-server
+# Or if globally installed:
 productive-mcp-server
 # Server runs on port 3000 by default
 ```

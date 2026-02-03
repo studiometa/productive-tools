@@ -10,7 +10,12 @@ CLI tool for interacting with the Productive.io API. Optimized for AI agents wit
 ## Installation
 
 ```bash
+# Global install
 npm install -g @studiometa/productive-cli
+
+# Or run directly with npx (no install needed)
+npx @studiometa/productive-cli --help
+npx @studiometa/productive-cli projects list
 ```
 
 ## Authentication
