@@ -74,6 +74,15 @@ describe('http module', () => {
       expect(result.serverInfo.version).toBe(VERSION);
       expect(result.capabilities.tools).toEqual({});
     });
+
+    it('should include instructions for Claude Desktop', () => {
+      const result = handleInitialize();
+
+      expect(result.instructions).toBeDefined();
+      expect(typeof result.instructions).toBe('string');
+      expect(result.instructions).toContain('productive');
+      expect(result.instructions).toContain('Best Practices');
+    });
   });
 
   describe('handleToolsList', () => {
