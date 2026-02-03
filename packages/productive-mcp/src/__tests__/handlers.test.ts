@@ -16,6 +16,8 @@ vi.mock('@studiometa/productive-cli', () => {
     deleteTimeEntry: vi.fn(),
     getTasks: vi.fn(),
     getTask: vi.fn(),
+    createTask: vi.fn(),
+    updateTask: vi.fn(),
     getServices: vi.fn(),
     getPeople: vi.fn(),
     getPerson: vi.fn(),
@@ -23,12 +25,24 @@ vi.mock('@studiometa/productive-cli', () => {
     // Additional handlers for include tests
     getDeals: vi.fn(),
     getDeal: vi.fn(),
+    createDeal: vi.fn(),
+    updateDeal: vi.fn(),
     getBookings: vi.fn(),
     getBooking: vi.fn(),
+    createBooking: vi.fn(),
+    updateBooking: vi.fn(),
     getComments: vi.fn(),
     getComment: vi.fn(),
+    createComment: vi.fn(),
+    updateComment: vi.fn(),
     getTimers: vi.fn(),
     getTimer: vi.fn(),
+    startTimer: vi.fn(),
+    stopTimer: vi.fn(),
+    getCompanies: vi.fn(),
+    getCompany: vi.fn(),
+    createCompany: vi.fn(),
+    updateCompany: vi.fn(),
   };
 
   return {
@@ -42,6 +56,7 @@ vi.mock('@studiometa/productive-cli', () => {
     formatBooking: vi.fn((booking) => ({ id: booking.id, ...booking.attributes })),
     formatComment: vi.fn((comment) => ({ id: comment.id, ...comment.attributes })),
     formatTimer: vi.fn((timer) => ({ id: timer.id, ...timer.attributes })),
+    formatCompany: vi.fn((company) => ({ id: company.id, ...company.attributes })),
     formatListResponse: vi.fn((data, formatter, meta) => ({
       data: data.map((item: Record<string, unknown>) => formatter(item)),
       meta,
@@ -794,6 +809,554 @@ describe('handlers', () => {
 
         expect(result.isError).toBe(true);
         expect(result.content[0].text).toContain('401 Unauthorized');
+      });
+
+      it('should handle 404 API errors with hints', async () => {
+        mockApi.getProject.mockRejectedValue(new Error('API request failed: 404 Not Found'));
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'projects', action: 'get', id: '999' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('404');
+        expect(result.content[0].text).toContain('Hints');
+      });
+
+      it('should handle 422 API errors with hints', async () => {
+        mockApi.createTimeEntry.mockRejectedValue(
+          new Error('API request failed: 422 Validation failed'),
+        );
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          {
+            resource: 'time',
+            action: 'create',
+            person_id: '123',
+            service_id: '456',
+            time: 480,
+            date: '2024-01-15',
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('422');
+        expect(result.content[0].text).toContain('Hints');
+      });
+    });
+
+    describe('tasks resource - error paths', () => {
+      it('should return error for create without title', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'tasks', action: 'create', project_id: '123', task_list_id: '456' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('are required for creating task');
+      });
+
+      it('should return error for update without id', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'tasks', action: 'update', title: 'New title' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('id is required for update');
+      });
+
+      it('should return error for invalid action', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'tasks', action: 'delete', id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Invalid action');
+      });
+
+      it('should handle create action', async () => {
+        const mockResponse = {
+          data: { id: '789', type: 'tasks', attributes: { title: 'New Task' } },
+        };
+        mockApi.createTask.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          {
+            resource: 'tasks',
+            action: 'create',
+            title: 'New Task',
+            project_id: '123',
+            task_list_id: '456',
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.createTask).toHaveBeenCalled();
+      });
+
+      it('should handle update action', async () => {
+        const mockResponse = {
+          data: { id: '789', type: 'tasks', attributes: { title: 'Updated Task' } },
+        };
+        mockApi.updateTask.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'tasks', action: 'update', id: '789', title: 'Updated Task' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.updateTask).toHaveBeenCalledWith('789', { title: 'Updated Task' });
+      });
+    });
+
+    describe('companies resource', () => {
+      it('should handle list action', async () => {
+        const mockResponse = {
+          data: [{ id: '1', type: 'companies', attributes: { name: 'Company 1' } }],
+          meta: { current_page: 1, total_pages: 1 },
+        };
+        mockApi.getCompanies.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'companies', action: 'list' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getCompanies).toHaveBeenCalled();
+      });
+
+      it('should handle get action', async () => {
+        const mockResponse = {
+          data: { id: '123', type: 'companies', attributes: { name: 'Test Company' } },
+        };
+        mockApi.getCompany.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'companies', action: 'get', id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getCompany).toHaveBeenCalledWith('123');
+      });
+
+      it('should return error for get without id', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'companies', action: 'get' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('id is required for get');
+      });
+
+      it('should handle create action', async () => {
+        const mockResponse = {
+          data: { id: '789', type: 'companies', attributes: { name: 'New Company' } },
+        };
+        mockApi.createCompany.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'companies', action: 'create', name: 'New Company' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.createCompany).toHaveBeenCalledWith({ name: 'New Company' });
+      });
+
+      it('should return error for create without name', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'companies', action: 'create' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('are required for creating company');
+      });
+
+      it('should handle update action', async () => {
+        const mockResponse = {
+          data: { id: '123', type: 'companies', attributes: { name: 'Updated Company' } },
+        };
+        mockApi.updateCompany.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'companies', action: 'update', id: '123', name: 'Updated Company' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.updateCompany).toHaveBeenCalledWith('123', { name: 'Updated Company' });
+      });
+
+      it('should return error for update without id', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'companies', action: 'update', name: 'Updated' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('id is required for update');
+      });
+
+      it('should return error for invalid action', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'companies', action: 'delete', id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Invalid action');
+      });
+    });
+
+    describe('comments resource - error paths', () => {
+      it('should return error for create without body', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'comments', action: 'create', task_id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('are required for creating comment');
+      });
+
+      it('should return error for create without target', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'comments', action: 'create', body: 'Test comment' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('target is required');
+      });
+
+      it('should handle create action', async () => {
+        const mockResponse = {
+          data: { id: '789', type: 'comments', attributes: { body: 'Test comment' } },
+        };
+        mockApi.createComment.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'comments', action: 'create', body: 'Test comment', task_id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.createComment).toHaveBeenCalled();
+      });
+
+      it('should return error for update without id', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'comments', action: 'update', body: 'Updated' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('id is required for update');
+      });
+
+      it('should return error for update without body', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'comments', action: 'update', id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('are required for creating comment update');
+      });
+
+      it('should handle update action', async () => {
+        const mockResponse = {
+          data: { id: '123', type: 'comments', attributes: { body: 'Updated comment' } },
+        };
+        mockApi.updateComment.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'comments', action: 'update', id: '123', body: 'Updated comment' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.updateComment).toHaveBeenCalledWith('123', { body: 'Updated comment' });
+      });
+
+      it('should return error for invalid action', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'comments', action: 'delete', id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Invalid action');
+      });
+    });
+
+    describe('deals resource - error paths', () => {
+      it('should return error for create without name', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'deals', action: 'create', company_id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('are required for creating deal');
+      });
+
+      it('should handle create action', async () => {
+        const mockResponse = {
+          data: { id: '789', type: 'deals', attributes: { name: 'New Deal' } },
+        };
+        mockApi.createDeal.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'deals', action: 'create', name: 'New Deal', company_id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.createDeal).toHaveBeenCalled();
+      });
+
+      it('should return error for update without id', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'deals', action: 'update', name: 'Updated' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('id is required for update');
+      });
+
+      it('should handle update action', async () => {
+        const mockResponse = {
+          data: { id: '123', type: 'deals', attributes: { name: 'Updated Deal' } },
+        };
+        mockApi.updateDeal.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'deals', action: 'update', id: '123', name: 'Updated Deal' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.updateDeal).toHaveBeenCalledWith('123', { name: 'Updated Deal' });
+      });
+
+      it('should return error for invalid action', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'deals', action: 'delete', id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Invalid action');
+      });
+    });
+
+    describe('bookings resource - error paths', () => {
+      it('should return error for create without required fields', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'bookings', action: 'create', person_id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('are required for creating booking');
+      });
+
+      it('should return error for create without service or event', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          {
+            resource: 'bookings',
+            action: 'create',
+            person_id: '123',
+            started_on: '2024-01-15',
+            ended_on: '2024-01-16',
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('service or event is required');
+      });
+
+      it('should handle create action', async () => {
+        const mockResponse = {
+          data: { id: '789', type: 'bookings', attributes: { started_on: '2024-01-15' } },
+        };
+        mockApi.createBooking.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          {
+            resource: 'bookings',
+            action: 'create',
+            person_id: '123',
+            service_id: '456',
+            started_on: '2024-01-15',
+            ended_on: '2024-01-16',
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.createBooking).toHaveBeenCalled();
+      });
+
+      it('should return error for update without id', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'bookings', action: 'update', started_on: '2024-01-15' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('id is required for update');
+      });
+
+      it('should handle update action', async () => {
+        const mockResponse = {
+          data: { id: '123', type: 'bookings', attributes: { started_on: '2024-01-20' } },
+        };
+        mockApi.updateBooking.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'bookings', action: 'update', id: '123', started_on: '2024-01-20' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.updateBooking).toHaveBeenCalledWith('123', { started_on: '2024-01-20' });
+      });
+
+      it('should return error for invalid action', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'bookings', action: 'delete', id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Invalid action');
+      });
+    });
+
+    describe('timers resource - error paths', () => {
+      it('should return error for start without service', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'timers', action: 'start' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('service_id is required');
+      });
+
+      it('should handle start action', async () => {
+        const mockResponse = {
+          data: { id: '789', type: 'timers', attributes: { started_at: '2024-01-15T10:00:00Z' } },
+        };
+        mockApi.startTimer.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'timers', action: 'start', service_id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.startTimer).toHaveBeenCalled();
+      });
+
+      it('should return error for stop without id', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'timers', action: 'stop' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('id is required');
+      });
+
+      it('should handle stop action', async () => {
+        const mockResponse = {
+          data: { id: '123', type: 'timers', attributes: { stopped_at: '2024-01-15T11:00:00Z' } },
+        };
+        mockApi.stopTimer.mockResolvedValue(mockResponse);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'timers', action: 'stop', id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.stopTimer).toHaveBeenCalledWith('123');
+      });
+
+      it('should return error for invalid action', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'timers', action: 'delete', id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Invalid action');
+      });
+    });
+
+    describe('people resource - error paths', () => {
+      it('should return error for invalid action', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'people', action: 'create' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Invalid action');
       });
     });
   });
