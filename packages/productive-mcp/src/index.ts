@@ -29,6 +29,7 @@ import {
   GetPromptRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
+import { INSTRUCTIONS } from './instructions.js';
 import { getAvailableTools, getAvailablePrompts, handleToolCall, handlePrompt } from './stdio.js';
 import { VERSION } from './version.js';
 
@@ -46,6 +47,7 @@ export function createStdioServer(): Server {
         tools: {},
         prompts: {},
       },
+      instructions: INSTRUCTIONS,
     },
   );
 

@@ -25,6 +25,7 @@
   },
   "files": [
     "dist",
+    "skills",
     "Dockerfile"
   ],
   "type": "module",

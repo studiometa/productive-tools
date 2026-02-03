@@ -17,6 +17,7 @@ import {
 
 import { parseAuthHeader } from './auth.js';
 import { executeToolWithCredentials } from './handlers.js';
+import { INSTRUCTIONS } from './instructions.js';
 import {
   oauthMetadataHandler,
   registerHandler,
@@ -62,6 +63,7 @@ export function handleInitialize() {
     capabilities: {
       tools: {},
     },
+    instructions: INSTRUCTIONS,
   };
 }
 
