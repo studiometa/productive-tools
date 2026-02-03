@@ -227,31 +227,89 @@ Returns filters, fields, includes, and examples for that resource.
 - `person_id` - Filter by person (use "me" for current user)
 - `project_id` - Filter by project
 - `service_id` - Filter by service
+- `task_id` - Filter by task
+- `company_id` - Filter by company
+- `deal_id` / `budget_id` - Filter by deal/budget
 - `after` - After date (YYYY-MM-DD)
 - `before` - Before date (YYYY-MM-DD)
+- `status` - Approval status: `1`=approved, `2`=unapproved, `3`=rejected
+- `billing_type_id` - Billing type: `1`=fixed, `2`=actuals, `3`=non_billable
+- `invoicing_status` - Invoicing: `1`=not_invoiced, `2`=drafted, `3`=finalized
 
 ### Tasks
 
 - `project_id` - Filter by project
+- `company_id` - Filter by company
 - `assignee_id` - Filter by assigned person
-- `status` - Filter by status: `open`, `closed`, `all`
+- `creator_id` - Filter by task creator
+- `status` - Status: `1`=open, `2`=closed (or "open", "closed", "all")
 - `task_list_id` - Filter by task list
+- `board_id` - Filter by board
+- `workflow_status_id` - Filter by workflow status (kanban column)
+- `parent_task_id` - Filter by parent task (for subtasks)
+- `overdue_status` - Overdue: `1`=not overdue, `2`=overdue
+- `due_date_on` / `due_date_before` / `due_date_after` - Due date filters
 
 ### Projects
 
 - `company_id` - Filter by company
-- `archived` - Include archived: `true`, `false`
+- `project_type` - Type: `1`=internal, `2`=client
+- `responsible_id` - Filter by project manager
+- `person_id` - Filter by team member
+- `status` - Status: `1`=active, `2`=archived
 
 ### Services
 
 - `project_id` - Filter by project
 - `deal_id` - Filter by deal
+- `task_id` - Filter by task
+- `person_id` - Filter by person (trackable by)
+- `budget_status` - Status: `1`=open, `2`=delivered
+- `billing_type` - Type: `1`=fixed, `2`=actuals, `3`=none
+- `time_tracking_enabled` - Boolean
+
+### People
+
+- `status` - Status: `1`=active, `2`=deactivated
+- `person_type` - Type: `1`=user, `2`=contact, `3`=placeholder
+- `company_id` - Filter by company
+- `project_id` - Filter by project
+- `role_id` - Filter by role
+- `team` - Filter by team name
+
+### Deals
+
+- `company_id` - Filter by company
+- `project_id` - Filter by project
+- `responsible_id` - Filter by responsible person
+- `pipeline_id` - Filter by pipeline
+- `stage_status_id` - Stage: `1`=open, `2`=won, `3`=lost
+- `type` - Type: `1`=deal, `2`=budget
+- `budget_status` - Budget status: `1`=open, `2`=closed
 
 ### Bookings
 
 - `person_id` - Filter by person
 - `service_id` - Filter by service
+- `project_id` - Filter by project
+- `company_id` - Filter by company
+- `event_id` - Filter by event
 - `after` / `before` - Date range
+- `booking_type` - Type: `event` (absence) or `service` (budget)
+- `draft` - Tentative status: `true`/`false`
+
+### Comments
+
+- `task_id` - Filter by task
+- `deal_id` - Filter by deal
+- `project_id` - Filter by project
+- `page_id` - Filter by page
+- `discussion_id` - Filter by discussion
+
+### Timers
+
+- `person_id` - Filter by person
+- `time_entry_id` - Filter by time entry
 
 ## Include (Related Resources)
 
