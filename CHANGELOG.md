@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-02-03
+
 ### Added
 
 - **CLI**: Extended filters for time entries - `status`, `task`, `company`, `deal`, `budget`, `billing-type`, `invoicing-status` ([e5b3d7f], [#17])
@@ -400,7 +402,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ESM** module format
 - **XDG** compliant configuration storage
 
-[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.7.0...HEAD
+[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.8.2...HEAD
+[0.8.2]: https://github.com/studiometa/productive-tools/compare/0.8.1...0.8.2
+[0.8.1]: https://github.com/studiometa/productive-tools/compare/0.8.0...0.8.1
+[0.8.0]: https://github.com/studiometa/productive-tools/compare/0.7.0...0.8.0
 [0.7.0]: https://github.com/studiometa/productive-tools/compare/0.6.4...0.7.0
 [0.6.4]: https://github.com/studiometa/productive-tools/compare/0.6.3...0.6.4
 [0.6.3]: https://github.com/studiometa/productive-tools/compare/0.6.2...0.6.3
