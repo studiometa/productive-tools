@@ -4,12 +4,25 @@ import type { Tool } from '@modelcontextprotocol/sdk/types.js';
  * Single consolidated tool for Productive.io MCP server
  *
  * Optimized for minimal token overhead (~170 tokens vs ~1300 for individual tools)
+ *
+ * MCP Annotations (for MCP directory compliance):
+ * - readOnlyHint: false - Tool can create/update data
+ * - destructiveHint: false - Tool does not permanently delete data
+ * - idempotentHint: false - Create actions are not idempotent
+ * - openWorldHint: true - Tool interacts with external Productive.io API
  */
 export const TOOLS: Tool[] = [
   {
     name: 'productive',
     description:
       'Productive.io API. Resources: projects, time, tasks, services, people, companies, comments, timers, deals, bookings, reports. Actions: list, get, create, update (varies by resource), start/stop (timers), me (people), help (documentation). Use query for text search on list actions. Reports: use resource=reports, action=get with report_type. Filters: project_id, person_id, service_id, company_id, after/before (dates). Use include to fetch related data. Use compact=false for full details (default for get, true for list). Use action=help with a resource for detailed documentation.',
+    annotations: {
+      title: 'Productive.io',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     inputSchema: {
       type: 'object',
       properties: {
@@ -111,6 +124,13 @@ export const STDIO_ONLY_TOOLS: Tool[] = [
   {
     name: 'productive_configure',
     description: 'Configure Productive.io credentials',
+    annotations: {
+      title: 'Configure Productive',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     inputSchema: {
       type: 'object',
       properties: {
@@ -124,6 +144,13 @@ export const STDIO_ONLY_TOOLS: Tool[] = [
   {
     name: 'productive_get_config',
     description: 'Get current configuration',
+    annotations: {
+      title: 'Get Productive Config',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     inputSchema: {
       type: 'object',
       properties: {},
