@@ -46,17 +46,17 @@ Returns filters, fields, includes, and examples for that resource.
 
 ## Common Parameters
 
-| Parameter  | Type    | Description                                            |
-| ---------- | ------- | ------------------------------------------------------ |
-| `resource` | string  | **Required**. Resource type (see table above)          |
-| `action`   | string  | **Required**. Action to perform                        |
-| `id`       | string  | Resource ID (for `get`, `update`, `stop`)              |
-| `filter`   | object  | Filter criteria for `list` actions                     |
-| `page`     | number  | Page number (default: 1)                               |
-| `per_page` | number  | Items per page (default: 20, max: 200)                 |
-| `compact`  | boolean | Compact output (default: true for list, false for get) |
-| `include`  | array   | Related resources to include                           |
-| `query`    | string  | Text search on name/title fields                       |
+| Parameter  | Type    | Description                                                                              |
+| ---------- | ------- | ---------------------------------------------------------------------------------------- |
+| `resource` | string  | **Required**. Resource type (see table above)                                            |
+| `action`   | string  | **Required**. Action to perform                                                          |
+| `id`       | string  | Resource ID (for `get`, `update`, `stop`)                                                |
+| `filter`   | object  | Filter criteria for `list` actions                                                       |
+| `page`     | number  | Page number (default: 1)                                                                 |
+| `per_page` | number  | Items per page (default: 20, max: 200)                                                   |
+| `compact`  | boolean | Compact output (default: true for list, false for get)                                   |
+| `include`  | array   | Related resources to include                                                             |
+| `query`    | string  | Text search (behavior varies by resource - may search related fields like project names) |
 
 ## Examples by Resource
 
@@ -128,8 +128,9 @@ Returns filters, fields, includes, and examples for that resource.
   "include": ["comments", "assignee"]
 }
 
-// Search tasks
+// Search tasks by title or project name
 { "resource": "tasks", "action": "list", "query": "bug fix" }
+{ "resource": "tasks", "action": "list", "query": "crosscall" }  // Also matches project names
 
 // Create task
 {
@@ -326,5 +327,5 @@ Key points:
 1. **Use `action: "help"`** - Get resource documentation before using unfamiliar resources
 2. **Use `compact: false`** for detailed single-item views
 3. **Use `include`** to reduce round-trips when you need related data
-4. **Use `query`** for text search instead of fetching all and filtering
+4. **Use `query`** for text search - behavior varies by resource but may include related fields (e.g., tasks query may match project names)
 5. **Check `people.me`** first to get the current user's ID for filters

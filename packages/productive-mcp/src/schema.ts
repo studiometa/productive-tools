@@ -190,7 +190,9 @@ export const ParamQuery = z
   .string()
   .trim()
   .min(1, 'Search query cannot be empty')
-  .describe('Text search query for filtering by name/title fields');
+  .describe(
+    'Text search query - behavior varies by resource, may include related fields (e.g., project names for tasks)',
+  );
 
 /**
  * Include related resources parameter
