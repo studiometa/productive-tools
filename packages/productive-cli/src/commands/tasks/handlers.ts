@@ -58,20 +58,59 @@ export async function tasksList(ctx: CommandContext): Promise<void> {
       Object.assign(filter, parseFilters(String(ctx.options.filter)));
     }
 
+    // Person filtering
     if (ctx.options.mine && ctx.config.userId) {
       filter.assignee_id = ctx.config.userId;
+    } else if (ctx.options.assignee) {
+      filter.assignee_id = String(ctx.options.assignee);
     } else if (ctx.options.person) {
+      // Legacy alias
       filter.assignee_id = String(ctx.options.person);
     }
+    if (ctx.options.creator) {
+      filter.creator_id = String(ctx.options.creator);
+    }
+
+    // Resource filtering
     if (ctx.options.project) {
       filter.project_id = String(ctx.options.project);
     }
+    if (ctx.options.company) {
+      filter.company_id = String(ctx.options.company);
+    }
+    if (ctx.options.board) {
+      filter.board_id = String(ctx.options.board);
+    }
+    if (ctx.options['task-list']) {
+      filter.task_list_id = String(ctx.options['task-list']);
+    }
+    if (ctx.options.parent) {
+      filter.parent_task_id = String(ctx.options.parent);
+    }
+    if (ctx.options['workflow-status']) {
+      filter.workflow_status_id = String(ctx.options['workflow-status']);
+    }
 
+    // Status filtering (open, completed)
     const status = String(ctx.options.status || 'open').toLowerCase();
     if (status === 'open') {
       filter.status = '1';
     } else if (status === 'completed' || status === 'done') {
       filter.status = '2';
+    }
+
+    // Due date filtering
+    if (ctx.options.overdue) {
+      filter.overdue_status = '2'; // 1=not overdue, 2=overdue
+    }
+    if (ctx.options['due-date']) {
+      filter.due_date_on = String(ctx.options['due-date']);
+    }
+    if (ctx.options['due-before']) {
+      filter.due_date_before = String(ctx.options['due-before']);
+    }
+    if (ctx.options['due-after']) {
+      filter.due_date_after = String(ctx.options['due-after']);
     }
 
     const { page, perPage } = ctx.getPagination();
