@@ -6,6 +6,7 @@ import type { HandlerContext, TaskArgs, ToolResult } from './types.js';
 
 import { ErrorMessages } from '../errors.js';
 import { formatListResponse, formatTask } from '../formatters.js';
+import { getTaskHints } from '../hints.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
 /** Default includes for tasks */
@@ -27,7 +28,18 @@ export async function handleTasks(
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
     const result = await api.getTask(id, { include });
-    return jsonResult(formatTask(result.data, { ...formatOptions, included: result.included }));
+    const formatted = formatTask(result.data, { ...formatOptions, included: result.included });
+
+    // Add contextual hints unless disabled
+    if (ctx.includeHints !== false) {
+      const serviceId = result.data.relationships?.service?.data?.id;
+      return jsonResult({
+        ...formatted,
+        _hints: getTaskHints(id, serviceId),
+      });
+    }
+
+    return jsonResult(formatted);
   }
 
   if (action === 'create') {

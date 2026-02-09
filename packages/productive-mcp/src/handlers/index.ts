@@ -115,8 +115,18 @@ export async function executeToolWithCredentials(
     return errorResult(`Unknown tool: ${name}`);
   }
 
-  const { resource, action, filter, page, per_page, compact, include, query, ...restArgs } =
-    args as unknown as ProductiveArgs;
+  const {
+    resource,
+    action,
+    filter,
+    page,
+    per_page,
+    compact,
+    include,
+    query,
+    no_hints,
+    ...restArgs
+  } = args as unknown as ProductiveArgs & { no_hints?: boolean };
 
   // Default compact to false for 'get' action (single resource), true for 'list'
   const isCompact = compact ?? action !== 'get';
@@ -129,6 +139,10 @@ export async function executeToolWithCredentials(
     stringFilter = { ...stringFilter, query };
   }
 
+  // Hints are included by default for 'get' action, disabled for 'list' or when compact
+  // Can be explicitly disabled with no_hints: true
+  const includeHints = no_hints !== true && action === 'get' && !isCompact;
+
   // Build handler context
   const ctx: HandlerContext = {
     api,
@@ -137,6 +151,7 @@ export async function executeToolWithCredentials(
     page,
     perPage,
     include,
+    includeHints,
   };
 
   try {

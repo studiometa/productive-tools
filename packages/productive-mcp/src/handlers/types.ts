@@ -19,6 +19,8 @@ export interface HandlerContext {
   page?: number;
   perPage: number;
   include?: string[];
+  /** Whether to include contextual hints in responses (default: true) */
+  includeHints?: boolean;
 }
 
 /**

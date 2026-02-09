@@ -57,6 +57,7 @@ Returns filters, fields, includes, and examples for that resource.
 | `compact`  | boolean | Compact output (default: true for list, false for get)                                   |
 | `include`  | array   | Related resources to include                                                             |
 | `query`    | string  | Text search (behavior varies by resource - may search related fields like project names) |
+| `no_hints` | boolean | Disable contextual hints in responses (default: false)                                   |
 
 ## Examples by Resource
 
@@ -341,6 +342,109 @@ Force full details on list:
 { "resource": "projects", "action": "list", "compact": false }
 ```
 
+## Contextual Hints
+
+When fetching a single resource with `action: "get"`, the response includes a `_hints` field with suggestions for related resources and common actions. This helps discover how to fetch additional context.
+
+Example response for a task:
+
+```json
+{
+  "id": "16097010",
+  "title": "Fix login bug",
+  "_hints": {
+    "related_resources": [
+      {
+        "resource": "comments",
+        "description": "Get comments on this task",
+        "example": {
+          "resource": "comments",
+          "action": "list",
+          "filter": { "task_id": "16097010" }
+        }
+      },
+      {
+        "resource": "time",
+        "description": "Get time entries logged on this task",
+        "example": {
+          "resource": "time",
+          "action": "list",
+          "filter": { "task_id": "16097010" }
+        }
+      }
+    ],
+    "common_actions": [
+      {
+        "action": "Add a comment",
+        "example": {
+          "resource": "comments",
+          "action": "create",
+          "task_id": "16097010",
+          "body": "<your comment>"
+        }
+      }
+    ]
+  }
+}
+```
+
+To disable hints, use `no_hints: true`:
+
+```json
+{ "resource": "tasks", "action": "get", "id": "16097010", "no_hints": true }
+```
+
+## Getting Task Context (Comments, Attachments)
+
+To get full context for a task, follow these steps:
+
+### 1. Get the task details
+
+```json
+{ "resource": "tasks", "action": "get", "id": "16097010" }
+```
+
+The response includes `_hints` showing how to fetch related resources.
+
+### 2. Get comments on the task
+
+```json
+{
+  "resource": "comments",
+  "action": "list",
+  "filter": { "task_id": "16097010" }
+}
+```
+
+### 3. Get attachments (via include)
+
+```json
+{
+  "resource": "tasks",
+  "action": "get",
+  "id": "16097010",
+  "include": ["attachments"]
+}
+```
+
+### 4. Get time entries
+
+```json
+{
+  "resource": "time",
+  "action": "list",
+  "filter": { "task_id": "16097010" }
+}
+```
+
+### Common Mistakes to Avoid
+
+❌ **Wrong:** Trying non-existent endpoints like `/activities`, `/notes`, `/task_comments`
+✅ **Right:** Use `resource: "comments"` with `filter: { task_id: "..." }`
+
+❌ **Wrong:** Using `include: ["comments"]` on tasks (not supported)
+✅ **Right:** Fetch comments separately with `resource: "comments", action: "list"`
+
 ## Time Values
 
 **Time is always in MINUTES:**
@@ -387,3 +491,4 @@ Key points:
 3. **Use `include`** to reduce round-trips when you need related data
 4. **Use `query`** for text search - behavior varies by resource but may include related fields (e.g., tasks query may match project names)
 5. **Check `people.me`** first to get the current user's ID for filters
+6. **Follow `_hints`** - When getting a resource, check the `_hints` field for suggestions on fetching related context

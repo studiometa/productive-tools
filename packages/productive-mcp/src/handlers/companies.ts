@@ -6,6 +6,7 @@ import type { CompanyArgs, HandlerContext, ToolResult } from './types.js';
 
 import { ErrorMessages } from '../errors.js';
 import { formatCompany, formatListResponse } from '../formatters.js';
+import { getCompanyHints } from '../hints.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
 const VALID_ACTIONS = ['list', 'get', 'create', 'update'];
@@ -21,7 +22,17 @@ export async function handleCompanies(
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
     const result = await api.getCompany(id);
-    return jsonResult(formatCompany(result.data, formatOptions));
+    const formatted = formatCompany(result.data, formatOptions);
+
+    // Add contextual hints unless disabled
+    if (ctx.includeHints !== false) {
+      return jsonResult({
+        ...formatted,
+        _hints: getCompanyHints(id),
+      });
+    }
+
+    return jsonResult(formatted);
   }
 
   if (action === 'create') {

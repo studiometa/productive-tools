@@ -6,6 +6,7 @@ import type { CommonArgs, HandlerContext, ToolResult } from './types.js';
 
 import { ErrorMessages } from '../errors.js';
 import { formatListResponse, formatTimeEntry } from '../formatters.js';
+import { getTimeEntryHints } from '../hints.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
 const VALID_ACTIONS = ['list', 'get', 'create', 'update'];
@@ -21,7 +22,18 @@ export async function handleTime(
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
     const result = await api.getTimeEntry(id);
-    return jsonResult(formatTimeEntry(result.data, formatOptions));
+    const formatted = formatTimeEntry(result.data, formatOptions);
+
+    // Add contextual hints unless disabled
+    if (ctx.includeHints !== false) {
+      const serviceId = result.data.relationships?.service?.data?.id;
+      return jsonResult({
+        ...formatted,
+        _hints: getTimeEntryHints(id, undefined, serviceId),
+      });
+    }
+
+    return jsonResult(formatted);
   }
 
   if (action === 'create') {

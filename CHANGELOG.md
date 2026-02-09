@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **MCP**: Contextual hints system for AI agents - responses include `_hints` field with suggestions for related resources and common actions ([47061f4], [1873439], [#18])
+- **MCP**: `no_hints` parameter to disable contextual hints when not needed ([1873439], [#18])
+
+### Changed
+
+- **MCP**: Documentation improved with "Getting Task Context" section and common mistakes to avoid ([be0e07f], [#18])
+- **CLI**: Documentation clarified for `api` command - query params vs request body ([be0e07f], [#18])
+
+[47061f4]: https://github.com/studiometa/productive-tools/commit/47061f4
+[1873439]: https://github.com/studiometa/productive-tools/commit/1873439
+[be0e07f]: https://github.com/studiometa/productive-tools/commit/be0e07f
+[#18]: https://github.com/studiometa/productive-tools/pull/18
+
 ## [0.8.2] - 2026-02-03
 
 ### Added

@@ -6,6 +6,7 @@ import type { CommentArgs, HandlerContext, ToolResult } from './types.js';
 
 import { ErrorMessages } from '../errors.js';
 import { formatComment, formatListResponse } from '../formatters.js';
+import { getCommentHints } from '../hints.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
 /** Default includes for comments */
@@ -27,7 +28,31 @@ export async function handleComments(
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
     const result = await api.getComment(id, { include });
-    return jsonResult(formatComment(result.data, { ...formatOptions, included: result.included }));
+    const formatted = formatComment(result.data, {
+      ...formatOptions,
+      included: result.included,
+    });
+
+    // Add contextual hints unless disabled
+    if (ctx.includeHints !== false) {
+      const commentableType = result.data.attributes?.commentable_type as string | undefined;
+      // Determine the commentable ID from relationships
+      let commentableId: string | undefined;
+      if (commentableType === 'task') {
+        commentableId = result.data.relationships?.task?.data?.id;
+      } else if (commentableType === 'deal') {
+        commentableId = result.data.relationships?.deal?.data?.id;
+      } else if (commentableType === 'company') {
+        commentableId = result.data.relationships?.company?.data?.id;
+      }
+
+      return jsonResult({
+        ...formatted,
+        _hints: getCommentHints(id, commentableType, commentableId),
+      });
+    }
+
+    return jsonResult(formatted);
   }
 
   if (action === 'create') {

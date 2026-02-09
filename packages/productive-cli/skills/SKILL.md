@@ -135,8 +135,45 @@ productive companies get <id>
 ### Comments
 
 ```bash
+# List comments on a task
 productive comments list --filter task_id=<id>
+
+# Or use the api command with query params
+productive api '/comments?filter[task_id]=12345' --format json
+
+# List comments on a deal/budget
+productive api '/comments?filter[deal_id]=12345' --format json
+
+# Get a single comment
 productive comments get <id>
+```
+
+### Getting Task Context (Comments, Attachments)
+
+To get full context for a task:
+
+```bash
+# 1. Get task details
+productive tasks get <id> --format json
+
+# 2. Get comments on the task
+productive api '/comments?filter[task_id]=<id>' --format json
+
+# 3. Get time entries for the task
+productive time list --filter task_id=<id> --format json
+```
+
+**Common mistakes to avoid:**
+
+```bash
+# ❌ Wrong: These endpoints don't exist
+productive api /activities
+productive api /notes
+productive api /task_comments
+productive api /tasks/<id>/comments
+
+# ✅ Right: Use the comments endpoint with task_id filter
+productive api '/comments?filter[task_id]=<id>'
 ```
 
 ### Timers
@@ -169,10 +206,11 @@ For endpoints not covered by built-in commands:
 # GET request
 productive api /companies
 
-# GET with filters
-productive api /tasks --field 'filter[project_id]=12345'
+# GET with query parameters (put them in the URL)
+productive api '/comments?filter[task_id]=12345'
+productive api '/tasks?filter[project_id]=12345&filter[status]=1'
 
-# POST (auto-detected when fields provided)
+# POST (auto-detected when --field is used)
 productive api /comments \
   --field task_id=12345 \
   --raw-field body="Comment text"
@@ -188,6 +226,26 @@ productive api /time_entries/12345 --method DELETE
 # Fetch all pages
 productive api /time_entries --paginate
 ```
+
+#### Important: Query Parameters vs Request Body
+
+- **Query parameters** (for GET requests): Put them directly in the URL
+
+  ```bash
+  # ✅ Correct: filter in URL
+  productive api '/comments?filter[task_id]=12345'
+
+  # ❌ Wrong: --field adds to request body, not URL
+  productive api /comments --field 'filter[task_id]=12345'
+  ```
+
+- **Request body** (for POST/PATCH): Use `--field` or `--raw-field`
+  ```bash
+  # Create a comment (POST body)
+  productive api /comments \
+    --field task_id=12345 \
+    --raw-field body="My comment"
+  ```
 
 ### Cache
 
