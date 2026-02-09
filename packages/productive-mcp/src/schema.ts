@@ -195,6 +195,16 @@ export const ParamQuery = z
   );
 
 /**
+ * No hints parameter - disable contextual hints in responses
+ */
+export const ParamNoHints = z
+  .boolean()
+  .optional()
+  .describe(
+    'Disable contextual hints in responses. Hints provide suggestions for related resources and actions.',
+  );
+
+/**
  * Include related resources parameter
  */
 export const ParamInclude = z
@@ -257,6 +267,7 @@ export const ProductiveToolInputSchema = z.object({
   compact: ParamCompact,
   include: ParamInclude.optional(),
   query: ParamQuery.optional(),
+  no_hints: ParamNoHints,
 
   // ID references
   person_id: ParamPersonId.optional(),

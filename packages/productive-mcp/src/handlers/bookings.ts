@@ -6,6 +6,7 @@ import type { BookingArgs, HandlerContext, ToolResult } from './types.js';
 
 import { ErrorMessages } from '../errors.js';
 import { formatBooking, formatListResponse } from '../formatters.js';
+import { getBookingHints } from '../hints.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
 /** Default includes for bookings */
@@ -27,7 +28,21 @@ export async function handleBookings(
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
     const result = await api.getBooking(id, { include });
-    return jsonResult(formatBooking(result.data, { ...formatOptions, included: result.included }));
+    const formatted = formatBooking(result.data, {
+      ...formatOptions,
+      included: result.included,
+    });
+
+    // Add contextual hints unless disabled
+    if (ctx.includeHints !== false) {
+      const personId = result.data.relationships?.person?.data?.id;
+      return jsonResult({
+        ...formatted,
+        _hints: getBookingHints(id, personId),
+      });
+    }
+
+    return jsonResult(formatted);
   }
 
   if (action === 'create') {

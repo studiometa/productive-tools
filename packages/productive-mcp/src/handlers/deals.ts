@@ -6,6 +6,7 @@ import type { DealArgs, HandlerContext, ToolResult } from './types.js';
 
 import { ErrorMessages } from '../errors.js';
 import { formatDeal, formatListResponse } from '../formatters.js';
+import { getDealHints } from '../hints.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
 /** Default includes for deals */
@@ -27,7 +28,17 @@ export async function handleDeals(
       ? [...new Set([...DEFAULT_DEAL_INCLUDE_GET, ...userInclude])]
       : DEFAULT_DEAL_INCLUDE_GET;
     const result = await api.getDeal(id, { include });
-    return jsonResult(formatDeal(result.data, { ...formatOptions, included: result.included }));
+    const formatted = formatDeal(result.data, { ...formatOptions, included: result.included });
+
+    // Add contextual hints unless disabled
+    if (ctx.includeHints !== false) {
+      return jsonResult({
+        ...formatted,
+        _hints: getDealHints(id),
+      });
+    }
+
+    return jsonResult(formatted);
   }
 
   if (action === 'create') {

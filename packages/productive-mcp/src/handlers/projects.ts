@@ -6,6 +6,7 @@ import type { CommonArgs, HandlerContext, ToolResult } from './types.js';
 
 import { ErrorMessages } from '../errors.js';
 import { formatListResponse, formatProject } from '../formatters.js';
+import { getProjectHints } from '../hints.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
 const VALID_ACTIONS = ['list', 'get'];
@@ -21,7 +22,17 @@ export async function handleProjects(
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
     const result = await api.getProject(id);
-    return jsonResult(formatProject(result.data, formatOptions));
+    const formatted = formatProject(result.data, formatOptions);
+
+    // Add contextual hints unless disabled
+    if (ctx.includeHints !== false) {
+      return jsonResult({
+        ...formatted,
+        _hints: getProjectHints(id),
+      });
+    }
+
+    return jsonResult(formatted);
   }
 
   if (action === 'list') {
