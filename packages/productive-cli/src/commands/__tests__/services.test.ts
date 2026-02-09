@@ -4,14 +4,19 @@ import { ProductiveApi, ProductiveApiError } from '../../api.js';
 import { handleServicesCommand } from '../services/index.js';
 
 // Mock dependencies
-vi.mock('../../api.js');
+vi.mock('../../api.js', async (importOriginal) => ({
+  ...((await importOriginal()) as object),
+  ProductiveApi: vi.fn(function () {}),
+}));
 vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn().mockImplementation((format, noColor) => ({
-    format,
-    noColor,
-    output: vi.fn(),
-    error: vi.fn(),
-  })),
+  OutputFormatter: vi.fn(function (format, noColor) {
+    return {
+      format,
+      noColor,
+      output: vi.fn(),
+      error: vi.fn(),
+    };
+  }),
   createSpinner: vi.fn(() => ({
     start: vi.fn(),
     succeed: vi.fn(),
@@ -56,12 +61,9 @@ describe('services command', () => {
         meta: { total: 2, page: 1, per_page: 100 },
       };
 
-      vi.mocked(ProductiveApi).mockImplementation(
-        () =>
-          ({
-            getServices: vi.fn().mockResolvedValue(mockServices),
-          }) as any,
-      );
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return { getServices: vi.fn().mockResolvedValue(mockServices) } as any;
+      });
 
       await handleServicesCommand('list', [], {});
 
@@ -87,7 +89,9 @@ describe('services command', () => {
       const mockApi = {
         getServices: vi.fn().mockResolvedValue(mockServices),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleServicesCommand('list', [], { format: 'json' });
 
@@ -107,7 +111,9 @@ describe('services command', () => {
       const mockApi = {
         getServices: vi.fn().mockResolvedValue(mockServices),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleServicesCommand('list', [], {
         page: '2',
@@ -130,7 +136,9 @@ describe('services command', () => {
       const mockApi = {
         getServices: vi.fn().mockResolvedValue(mockServices),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleServicesCommand('list', [], {
         project: 'project-1',
@@ -166,7 +174,9 @@ describe('services command', () => {
       const mockApi = {
         getServices: vi.fn().mockResolvedValue(mockServices),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleServicesCommand('list', [], { 'budget-status': 'delivered' });
 
@@ -186,7 +196,9 @@ describe('services command', () => {
       const mockApi = {
         getServices: vi.fn().mockResolvedValue(mockServices),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleServicesCommand('list', [], { 'billing-type': 'fixed' });
 
@@ -206,7 +218,9 @@ describe('services command', () => {
       const mockApi = {
         getServices: vi.fn().mockResolvedValue(mockServices),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleServicesCommand('list', [], { 'billing-type': 'none' });
 
@@ -222,7 +236,9 @@ describe('services command', () => {
       const mockApi = {
         getServices: vi.fn().mockRejectedValue(mockError),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleServicesCommand('list', [], {});
 
@@ -233,7 +249,9 @@ describe('services command', () => {
       const mockApi = {
         getServices: vi.fn().mockRejectedValue(new Error('Unexpected error')),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleServicesCommand('list', [], {});
 
@@ -251,7 +269,9 @@ describe('services command', () => {
       const mockApi = {
         getServices: vi.fn().mockResolvedValue(mockServices),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleServicesCommand('ls', [], {});
 

@@ -6,13 +6,15 @@ import { handleTimeCommand } from '../time/index.js';
 
 // Mock the API
 vi.mock('../../api.js', () => ({
-  ProductiveApi: vi.fn(() => ({
-    getTimeEntries: vi.fn(),
-    getTimeEntry: vi.fn(),
-    createTimeEntry: vi.fn(),
-    updateTimeEntry: vi.fn(),
-    deleteTimeEntry: vi.fn(),
-  })),
+  ProductiveApi: vi.fn(function () {
+    return {
+      getTimeEntries: vi.fn(),
+      getTimeEntry: vi.fn(),
+      createTimeEntry: vi.fn(),
+      updateTimeEntry: vi.fn(),
+      deleteTimeEntry: vi.fn(),
+    };
+  }),
   ProductiveApiError: class ProductiveApiError extends Error {
     constructor(
       message: string,
@@ -53,7 +55,9 @@ describe('handleTimeCommand', () => {
       updateTimeEntry: vi.fn(),
       deleteTimeEntry: vi.fn(),
     };
-    (api.ProductiveApi as any).mockImplementation(() => mockApi);
+    (api.ProductiveApi as any).mockImplementation(function () {
+      return mockApi;
+    });
 
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

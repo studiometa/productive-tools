@@ -47,7 +47,9 @@ vi.mock('@studiometa/productive-cli', () => {
   };
 
   return {
-    ProductiveApi: vi.fn(() => mockApi),
+    ProductiveApi: vi.fn(function () {
+      return mockApi;
+    }),
     formatTimeEntry: vi.fn((entry) => ({ id: entry.id, ...entry.attributes })),
     formatProject: vi.fn((project) => ({ id: project.id, ...project.attributes })),
     formatTask: vi.fn((task) => ({ id: task.id, ...task.attributes })),

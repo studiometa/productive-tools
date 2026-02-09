@@ -13,19 +13,24 @@ import {
 } from '../tasks/index.js';
 
 // Mock API
-vi.mock('../../api.js');
+vi.mock('../../api.js', async (importOriginal) => ({
+  ...((await importOriginal()) as object),
+  ProductiveApi: vi.fn(function () {}),
+}));
 
 // Mock output
 vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn().mockImplementation((format, noColor) => ({
-    format,
-    noColor,
-    output: vi.fn(),
-    error: vi.fn(),
-    success: vi.fn(),
-    warning: vi.fn(),
-    info: vi.fn(),
-  })),
+  OutputFormatter: vi.fn(function (format, noColor) {
+    return {
+      format,
+      noColor,
+      output: vi.fn(),
+      error: vi.fn(),
+      success: vi.fn(),
+      warning: vi.fn(),
+      info: vi.fn(),
+    };
+  }),
   createSpinner: vi.fn(() => ({
     start: vi.fn(),
     succeed: vi.fn(),
@@ -568,12 +573,9 @@ describe('tasks command', () => {
         meta: { total: 1 },
       };
 
-      vi.mocked(ProductiveApi).mockImplementation(
-        () =>
-          ({
-            getTasks: vi.fn().mockResolvedValue(mockTasks),
-          }) as any,
-      );
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return { getTasks: vi.fn().mockResolvedValue(mockTasks) } as any;
+      });
 
       await handleTasksCommand('list', [], {});
 
@@ -692,7 +694,7 @@ describe('tasks command', () => {
       mockApiInstance.getTasks = mockApi.getTasks;
       mockApiInstance.getTask = mockApi.getTask;
 
-      await expect(() => handleTasksCommand('get', ['999'], {})).rejects.toThrow('process.exit(1)');
+      await expect(() => handleTasksCommand('get', ['999'], {})).rejects.toThrow('process.exit(5)'); // NOT_FOUND_ERROR exit code
     });
   });
 

@@ -4,7 +4,7 @@ import { ProductiveApi } from '../../api.js';
 import { handleBookingsCommand } from '../bookings/index.js';
 
 vi.mock('../../api.js', () => ({
-  ProductiveApi: vi.fn(),
+  ProductiveApi: vi.fn(function () {}),
   ProductiveApiError: class ProductiveApiError extends Error {
     constructor(
       message: string,
@@ -18,13 +18,15 @@ vi.mock('../../api.js', () => ({
 }));
 
 vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn().mockImplementation((format, noColor) => ({
-    format,
-    noColor,
-    output: vi.fn(),
-    error: vi.fn(),
-    success: vi.fn(),
-  })),
+  OutputFormatter: vi.fn(function (format, noColor) {
+    return {
+      format,
+      noColor,
+      output: vi.fn(),
+      error: vi.fn(),
+      success: vi.fn(),
+    };
+  }),
   createSpinner: vi.fn(() => ({
     start: vi.fn(),
     succeed: vi.fn(),
@@ -67,7 +69,9 @@ describe('bookings command', () => {
       const mockApi = {
         getBookings: vi.fn().mockResolvedValue(mockBookings),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBookingsCommand('list', [], {});
 
@@ -84,7 +88,9 @@ describe('bookings command', () => {
     it('should filter by person', async () => {
       const mockBookings = { data: [], meta: {}, included: [] };
       const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBookingsCommand('list', [], { person: '123' });
 
@@ -98,7 +104,9 @@ describe('bookings command', () => {
     it('should filter by date range', async () => {
       const mockBookings = { data: [], meta: {}, included: [] };
       const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBookingsCommand('list', [], { from: '2024-01-01', to: '2024-01-31' });
 
@@ -112,7 +120,9 @@ describe('bookings command', () => {
     it('should filter bookings with extended filters', async () => {
       const mockBookings = { data: [], meta: {}, included: [] };
       const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBookingsCommand('list', [], {
         project: 'project-1',
@@ -138,7 +148,9 @@ describe('bookings command', () => {
     it('should filter bookings by type budget', async () => {
       const mockBookings = { data: [], meta: {}, included: [] };
       const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBookingsCommand('list', [], { type: 'budget' });
 
@@ -152,7 +164,9 @@ describe('bookings command', () => {
     it('should filter tentative bookings only', async () => {
       const mockBookings = { data: [], meta: {}, included: [] };
       const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBookingsCommand('list', [], { tentative: true });
 
@@ -166,7 +180,9 @@ describe('bookings command', () => {
     it('should filter confirmed bookings only', async () => {
       const mockBookings = { data: [], meta: {}, included: [] };
       const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBookingsCommand('list', [], { tentative: false });
 
@@ -194,7 +210,9 @@ describe('bookings command', () => {
       };
 
       const mockApi = { getBooking: vi.fn().mockResolvedValue(mockBooking) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBookingsCommand('get', ['1'], {});
 
@@ -229,7 +247,9 @@ describe('bookings command', () => {
       };
 
       const mockApi = { createBooking: vi.fn().mockResolvedValue(mockBooking) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBookingsCommand('add', [], {
         person: '123',
@@ -290,7 +310,9 @@ describe('bookings command', () => {
     it('should update a booking', async () => {
       const mockBooking = { data: { id: '1', attributes: {} } };
       const mockApi = { updateBooking: vi.fn().mockResolvedValue(mockBooking) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBookingsCommand('update', ['1'], { from: '2024-01-20' });
 

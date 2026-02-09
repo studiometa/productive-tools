@@ -4,7 +4,7 @@ import { ProductiveApi } from '../../api.js';
 import { handleCompaniesCommand } from '../companies/index.js';
 
 vi.mock('../../api.js', () => ({
-  ProductiveApi: vi.fn(),
+  ProductiveApi: vi.fn(function () {}),
   ProductiveApiError: class ProductiveApiError extends Error {
     constructor(
       message: string,
@@ -18,13 +18,15 @@ vi.mock('../../api.js', () => ({
 }));
 
 vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn().mockImplementation((format, noColor) => ({
-    format,
-    noColor,
-    output: vi.fn(),
-    error: vi.fn(),
-    success: vi.fn(),
-  })),
+  OutputFormatter: vi.fn(function (format, noColor) {
+    return {
+      format,
+      noColor,
+      output: vi.fn(),
+      error: vi.fn(),
+      success: vi.fn(),
+    };
+  }),
   createSpinner: vi.fn(() => ({
     start: vi.fn(),
     succeed: vi.fn(),
@@ -64,7 +66,9 @@ describe('companies command', () => {
       };
 
       const mockApi = { getCompanies: vi.fn().mockResolvedValue(mockCompanies) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleCompaniesCommand('list', [], {});
 
@@ -80,7 +84,9 @@ describe('companies command', () => {
     it('should list archived companies with --archived flag', async () => {
       const mockCompanies = { data: [], meta: {} };
       const mockApi = { getCompanies: vi.fn().mockResolvedValue(mockCompanies) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleCompaniesCommand('list', [], { archived: true });
 
@@ -106,7 +112,9 @@ describe('companies command', () => {
       };
 
       const mockApi = { getCompany: vi.fn().mockResolvedValue(mockCompany) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleCompaniesCommand('get', ['1'], {});
 
@@ -139,7 +147,9 @@ describe('companies command', () => {
       };
 
       const mockApi = { createCompany: vi.fn().mockResolvedValue(mockCompany) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleCompaniesCommand('add', [], {
         name: 'New Company',
@@ -170,7 +180,9 @@ describe('companies command', () => {
     it('should update a company', async () => {
       const mockCompany = { data: { id: '1', attributes: {} } };
       const mockApi = { updateCompany: vi.fn().mockResolvedValue(mockCompany) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleCompaniesCommand('update', ['1'], { name: 'Updated Name' });
 

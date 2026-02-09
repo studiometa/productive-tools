@@ -4,7 +4,7 @@ import { ProductiveApi } from '../../api.js';
 import { handleDealsCommand } from '../deals/index.js';
 
 vi.mock('../../api.js', () => ({
-  ProductiveApi: vi.fn(),
+  ProductiveApi: vi.fn(function () {}),
   ProductiveApiError: class ProductiveApiError extends Error {
     constructor(
       message: string,
@@ -18,13 +18,15 @@ vi.mock('../../api.js', () => ({
 }));
 
 vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn().mockImplementation((format, noColor) => ({
-    format,
-    noColor,
-    output: vi.fn(),
-    error: vi.fn(),
-    success: vi.fn(),
-  })),
+  OutputFormatter: vi.fn(function (format, noColor) {
+    return {
+      format,
+      noColor,
+      output: vi.fn(),
+      error: vi.fn(),
+      success: vi.fn(),
+    };
+  }),
   createSpinner: vi.fn(() => ({
     start: vi.fn(),
     succeed: vi.fn(),
@@ -65,7 +67,9 @@ describe('deals command', () => {
       };
 
       const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleDealsCommand('list', [], {});
 
@@ -82,7 +86,9 @@ describe('deals command', () => {
     it('should filter by company', async () => {
       const mockDeals = { data: [], meta: {}, included: [] };
       const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleDealsCommand('list', [], { company: '123' });
 
@@ -96,7 +102,9 @@ describe('deals command', () => {
     it('should filter by status (open)', async () => {
       const mockDeals = { data: [], meta: {}, included: [] };
       const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleDealsCommand('list', [], { status: 'open' });
 
@@ -110,7 +118,9 @@ describe('deals command', () => {
     it('should filter by status (won)', async () => {
       const mockDeals = { data: [], meta: {}, included: [] };
       const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleDealsCommand('list', [], { status: 'won' });
 
@@ -124,7 +134,9 @@ describe('deals command', () => {
     it('should filter by status (lost)', async () => {
       const mockDeals = { data: [], meta: {}, included: [] };
       const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleDealsCommand('list', [], { status: 'lost' });
 
@@ -138,7 +150,9 @@ describe('deals command', () => {
     it('should filter by type (deal)', async () => {
       const mockDeals = { data: [], meta: {}, included: [] };
       const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleDealsCommand('list', [], { type: 'deal' });
 
@@ -152,7 +166,9 @@ describe('deals command', () => {
     it('should filter by type (budget)', async () => {
       const mockDeals = { data: [], meta: {}, included: [] };
       const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleDealsCommand('list', [], { type: 'budget' });
 
@@ -166,7 +182,9 @@ describe('deals command', () => {
     it('should filter deals with extended filters', async () => {
       const mockDeals = { data: [], meta: {}, included: [] };
       const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleDealsCommand('list', [], {
         project: 'project-1',
@@ -190,7 +208,9 @@ describe('deals command', () => {
     it('should filter deals by budget-status closed', async () => {
       const mockDeals = { data: [], meta: {}, included: [] };
       const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleDealsCommand('list', [], { 'budget-status': 'closed' });
 
@@ -217,7 +237,9 @@ describe('deals command', () => {
       };
 
       const mockApi = { getDeal: vi.fn().mockResolvedValue(mockDeal) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleDealsCommand('get', ['1'], {});
 
@@ -253,7 +275,9 @@ describe('deals command', () => {
       };
 
       const mockApi = { createDeal: vi.fn().mockResolvedValue(mockDeal) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleDealsCommand('add', [], { name: 'New Deal', company: '123' });
 
@@ -281,7 +305,9 @@ describe('deals command', () => {
       };
 
       const mockApi = { createDeal: vi.fn().mockResolvedValue(mockDeal) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleDealsCommand('add', [], { name: 'New Budget', company: '123', budget: true });
 
@@ -311,7 +337,9 @@ describe('deals command', () => {
     it('should update a deal', async () => {
       const mockDeal = { data: { id: '1', attributes: {} } };
       const mockApi = { updateDeal: vi.fn().mockResolvedValue(mockDeal) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleDealsCommand('update', ['1'], { name: 'Updated Deal' });
 

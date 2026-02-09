@@ -14,14 +14,16 @@ vi.mock('../../config.js', () => ({
 }));
 
 vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn().mockImplementation((format, noColor) => ({
-    format,
-    noColor,
-    output: vi.fn(),
-    error: vi.fn(),
-    warning: vi.fn(),
-    success: vi.fn(),
-  })),
+  OutputFormatter: vi.fn(function (format, noColor) {
+    return {
+      format,
+      noColor,
+      output: vi.fn(),
+      error: vi.fn(),
+      warning: vi.fn(),
+      success: vi.fn(),
+    };
+  }),
 }));
 
 describe('config command', () => {

@@ -4,14 +4,19 @@ import { ProductiveApi, ProductiveApiError } from '../../api.js';
 import { handlePeopleCommand } from '../people/index.js';
 
 // Mock dependencies
-vi.mock('../../api.js');
+vi.mock('../../api.js', async (importOriginal) => ({
+  ...((await importOriginal()) as object),
+  ProductiveApi: vi.fn(function () {}),
+}));
 vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn().mockImplementation((format, noColor) => ({
-    format,
-    noColor,
-    output: vi.fn(),
-    error: vi.fn(),
-  })),
+  OutputFormatter: vi.fn(function (format, noColor) {
+    return {
+      format,
+      noColor,
+      output: vi.fn(),
+      error: vi.fn(),
+    };
+  }),
   createSpinner: vi.fn(() => ({
     start: vi.fn(),
     succeed: vi.fn(),
@@ -54,7 +59,9 @@ describe('people command', () => {
       const mockApi = {
         getPeople: vi.fn().mockResolvedValue(mockPeople),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handlePeopleCommand('list', [], {});
 
@@ -100,7 +107,9 @@ describe('people command', () => {
       const mockApi = {
         getPeople: vi.fn().mockResolvedValue(mockPeople),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handlePeopleCommand('list', [], { all: true });
 
@@ -133,7 +142,9 @@ describe('people command', () => {
       const mockApi = {
         getPeople: vi.fn().mockResolvedValue(mockPeople),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handlePeopleCommand('list', [], { format: 'json' });
 
@@ -149,7 +160,9 @@ describe('people command', () => {
       const mockApi = {
         getPeople: vi.fn().mockResolvedValue(mockPeople),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handlePeopleCommand('list', [], {
         page: '2',
@@ -174,7 +187,9 @@ describe('people command', () => {
       const mockApi = {
         getPeople: vi.fn().mockResolvedValue(mockPeople),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handlePeopleCommand('list', [], {
         company: 'company-1',
@@ -209,7 +224,9 @@ describe('people command', () => {
       const mockApi = {
         getPeople: vi.fn().mockResolvedValue(mockPeople),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handlePeopleCommand('list', [], { type: 'contact' });
 
@@ -230,7 +247,9 @@ describe('people command', () => {
       const mockApi = {
         getPeople: vi.fn().mockResolvedValue(mockPeople),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handlePeopleCommand('list', [], { type: 'placeholder' });
 
@@ -251,7 +270,9 @@ describe('people command', () => {
       const mockApi = {
         getPeople: vi.fn().mockResolvedValue(mockPeople),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handlePeopleCommand('list', [], { status: 'deactivated' });
 
@@ -268,7 +289,9 @@ describe('people command', () => {
       const mockApi = {
         getPeople: vi.fn().mockRejectedValue(mockError),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handlePeopleCommand('list', [], {});
 
@@ -296,7 +319,9 @@ describe('people command', () => {
       const mockApi = {
         getPerson: vi.fn().mockResolvedValue(mockPerson),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handlePeopleCommand('get', ['1'], {});
 
@@ -324,7 +349,9 @@ describe('people command', () => {
       const mockApi = {
         getPerson: vi.fn().mockResolvedValue(mockPerson),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handlePeopleCommand('get', ['1'], { format: 'json' });
 
@@ -346,18 +373,22 @@ describe('people command', () => {
       const mockApi = {
         getPerson: vi.fn().mockRejectedValue(mockError),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handlePeopleCommand('get', ['999'], {});
 
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(processExitSpy).toHaveBeenCalledWith(5); // NOT_FOUND_ERROR exit code
     });
 
     it('should handle unexpected errors', async () => {
       const mockApi = {
         getPerson: vi.fn().mockRejectedValue(new Error('Unexpected error')),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handlePeopleCommand('get', ['1'], {});
 
@@ -375,7 +406,9 @@ describe('people command', () => {
       const mockApi = {
         getPeople: vi.fn().mockResolvedValue(mockPeople),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handlePeopleCommand('ls', [], {});
 

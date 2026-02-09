@@ -4,14 +4,19 @@ import { ProductiveApi, ProductiveApiError } from '../../api.js';
 import { handleBudgetsCommand } from '../budgets/index.js';
 
 // Mock dependencies
-vi.mock('../../api.js');
+vi.mock('../../api.js', async (importOriginal) => ({
+  ...((await importOriginal()) as object),
+  ProductiveApi: vi.fn(function () {}),
+}));
 vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn().mockImplementation((format, noColor) => ({
-    format,
-    noColor,
-    output: vi.fn(),
-    error: vi.fn(),
-  })),
+  OutputFormatter: vi.fn(function (format, noColor) {
+    return {
+      format,
+      noColor,
+      output: vi.fn(),
+      error: vi.fn(),
+    };
+  }),
   createSpinner: vi.fn(() => ({
     start: vi.fn(),
     succeed: vi.fn(),
@@ -58,12 +63,9 @@ describe('budgets command', () => {
         meta: { total: 2, page: 1, per_page: 100 },
       };
 
-      vi.mocked(ProductiveApi).mockImplementation(
-        () =>
-          ({
-            getBudgets: vi.fn().mockResolvedValue(mockBudgets),
-          }) as any,
-      );
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return { getBudgets: vi.fn().mockResolvedValue(mockBudgets) } as any;
+      });
 
       await handleBudgetsCommand('list', [], {});
 
@@ -90,7 +92,9 @@ describe('budgets command', () => {
       const mockApi = {
         getBudgets: vi.fn().mockResolvedValue(mockBudgets),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBudgetsCommand('list', [], { format: 'json' });
 
@@ -110,7 +114,9 @@ describe('budgets command', () => {
       const mockApi = {
         getBudgets: vi.fn().mockResolvedValue(mockBudgets),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBudgetsCommand('list', [], {
         project: '123',
@@ -132,7 +138,9 @@ describe('budgets command', () => {
       const mockApi = {
         getBudgets: vi.fn().mockResolvedValue(mockBudgets),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBudgetsCommand('list', [], {
         page: '3',
@@ -162,12 +170,9 @@ describe('budgets command', () => {
         meta: { total: 1 },
       };
 
-      vi.mocked(ProductiveApi).mockImplementation(
-        () =>
-          ({
-            getBudgets: vi.fn().mockResolvedValue(mockBudgets),
-          }) as any,
-      );
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return { getBudgets: vi.fn().mockResolvedValue(mockBudgets) } as any;
+      });
 
       await handleBudgetsCommand('list', [], {});
 
@@ -180,7 +185,9 @@ describe('budgets command', () => {
       const mockApi = {
         getBudgets: vi.fn().mockRejectedValue(mockError),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBudgetsCommand('list', [], {});
 
@@ -191,7 +198,9 @@ describe('budgets command', () => {
       const mockApi = {
         getBudgets: vi.fn().mockRejectedValue(new Error('Unexpected error')),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBudgetsCommand('list', [], {});
 
@@ -209,7 +218,9 @@ describe('budgets command', () => {
       const mockApi = {
         getBudgets: vi.fn().mockResolvedValue(mockBudgets),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleBudgetsCommand('ls', [], {});
 

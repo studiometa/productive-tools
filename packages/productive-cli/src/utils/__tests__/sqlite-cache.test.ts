@@ -17,7 +17,9 @@ const mockPreparedStatement = {
 
 vi.mock('node:sqlite', async () => {
   return {
-    DatabaseSync: vi.fn(() => mockDbInstance),
+    DatabaseSync: vi.fn(function () {
+      return mockDbInstance;
+    }),
   };
 });
 

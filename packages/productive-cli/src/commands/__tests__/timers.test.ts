@@ -5,7 +5,7 @@ import { handleTimersCommand } from '../timers/index.js';
 
 // Mock dependencies
 vi.mock('../../api.js', () => ({
-  ProductiveApi: vi.fn(),
+  ProductiveApi: vi.fn(function () {}),
   ProductiveApiError: class ProductiveApiError extends Error {
     constructor(
       message: string,
@@ -19,13 +19,15 @@ vi.mock('../../api.js', () => ({
 }));
 
 vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn().mockImplementation((format, noColor) => ({
-    format,
-    noColor,
-    output: vi.fn(),
-    error: vi.fn(),
-    success: vi.fn(),
-  })),
+  OutputFormatter: vi.fn(function (format, noColor) {
+    return {
+      format,
+      noColor,
+      output: vi.fn(),
+      error: vi.fn(),
+      success: vi.fn(),
+    };
+  }),
   createSpinner: vi.fn(() => ({
     start: vi.fn(),
     succeed: vi.fn(),
@@ -67,7 +69,9 @@ describe('timers command', () => {
       const mockApi = {
         getTimers: vi.fn().mockResolvedValue(mockTimers),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleTimersCommand('list', [], {});
 
@@ -91,7 +95,9 @@ describe('timers command', () => {
       const mockApi = {
         getTimers: vi.fn().mockResolvedValue(mockTimers),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       // Without userId in config, --mine won't filter
       await handleTimersCommand('list', [], { mine: true });
@@ -113,7 +119,9 @@ describe('timers command', () => {
       const mockApi = {
         getTimers: vi.fn().mockResolvedValue(mockTimers),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleTimersCommand('list', [], { person: '456' });
 
@@ -134,7 +142,9 @@ describe('timers command', () => {
       const mockApi = {
         getTimers: vi.fn().mockResolvedValue(mockTimers),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleTimersCommand('list', [], { 'time-entry': 'entry-123' });
 
@@ -164,7 +174,9 @@ describe('timers command', () => {
       const mockApi = {
         getTimer: vi.fn().mockResolvedValue(mockTimer),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleTimersCommand('get', ['1'], {});
 
@@ -202,7 +214,9 @@ describe('timers command', () => {
       const mockApi = {
         startTimer: vi.fn().mockResolvedValue(mockTimer),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleTimersCommand('start', [], { service: '789' });
 
@@ -230,7 +244,9 @@ describe('timers command', () => {
       const mockApi = {
         startTimer: vi.fn().mockResolvedValue(mockTimer),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleTimersCommand('start', [], { 'time-entry': '456' });
 
@@ -262,7 +278,9 @@ describe('timers command', () => {
       const mockApi = {
         startTimer: vi.fn().mockResolvedValue(mockTimer),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleTimersCommand('start', [], { service: '789', format: 'json' });
 
@@ -287,7 +305,9 @@ describe('timers command', () => {
       const mockApi = {
         stopTimer: vi.fn().mockResolvedValue(mockTimer),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleTimersCommand('stop', ['1'], {});
 
@@ -322,7 +342,9 @@ describe('timers command', () => {
       const mockApi = {
         stopTimer: vi.fn().mockResolvedValue(mockTimer),
       };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleTimersCommand('stop', ['1'], { format: 'json' });
 

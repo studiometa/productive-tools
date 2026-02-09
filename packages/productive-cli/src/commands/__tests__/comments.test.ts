@@ -4,7 +4,7 @@ import { ProductiveApi } from '../../api.js';
 import { handleCommentsCommand } from '../comments/index.js';
 
 vi.mock('../../api.js', () => ({
-  ProductiveApi: vi.fn(),
+  ProductiveApi: vi.fn(function () {}),
   ProductiveApiError: class ProductiveApiError extends Error {
     constructor(
       message: string,
@@ -18,13 +18,15 @@ vi.mock('../../api.js', () => ({
 }));
 
 vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn().mockImplementation((format, noColor) => ({
-    format,
-    noColor,
-    output: vi.fn(),
-    error: vi.fn(),
-    success: vi.fn(),
-  })),
+  OutputFormatter: vi.fn(function (format, noColor) {
+    return {
+      format,
+      noColor,
+      output: vi.fn(),
+      error: vi.fn(),
+      success: vi.fn(),
+    };
+  }),
   createSpinner: vi.fn(() => ({
     start: vi.fn(),
     succeed: vi.fn(),
@@ -63,7 +65,9 @@ describe('comments command', () => {
       };
 
       const mockApi = { getComments: vi.fn().mockResolvedValue(mockComments) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleCommentsCommand('list', [], {});
 
@@ -79,7 +83,9 @@ describe('comments command', () => {
     it('should filter by task', async () => {
       const mockComments = { data: [], meta: {}, included: [] };
       const mockApi = { getComments: vi.fn().mockResolvedValue(mockComments) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleCommentsCommand('list', [], { task: '123' });
 
@@ -93,7 +99,9 @@ describe('comments command', () => {
     it('should filter by deal', async () => {
       const mockComments = { data: [], meta: {}, included: [] };
       const mockApi = { getComments: vi.fn().mockResolvedValue(mockComments) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleCommentsCommand('list', [], { deal: '456' });
 
@@ -107,7 +115,9 @@ describe('comments command', () => {
     it('should filter by project', async () => {
       const mockComments = { data: [], meta: {}, included: [] };
       const mockApi = { getComments: vi.fn().mockResolvedValue(mockComments) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleCommentsCommand('list', [], { project: '789' });
 
@@ -121,7 +131,9 @@ describe('comments command', () => {
     it('should filter by page', async () => {
       const mockComments = { data: [], meta: {}, included: [] };
       const mockApi = { getComments: vi.fn().mockResolvedValue(mockComments) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleCommentsCommand('list', [], { page: '101' });
 
@@ -135,7 +147,9 @@ describe('comments command', () => {
     it('should filter by discussion', async () => {
       const mockComments = { data: [], meta: {}, included: [] };
       const mockApi = { getComments: vi.fn().mockResolvedValue(mockComments) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleCommentsCommand('list', [], { discussion: '202' });
 
@@ -162,7 +176,9 @@ describe('comments command', () => {
       };
 
       const mockApi = { getComment: vi.fn().mockResolvedValue(mockComment) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleCommentsCommand('get', ['1'], {});
 
@@ -195,7 +211,9 @@ describe('comments command', () => {
       };
 
       const mockApi = { createComment: vi.fn().mockResolvedValue(mockComment) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleCommentsCommand('add', [], { body: 'New comment', task: '123' });
 
@@ -234,7 +252,9 @@ describe('comments command', () => {
     it('should update a comment', async () => {
       const mockComment = { data: { id: '1', attributes: {} } };
       const mockApi = { updateComment: vi.fn().mockResolvedValue(mockComment) };
-      vi.mocked(ProductiveApi).mockImplementation(() => mockApi as any);
+      vi.mocked(ProductiveApi).mockImplementation(function () {
+        return mockApi as any;
+      });
 
       await handleCommentsCommand('update', ['1'], { body: 'Updated comment' });
 
