@@ -91,7 +91,7 @@ export async function startStdioServer(): Promise<void> {
   const server = createStdioServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('Productive MCP server running on stdio');
+  console.error(`Productive MCP server v${VERSION} running on stdio`);
 }
 
 // Start server when run directly
