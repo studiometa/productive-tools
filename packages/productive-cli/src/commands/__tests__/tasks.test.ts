@@ -3,17 +3,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ProductiveApi } from '../../api.js';
 
 import { createTestContext } from '../../context.js';
+import { stripAnsi, truncateText, padText } from '../../renderers/human/kanban.js';
+import { formatTime } from '../../renderers/human/task.js';
 import { parseFilters } from '../../utils/parse-filters.js';
-import { tasksList, tasksGet } from '../tasks/handlers.js';
-import {
-  handleTasksCommand,
-  showTasksHelp,
-  formatTime,
-  getIncludedResource,
-  stripAnsi,
-  truncateText,
-  padText,
-} from '../tasks/index.js';
+import { handleTasksCommand } from '../tasks/command.js';
+import { tasksList, tasksGet, getIncludedResource } from '../tasks/handlers.js';
+import { showTasksHelp } from '../tasks/help.js';
 
 describe('tasks helpers', () => {
   describe('parseFilters', () => {

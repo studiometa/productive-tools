@@ -62,7 +62,7 @@ export class CacheStore {
   private getCacheKey(endpoint: string, params: Record<string, unknown>, orgId: string): string {
     // Sort params keys for consistent hashing
     const sortedParams = Object.keys(params)
-      .sort()
+      .toSorted()
       .reduce(
         (acc, key) => {
           acc[key] = params[key];
