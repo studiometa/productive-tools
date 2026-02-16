@@ -407,5 +407,164 @@ describe('resource-resolver', () => {
         ],
       });
     });
+
+    it('serializes without suggestions', () => {
+      const error = new ResolveError('No person found', 'unknown@example.com', 'person');
+
+      expect(error.toJSON().suggestions).toBeUndefined();
+    });
+  });
+
+  describe('resolve - additional cases', () => {
+    let mockApi: {
+      getPeople: ReturnType<typeof vi.fn>;
+      getProjects: ReturnType<typeof vi.fn>;
+      getCompanies: ReturnType<typeof vi.fn>;
+      getDeals: ReturnType<typeof vi.fn>;
+      getServices: ReturnType<typeof vi.fn>;
+    };
+
+    beforeEach(() => {
+      mockApi = {
+        getPeople: vi.fn(),
+        getProjects: vi.fn(),
+        getCompanies: vi.fn(),
+        getDeals: vi.fn(),
+        getServices: vi.fn(),
+      };
+    });
+
+    it('resolves person by name search when type is explicit', async () => {
+      mockApi.getPeople.mockResolvedValue({
+        data: [
+          { id: '1', attributes: { first_name: 'John', last_name: 'Doe' } },
+          { id: '2', attributes: { first_name: 'John', last_name: 'Smith' } },
+        ],
+      });
+
+      const results = await resolve(mockApi as unknown as ProductiveApi, 'John', {
+        type: 'person',
+      });
+
+      expect(results).toHaveLength(2);
+      expect(results[0].exact).toBe(false);
+      expect(mockApi.getPeople).toHaveBeenCalledWith({
+        filter: { query: 'John' },
+        perPage: 10,
+      });
+    });
+
+    it('resolves project by name when type is explicit', async () => {
+      mockApi.getProjects.mockResolvedValue({
+        data: [{ id: '777', attributes: { name: 'Client Project' } }],
+      });
+
+      const results = await resolve(mockApi as unknown as ProductiveApi, 'Client', {
+        type: 'project',
+      });
+
+      expect(results[0].exact).toBe(false);
+    });
+
+    it('resolves project with fallback when normalized number not found', async () => {
+      mockApi.getProjects
+        .mockResolvedValueOnce({ data: [] }) // First try with normalized number
+        .mockResolvedValueOnce({
+          data: [{ id: '777', attributes: { name: 'Test' } }],
+        });
+
+      const results = await resolve(mockApi as unknown as ProductiveApi, 'P-123');
+
+      expect(results[0].id).toBe('777');
+      expect(mockApi.getProjects).toHaveBeenCalledTimes(2);
+    });
+
+    it('resolves deal by name when type is explicit', async () => {
+      mockApi.getDeals.mockResolvedValue({
+        data: [{ id: '888', attributes: { name: 'Test Deal' } }],
+      });
+
+      const results = await resolve(mockApi as unknown as ProductiveApi, 'Test', {
+        type: 'deal',
+      });
+
+      expect(results[0].type).toBe('deal');
+      expect(results[0].exact).toBe(false);
+    });
+
+    it('resolves deal with fallback when normalized number not found', async () => {
+      mockApi.getDeals
+        .mockResolvedValueOnce({ data: [] }) // First try with normalized number
+        .mockResolvedValueOnce({
+          data: [{ id: '888', attributes: { name: 'Test' } }],
+        });
+
+      const results = await resolve(mockApi as unknown as ProductiveApi, 'DEAL-123');
+
+      expect(results[0].id).toBe('888');
+      expect(mockApi.getDeals).toHaveBeenCalledTimes(2);
+    });
+
+    it('resolves service by name with project context', async () => {
+      mockApi.getServices.mockResolvedValue({
+        data: [
+          { id: '111', attributes: { name: 'Development' } },
+          { id: '222', attributes: { name: 'Design' } },
+        ],
+      });
+
+      const results = await resolve(mockApi as unknown as ProductiveApi, 'Dev', {
+        type: 'service',
+        projectId: '777',
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id).toBe('111');
+    });
+
+    it('resolves service with exact match', async () => {
+      mockApi.getServices.mockResolvedValue({
+        data: [{ id: '111', attributes: { name: 'Development' } }],
+      });
+
+      const results = await resolve(mockApi as unknown as ProductiveApi, 'development', {
+        type: 'service',
+      });
+
+      expect(results[0].exact).toBe(true);
+    });
+
+    it('handles empty first_name or last_name', async () => {
+      mockApi.getPeople.mockResolvedValue({
+        data: [
+          { id: '1', attributes: { first_name: '', last_name: 'Doe' } },
+          { id: '2', attributes: { first_name: 'John', last_name: '' } },
+        ],
+      });
+
+      const results = await resolve(mockApi as unknown as ProductiveApi, 'test@example.com');
+
+      expect(results[0].label).toBe('Doe');
+    });
+
+    it('handles empty project name', async () => {
+      mockApi.getProjects.mockResolvedValue({
+        data: [{ id: '777', attributes: { name: '' } }],
+      });
+
+      const results = await resolve(mockApi as unknown as ProductiveApi, 'PRJ-123');
+
+      expect(results[0].label).toBe('PRJ-123');
+    });
+
+    it('handles empty deal name', async () => {
+      mockApi.getDeals.mockResolvedValue({
+        data: [{ id: '888', attributes: { name: '' } }],
+      });
+
+      const results = await resolve(mockApi as unknown as ProductiveApi, 'D-123');
+
+      expect(results[0].label).toBe('D-123');
+    });
   });
 });
