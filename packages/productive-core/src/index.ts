@@ -69,3 +69,82 @@ export type {
   ListCompaniesOptions,
   UpdateCompanyOptions,
 } from './executors/companies/index.js';
+
+// Tasks executors
+export {
+  buildTaskFilters,
+  createTask,
+  getTask,
+  listTasks,
+  updateTask,
+} from './executors/tasks/index.js';
+export type {
+  CreateTaskOptions,
+  GetTaskOptions,
+  ListTasksOptions,
+  UpdateTaskOptions,
+} from './executors/tasks/index.js';
+
+// Deals executors
+export {
+  buildDealFilters,
+  createDeal,
+  getDeal,
+  listDeals,
+  updateDeal,
+} from './executors/deals/index.js';
+export type {
+  CreateDealOptions,
+  GetDealOptions,
+  ListDealsOptions,
+  UpdateDealOptions,
+} from './executors/deals/index.js';
+
+// Bookings executors
+export {
+  buildBookingFilters,
+  createBooking,
+  getBooking,
+  listBookings,
+  updateBooking,
+} from './executors/bookings/index.js';
+export type {
+  CreateBookingOptions,
+  GetBookingOptions,
+  ListBookingsOptions,
+  UpdateBookingOptions,
+} from './executors/bookings/index.js';
+
+// Comments executors
+export {
+  buildCommentFilters,
+  createComment,
+  getComment,
+  listComments,
+  updateComment,
+} from './executors/comments/index.js';
+export type {
+  CreateCommentOptions,
+  GetCommentOptions,
+  ListCommentsOptions,
+  UpdateCommentOptions,
+} from './executors/comments/index.js';
+
+// Timers executors
+export {
+  buildTimerFilters,
+  getTimer,
+  listTimers,
+  startTimer,
+  stopTimer,
+} from './executors/timers/index.js';
+export type {
+  GetTimerOptions,
+  ListTimersOptions,
+  StartTimerOptions,
+  StopTimerOptions,
+} from './executors/timers/index.js';
+
+// Budgets executors
+export { buildBudgetFilters, listBudgets } from './executors/budgets/index.js';
+export type { ListBudgetsOptions } from './executors/budgets/index.js';
