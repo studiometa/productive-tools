@@ -8,6 +8,7 @@ import type { OutputFormat } from '../../types.js';
 import { exitWithValidationError, runCommand } from '../../error-handler.js';
 import { formatProject, formatListResponse } from '../../formatters/index.js';
 import { render, createRenderContext, humanProjectDetailRenderer } from '../../renderers/index.js';
+import { resolveCommandFilters, tryResolveValue } from '../../utils/resolve-filters.js';
 
 /**
  * Parse filter string into key-value pairs
@@ -75,11 +76,18 @@ export async function projectsList(ctx: CommandContext): Promise<void> {
       }
     }
 
+    // Resolve any human-friendly identifiers (email, company name, etc.)
+    const { resolved: resolvedFilter } = await resolveCommandFilters(ctx, filter, {
+      company_id: 'company',
+      responsible_id: 'person',
+      person_id: 'person',
+    });
+
     const { page, perPage } = ctx.getPagination();
     const response = await ctx.api.getProjects({
       page,
       perPage,
-      filter,
+      filter: resolvedFilter,
       sort: ctx.getSort(),
     });
 
@@ -123,7 +131,10 @@ export async function projectsGet(args: string[], ctx: CommandContext): Promise<
   spinner.start();
 
   await runCommand(async () => {
-    const response = await ctx.api.getProject(id);
+    // Resolve project ID if it's a human-friendly identifier (e.g., PRJ-123)
+    const resolvedId = await tryResolveValue(ctx, id, 'project');
+
+    const response = await ctx.api.getProject(resolvedId);
     const project = response.data;
 
     spinner.succeed();

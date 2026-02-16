@@ -15,6 +15,7 @@ import {
   formatTime,
 } from '../../renderers/index.js';
 import { colors } from '../../utils/colors.js';
+import { resolveCommandFilters, tryResolveValue } from '../../utils/resolve-filters.js';
 
 /**
  * Parse filter string into key-value pairs
@@ -113,11 +114,14 @@ export async function tasksList(ctx: CommandContext): Promise<void> {
       filter.due_date_after = String(ctx.options['due-after']);
     }
 
+    // Resolve any human-friendly identifiers (email, project number, etc.)
+    const { resolved: resolvedFilter } = await resolveCommandFilters(ctx, filter);
+
     const { page, perPage } = ctx.getPagination();
     const response = await ctx.api.getTasks({
       page,
       perPage,
-      filter,
+      filter: resolvedFilter,
       sort: ctx.getSort(),
       include: ['project', 'assignee', 'workflow_status'],
     });
@@ -233,11 +237,19 @@ export async function tasksAdd(ctx: CommandContext): Promise<void> {
   }
 
   await runCommand(async () => {
+    // Resolve project ID if it's a human-friendly identifier
+    const projectId = await tryResolveValue(ctx, String(ctx.options.project), 'project');
+
+    // Resolve assignee ID if provided
+    const assigneeId = ctx.options.assignee
+      ? await tryResolveValue(ctx, String(ctx.options.assignee), 'person')
+      : undefined;
+
     const response = await ctx.api.createTask({
       title: String(ctx.options.title),
-      project_id: String(ctx.options.project),
+      project_id: projectId,
       task_list_id: String(ctx.options['task-list']),
-      assignee_id: ctx.options.assignee ? String(ctx.options.assignee) : undefined,
+      assignee_id: assigneeId,
       description: ctx.options.description ? String(ctx.options.description) : undefined,
       due_date: ctx.options['due-date'] ? String(ctx.options['due-date']) : undefined,
       start_date: ctx.options['start-date'] ? String(ctx.options['start-date']) : undefined,
@@ -294,7 +306,10 @@ export async function tasksUpdate(args: string[], ctx: CommandContext): Promise<
     if (ctx.options.estimate !== undefined)
       data.initial_estimate = parseInt(String(ctx.options.estimate));
     if (ctx.options.private !== undefined) data.private = ctx.options.private === true;
-    if (ctx.options.assignee !== undefined) data.assignee_id = String(ctx.options.assignee);
+    if (ctx.options.assignee !== undefined) {
+      // Resolve assignee if it's a human-friendly identifier
+      data.assignee_id = await tryResolveValue(ctx, String(ctx.options.assignee), 'person');
+    }
     if (ctx.options.status !== undefined) data.workflow_status_id = String(ctx.options.status);
 
     if (Object.keys(data).length === 0) {

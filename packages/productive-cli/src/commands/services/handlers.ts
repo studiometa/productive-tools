@@ -8,6 +8,7 @@ import type { OutputFormat } from '../../types.js';
 import { runCommand } from '../../error-handler.js';
 import { formatService, formatListResponse } from '../../formatters/index.js';
 import { render, createRenderContext } from '../../renderers/index.js';
+import { resolveCommandFilters } from '../../utils/resolve-filters.js';
 
 /**
  * Parse filter string into key-value pairs
@@ -83,11 +84,14 @@ export async function servicesList(ctx: CommandContext): Promise<void> {
       filter.time_tracking_enabled = ctx.options['time-tracking'] ? 'true' : 'false';
     }
 
+    // Resolve any human-friendly identifiers (email, project number, etc.)
+    const { resolved: resolvedFilter } = await resolveCommandFilters(ctx, filter);
+
     const { page, perPage } = ctx.getPagination();
     const response = await ctx.api.getServices({
       page,
       perPage,
-      filter,
+      filter: resolvedFilter,
     });
 
     spinner.succeed();

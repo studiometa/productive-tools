@@ -6,6 +6,7 @@ import type { CommandContext } from '../../context.js';
 import type { OutputFormat } from '../../types.js';
 
 import { runCommand } from '../../error-handler.js';
+import { resolveCommandFilters } from '../../utils/resolve-filters.js';
 
 /**
  * Parse filter string into key-value pairs
@@ -58,13 +59,16 @@ export async function reportsTime(ctx: CommandContext): Promise<void> {
     if (ctx.options.person) filter.person_id = String(ctx.options.person);
     if (ctx.options.project) filter.project_id = String(ctx.options.project);
 
+    // Resolve any human-friendly identifiers
+    const { resolved: resolvedFilter } = await resolveCommandFilters(ctx, filter);
+
     const { page, perPage } = ctx.getPagination();
     const group = ctx.options.group ? String(ctx.options.group) : 'person';
 
     const response = await ctx.api.getReports('time_reports', {
       page,
       perPage,
-      filter,
+      filter: resolvedFilter,
       group,
     });
 

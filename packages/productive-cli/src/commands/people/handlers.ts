@@ -8,6 +8,7 @@ import type { OutputFormat } from '../../types.js';
 import { exitWithValidationError, runCommand } from '../../error-handler.js';
 import { formatPerson, formatListResponse } from '../../formatters/index.js';
 import { render, createRenderContext, humanPersonDetailRenderer } from '../../renderers/index.js';
+import { resolveCommandFilters, tryResolveValue } from '../../utils/resolve-filters.js';
 
 /**
  * Parse filter string into key-value pairs
@@ -79,11 +80,17 @@ export async function peopleList(ctx: CommandContext): Promise<void> {
       }
     }
 
+    // Resolve any human-friendly identifiers (company name, project number, etc.)
+    const { resolved: resolvedFilter } = await resolveCommandFilters(ctx, filter, {
+      company_id: 'company',
+      project_id: 'project',
+    });
+
     const { page, perPage } = ctx.getPagination();
     const response = await ctx.api.getPeople({
       page,
       perPage,
-      filter,
+      filter: resolvedFilter,
       sort: ctx.getSort(),
     });
 
@@ -126,7 +133,10 @@ export async function peopleGet(args: string[], ctx: CommandContext): Promise<vo
   spinner.start();
 
   await runCommand(async () => {
-    const response = await ctx.api.getPerson(id);
+    // Resolve person ID if it's a human-friendly identifier (e.g., email)
+    const resolvedId = await tryResolveValue(ctx, id, 'person');
+
+    const response = await ctx.api.getPerson(resolvedId);
     const person = response.data;
 
     spinner.succeed();
