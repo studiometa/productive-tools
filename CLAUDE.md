@@ -27,6 +27,33 @@
 - These scripts update version in root and all workspace packages simultaneously
 - Version is injected at build time from package.json (no manual sync needed)
 
+## Architecture
+
+4-package monorepo with clean dependency layering:
+
+```
+productive-api     → (nothing)          # types, API client, formatters
+productive-core    → productive-api     # executors with dependency injection
+productive-cli     → productive-core    # CLI commands, renderers, config+cache
+productive-mcp     → productive-core    # MCP server handlers, OAuth
+                   → productive-api
+```
+
+- **productive-api**: `ProductiveApi` (explicit config injection), resource types, formatters, `ProductiveApiError`, `ApiCache` interface
+- **productive-core**: pure executor functions `(options, context) → ExecutorResult<T>`, `ExecutorContext` with DI, bridge functions (`fromCommandContext`, `fromHandlerContext`)
+- **productive-cli**: CLI commands, human/table/CSV renderers, keychain config, SQLite cache
+- **productive-mcp**: MCP tool handlers, OAuth, MCP-specific compact formatters
+
+Key principle: **executors are pure functions with zero side effects** — all dependencies injected via `ExecutorContext`. Tests use `createTestExecutorContext()` with no `vi.mock` needed.
+
+Build order: `productive-api` → `productive-core` → `productive-cli` / `productive-mcp`
+
+After changing `productive-core` source, rebuild before running CLI/MCP tests:
+
+```bash
+cd packages/productive-core && npx vite build
+```
+
 ---
 
 # AI Agents & Automation
@@ -280,41 +307,30 @@ done
 
 ## API Client Library
 
-For more complex integrations, use the Node.js library:
+For more complex integrations, use the `@studiometa/productive-api` package:
 
 ```typescript
-import { ProductiveApi, setConfig } from '@studiometa/productive-cli';
+import { ProductiveApi, ProductiveApiError } from '@studiometa/productive-api';
 
-// Configure
-setConfig('apiToken', process.env.PRODUCTIVE_API_TOKEN);
-setConfig('organizationId', process.env.PRODUCTIVE_ORG_ID);
-setConfig('userId', process.env.PRODUCTIVE_USER_ID);
+// Initialize with explicit config (no side effects)
+const api = new ProductiveApi({
+  config: {
+    apiToken: process.env.PRODUCTIVE_API_TOKEN!,
+    organizationId: process.env.PRODUCTIVE_ORG_ID!,
+  },
+});
 
-// Initialize API client
-const api = new ProductiveApi();
-
-// Async/await pattern
 async function automateTimeTracking() {
   try {
-    // Get active projects
-    const projects = await api.getProjects({
-      page: 1,
-      perPage: 100,
-      filter: {},
-    });
-
-    // Get services for first project
+    const projects = await api.getProjects({ page: 1, perPage: 100 });
     const projectId = projects.data[0].id;
-    const services = await api.getServices({
-      filter: { project_id: projectId },
-    });
+    const services = await api.getServices({ filter: { project_id: projectId } });
 
-    // Create time entry
     const timeEntry = await api.createTimeEntry({
       person_id: process.env.PRODUCTIVE_USER_ID!,
       service_id: services.data[0].id,
       date: new Date().toISOString().split('T')[0],
-      time: 480, // 8 hours
+      time: 480,
       note: 'Automated entry',
     });
 
@@ -322,13 +338,10 @@ async function automateTimeTracking() {
   } catch (error) {
     if (error instanceof ProductiveApiError) {
       console.error('API Error:', error.message, error.statusCode);
-    } else {
-      console.error('Unexpected error:', error);
     }
+    throw error;
   }
 }
-
-automateTimeTracking();
 ```
 
 ## Response Schemas
@@ -425,7 +438,12 @@ productive projects list --page 2 --size 100 --format json
 Programmatic pagination:
 
 ```typescript
-const api = new ProductiveApi();
+const api = new ProductiveApi({
+  config: {
+    apiToken: process.env.PRODUCTIVE_API_TOKEN!,
+    organizationId: process.env.PRODUCTIVE_ORG_ID!,
+  },
+});
 let page = 1;
 let allProjects = [];
 
