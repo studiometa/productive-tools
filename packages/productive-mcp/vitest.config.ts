@@ -23,6 +23,12 @@ export default defineConfig({
         'src/index.ts', // Entry point with startup code only
         'src/server.ts', // Entry point with startup code only
       ],
+      thresholds: {
+        statements: 90,
+        branches: 85,
+        functions: 90,
+        lines: 90,
+      },
     },
   },
 });

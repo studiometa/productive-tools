@@ -34,6 +34,12 @@ export default defineConfig({
         '**/__tests__/**',
         '*.config.ts',
       ],
+      thresholds: {
+        statements: 90,
+        branches: 80,
+        functions: 90,
+        lines: 90,
+      },
     },
   },
 });
