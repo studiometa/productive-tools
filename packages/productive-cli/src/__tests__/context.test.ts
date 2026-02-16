@@ -153,8 +153,8 @@ describe('createTestContext', () => {
     const ctx = createTestContext();
 
     expect(ctx.config.apiToken).toBe('test-token');
-    expect(ctx.config.organizationId).toBe('test-org');
-    expect(ctx.config.userId).toBe('test-user');
+    expect(ctx.config.organizationId).toBe('12345');
+    expect(ctx.config.userId).toBe('500521');
   });
 
   it('should allow overriding config', () => {

@@ -1,160 +1,120 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { ProductiveApi, ProductiveApiError } from '../../api.js';
+import type { ProductiveApi } from '../../api.js';
+
+import { createTestContext } from '../../context.js';
+import {
+  reportsTime,
+  reportsProject,
+  reportsBudget,
+  reportsPerson,
+  reportsInvoice,
+  reportsPayment,
+  reportsService,
+  reportsTask,
+  reportsCompany,
+  reportsDeal,
+  reportsTimesheet,
+} from '../reports/handlers.js';
 import { showReportsHelp } from '../reports/help.js';
 import { handleReportsCommand } from '../reports/index.js';
 
-// Mock dependencies
-vi.mock('../../api.js', async (importOriginal) => ({
-  ...((await importOriginal()) as object),
-  ProductiveApi: vi.fn(function () {}),
-}));
-vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn(function (format, noColor) {
-    return {
-      format,
-      noColor,
-      output: vi.fn(),
-      error: vi.fn(),
-    };
-  }),
-  createSpinner: vi.fn(() => ({
-    start: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-  })),
-}));
+/**
+ * Helper to create a test context with a mocked getReports method.
+ */
+function createReportCtx(
+  mockData: unknown[] = [],
+  options: Record<string, string | boolean | number | undefined> = {},
+) {
+  const getReports = vi
+    .fn()
+    .mockResolvedValue({ data: mockData, meta: { total: mockData.length } });
+  const ctx = createTestContext({
+    api: { getReports } as unknown as ProductiveApi,
+    options: { format: 'json', ...options },
+  });
+  return { ctx, getReports };
+}
 
 describe('reports command', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('time reports', () => {
     it('should fetch time reports in json format', async () => {
-      const mockReports = {
-        data: [
-          {
-            id: 'report-1',
-            type: 'time_reports',
-            attributes: { total_worked_time: 480, group: 'Person 1' },
-          },
-        ],
-        meta: { total: 1 },
-      };
+      const { ctx, getReports } = createReportCtx([
+        {
+          id: 'report-1',
+          type: 'time_reports',
+          attributes: { total_worked_time: 480, group: 'Person 1' },
+        },
+      ]);
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      await reportsTime(ctx);
 
-      await handleReportsCommand('time', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'time_reports',
         expect.objectContaining({ group: 'person' }),
       );
     });
 
     it('should fetch time reports in human format', async () => {
-      const mockReports = {
-        data: [
+      const { ctx, getReports } = createReportCtx(
+        [
           {
             id: 'report-1',
             type: 'time_reports',
             attributes: { total_worked_time: 480, group: 'Person 1' },
           },
         ],
-        meta: { total: 1 },
-      };
+        { format: 'human' },
+      );
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('time', [], { format: 'human' });
+      await reportsTime(ctx);
 
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(mockApi.getReports).toHaveBeenCalledWith('time_reports', expect.anything());
+      expect(getReports).toHaveBeenCalledWith('time_reports', expect.anything());
     });
 
     it('should apply date filters', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { from: '2024-01-01', to: '2024-01-31' });
 
-      await handleReportsCommand('time', [], {
-        from: '2024-01-01',
-        to: '2024-01-31',
-        format: 'json',
-      });
+      await reportsTime(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'time_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            after: '2024-01-01',
-            before: '2024-01-31',
-          }),
+          filter: expect.objectContaining({ after: '2024-01-01', before: '2024-01-31' }),
         }),
       );
     });
 
     it('should apply person and project filters', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { person: '123', project: '456' });
 
-      await handleReportsCommand('time', [], {
-        person: '123',
-        project: '456',
-        format: 'json',
-      });
+      await reportsTime(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'time_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            person_id: '123',
-            project_id: '456',
-          }),
+          filter: expect.objectContaining({ person_id: '123', project_id: '456' }),
         }),
       );
     });
 
     it('should use custom group parameter', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { group: 'project' });
 
-      await handleReportsCommand('time', [], { group: 'project', format: 'json' });
+      await reportsTime(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'time_reports',
         expect.objectContaining({ group: 'project' }),
       );
@@ -163,39 +123,29 @@ describe('reports command', () => {
 
   describe('project reports', () => {
     it('should fetch project reports', async () => {
-      const mockReports = {
-        data: [
-          {
-            id: 'report-1',
-            type: 'project_reports',
-            attributes: {
-              total_revenue_default: 10000,
-              total_cost_default: 5000,
-              average_profit_margin_default: 50,
-            },
+      const { ctx, getReports } = createReportCtx([
+        {
+          id: 'report-1',
+          type: 'project_reports',
+          attributes: {
+            total_revenue_default: 10000,
+            total_cost_default: 5000,
+            average_profit_margin_default: 50,
           },
-        ],
-        meta: { total: 1 },
-      };
+        },
+      ]);
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      await reportsProject(ctx);
 
-      await handleReportsCommand('project', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'project_reports',
         expect.objectContaining({ group: 'project', include: ['project'] }),
       );
     });
 
     it('should fetch project reports in human format', async () => {
-      const mockReports = {
-        data: [
+      const { ctx, getReports } = createReportCtx(
+        [
           {
             id: 'report-1',
             type: 'project_reports',
@@ -207,48 +157,21 @@ describe('reports command', () => {
             },
           },
         ],
-        meta: { total: 1 },
-      };
+        { format: 'human' },
+      );
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('project', [], { format: 'human' });
+      await reportsProject(ctx);
 
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(mockApi.getReports).toHaveBeenCalledWith('project_reports', expect.anything());
-    });
-
-    it('should handle projects alias', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('projects', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith('project_reports', expect.anything());
+      expect(getReports).toHaveBeenCalledWith('project_reports', expect.anything());
     });
 
     it('should filter by company', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { company: '789' });
 
-      await handleReportsCommand('project', [], { company: '789', format: 'json' });
+      await reportsProject(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'project_reports',
         expect.objectContaining({
           filter: expect.objectContaining({ company_id: '789' }),
@@ -257,25 +180,14 @@ describe('reports command', () => {
     });
 
     it('should parse generic filter for project reports', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { filter: 'custom_key=custom_value' });
 
-      await handleReportsCommand('project', [], {
-        filter: 'custom_key=custom_value',
-        format: 'json',
-      });
+      await reportsProject(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'project_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            custom_key: 'custom_value',
-          }),
+          filter: expect.objectContaining({ custom_key: 'custom_value' }),
         }),
       );
     });
@@ -283,91 +195,49 @@ describe('reports command', () => {
 
   describe('budget reports', () => {
     it('should fetch budget reports', async () => {
-      const mockReports = {
-        data: [
-          {
-            id: 'report-1',
-            type: 'budget_reports',
-            attributes: { total_budget_time: 960, total_worked_time: 480 },
-          },
-        ],
-        meta: { total: 1 },
-      };
+      const { ctx, getReports } = createReportCtx([
+        {
+          id: 'report-1',
+          type: 'budget_reports',
+          attributes: { total_budget_time: 960, total_worked_time: 480 },
+        },
+      ]);
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      await reportsBudget(ctx);
 
-      await handleReportsCommand('budget', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'budget_reports',
         expect.objectContaining({ group: 'deal', include: ['deal'] }),
       );
     });
 
     it('should fetch budget reports in human format', async () => {
-      const mockReports = {
-        data: [
+      const { ctx, getReports } = createReportCtx(
+        [
           {
             id: 'report-1',
             type: 'budget_reports',
             attributes: { total_budget_time: 960, total_worked_time: 480, group: 'Budget A' },
           },
         ],
-        meta: { total: 1 },
-      };
+        { format: 'human' },
+      );
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('budget', [], { format: 'human' });
+      await reportsBudget(ctx);
 
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(mockApi.getReports).toHaveBeenCalledWith('budget_reports', expect.anything());
-    });
-
-    it('should handle budgets alias', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('budgets', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith('budget_reports', expect.anything());
+      expect(getReports).toHaveBeenCalledWith('budget_reports', expect.anything());
     });
 
     it('should parse generic filter for budget reports', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { filter: 'custom_key=custom_value' });
 
-      await handleReportsCommand('budget', [], {
-        filter: 'custom_key=custom_value',
-        format: 'json',
-      });
+      await reportsBudget(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'budget_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            custom_key: 'custom_value',
-          }),
+          filter: expect.objectContaining({ custom_key: 'custom_value' }),
         }),
       );
     });
@@ -375,91 +245,49 @@ describe('reports command', () => {
 
   describe('person reports', () => {
     it('should fetch person reports', async () => {
-      const mockReports = {
-        data: [
-          {
-            id: 'report-1',
-            type: 'person_reports',
-            attributes: { total_worked_time: 480, total_billable_time: 400 },
-          },
-        ],
-        meta: { total: 1 },
-      };
+      const { ctx, getReports } = createReportCtx([
+        {
+          id: 'report-1',
+          type: 'person_reports',
+          attributes: { total_worked_time: 480, total_billable_time: 400 },
+        },
+      ]);
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      await reportsPerson(ctx);
 
-      await handleReportsCommand('person', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'person_reports',
         expect.objectContaining({ group: 'person', include: ['person'] }),
       );
     });
 
     it('should fetch person reports in human format', async () => {
-      const mockReports = {
-        data: [
+      const { ctx, getReports } = createReportCtx(
+        [
           {
             id: 'report-1',
             type: 'person_reports',
             attributes: { total_worked_time: 480, total_billable_time: 400, group: 'Person A' },
           },
         ],
-        meta: { total: 1 },
-      };
+        { format: 'human' },
+      );
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('person', [], { format: 'human' });
+      await reportsPerson(ctx);
 
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(mockApi.getReports).toHaveBeenCalledWith('person_reports', expect.anything());
-    });
-
-    it('should handle people alias', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('people', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith('person_reports', expect.anything());
+      expect(getReports).toHaveBeenCalledWith('person_reports', expect.anything());
     });
 
     it('should parse generic filter for person reports', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { filter: 'custom_key=custom_value' });
 
-      await handleReportsCommand('person', [], {
-        filter: 'custom_key=custom_value',
-        format: 'json',
-      });
+      await reportsPerson(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'person_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            custom_key: 'custom_value',
-          }),
+          filter: expect.objectContaining({ custom_key: 'custom_value' }),
         }),
       );
     });
@@ -467,39 +295,29 @@ describe('reports command', () => {
 
   describe('invoice reports', () => {
     it('should fetch invoice reports', async () => {
-      const mockReports = {
-        data: [
-          {
-            id: 'report-1',
-            type: 'invoice_reports',
-            attributes: {
-              total_amount: 10000,
-              total_paid_amount: 5000,
-              total_outstanding_amount: 5000,
-            },
+      const { ctx, getReports } = createReportCtx([
+        {
+          id: 'report-1',
+          type: 'invoice_reports',
+          attributes: {
+            total_amount: 10000,
+            total_paid_amount: 5000,
+            total_outstanding_amount: 5000,
           },
-        ],
-        meta: { total: 1 },
-      };
+        },
+      ]);
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      await reportsInvoice(ctx);
 
-      await handleReportsCommand('invoice', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'invoice_reports',
         expect.objectContaining({ group: 'invoice', include: ['invoice'] }),
       );
     });
 
     it('should fetch invoice reports in human format', async () => {
-      const mockReports = {
-        data: [
+      const { ctx, getReports } = createReportCtx(
+        [
           {
             id: 'report-1',
             type: 'invoice_reports',
@@ -511,78 +329,39 @@ describe('reports command', () => {
             },
           },
         ],
-        meta: { total: 1 },
-      };
+        { format: 'human' },
+      );
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('invoice', [], { format: 'human' });
+      await reportsInvoice(ctx);
 
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(mockApi.getReports).toHaveBeenCalledWith('invoice_reports', expect.anything());
+      expect(getReports).toHaveBeenCalledWith('invoice_reports', expect.anything());
     });
 
     it('should parse generic filter for invoice reports', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { filter: 'custom_key=custom_value' });
 
-      await handleReportsCommand('invoice', [], {
-        filter: 'custom_key=custom_value',
-        format: 'json',
-      });
+      await reportsInvoice(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'invoice_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            custom_key: 'custom_value',
-          }),
+          filter: expect.objectContaining({ custom_key: 'custom_value' }),
         }),
       );
     });
 
-    it('should handle invoices alias', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('invoices', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith('invoice_reports', expect.anything());
-    });
-
     it('should apply invoice-specific filters', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('invoice', [], {
+      const { ctx, getReports } = createReportCtx([], {
         company: '123',
         status: 'overdue',
         from: '2024-01-01',
         to: '2024-01-31',
-        format: 'json',
       });
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      await reportsInvoice(ctx);
+
+      expect(getReports).toHaveBeenCalledWith(
         'invoice_reports',
         expect.objectContaining({
           filter: expect.objectContaining({
@@ -598,112 +377,59 @@ describe('reports command', () => {
 
   describe('payment reports', () => {
     it('should fetch payment reports', async () => {
-      const mockReports = {
-        data: [
-          {
-            id: 'report-1',
-            type: 'payment_reports',
-            attributes: { total_amount: 5000 },
-          },
-        ],
-        meta: { total: 1 },
-      };
+      const { ctx, getReports } = createReportCtx([
+        { id: 'report-1', type: 'payment_reports', attributes: { total_amount: 5000 } },
+      ]);
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      await reportsPayment(ctx);
 
-      await handleReportsCommand('payment', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'payment_reports',
         expect.objectContaining({ group: 'payment', include: ['payment'] }),
       );
     });
 
     it('should fetch payment reports in human format', async () => {
-      const mockReports = {
-        data: [
+      const { ctx, getReports } = createReportCtx(
+        [
           {
             id: 'report-1',
             type: 'payment_reports',
             attributes: { total_amount: 5000, group: 'Payment A' },
           },
         ],
-        meta: { total: 1 },
-      };
+        { format: 'human' },
+      );
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('payment', [], { format: 'human' });
+      await reportsPayment(ctx);
 
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(mockApi.getReports).toHaveBeenCalledWith('payment_reports', expect.anything());
-    });
-
-    it('should handle payments alias', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('payments', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith('payment_reports', expect.anything());
+      expect(getReports).toHaveBeenCalledWith('payment_reports', expect.anything());
     });
 
     it('should parse generic filter for payment reports', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { filter: 'custom_key=custom_value' });
 
-      await handleReportsCommand('payment', [], {
-        filter: 'custom_key=custom_value',
-        format: 'json',
-      });
+      await reportsPayment(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'payment_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            custom_key: 'custom_value',
-          }),
+          filter: expect.objectContaining({ custom_key: 'custom_value' }),
         }),
       );
     });
 
     it('should apply date and company filters for payment reports', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('payment', [], {
+      const { ctx, getReports } = createReportCtx([], {
         company: '123',
         from: '2024-01-01',
         to: '2024-12-31',
-        format: 'json',
       });
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      await reportsPayment(ctx);
+
+      expect(getReports).toHaveBeenCalledWith(
         'payment_reports',
         expect.objectContaining({
           filter: expect.objectContaining({
@@ -718,35 +444,25 @@ describe('reports command', () => {
 
   describe('service reports', () => {
     it('should fetch service reports', async () => {
-      const mockReports = {
-        data: [
-          {
-            id: 'report-1',
-            type: 'service_reports',
-            attributes: { total_budget_time: 960, total_worked_time: 480, total_revenue: 10000 },
-          },
-        ],
-        meta: { total: 1 },
-      };
+      const { ctx, getReports } = createReportCtx([
+        {
+          id: 'report-1',
+          type: 'service_reports',
+          attributes: { total_budget_time: 960, total_worked_time: 480, total_revenue: 10000 },
+        },
+      ]);
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      await reportsService(ctx);
 
-      await handleReportsCommand('service', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'service_reports',
         expect.objectContaining({ group: 'service', include: ['service'] }),
       );
     });
 
     it('should fetch service reports in human format', async () => {
-      const mockReports = {
-        data: [
+      const { ctx, getReports } = createReportCtx(
+        [
           {
             id: 'report-1',
             type: 'service_reports',
@@ -758,82 +474,37 @@ describe('reports command', () => {
             },
           },
         ],
-        meta: { total: 1 },
-      };
+        { format: 'human' },
+      );
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('service', [], { format: 'human' });
+      await reportsService(ctx);
 
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(mockApi.getReports).toHaveBeenCalledWith('service_reports', expect.anything());
-    });
-
-    it('should handle services alias', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('services', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith('service_reports', expect.anything());
+      expect(getReports).toHaveBeenCalledWith('service_reports', expect.anything());
     });
 
     it('should filter by project and deal', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { project: '123', deal: '456' });
 
-      await handleReportsCommand('service', [], {
-        project: '123',
-        deal: '456',
-        format: 'json',
-      });
+      await reportsService(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'service_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            project_id: '123',
-            deal_id: '456',
-          }),
+          filter: expect.objectContaining({ project_id: '123', deal_id: '456' }),
         }),
       );
     });
 
     it('should parse generic filter for service reports', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { filter: 'custom_key=custom_value' });
 
-      await handleReportsCommand('service', [], {
-        filter: 'custom_key=custom_value',
-        format: 'json',
-      });
+      await reportsService(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'service_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            custom_key: 'custom_value',
-          }),
+          filter: expect.objectContaining({ custom_key: 'custom_value' }),
         }),
       );
     });
@@ -841,35 +512,25 @@ describe('reports command', () => {
 
   describe('task reports', () => {
     it('should fetch task reports', async () => {
-      const mockReports = {
-        data: [
-          {
-            id: 'report-1',
-            type: 'task_reports',
-            attributes: { total_tasks: 10, total_completed_tasks: 5, total_worked_time: 480 },
-          },
-        ],
-        meta: { total: 1 },
-      };
+      const { ctx, getReports } = createReportCtx([
+        {
+          id: 'report-1',
+          type: 'task_reports',
+          attributes: { total_tasks: 10, total_completed_tasks: 5, total_worked_time: 480 },
+        },
+      ]);
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      await reportsTask(ctx);
 
-      await handleReportsCommand('task', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'task_reports',
         expect.objectContaining({ group: 'task', include: ['task'] }),
       );
     });
 
     it('should fetch task reports in human format', async () => {
-      const mockReports = {
-        data: [
+      const { ctx, getReports } = createReportCtx(
+        [
           {
             id: 'report-1',
             type: 'task_reports',
@@ -881,53 +542,25 @@ describe('reports command', () => {
             },
           },
         ],
-        meta: { total: 1 },
-      };
+        { format: 'human' },
+      );
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('task', [], { format: 'human' });
+      await reportsTask(ctx);
 
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(mockApi.getReports).toHaveBeenCalledWith('task_reports', expect.anything());
-    });
-
-    it('should handle tasks alias', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('tasks', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith('task_reports', expect.anything());
+      expect(getReports).toHaveBeenCalledWith('task_reports', expect.anything());
     });
 
     it('should filter by project and person (assignee)', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('task', [], {
+      const { ctx, getReports } = createReportCtx([], {
         project: '123',
         person: '456',
         status: 'open',
-        format: 'json',
       });
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      await reportsTask(ctx);
+
+      expect(getReports).toHaveBeenCalledWith(
         'task_reports',
         expect.objectContaining({
           filter: expect.objectContaining({
@@ -940,25 +573,14 @@ describe('reports command', () => {
     });
 
     it('should parse generic filter for task reports', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { filter: 'custom_key=custom_value' });
 
-      await handleReportsCommand('task', [], {
-        filter: 'custom_key=custom_value',
-        format: 'json',
-      });
+      await reportsTask(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'task_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            custom_key: 'custom_value',
-          }),
+          filter: expect.objectContaining({ custom_key: 'custom_value' }),
         }),
       );
     });
@@ -966,35 +588,25 @@ describe('reports command', () => {
 
   describe('company reports', () => {
     it('should fetch company reports', async () => {
-      const mockReports = {
-        data: [
-          {
-            id: 'report-1',
-            type: 'company_reports',
-            attributes: { total_revenue: 50000, total_cost: 25000, average_profit_margin: 50 },
-          },
-        ],
-        meta: { total: 1 },
-      };
+      const { ctx, getReports } = createReportCtx([
+        {
+          id: 'report-1',
+          type: 'company_reports',
+          attributes: { total_revenue: 50000, total_cost: 25000, average_profit_margin: 50 },
+        },
+      ]);
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      await reportsCompany(ctx);
 
-      await handleReportsCommand('company', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'company_reports',
         expect.objectContaining({ group: 'company', include: ['company'] }),
       );
     });
 
     it('should fetch company reports in human format', async () => {
-      const mockReports = {
-        data: [
+      const { ctx, getReports } = createReportCtx(
+        [
           {
             id: 'report-1',
             type: 'company_reports',
@@ -1006,82 +618,37 @@ describe('reports command', () => {
             },
           },
         ],
-        meta: { total: 1 },
-      };
+        { format: 'human' },
+      );
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('company', [], { format: 'human' });
+      await reportsCompany(ctx);
 
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(mockApi.getReports).toHaveBeenCalledWith('company_reports', expect.anything());
-    });
-
-    it('should handle companies alias', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('companies', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith('company_reports', expect.anything());
+      expect(getReports).toHaveBeenCalledWith('company_reports', expect.anything());
     });
 
     it('should parse generic filter for company reports', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { filter: 'custom_key=custom_value' });
 
-      await handleReportsCommand('company', [], {
-        filter: 'custom_key=custom_value',
-        format: 'json',
-      });
+      await reportsCompany(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'company_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            custom_key: 'custom_value',
-          }),
+          filter: expect.objectContaining({ custom_key: 'custom_value' }),
         }),
       );
     });
 
     it('should apply date filters for company reports', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { from: '2024-01-01', to: '2024-12-31' });
 
-      await handleReportsCommand('company', [], {
-        from: '2024-01-01',
-        to: '2024-12-31',
-        format: 'json',
-      });
+      await reportsCompany(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'company_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            after: '2024-01-01',
-            before: '2024-12-31',
-          }),
+          filter: expect.objectContaining({ after: '2024-01-01', before: '2024-12-31' }),
         }),
       );
     });
@@ -1089,139 +656,77 @@ describe('reports command', () => {
 
   describe('deal reports', () => {
     it('should fetch deal reports', async () => {
-      const mockReports = {
-        data: [
-          {
-            id: 'report-1',
-            type: 'deal_reports',
-            attributes: { total_value: 100000, total_won_value: 50000 },
-          },
-        ],
-        meta: { total: 1 },
-      };
+      const { ctx, getReports } = createReportCtx([
+        {
+          id: 'report-1',
+          type: 'deal_reports',
+          attributes: { total_value: 100000, total_won_value: 50000 },
+        },
+      ]);
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      await reportsDeal(ctx);
 
-      await handleReportsCommand('deal', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'deal_reports',
         expect.objectContaining({ group: 'deal', include: ['deal'] }),
       );
     });
 
     it('should fetch deal reports in human format', async () => {
-      const mockReports = {
-        data: [
+      const { ctx, getReports } = createReportCtx(
+        [
           {
             id: 'report-1',
             type: 'deal_reports',
             attributes: { total_value: 100000, total_won_value: 50000, group: 'Deal A' },
           },
         ],
-        meta: { total: 1 },
-      };
+        { format: 'human' },
+      );
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('deal', [], { format: 'human' });
+      await reportsDeal(ctx);
 
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(mockApi.getReports).toHaveBeenCalledWith('deal_reports', expect.anything());
+      expect(getReports).toHaveBeenCalledWith('deal_reports', expect.anything());
     });
 
     it('should apply date filters for deal reports', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { from: '2024-01-01', to: '2024-12-31' });
 
-      await handleReportsCommand('deal', [], {
-        from: '2024-01-01',
-        to: '2024-12-31',
-        format: 'json',
-      });
+      await reportsDeal(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'deal_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            date_after: '2024-01-01',
-            date_before: '2024-12-31',
-          }),
+          filter: expect.objectContaining({ date_after: '2024-01-01', date_before: '2024-12-31' }),
         }),
       );
     });
 
     it('should parse generic filter for deal reports', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { filter: 'custom_key=custom_value' });
 
-      await handleReportsCommand('deal', [], {
-        filter: 'custom_key=custom_value',
-        format: 'json',
-      });
+      await reportsDeal(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'deal_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            custom_key: 'custom_value',
-          }),
+          filter: expect.objectContaining({ custom_key: 'custom_value' }),
         }),
       );
     });
 
-    it('should handle deals alias', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('deals', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith('deal_reports', expect.anything());
-    });
-
     it('should filter by company and status', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('deal', [], {
+      const { ctx, getReports } = createReportCtx([], {
         company: '123',
         status: '456',
         from: '2024-01-01',
         to: '2024-12-31',
-        format: 'json',
       });
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      await reportsDeal(ctx);
+
+      expect(getReports).toHaveBeenCalledWith(
         'deal_reports',
         expect.objectContaining({
           filter: expect.objectContaining({
@@ -1237,139 +742,77 @@ describe('reports command', () => {
 
   describe('timesheet reports', () => {
     it('should fetch timesheet reports', async () => {
-      const mockReports = {
-        data: [
-          {
-            id: 'report-1',
-            type: 'timesheet_reports',
-            attributes: { status: 'approved', total_time: 2400 },
-          },
-        ],
-        meta: { total: 1 },
-      };
+      const { ctx, getReports } = createReportCtx([
+        {
+          id: 'report-1',
+          type: 'timesheet_reports',
+          attributes: { status: 'approved', total_time: 2400 },
+        },
+      ]);
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      await reportsTimesheet(ctx);
 
-      await handleReportsCommand('timesheet', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'timesheet_reports',
         expect.objectContaining({ include: ['person'] }),
       );
     });
 
     it('should fetch timesheet reports in human format', async () => {
-      const mockReports = {
-        data: [
+      const { ctx, getReports } = createReportCtx(
+        [
           {
             id: 'report-1',
             type: 'timesheet_reports',
             attributes: { status: 'approved', total_time: 2400, group: 'Person A' },
           },
         ],
-        meta: { total: 1 },
-      };
+        { format: 'human' },
+      );
 
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('timesheet', [], { format: 'human' });
+      await reportsTimesheet(ctx);
 
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(mockApi.getReports).toHaveBeenCalledWith('timesheet_reports', expect.anything());
+      expect(getReports).toHaveBeenCalledWith('timesheet_reports', expect.anything());
     });
 
     it('should apply date filters for timesheet reports', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { from: '2024-01-01', to: '2024-01-31' });
 
-      await handleReportsCommand('timesheet', [], {
-        from: '2024-01-01',
-        to: '2024-01-31',
-        format: 'json',
-      });
+      await reportsTimesheet(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'timesheet_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            after: '2024-01-01',
-            before: '2024-01-31',
-          }),
+          filter: expect.objectContaining({ after: '2024-01-01', before: '2024-01-31' }),
         }),
       );
     });
 
     it('should parse generic filter for timesheet reports', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { filter: 'custom_key=custom_value' });
 
-      await handleReportsCommand('timesheet', [], {
-        filter: 'custom_key=custom_value',
-        format: 'json',
-      });
+      await reportsTimesheet(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'timesheet_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            custom_key: 'custom_value',
-          }),
+          filter: expect.objectContaining({ custom_key: 'custom_value' }),
         }),
       );
     });
 
-    it('should handle timesheets alias', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('timesheets', [], { format: 'json' });
-
-      expect(mockApi.getReports).toHaveBeenCalledWith('timesheet_reports', expect.anything());
-    });
-
     it('should filter by person and status', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleReportsCommand('timesheet', [], {
+      const { ctx, getReports } = createReportCtx([], {
         person: '123',
         status: 'pending',
         from: '2024-01-01',
         to: '2024-01-31',
-        format: 'json',
       });
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      await reportsTimesheet(ctx);
+
+      expect(getReports).toHaveBeenCalledWith(
         'timesheet_reports',
         expect.objectContaining({
           filter: expect.objectContaining({
@@ -1385,36 +828,42 @@ describe('reports command', () => {
 
   describe('error handling', () => {
     it('should handle API errors', async () => {
-      const mockError = new ProductiveApiError('API Error', 500);
-      const mockApi = {
-        getReports: vi.fn().mockRejectedValue(mockError),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const { ProductiveApiError } = await import('@studiometa/productive-api');
+      const getReports = vi.fn().mockRejectedValue(new ProductiveApiError('API Error', 500));
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        api: { getReports } as unknown as ProductiveApi,
       });
 
-      await handleReportsCommand('time', [], {});
+      await reportsTime(ctx);
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
     it('should handle unexpected errors', async () => {
-      const mockApi = {
-        getReports: vi.fn().mockRejectedValue(new Error('Unexpected error')),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getReports = vi.fn().mockRejectedValue(new Error('Unexpected error'));
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        api: { getReports } as unknown as ProductiveApi,
       });
 
-      await handleReportsCommand('time', [], {});
+      await reportsTime(ctx);
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
 
-  describe('unknown subcommand', () => {
+  describe('command routing', () => {
     it('should exit with error for unknown subcommand', async () => {
-      await handleReportsCommand('unknown', [], {});
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      await handleReportsCommand('unknown', [], {
+        format: 'json',
+        token: 'test-token',
+        'org-id': 'test-org',
+      });
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
@@ -1422,52 +871,27 @@ describe('reports command', () => {
 
   describe('pagination', () => {
     it('should handle pagination options', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { page: '2', size: '50' });
 
-      await handleReportsCommand('time', [], {
-        page: '2',
-        size: '50',
-        format: 'json',
-      });
+      await reportsTime(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'time_reports',
-        expect.objectContaining({
-          page: 2,
-          perPage: 50,
-        }),
+        expect.objectContaining({ page: 2, perPage: 50 }),
       );
     });
   });
 
   describe('generic filters', () => {
     it('should parse filter string into key-value pairs', async () => {
-      const mockReports = { data: [], meta: {} };
-      const mockApi = {
-        getReports: vi.fn().mockResolvedValue(mockReports),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
+      const { ctx, getReports } = createReportCtx([], { filter: 'key1=value1,key2=value2' });
 
-      await handleReportsCommand('time', [], {
-        filter: 'key1=value1,key2=value2',
-        format: 'json',
-      });
+      await reportsTime(ctx);
 
-      expect(mockApi.getReports).toHaveBeenCalledWith(
+      expect(getReports).toHaveBeenCalledWith(
         'time_reports',
         expect.objectContaining({
-          filter: expect.objectContaining({
-            key1: 'value1',
-            key2: 'value2',
-          }),
+          filter: expect.objectContaining({ key1: 'value1', key2: 'value2' }),
         }),
       );
     });
@@ -1482,7 +906,7 @@ describe('reports help', () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('should show main help without subcommand', () => {

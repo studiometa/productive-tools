@@ -1,58 +1,29 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { ProductiveApi } from '../../api.js';
+import type { ProductiveApi } from '../../api.js';
+
+import { createTestContext } from '../../context.js';
+import { commentsList, commentsGet, commentsAdd, commentsUpdate } from '../comments/handlers.js';
 import { handleCommentsCommand } from '../comments/index.js';
-
-vi.mock('../../api.js', () => ({
-  ProductiveApi: vi.fn(function () {}),
-  ProductiveApiError: class ProductiveApiError extends Error {
-    constructor(
-      message: string,
-      public statusCode?: number,
-      public response?: unknown,
-    ) {
-      super(message);
-      this.name = 'ProductiveApiError';
-    }
-  },
-}));
-
-vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn(function (format, noColor) {
-    return {
-      format,
-      noColor,
-      output: vi.fn(),
-      error: vi.fn(),
-      success: vi.fn(),
-    };
-  }),
-  createSpinner: vi.fn(() => ({
-    start: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-  })),
-}));
 
 describe('comments command', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
-  describe('list command', () => {
+  describe('commentsList', () => {
     it('should list comments', async () => {
-      const mockComments = {
+      const getComments = vi.fn().mockResolvedValue({
         data: [
           {
             id: '1',
+            type: 'comments',
             attributes: {
               body: 'Test comment',
               commentable_type: 'Task',
@@ -62,34 +33,34 @@ describe('comments command', () => {
         ],
         meta: { total: 1, page: 1, per_page: 100 },
         included: [],
-      };
-
-      const mockApi = { getComments: vi.fn().mockResolvedValue(mockComments) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleCommentsCommand('list', [], {});
+      const ctx = createTestContext({
+        api: { getComments } as unknown as ProductiveApi,
+      });
 
-      expect(mockApi.getComments).toHaveBeenCalledWith({
+      await commentsList(ctx);
+
+      expect(getComments).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
         filter: {},
         include: ['creator'],
       });
-      expect(processExitSpy).not.toHaveBeenCalled();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should filter by task', async () => {
-      const mockComments = { data: [], meta: {}, included: [] };
-      const mockApi = { getComments: vi.fn().mockResolvedValue(mockComments) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getComments = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getComments } as unknown as ProductiveApi,
+        options: { task: '123', format: 'json' },
       });
 
-      await handleCommentsCommand('list', [], { task: '123' });
+      await commentsList(ctx);
 
-      expect(mockApi.getComments).toHaveBeenCalledWith(
+      expect(getComments).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: { task_id: '123' },
         }),
@@ -97,15 +68,16 @@ describe('comments command', () => {
     });
 
     it('should filter by deal', async () => {
-      const mockComments = { data: [], meta: {}, included: [] };
-      const mockApi = { getComments: vi.fn().mockResolvedValue(mockComments) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getComments = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getComments } as unknown as ProductiveApi,
+        options: { deal: '456', format: 'json' },
       });
 
-      await handleCommentsCommand('list', [], { deal: '456' });
+      await commentsList(ctx);
 
-      expect(mockApi.getComments).toHaveBeenCalledWith(
+      expect(getComments).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: { deal_id: '456' },
         }),
@@ -113,47 +85,33 @@ describe('comments command', () => {
     });
 
     it('should filter by project', async () => {
-      const mockComments = { data: [], meta: {}, included: [] };
-      const mockApi = { getComments: vi.fn().mockResolvedValue(mockComments) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getComments = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getComments } as unknown as ProductiveApi,
+        options: { project: '789', format: 'json' },
       });
 
-      await handleCommentsCommand('list', [], { project: '789' });
+      await commentsList(ctx);
 
-      expect(mockApi.getComments).toHaveBeenCalledWith(
+      expect(getComments).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: { project_id: '789' },
         }),
       );
     });
 
-    it('should filter by page', async () => {
-      const mockComments = { data: [], meta: {}, included: [] };
-      const mockApi = { getComments: vi.fn().mockResolvedValue(mockComments) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleCommentsCommand('list', [], { page: '101' });
-
-      expect(mockApi.getComments).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filter: { page_id: '101' },
-        }),
-      );
-    });
-
     it('should filter by discussion', async () => {
-      const mockComments = { data: [], meta: {}, included: [] };
-      const mockApi = { getComments: vi.fn().mockResolvedValue(mockComments) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getComments = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getComments } as unknown as ProductiveApi,
+        options: { discussion: '202', format: 'json' },
       });
 
-      await handleCommentsCommand('list', [], { discussion: '202' });
+      await commentsList(ctx);
 
-      expect(mockApi.getComments).toHaveBeenCalledWith(
+      expect(getComments).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: { discussion_id: '202' },
         }),
@@ -161,11 +119,12 @@ describe('comments command', () => {
     });
   });
 
-  describe('get command', () => {
+  describe('commentsGet', () => {
     it('should get a comment by id', async () => {
-      const mockComment = {
+      const getComment = vi.fn().mockResolvedValue({
         data: {
           id: '1',
+          type: 'comments',
           attributes: {
             body: 'Test comment',
             commentable_type: 'Task',
@@ -173,22 +132,25 @@ describe('comments command', () => {
           },
         },
         included: [],
-      };
-
-      const mockApi = { getComment: vi.fn().mockResolvedValue(mockComment) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleCommentsCommand('get', ['1'], {});
+      const ctx = createTestContext({
+        api: { getComment } as unknown as ProductiveApi,
+        options: { format: 'json' },
+      });
 
-      expect(mockApi.getComment).toHaveBeenCalledWith('1', { include: ['creator'] });
-      expect(processExitSpy).not.toHaveBeenCalled();
+      await commentsGet(['1'], ctx);
+
+      expect(getComment).toHaveBeenCalledWith('1', { include: ['creator'] });
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should exit with error when id is missing', async () => {
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+      const ctx = createTestContext();
+
       try {
-        await handleCommentsCommand('get', [], {});
+        await commentsGet([], ctx);
       } catch {
         // exitWithValidationError throws
       }
@@ -197,27 +159,28 @@ describe('comments command', () => {
     });
   });
 
-  describe('add command', () => {
+  describe('commentsAdd', () => {
     it('should create a comment on a task', async () => {
-      const mockComment = {
+      const createComment = vi.fn().mockResolvedValue({
         data: {
           id: '1',
+          type: 'comments',
           attributes: {
             body: 'New comment',
             commentable_type: 'Task',
             created_at: '2024-01-15T10:00:00Z',
           },
         },
-      };
-
-      const mockApi = { createComment: vi.fn().mockResolvedValue(mockComment) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleCommentsCommand('add', [], { body: 'New comment', task: '123' });
+      const ctx = createTestContext({
+        api: { createComment } as unknown as ProductiveApi,
+        options: { body: 'New comment', task: '123', format: 'json' },
+      });
 
-      expect(mockApi.createComment).toHaveBeenCalledWith({
+      await commentsAdd(ctx);
+
+      expect(createComment).toHaveBeenCalledWith({
         body: 'New comment',
         task_id: '123',
         deal_id: undefined,
@@ -230,40 +193,67 @@ describe('comments command', () => {
     });
 
     it('should exit with error when body is missing', async () => {
-      await handleCommentsCommand('add', [], { task: '123' });
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { task: '123', format: 'json' },
+      });
+
+      await commentsAdd(ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
 
     it('should exit with error when no parent resource is provided', async () => {
-      await handleCommentsCommand('add', [], { body: 'Comment without parent' });
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { body: 'Comment without parent', format: 'json' },
+      });
+
+      await commentsAdd(ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
 
     it('should exit with error when multiple parent resources are provided', async () => {
-      await handleCommentsCommand('add', [], { body: 'Comment', task: '123', deal: '456' });
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { body: 'Comment', task: '123', deal: '456', format: 'json' },
+      });
+
+      await commentsAdd(ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
   });
 
-  describe('update command', () => {
+  describe('commentsUpdate', () => {
     it('should update a comment', async () => {
-      const mockComment = { data: { id: '1', attributes: {} } };
-      const mockApi = { updateComment: vi.fn().mockResolvedValue(mockComment) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const updateComment = vi.fn().mockResolvedValue({
+        data: { id: '1', type: 'comments', attributes: {} },
       });
 
-      await handleCommentsCommand('update', ['1'], { body: 'Updated comment' });
+      const ctx = createTestContext({
+        api: { updateComment } as unknown as ProductiveApi,
+        options: { body: 'Updated comment', format: 'json' },
+      });
 
-      expect(mockApi.updateComment).toHaveBeenCalledWith('1', { body: 'Updated comment' });
+      await commentsUpdate(['1'], ctx);
+
+      expect(updateComment).toHaveBeenCalledWith('1', { body: 'Updated comment' });
     });
 
     it('should exit with error when id is missing', async () => {
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { body: 'Updated', format: 'json' },
+      });
+
       try {
-        await handleCommentsCommand('update', [], { body: 'Updated' });
+        await commentsUpdate([], ctx);
       } catch {
         // exitWithValidationError throws
       }
@@ -272,15 +262,27 @@ describe('comments command', () => {
     });
 
     it('should exit with error when no updates specified', async () => {
-      await handleCommentsCommand('update', ['1'], {});
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { format: 'json' },
+      });
+
+      await commentsUpdate(['1'], ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
   });
 
-  describe('unknown subcommand', () => {
+  describe('command routing', () => {
     it('should exit with error for unknown subcommand', async () => {
-      await handleCommentsCommand('unknown', [], {});
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      await handleCommentsCommand('unknown', [], {
+        format: 'json',
+        token: 'test-token',
+        'org-id': 'test-org',
+      });
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });

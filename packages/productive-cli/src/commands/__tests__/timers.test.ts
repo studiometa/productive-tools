@@ -1,59 +1,29 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { ProductiveApi } from '../../api.js';
+import type { ProductiveApi } from '../../api.js';
+
+import { createTestContext } from '../../context.js';
+import { timersList, timersGet, timersStart, timersStop } from '../timers/handlers.js';
 import { handleTimersCommand } from '../timers/index.js';
-
-// Mock dependencies
-vi.mock('../../api.js', () => ({
-  ProductiveApi: vi.fn(function () {}),
-  ProductiveApiError: class ProductiveApiError extends Error {
-    constructor(
-      message: string,
-      public statusCode?: number,
-      public response?: unknown,
-    ) {
-      super(message);
-      this.name = 'ProductiveApiError';
-    }
-  },
-}));
-
-vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn(function (format, noColor) {
-    return {
-      format,
-      noColor,
-      output: vi.fn(),
-      error: vi.fn(),
-      success: vi.fn(),
-    };
-  }),
-  createSpinner: vi.fn(() => ({
-    start: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-  })),
-}));
 
 describe('timers command', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
-  describe('list command', () => {
+  describe('timersList', () => {
     it('should list timers', async () => {
-      const mockTimers = {
+      const getTimers = vi.fn().mockResolvedValue({
         data: [
           {
             id: '1',
+            type: 'timers',
             attributes: {
               started_at: '2024-01-15T09:00:00Z',
               stopped_at: null,
@@ -64,68 +34,60 @@ describe('timers command', () => {
         ],
         meta: { total: 1, page: 1, per_page: 100 },
         included: [],
-      };
-
-      const mockApi = {
-        getTimers: vi.fn().mockResolvedValue(mockTimers),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleTimersCommand('list', [], {});
+      const ctx = createTestContext({
+        api: { getTimers } as unknown as ProductiveApi,
+      });
 
-      expect(mockApi.getTimers).toHaveBeenCalledWith({
+      await timersList(ctx);
+
+      expect(getTimers).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
         filter: {},
         sort: '-started_at',
         include: ['time_entry'],
       });
-      expect(processExitSpy).not.toHaveBeenCalled();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
-    it('should not filter by person if --mine is used without userId config', async () => {
-      const mockTimers = {
+    it('should filter by person with --mine flag (uses config userId)', async () => {
+      const getTimers = vi.fn().mockResolvedValue({
         data: [],
-        meta: { total: 0, page: 1, per_page: 100 },
+        meta: { total: 0 },
         included: [],
-      };
-
-      const mockApi = {
-        getTimers: vi.fn().mockResolvedValue(mockTimers),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      // Without userId in config, --mine won't filter
-      await handleTimersCommand('list', [], { mine: true });
+      const ctx = createTestContext({
+        api: { getTimers } as unknown as ProductiveApi,
+        options: { mine: true, format: 'json' },
+      });
 
-      expect(mockApi.getTimers).toHaveBeenCalledWith(
+      await timersList(ctx);
+
+      expect(getTimers).toHaveBeenCalledWith(
         expect.objectContaining({
-          filter: {},
+          filter: { person_id: '500521' },
         }),
       );
     });
 
     it('should filter by person with --person flag', async () => {
-      const mockTimers = {
+      const getTimers = vi.fn().mockResolvedValue({
         data: [],
-        meta: { total: 0, page: 1, per_page: 100 },
+        meta: { total: 0 },
         included: [],
-      };
-
-      const mockApi = {
-        getTimers: vi.fn().mockResolvedValue(mockTimers),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleTimersCommand('list', [], { person: '456' });
+      const ctx = createTestContext({
+        api: { getTimers } as unknown as ProductiveApi,
+        options: { person: '456', format: 'json' },
+      });
 
-      expect(mockApi.getTimers).toHaveBeenCalledWith(
+      await timersList(ctx);
+
+      expect(getTimers).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: { person_id: '456' },
         }),
@@ -133,22 +95,20 @@ describe('timers command', () => {
     });
 
     it('should filter by time-entry with --time-entry flag', async () => {
-      const mockTimers = {
+      const getTimers = vi.fn().mockResolvedValue({
         data: [],
-        meta: { total: 0, page: 1, per_page: 100 },
+        meta: { total: 0 },
         included: [],
-      };
-
-      const mockApi = {
-        getTimers: vi.fn().mockResolvedValue(mockTimers),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleTimersCommand('list', [], { 'time-entry': 'entry-123' });
+      const ctx = createTestContext({
+        api: { getTimers } as unknown as ProductiveApi,
+        options: { 'time-entry': 'entry-123', format: 'json' },
+      });
 
-      expect(mockApi.getTimers).toHaveBeenCalledWith(
+      await timersList(ctx);
+
+      expect(getTimers).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: { time_entry_id: 'entry-123' },
         }),
@@ -156,11 +116,12 @@ describe('timers command', () => {
     });
   });
 
-  describe('get command', () => {
+  describe('timersGet', () => {
     it('should get a timer by id', async () => {
-      const mockTimer = {
+      const getTimer = vi.fn().mockResolvedValue({
         data: {
           id: '1',
+          type: 'timers',
           attributes: {
             started_at: '2024-01-15T09:00:00Z',
             stopped_at: null,
@@ -169,39 +130,39 @@ describe('timers command', () => {
           },
         },
         included: [],
-      };
-
-      const mockApi = {
-        getTimer: vi.fn().mockResolvedValue(mockTimer),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleTimersCommand('get', ['1'], {});
-
-      expect(mockApi.getTimer).toHaveBeenCalledWith('1', {
-        include: ['time_entry'],
+      const ctx = createTestContext({
+        api: { getTimer } as unknown as ProductiveApi,
+        options: { format: 'json' },
       });
-      expect(processExitSpy).not.toHaveBeenCalled();
+
+      await timersGet(['1'], ctx);
+
+      expect(getTimer).toHaveBeenCalledWith('1', { include: ['time_entry'] });
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should exit with error when id is missing', async () => {
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+      const ctx = createTestContext();
+
       try {
-        await handleTimersCommand('get', [], {});
+        await timersGet([], ctx);
       } catch {
-        // exitWithValidationError throws after process.exit (which is mocked)
+        // exitWithValidationError throws
       }
 
       expect(processExitSpy).toHaveBeenCalledWith(3);
     });
   });
 
-  describe('start command', () => {
+  describe('timersStart', () => {
     it('should start a timer with service', async () => {
-      const mockTimer = {
+      const startTimer = vi.fn().mockResolvedValue({
         data: {
           id: '1',
+          type: 'timers',
           attributes: {
             started_at: '2024-01-15T09:00:00Z',
             stopped_at: null,
@@ -209,29 +170,27 @@ describe('timers command', () => {
             person_id: '123',
           },
         },
-      };
-
-      const mockApi = {
-        startTimer: vi.fn().mockResolvedValue(mockTimer),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleTimersCommand('start', [], { service: '789' });
+      const ctx = createTestContext({
+        api: { startTimer } as unknown as ProductiveApi,
+        options: { service: '789', format: 'json' },
+      });
 
-      expect(mockApi.startTimer).toHaveBeenCalledWith({
+      await timersStart(ctx);
+
+      expect(startTimer).toHaveBeenCalledWith({
         service_id: '789',
         time_entry_id: undefined,
       });
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(processExitSpy).not.toHaveBeenCalled();
     });
 
     it('should start a timer with time-entry', async () => {
-      const mockTimer = {
+      const startTimer = vi.fn().mockResolvedValue({
         data: {
           id: '1',
+          type: 'timers',
           attributes: {
             started_at: '2024-01-15T09:00:00Z',
             stopped_at: null,
@@ -239,60 +198,40 @@ describe('timers command', () => {
             person_id: '123',
           },
         },
-      };
-
-      const mockApi = {
-        startTimer: vi.fn().mockResolvedValue(mockTimer),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleTimersCommand('start', [], { 'time-entry': '456' });
+      const ctx = createTestContext({
+        api: { startTimer } as unknown as ProductiveApi,
+        options: { 'time-entry': '456', format: 'json' },
+      });
 
-      expect(mockApi.startTimer).toHaveBeenCalledWith({
+      await timersStart(ctx);
+
+      expect(startTimer).toHaveBeenCalledWith({
         service_id: undefined,
         time_entry_id: '456',
       });
     });
 
     it('should exit with error when neither service nor time-entry is provided', async () => {
-      await handleTimersCommand('start', [], {});
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { format: 'json' },
+      });
+
+      await timersStart(ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
-
-    it('should output JSON format when requested', async () => {
-      const mockTimer = {
-        data: {
-          id: '1',
-          attributes: {
-            started_at: '2024-01-15T09:00:00Z',
-            stopped_at: null,
-            total_time: 0,
-            person_id: '123',
-          },
-        },
-      };
-
-      const mockApi = {
-        startTimer: vi.fn().mockResolvedValue(mockTimer),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleTimersCommand('start', [], { service: '789', format: 'json' });
-
-      expect(mockApi.startTimer).toHaveBeenCalled();
-    });
   });
 
-  describe('stop command', () => {
+  describe('timersStop', () => {
     it('should stop a timer', async () => {
-      const mockTimer = {
+      const stopTimer = vi.fn().mockResolvedValue({
         data: {
           id: '1',
+          type: 'timers',
           attributes: {
             started_at: '2024-01-15T09:00:00Z',
             stopped_at: '2024-01-15T10:00:00Z',
@@ -300,61 +239,42 @@ describe('timers command', () => {
             person_id: '123',
           },
         },
-      };
-
-      const mockApi = {
-        stopTimer: vi.fn().mockResolvedValue(mockTimer),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleTimersCommand('stop', ['1'], {});
+      const ctx = createTestContext({
+        api: { stopTimer } as unknown as ProductiveApi,
+        options: { format: 'json' },
+      });
 
-      expect(mockApi.stopTimer).toHaveBeenCalledWith('1');
+      await timersStop(['1'], ctx);
+
+      expect(stopTimer).toHaveBeenCalledWith('1');
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(processExitSpy).not.toHaveBeenCalled();
     });
 
     it('should exit with error when id is missing', async () => {
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+      const ctx = createTestContext();
+
       try {
-        await handleTimersCommand('stop', [], {});
+        await timersStop([], ctx);
       } catch {
-        // exitWithValidationError throws after process.exit (which is mocked)
+        // exitWithValidationError throws
       }
 
       expect(processExitSpy).toHaveBeenCalledWith(3);
     });
-
-    it('should output JSON format when requested', async () => {
-      const mockTimer = {
-        data: {
-          id: '1',
-          attributes: {
-            started_at: '2024-01-15T09:00:00Z',
-            stopped_at: '2024-01-15T10:00:00Z',
-            total_time: 60,
-            person_id: '123',
-          },
-        },
-      };
-
-      const mockApi = {
-        stopTimer: vi.fn().mockResolvedValue(mockTimer),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handleTimersCommand('stop', ['1'], { format: 'json' });
-
-      expect(mockApi.stopTimer).toHaveBeenCalledWith('1');
-    });
   });
 
-  describe('unknown subcommand', () => {
+  describe('command routing', () => {
     it('should exit with error for unknown subcommand', async () => {
-      await handleTimersCommand('unknown', [], {});
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      await handleTimersCommand('unknown', [], {
+        format: 'json',
+        token: 'test-token',
+        'org-id': 'test-org',
+      });
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });

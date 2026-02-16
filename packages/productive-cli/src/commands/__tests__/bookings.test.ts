@@ -1,58 +1,29 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { ProductiveApi } from '../../api.js';
+import type { ProductiveApi } from '../../api.js';
+
+import { createTestContext } from '../../context.js';
+import { bookingsList, bookingsGet, bookingsAdd, bookingsUpdate } from '../bookings/handlers.js';
 import { handleBookingsCommand } from '../bookings/index.js';
-
-vi.mock('../../api.js', () => ({
-  ProductiveApi: vi.fn(function () {}),
-  ProductiveApiError: class ProductiveApiError extends Error {
-    constructor(
-      message: string,
-      public statusCode?: number,
-      public response?: unknown,
-    ) {
-      super(message);
-      this.name = 'ProductiveApiError';
-    }
-  },
-}));
-
-vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn(function (format, noColor) {
-    return {
-      format,
-      noColor,
-      output: vi.fn(),
-      error: vi.fn(),
-      success: vi.fn(),
-    };
-  }),
-  createSpinner: vi.fn(() => ({
-    start: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-  })),
-}));
 
 describe('bookings command', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
-  describe('list command', () => {
+  describe('bookingsList', () => {
     it('should list bookings', async () => {
-      const mockBookings = {
+      const getBookings = vi.fn().mockResolvedValue({
         data: [
           {
             id: '1',
+            type: 'bookings',
             attributes: {
               started_on: '2024-01-15',
               ended_on: '2024-01-19',
@@ -64,37 +35,35 @@ describe('bookings command', () => {
         ],
         meta: { total: 1, page: 1, per_page: 100 },
         included: [],
-      };
-
-      const mockApi = {
-        getBookings: vi.fn().mockResolvedValue(mockBookings),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleBookingsCommand('list', [], {});
+      const ctx = createTestContext({
+        api: { getBookings } as unknown as ProductiveApi,
+      });
 
-      expect(mockApi.getBookings).toHaveBeenCalledWith({
+      await bookingsList(ctx);
+
+      expect(getBookings).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
         filter: { with_draft: 'true' },
         sort: 'started_on',
         include: ['person', 'service'],
       });
-      expect(processExitSpy).not.toHaveBeenCalled();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should filter by person', async () => {
-      const mockBookings = { data: [], meta: {}, included: [] };
-      const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getBookings = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getBookings } as unknown as ProductiveApi,
+        options: { person: '123', format: 'json' },
       });
 
-      await handleBookingsCommand('list', [], { person: '123' });
+      await bookingsList(ctx);
 
-      expect(mockApi.getBookings).toHaveBeenCalledWith(
+      expect(getBookings).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: expect.objectContaining({ person_id: '123' }),
         }),
@@ -102,15 +71,16 @@ describe('bookings command', () => {
     });
 
     it('should filter by date range', async () => {
-      const mockBookings = { data: [], meta: {}, included: [] };
-      const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getBookings = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getBookings } as unknown as ProductiveApi,
+        options: { from: '2024-01-01', to: '2024-01-31', format: 'json' },
       });
 
-      await handleBookingsCommand('list', [], { from: '2024-01-01', to: '2024-01-31' });
+      await bookingsList(ctx);
 
-      expect(mockApi.getBookings).toHaveBeenCalledWith(
+      expect(getBookings).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: expect.objectContaining({ after: '2024-01-01', before: '2024-01-31' }),
         }),
@@ -118,21 +88,23 @@ describe('bookings command', () => {
     });
 
     it('should filter bookings with extended filters', async () => {
-      const mockBookings = { data: [], meta: {}, included: [] };
-      const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getBookings = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getBookings } as unknown as ProductiveApi,
+        options: {
+          project: 'project-1',
+          company: 'company-1',
+          service: 'service-1',
+          event: 'event-1',
+          type: 'absence',
+          format: 'json',
+        },
       });
 
-      await handleBookingsCommand('list', [], {
-        project: 'project-1',
-        company: 'company-1',
-        service: 'service-1',
-        event: 'event-1',
-        type: 'absence',
-      });
+      await bookingsList(ctx);
 
-      expect(mockApi.getBookings).toHaveBeenCalledWith(
+      expect(getBookings).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: expect.objectContaining({
             project_id: 'project-1',
@@ -146,15 +118,16 @@ describe('bookings command', () => {
     });
 
     it('should filter bookings by type budget', async () => {
-      const mockBookings = { data: [], meta: {}, included: [] };
-      const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getBookings = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getBookings } as unknown as ProductiveApi,
+        options: { type: 'budget', format: 'json' },
       });
 
-      await handleBookingsCommand('list', [], { type: 'budget' });
+      await bookingsList(ctx);
 
-      expect(mockApi.getBookings).toHaveBeenCalledWith(
+      expect(getBookings).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: expect.objectContaining({ booking_type: 'service' }),
         }),
@@ -162,15 +135,16 @@ describe('bookings command', () => {
     });
 
     it('should filter tentative bookings only', async () => {
-      const mockBookings = { data: [], meta: {}, included: [] };
-      const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getBookings = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getBookings } as unknown as ProductiveApi,
+        options: { tentative: true, format: 'json' },
       });
 
-      await handleBookingsCommand('list', [], { tentative: true });
+      await bookingsList(ctx);
 
-      expect(mockApi.getBookings).toHaveBeenCalledWith(
+      expect(getBookings).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: expect.objectContaining({ draft: 'true' }),
         }),
@@ -178,15 +152,16 @@ describe('bookings command', () => {
     });
 
     it('should filter confirmed bookings only', async () => {
-      const mockBookings = { data: [], meta: {}, included: [] };
-      const mockApi = { getBookings: vi.fn().mockResolvedValue(mockBookings) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getBookings = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getBookings } as unknown as ProductiveApi,
+        options: { tentative: false, format: 'json' },
       });
 
-      await handleBookingsCommand('list', [], { tentative: false });
+      await bookingsList(ctx);
 
-      expect(mockApi.getBookings).toHaveBeenCalledWith(
+      expect(getBookings).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: expect.objectContaining({ draft: 'false' }),
         }),
@@ -194,11 +169,12 @@ describe('bookings command', () => {
     });
   });
 
-  describe('get command', () => {
+  describe('bookingsGet', () => {
     it('should get a booking by id', async () => {
-      const mockBooking = {
+      const getBooking = vi.fn().mockResolvedValue({
         data: {
           id: '1',
+          type: 'bookings',
           attributes: {
             started_on: '2024-01-15',
             ended_on: '2024-01-19',
@@ -207,24 +183,27 @@ describe('bookings command', () => {
           },
         },
         included: [],
-      };
-
-      const mockApi = { getBooking: vi.fn().mockResolvedValue(mockBooking) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleBookingsCommand('get', ['1'], {});
+      const ctx = createTestContext({
+        api: { getBooking } as unknown as ProductiveApi,
+        options: { format: 'json' },
+      });
 
-      expect(mockApi.getBooking).toHaveBeenCalledWith('1', {
+      await bookingsGet(['1'], ctx);
+
+      expect(getBooking).toHaveBeenCalledWith('1', {
         include: ['person', 'service', 'event', 'approver'],
       });
-      expect(processExitSpy).not.toHaveBeenCalled();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should exit with error when id is missing', async () => {
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+      const ctx = createTestContext();
+
       try {
-        await handleBookingsCommand('get', [], {});
+        await bookingsGet([], ctx);
       } catch {
         // exitWithValidationError throws
       }
@@ -233,32 +212,34 @@ describe('bookings command', () => {
     });
   });
 
-  describe('add command', () => {
+  describe('bookingsAdd', () => {
     it('should create a booking with service', async () => {
-      const mockBooking = {
+      const createBooking = vi.fn().mockResolvedValue({
         data: {
           id: '1',
+          type: 'bookings',
           attributes: {
             started_on: '2024-01-15',
             ended_on: '2024-01-19',
             draft: false,
           },
         },
-      };
-
-      const mockApi = { createBooking: vi.fn().mockResolvedValue(mockBooking) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleBookingsCommand('add', [], {
-        person: '123',
-        from: '2024-01-15',
-        to: '2024-01-19',
-        service: '456',
+      const ctx = createTestContext({
+        api: { createBooking } as unknown as ProductiveApi,
+        options: {
+          person: '123',
+          from: '2024-01-15',
+          to: '2024-01-19',
+          service: '456',
+          format: 'json',
+        },
       });
 
-      expect(mockApi.createBooking).toHaveBeenCalledWith({
+      await bookingsAdd(ctx);
+
+      expect(createBooking).toHaveBeenCalledWith({
         person_id: '123',
         service_id: '456',
         event_id: undefined,
@@ -274,54 +255,85 @@ describe('bookings command', () => {
     });
 
     it('should exit with error when person is missing', async () => {
-      await handleBookingsCommand('add', [], {
-        from: '2024-01-15',
-        to: '2024-01-19',
-        service: '456',
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        config: {
+          apiToken: 'test-token',
+          organizationId: '12345',
+          userId: '',
+          baseUrl: 'https://api.productive.io/api/v2',
+        },
+        options: { from: '2024-01-15', to: '2024-01-19', service: '456', format: 'json' },
       });
+
+      await bookingsAdd(ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
 
     it('should exit with error when from date is missing', async () => {
-      await handleBookingsCommand('add', [], { person: '123', to: '2024-01-19', service: '456' });
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { person: '123', to: '2024-01-19', service: '456', format: 'json' },
+      });
+
+      await bookingsAdd(ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
 
     it('should exit with error when to date is missing', async () => {
-      await handleBookingsCommand('add', [], { person: '123', from: '2024-01-15', service: '456' });
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { person: '123', from: '2024-01-15', service: '456', format: 'json' },
+      });
+
+      await bookingsAdd(ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
 
     it('should exit with error when neither service nor event is provided', async () => {
-      await handleBookingsCommand('add', [], {
-        person: '123',
-        from: '2024-01-15',
-        to: '2024-01-19',
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { person: '123', from: '2024-01-15', to: '2024-01-19', format: 'json' },
       });
+
+      await bookingsAdd(ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
   });
 
-  describe('update command', () => {
+  describe('bookingsUpdate', () => {
     it('should update a booking', async () => {
-      const mockBooking = { data: { id: '1', attributes: {} } };
-      const mockApi = { updateBooking: vi.fn().mockResolvedValue(mockBooking) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const updateBooking = vi.fn().mockResolvedValue({
+        data: { id: '1', type: 'bookings', attributes: {} },
       });
 
-      await handleBookingsCommand('update', ['1'], { from: '2024-01-20' });
+      const ctx = createTestContext({
+        api: { updateBooking } as unknown as ProductiveApi,
+        options: { from: '2024-01-20', format: 'json' },
+      });
 
-      expect(mockApi.updateBooking).toHaveBeenCalledWith('1', { started_on: '2024-01-20' });
+      await bookingsUpdate(['1'], ctx);
+
+      expect(updateBooking).toHaveBeenCalledWith('1', { started_on: '2024-01-20' });
     });
 
     it('should exit with error when id is missing', async () => {
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { from: '2024-01-20', format: 'json' },
+      });
+
       try {
-        await handleBookingsCommand('update', [], { from: '2024-01-20' });
+        await bookingsUpdate([], ctx);
       } catch {
         // exitWithValidationError throws
       }
@@ -330,15 +342,27 @@ describe('bookings command', () => {
     });
 
     it('should exit with error when no updates specified', async () => {
-      await handleBookingsCommand('update', ['1'], {});
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { format: 'json' },
+      });
+
+      await bookingsUpdate(['1'], ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
   });
 
-  describe('unknown subcommand', () => {
+  describe('command routing', () => {
     it('should exit with error for unknown subcommand', async () => {
-      await handleBookingsCommand('unknown', [], {});
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      await handleBookingsCommand('unknown', [], {
+        format: 'json',
+        token: 'test-token',
+        'org-id': 'test-org',
+      });
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });

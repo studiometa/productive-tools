@@ -1,58 +1,34 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { ProductiveApi } from '../../api.js';
+import type { ProductiveApi } from '../../api.js';
+
+import { createTestContext } from '../../context.js';
+import {
+  companiesList,
+  companiesGet,
+  companiesAdd,
+  companiesUpdate,
+} from '../companies/handlers.js';
 import { handleCompaniesCommand } from '../companies/index.js';
-
-vi.mock('../../api.js', () => ({
-  ProductiveApi: vi.fn(function () {}),
-  ProductiveApiError: class ProductiveApiError extends Error {
-    constructor(
-      message: string,
-      public statusCode?: number,
-      public response?: unknown,
-    ) {
-      super(message);
-      this.name = 'ProductiveApiError';
-    }
-  },
-}));
-
-vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn(function (format, noColor) {
-    return {
-      format,
-      noColor,
-      output: vi.fn(),
-      error: vi.fn(),
-      success: vi.fn(),
-    };
-  }),
-  createSpinner: vi.fn(() => ({
-    start: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-  })),
-}));
 
 describe('companies command', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
-  describe('list command', () => {
+  describe('companiesList', () => {
     it('should list active companies by default', async () => {
-      const mockCompanies = {
+      const getCompanies = vi.fn().mockResolvedValue({
         data: [
           {
             id: '1',
+            type: 'companies',
             attributes: {
               name: 'Acme Corp',
               company_code: 'ACME',
@@ -63,34 +39,34 @@ describe('companies command', () => {
           },
         ],
         meta: { total: 1, page: 1, per_page: 100 },
-      };
-
-      const mockApi = { getCompanies: vi.fn().mockResolvedValue(mockCompanies) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleCompaniesCommand('list', [], {});
+      const ctx = createTestContext({
+        api: { getCompanies } as unknown as ProductiveApi,
+      });
 
-      expect(mockApi.getCompanies).toHaveBeenCalledWith({
+      await companiesList(ctx);
+
+      expect(getCompanies).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
         filter: { status: '1' },
         sort: '',
       });
-      expect(processExitSpy).not.toHaveBeenCalled();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should list archived companies with --archived flag', async () => {
-      const mockCompanies = { data: [], meta: {} };
-      const mockApi = { getCompanies: vi.fn().mockResolvedValue(mockCompanies) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getCompanies = vi.fn().mockResolvedValue({ data: [], meta: {} });
+
+      const ctx = createTestContext({
+        api: { getCompanies } as unknown as ProductiveApi,
+        options: { archived: true, format: 'json' },
       });
 
-      await handleCompaniesCommand('list', [], { archived: true });
+      await companiesList(ctx);
 
-      expect(mockApi.getCompanies).toHaveBeenCalledWith(
+      expect(getCompanies).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: { status: '2' },
         }),
@@ -98,33 +74,37 @@ describe('companies command', () => {
     });
   });
 
-  describe('get command', () => {
+  describe('companiesGet', () => {
     it('should get a company by id', async () => {
-      const mockCompany = {
+      const getCompany = vi.fn().mockResolvedValue({
         data: {
           id: '1',
+          type: 'companies',
           attributes: {
             name: 'Acme Corp',
             company_code: 'ACME',
             created_at: '2024-01-01T00:00:00Z',
           },
         },
-      };
-
-      const mockApi = { getCompany: vi.fn().mockResolvedValue(mockCompany) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleCompaniesCommand('get', ['1'], {});
+      const ctx = createTestContext({
+        api: { getCompany } as unknown as ProductiveApi,
+        options: { format: 'json' },
+      });
 
-      expect(mockApi.getCompany).toHaveBeenCalledWith('1');
-      expect(processExitSpy).not.toHaveBeenCalled();
+      await companiesGet(['1'], ctx);
+
+      expect(getCompany).toHaveBeenCalledWith('1');
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should exit with error when id is missing', async () => {
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+      const ctx = createTestContext();
+
       try {
-        await handleCompaniesCommand('get', [], {});
+        await companiesGet([], ctx);
       } catch {
         // exitWithValidationError throws
       }
@@ -133,31 +113,28 @@ describe('companies command', () => {
     });
   });
 
-  describe('add command', () => {
+  describe('companiesAdd', () => {
     it('should create a company', async () => {
-      const mockCompany = {
+      const createCompany = vi.fn().mockResolvedValue({
         data: {
           id: '1',
+          type: 'companies',
           attributes: {
             name: 'New Company',
             company_code: 'NEW',
             created_at: '2024-01-15T00:00:00Z',
           },
         },
-      };
-
-      const mockApi = { createCompany: vi.fn().mockResolvedValue(mockCompany) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleCompaniesCommand('add', [], {
-        name: 'New Company',
-        code: 'NEW',
-        currency: 'EUR',
+      const ctx = createTestContext({
+        api: { createCompany } as unknown as ProductiveApi,
+        options: { name: 'New Company', code: 'NEW', currency: 'EUR', format: 'json' },
       });
 
-      expect(mockApi.createCompany).toHaveBeenCalledWith({
+      await companiesAdd(ctx);
+
+      expect(createCompany).toHaveBeenCalledWith({
         name: 'New Company',
         billing_name: undefined,
         vat: undefined,
@@ -170,28 +147,40 @@ describe('companies command', () => {
     });
 
     it('should exit with error when name is missing', async () => {
-      await handleCompaniesCommand('add', [], { code: 'NEW' });
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { code: 'NEW', format: 'json' },
+      });
+
+      await companiesAdd(ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
   });
 
-  describe('update command', () => {
+  describe('companiesUpdate', () => {
     it('should update a company', async () => {
-      const mockCompany = { data: { id: '1', attributes: {} } };
-      const mockApi = { updateCompany: vi.fn().mockResolvedValue(mockCompany) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const updateCompany = vi.fn().mockResolvedValue({
+        data: { id: '1', type: 'companies', attributes: {} },
       });
 
-      await handleCompaniesCommand('update', ['1'], { name: 'Updated Name' });
+      const ctx = createTestContext({
+        api: { updateCompany } as unknown as ProductiveApi,
+        options: { name: 'Updated Name', format: 'json' },
+      });
 
-      expect(mockApi.updateCompany).toHaveBeenCalledWith('1', { name: 'Updated Name' });
+      await companiesUpdate(['1'], ctx);
+
+      expect(updateCompany).toHaveBeenCalledWith('1', { name: 'Updated Name' });
     });
 
     it('should exit with error when id is missing', async () => {
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+      const ctx = createTestContext({ options: { name: 'Updated', format: 'json' } });
+
       try {
-        await handleCompaniesCommand('update', [], { name: 'Updated' });
+        await companiesUpdate([], ctx);
       } catch {
         // exitWithValidationError throws
       }
@@ -200,15 +189,27 @@ describe('companies command', () => {
     });
 
     it('should exit with error when no updates specified', async () => {
-      await handleCompaniesCommand('update', ['1'], {});
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { format: 'json' },
+      });
+
+      await companiesUpdate(['1'], ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
   });
 
-  describe('unknown subcommand', () => {
+  describe('command routing', () => {
     it('should exit with error for unknown subcommand', async () => {
-      await handleCompaniesCommand('unknown', [], {});
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      await handleCompaniesCommand('unknown', [], {
+        format: 'json',
+        token: 'test-token',
+        'org-id': 'test-org',
+      });
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });

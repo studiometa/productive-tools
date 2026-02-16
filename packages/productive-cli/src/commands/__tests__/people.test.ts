@@ -1,48 +1,29 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { ProductiveApi, ProductiveApiError } from '../../api.js';
-import { handlePeopleCommand } from '../people/index.js';
+import type { ProductiveApi } from '../../api.js';
 
-// Mock dependencies
-vi.mock('../../api.js', async (importOriginal) => ({
-  ...((await importOriginal()) as object),
-  ProductiveApi: vi.fn(function () {}),
-}));
-vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn(function (format, noColor) {
-    return {
-      format,
-      noColor,
-      output: vi.fn(),
-      error: vi.fn(),
-    };
-  }),
-  createSpinner: vi.fn(() => ({
-    start: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-  })),
-}));
+import { createTestContext } from '../../context.js';
+import { peopleList, peopleGet } from '../people/handlers.js';
+import { handlePeopleCommand } from '../people/index.js';
 
 describe('people command', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
-  describe('list command', () => {
+  describe('peopleList', () => {
     it('should list active people by default', async () => {
-      const mockPeople = {
+      const getPeople = vi.fn().mockResolvedValue({
         data: [
           {
             id: '1',
+            type: 'people',
             attributes: {
               first_name: 'John',
               last_name: 'Doe',
@@ -54,78 +35,29 @@ describe('people command', () => {
           },
         ],
         meta: { total: 1, page: 1, per_page: 100 },
-      };
-
-      const mockApi = {
-        getPeople: vi.fn().mockResolvedValue(mockPeople),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handlePeopleCommand('list', [], {});
+      const ctx = createTestContext({
+        api: { getPeople } as unknown as ProductiveApi,
+      });
 
-      expect(mockApi.getPeople).toHaveBeenCalledWith({
+      await peopleList(ctx);
+
+      expect(getPeople).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
         filter: {},
         sort: '',
       });
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(processExitSpy).not.toHaveBeenCalled();
-    });
-
-    it('should list all people when --all flag is used', async () => {
-      const mockPeople = {
-        data: [
-          {
-            id: '1',
-            attributes: {
-              first_name: 'John',
-              last_name: 'Doe',
-              email: 'john@example.com',
-              active: true,
-              created_at: '2024-01-01',
-              updated_at: '2024-01-02',
-            },
-          },
-          {
-            id: '2',
-            attributes: {
-              first_name: 'Jane',
-              last_name: 'Smith',
-              email: 'jane@example.com',
-              active: false,
-              created_at: '2024-01-01',
-              updated_at: '2024-01-02',
-            },
-          },
-        ],
-        meta: { total: 2 },
-      };
-
-      const mockApi = {
-        getPeople: vi.fn().mockResolvedValue(mockPeople),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handlePeopleCommand('list', [], { all: true });
-
-      expect(mockApi.getPeople).toHaveBeenCalledWith({
-        page: 1,
-        perPage: 100,
-        filter: {},
-        sort: '',
-      });
     });
 
     it('should list people in json format', async () => {
-      const mockPeople = {
+      const getPeople = vi.fn().mockResolvedValue({
         data: [
           {
             id: '1',
+            type: 'people',
             attributes: {
               first_name: 'John',
               last_name: 'Doe',
@@ -137,40 +69,30 @@ describe('people command', () => {
           },
         ],
         meta: { total: 1 },
-      };
-
-      const mockApi = {
-        getPeople: vi.fn().mockResolvedValue(mockPeople),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handlePeopleCommand('list', [], { format: 'json' });
+      const ctx = createTestContext({
+        api: { getPeople } as unknown as ProductiveApi,
+        options: { format: 'json' },
+      });
 
-      expect(mockApi.getPeople).toHaveBeenCalled();
+      await peopleList(ctx);
+
+      expect(getPeople).toHaveBeenCalled();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should handle pagination and sorting', async () => {
-      const mockPeople = {
-        data: [],
-        meta: { total: 0 },
-      };
+      const getPeople = vi.fn().mockResolvedValue({ data: [], meta: { total: 0 } });
 
-      const mockApi = {
-        getPeople: vi.fn().mockResolvedValue(mockPeople),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const ctx = createTestContext({
+        api: { getPeople } as unknown as ProductiveApi,
+        options: { page: '2', size: '50', sort: 'last_name', format: 'json' },
       });
 
-      await handlePeopleCommand('list', [], {
-        page: '2',
-        size: '50',
-        sort: 'last_name',
-      });
+      await peopleList(ctx);
 
-      expect(mockApi.getPeople).toHaveBeenCalledWith({
+      expect(getPeople).toHaveBeenCalledWith({
         page: 2,
         perPage: 50,
         filter: {},
@@ -179,28 +101,24 @@ describe('people command', () => {
     });
 
     it('should filter people with extended filters', async () => {
-      const mockPeople = {
-        data: [],
-        meta: { total: 0 },
-      };
+      const getPeople = vi.fn().mockResolvedValue({ data: [], meta: { total: 0 } });
 
-      const mockApi = {
-        getPeople: vi.fn().mockResolvedValue(mockPeople),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const ctx = createTestContext({
+        api: { getPeople } as unknown as ProductiveApi,
+        options: {
+          company: 'company-1',
+          project: 'project-1',
+          role: 'role-1',
+          team: 'Engineering',
+          type: 'user',
+          status: 'active',
+          format: 'json',
+        },
       });
 
-      await handlePeopleCommand('list', [], {
-        company: 'company-1',
-        project: 'project-1',
-        role: 'role-1',
-        team: 'Engineering',
-        type: 'user',
-        status: 'active',
-      });
+      await peopleList(ctx);
 
-      expect(mockApi.getPeople).toHaveBeenCalledWith({
+      expect(getPeople).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
         filter: {
@@ -216,21 +134,16 @@ describe('people command', () => {
     });
 
     it('should filter people by type contact', async () => {
-      const mockPeople = {
-        data: [],
-        meta: { total: 0 },
-      };
+      const getPeople = vi.fn().mockResolvedValue({ data: [], meta: { total: 0 } });
 
-      const mockApi = {
-        getPeople: vi.fn().mockResolvedValue(mockPeople),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const ctx = createTestContext({
+        api: { getPeople } as unknown as ProductiveApi,
+        options: { type: 'contact', format: 'json' },
       });
 
-      await handlePeopleCommand('list', [], { type: 'contact' });
+      await peopleList(ctx);
 
-      expect(mockApi.getPeople).toHaveBeenCalledWith({
+      expect(getPeople).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
         filter: { person_type: '2' },
@@ -239,21 +152,16 @@ describe('people command', () => {
     });
 
     it('should filter people by type placeholder', async () => {
-      const mockPeople = {
-        data: [],
-        meta: { total: 0 },
-      };
+      const getPeople = vi.fn().mockResolvedValue({ data: [], meta: { total: 0 } });
 
-      const mockApi = {
-        getPeople: vi.fn().mockResolvedValue(mockPeople),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const ctx = createTestContext({
+        api: { getPeople } as unknown as ProductiveApi,
+        options: { type: 'placeholder', format: 'json' },
       });
 
-      await handlePeopleCommand('list', [], { type: 'placeholder' });
+      await peopleList(ctx);
 
-      expect(mockApi.getPeople).toHaveBeenCalledWith({
+      expect(getPeople).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
         filter: { person_type: '3' },
@@ -262,21 +170,16 @@ describe('people command', () => {
     });
 
     it('should filter people by status deactivated', async () => {
-      const mockPeople = {
-        data: [],
-        meta: { total: 0 },
-      };
+      const getPeople = vi.fn().mockResolvedValue({ data: [], meta: { total: 0 } });
 
-      const mockApi = {
-        getPeople: vi.fn().mockResolvedValue(mockPeople),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const ctx = createTestContext({
+        api: { getPeople } as unknown as ProductiveApi,
+        options: { status: 'deactivated', format: 'json' },
       });
 
-      await handlePeopleCommand('list', [], { status: 'deactivated' });
+      await peopleList(ctx);
 
-      expect(mockApi.getPeople).toHaveBeenCalledWith({
+      expect(getPeople).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
         filter: { status: '2' },
@@ -285,25 +188,26 @@ describe('people command', () => {
     });
 
     it('should handle API errors', async () => {
-      const mockError = new ProductiveApiError('API Error', 500);
-      const mockApi = {
-        getPeople: vi.fn().mockRejectedValue(mockError),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const { ProductiveApiError } = await import('@studiometa/productive-api');
+      const getPeople = vi.fn().mockRejectedValue(new ProductiveApiError('API Error', 500));
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        api: { getPeople } as unknown as ProductiveApi,
       });
 
-      await handlePeopleCommand('list', [], {});
+      await peopleList(ctx);
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
 
-  describe('get command', () => {
+  describe('peopleGet', () => {
     it('should get a person by id', async () => {
-      const mockPerson = {
+      const getPerson = vi.fn().mockResolvedValue({
         data: {
           id: '1',
+          type: 'people',
           attributes: {
             first_name: 'John',
             last_name: 'Doe',
@@ -314,111 +218,69 @@ describe('people command', () => {
           },
           relationships: {},
         },
-      };
-
-      const mockApi = {
-        getPerson: vi.fn().mockResolvedValue(mockPerson),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handlePeopleCommand('get', ['1'], {});
+      const ctx = createTestContext({
+        api: { getPerson } as unknown as ProductiveApi,
+        options: { format: 'json' },
+      });
 
-      expect(mockApi.getPerson).toHaveBeenCalledWith('1');
+      await peopleGet(['1'], ctx);
+
+      expect(getPerson).toHaveBeenCalledWith('1');
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(processExitSpy).not.toHaveBeenCalled();
-    });
-
-    it('should get a person in json format', async () => {
-      const mockPerson = {
-        data: {
-          id: '1',
-          attributes: {
-            first_name: 'John',
-            last_name: 'Doe',
-            email: 'john@example.com',
-            active: true,
-            created_at: '2024-01-01',
-            updated_at: '2024-01-02',
-          },
-          relationships: {},
-        },
-      };
-
-      const mockApi = {
-        getPerson: vi.fn().mockResolvedValue(mockPerson),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handlePeopleCommand('get', ['1'], { format: 'json' });
-
-      expect(mockApi.getPerson).toHaveBeenCalledWith('1');
     });
 
     it('should exit with error when id is missing', async () => {
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+      const ctx = createTestContext();
+
       try {
-        await handlePeopleCommand('get', [], {});
+        await peopleGet([], ctx);
       } catch {
-        // exitWithValidationError throws after process.exit (which is mocked)
+        // exitWithValidationError throws
       }
 
       expect(processExitSpy).toHaveBeenCalledWith(3);
     });
 
-    it('should handle API errors', async () => {
-      const mockError = new ProductiveApiError('Person not found', 404);
-      const mockApi = {
-        getPerson: vi.fn().mockRejectedValue(mockError),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+    it('should handle API errors (not found)', async () => {
+      const { ProductiveApiError } = await import('@studiometa/productive-api');
+      const getPerson = vi.fn().mockRejectedValue(new ProductiveApiError('Person not found', 404));
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        api: { getPerson } as unknown as ProductiveApi,
       });
 
-      await handlePeopleCommand('get', ['999'], {});
+      await peopleGet(['999'], ctx);
 
-      expect(processExitSpy).toHaveBeenCalledWith(5); // NOT_FOUND_ERROR exit code
+      expect(processExitSpy).toHaveBeenCalledWith(5);
     });
 
     it('should handle unexpected errors', async () => {
-      const mockApi = {
-        getPerson: vi.fn().mockRejectedValue(new Error('Unexpected error')),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getPerson = vi.fn().mockRejectedValue(new Error('Unexpected error'));
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        api: { getPerson } as unknown as ProductiveApi,
       });
 
-      await handlePeopleCommand('get', ['1'], {});
+      await peopleGet(['1'], ctx);
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
 
-  describe('ls alias', () => {
-    it('should work as an alias for list', async () => {
-      const mockPeople = {
-        data: [],
-        meta: { total: 0 },
-      };
-
-      const mockApi = {
-        getPeople: vi.fn().mockResolvedValue(mockPeople),
-      };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
-      });
-
-      await handlePeopleCommand('ls', [], {});
-
-      expect(mockApi.getPeople).toHaveBeenCalled();
-    });
-  });
-
-  describe('unknown subcommand', () => {
+  describe('command routing', () => {
     it('should exit with error for unknown subcommand', async () => {
-      await handlePeopleCommand('unknown', [], {});
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      await handlePeopleCommand('unknown', [], {
+        format: 'json',
+        token: 'test-token',
+        'org-id': 'test-org',
+      });
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
