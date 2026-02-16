@@ -2,7 +2,7 @@
  * Get a single time entry executor.
  */
 
-import type { ProductiveTimeEntry } from '@studiometa/productive-cli';
+import type { ProductiveTimeEntry } from '@studiometa/productive-api';
 
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';

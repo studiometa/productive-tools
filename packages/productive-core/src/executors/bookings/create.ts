@@ -1,4 +1,4 @@
-import type { ProductiveBooking } from '@studiometa/productive-cli';
+import type { ProductiveBooking } from '@studiometa/productive-api';
 
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';

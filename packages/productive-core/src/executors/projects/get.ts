@@ -2,7 +2,7 @@
  * Get a single project executor.
  */
 
-import type { ProductiveProject } from '@studiometa/productive-cli';
+import type { ProductiveProject } from '@studiometa/productive-api';
 
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';

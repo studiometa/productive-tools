@@ -27,7 +27,7 @@ export default defineConfig({
     },
     rollupOptions: {
       external: [
-        '@studiometa/productive-cli',
+        '@studiometa/productive-api',
         ...builtinModules,
         ...builtinModules.map((m) => `node:${m}`),
       ],

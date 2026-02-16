@@ -2,7 +2,7 @@
  * List people executor.
  */
 
-import type { ProductivePerson } from '@studiometa/productive-cli';
+import type { ProductivePerson } from '@studiometa/productive-api';
 
 import type { ExecutorContext, ResolvableResourceType } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';

@@ -1,4 +1,4 @@
-import type { ProductiveTimer } from '@studiometa/productive-cli';
+import type { ProductiveTimer } from '@studiometa/productive-api';
 
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';

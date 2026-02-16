@@ -14,7 +14,7 @@
  * ```
  */
 
-import type { ProductiveApi } from '@studiometa/productive-cli';
+import type { ProductiveApi } from '@studiometa/productive-api';
 
 import type { ExecutorConfig, ExecutorContext, ResourceResolver } from './types.js';
 

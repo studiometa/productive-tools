@@ -2,7 +2,7 @@
  * List services executor.
  */
 
-import type { ProductiveService } from '@studiometa/productive-cli';
+import type { ProductiveService } from '@studiometa/productive-api';
 
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';

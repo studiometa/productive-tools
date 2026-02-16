@@ -8,7 +8,7 @@
  * Adapters (CLI, MCP) handle all I/O concerns.
  */
 
-import type { IncludedResource, JsonApiMeta } from '@studiometa/productive-cli';
+import type { IncludedResource, JsonApiMeta } from '@studiometa/productive-api';
 
 import type { ExecutorContext, ResolvedInfo } from '../context/types.js';
 

@@ -6,7 +6,7 @@
  * from CLI command handlers.
  */
 
-import type { ProductiveApi } from '@studiometa/productive-cli';
+import type { ProductiveApi } from '@studiometa/productive-api';
 
 import type { ExecutorContext, ResourceResolver, ResolvableResourceType } from './types.js';
 

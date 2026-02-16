@@ -5,7 +5,7 @@
  * inject real implementations in production, mocks in tests.
  */
 
-import type { ProductiveApi } from '@studiometa/productive-cli';
+import type { ProductiveApi } from '@studiometa/productive-api';
 
 /**
  * Supported resource types for smart ID resolution

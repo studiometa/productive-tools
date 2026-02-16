@@ -2,7 +2,7 @@
  * List projects executor.
  */
 
-import type { ProductiveProject } from '@studiometa/productive-cli';
+import type { ProductiveProject } from '@studiometa/productive-api';
 
 import type { ExecutorContext, ResolvableResourceType } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';

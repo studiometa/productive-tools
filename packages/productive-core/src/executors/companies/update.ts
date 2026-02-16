@@ -2,7 +2,7 @@
  * Update a company executor.
  */
 
-import type { ProductiveCompany } from '@studiometa/productive-cli';
+import type { ProductiveCompany } from '@studiometa/productive-api';
 
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';

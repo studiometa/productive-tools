@@ -51,7 +51,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@studiometa/productive-cli": "*"
+    "@studiometa/productive-api": "*"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
