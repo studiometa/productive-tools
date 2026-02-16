@@ -30,14 +30,19 @@ export {
   createResourceResolver,
   resolve as resolveResource,
   isNumericId,
+  needsResolution,
   detectResourceType,
+  resolveFilterValue,
+  resolveFilterIds,
   ResolveError,
   FILTER_TYPE_MAPPING,
 } from './resolvers/index.js';
 export type {
+  DetectionResult,
   ResolveResult,
   ResolveOptions,
   ResolverCache,
+  ResolvedMetadata,
   CreateResolverOptions,
 } from './resolvers/index.js';
 

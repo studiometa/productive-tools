@@ -64,9 +64,20 @@ export class ResolveError extends Error {
     message: string,
     public query: string,
     public type?: ResolvableResourceType,
+    public suggestions?: ResolveResult[],
   ) {
     super(message);
     this.name = 'ResolveError';
+  }
+
+  toJSON() {
+    return {
+      error: this.name,
+      message: this.message,
+      query: this.query,
+      type: this.type,
+      suggestions: this.suggestions,
+    };
   }
 }
 
@@ -80,6 +91,15 @@ const DEAL_NUMBER_PATTERN = /^(D|DEAL)-\d+$/i;
 const NUMERIC_ID_PATTERN = /^\d+$/;
 
 /**
+ * Detection result from pattern matching
+ */
+export interface DetectionResult {
+  type: ResolvableResourceType;
+  confidence: 'high' | 'medium' | 'low';
+  pattern: string;
+}
+
+/**
  * Check if a value is a numeric ID (no resolution needed)
  */
 export function isNumericId(value: string): boolean {
@@ -87,13 +107,22 @@ export function isNumericId(value: string): boolean {
 }
 
 /**
+ * Check if a value needs resolution (not a numeric ID)
+ */
+export function needsResolution(value: string): boolean {
+  return !isNumericId(value);
+}
+
+/**
  * Detect resource type from query string pattern
  */
-export function detectResourceType(query: string): ResolvableResourceType | null {
+export function detectResourceType(query: string): DetectionResult | null {
   if (NUMERIC_ID_PATTERN.test(query)) return null;
-  if (EMAIL_PATTERN.test(query)) return 'person';
-  if (PROJECT_NUMBER_PATTERN.test(query)) return 'project';
-  if (DEAL_NUMBER_PATTERN.test(query)) return 'deal';
+  if (EMAIL_PATTERN.test(query)) return { type: 'person', confidence: 'high', pattern: 'email' };
+  if (PROJECT_NUMBER_PATTERN.test(query))
+    return { type: 'project', confidence: 'high', pattern: 'project_number' };
+  if (DEAL_NUMBER_PATTERN.test(query))
+    return { type: 'deal', confidence: 'high', pattern: 'deal_number' };
   return null;
 }
 
@@ -329,7 +358,7 @@ export async function resolve(
         query,
       );
     }
-    resourceType = detected;
+    resourceType = detected.type;
   }
 
   // Resolve based on type
@@ -400,6 +429,100 @@ export const FILTER_TYPE_MAPPING: Record<string, ResolvableResourceType> = {
   deal_id: 'deal',
   service_id: 'service',
 };
+
+// ============================================================================
+// Standalone resolve helpers (used by CLI)
+// ============================================================================
+
+/**
+ * Metadata about resolved filters (for response enrichment)
+ */
+export interface ResolvedMetadata {
+  [key: string]: {
+    input: string;
+    id: string;
+    label: string;
+    reusable: boolean;
+  };
+}
+
+/**
+ * Resolve a filter value if it needs resolution, or return as-is if numeric
+ *
+ * @param api - ProductiveApi instance
+ * @param value - The filter value (ID or human-friendly identifier)
+ * @param type - The resource type to resolve to
+ * @param options - Additional resolution options
+ * @returns Resolved ID
+ * @throws ResolveError if resolution fails
+ */
+export async function resolveFilterValue(
+  api: ProductiveApi,
+  value: string,
+  type: ResolvableResourceType,
+  options: Omit<ResolveOptions, 'type'> = {},
+): Promise<string> {
+  if (isNumericId(value)) {
+    return value;
+  }
+
+  const results = await resolve(api, value, { ...options, type, first: true });
+
+  if (results.length === 0) {
+    throw new ResolveError(`No ${type} found matching "${value}"`, value, type);
+  }
+
+  return results[0].id;
+}
+
+/**
+ * Resolve multiple filter IDs and return metadata
+ *
+ * @param api - ProductiveApi instance
+ * @param filters - Object mapping filter names to values
+ * @param typeMapping - Object mapping filter names to resource types
+ * @param options - Resolution options
+ * @returns Object with resolved IDs and metadata
+ */
+export async function resolveFilterIds(
+  api: ProductiveApi,
+  filters: Record<string, string>,
+  typeMapping: Record<string, ResolvableResourceType>,
+  options: Omit<ResolveOptions, 'type'> = {},
+): Promise<{ resolved: Record<string, string>; metadata: ResolvedMetadata }> {
+  const resolved: Record<string, string> = {};
+  const metadata: ResolvedMetadata = {};
+
+  for (const [key, value] of Object.entries(filters)) {
+    const type = typeMapping[key];
+
+    if (!type || isNumericId(value)) {
+      resolved[key] = value;
+      continue;
+    }
+
+    try {
+      const results = await resolve(api, value, { ...options, type, first: true });
+
+      if (results.length > 0) {
+        const result = results[0];
+        resolved[key] = result.id;
+        metadata[key] = {
+          input: value,
+          id: result.id,
+          label: result.label,
+          reusable: result.exact,
+        };
+      } else {
+        resolved[key] = value;
+      }
+    } catch {
+      resolved[key] = value;
+    }
+  }
+
+  return { resolved, metadata };
+}
 
 // ============================================================================
 // Factory

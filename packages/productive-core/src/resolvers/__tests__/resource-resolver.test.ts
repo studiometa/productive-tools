@@ -7,7 +7,10 @@ import {
   detectResourceType,
   FILTER_TYPE_MAPPING,
   isNumericId,
+  needsResolution,
   resolve,
+  resolveFilterIds,
+  resolveFilterValue,
   ResolveError,
 } from '../resource-resolver.js';
 
@@ -83,17 +86,18 @@ describe('isNumericId', () => {
 
 describe('detectResourceType', () => {
   it('detects person from email', () => {
-    expect(detectResourceType('user@example.com')).toBe('person');
+    const result = detectResourceType('user@example.com');
+    expect(result).toEqual({ type: 'person', confidence: 'high', pattern: 'email' });
   });
 
   it('detects project from PRJ-xxx', () => {
-    expect(detectResourceType('PRJ-123')).toBe('project');
-    expect(detectResourceType('P-456')).toBe('project');
+    expect(detectResourceType('PRJ-123')?.type).toBe('project');
+    expect(detectResourceType('P-456')?.type).toBe('project');
   });
 
   it('detects deal from D-xxx', () => {
-    expect(detectResourceType('D-123')).toBe('deal');
-    expect(detectResourceType('DEAL-456')).toBe('deal');
+    expect(detectResourceType('D-123')?.type).toBe('deal');
+    expect(detectResourceType('DEAL-456')?.type).toBe('deal');
   });
 
   it('returns null for numeric IDs', () => {
@@ -475,5 +479,150 @@ describe('FILTER_TYPE_MAPPING', () => {
     expect(FILTER_TYPE_MAPPING.company_id).toBe('company');
     expect(FILTER_TYPE_MAPPING.deal_id).toBe('deal');
     expect(FILTER_TYPE_MAPPING.service_id).toBe('service');
+  });
+});
+
+// ============================================================================
+// needsResolution
+// ============================================================================
+
+describe('needsResolution', () => {
+  it('returns false for numeric IDs', () => {
+    expect(needsResolution('12345')).toBe(false);
+    expect(needsResolution('0')).toBe(false);
+  });
+
+  it('returns true for non-numeric values', () => {
+    expect(needsResolution('user@test.com')).toBe(true);
+    expect(needsResolution('PRJ-123')).toBe(true);
+    expect(needsResolution('some name')).toBe(true);
+  });
+});
+
+// ============================================================================
+// resolveFilterValue
+// ============================================================================
+
+describe('resolveFilterValue', () => {
+  it('returns numeric IDs unchanged', async () => {
+    const api = mockApi();
+    const result = await resolveFilterValue(api, '12345', 'person');
+    expect(result).toBe('12345');
+  });
+
+  it('resolves non-numeric values', async () => {
+    const api = mockApi({
+      getPeople: vi.fn().mockResolvedValue({
+        data: [mockPerson('100', 'John', 'Doe', 'john@test.com')],
+        meta: {},
+      }),
+    });
+
+    const result = await resolveFilterValue(api, 'john@test.com', 'person');
+    expect(result).toBe('100');
+  });
+
+  it('throws ResolveError when no match found', async () => {
+    const api = mockApi({
+      getPeople: vi.fn().mockResolvedValue({ data: [], meta: {} }),
+    });
+
+    await expect(resolveFilterValue(api, 'nobody@test.com', 'person')).rejects.toThrow(
+      ResolveError,
+    );
+  });
+});
+
+// ============================================================================
+// resolveFilterIds
+// ============================================================================
+
+describe('resolveFilterIds', () => {
+  it('resolves mapped filter values', async () => {
+    const api = mockApi({
+      getPeople: vi.fn().mockResolvedValue({
+        data: [mockPerson('100', 'John', 'Doe', 'john@test.com')],
+        meta: {},
+      }),
+    });
+
+    const { resolved, metadata } = await resolveFilterIds(
+      api,
+      { person_id: 'john@test.com', status: 'active' },
+      { person_id: 'person' },
+    );
+
+    expect(resolved.person_id).toBe('100');
+    expect(resolved.status).toBe('active');
+    expect(metadata.person_id).toEqual({
+      input: 'john@test.com',
+      id: '100',
+      label: 'John Doe',
+      reusable: true,
+    });
+  });
+
+  it('passes through numeric IDs', async () => {
+    const api = mockApi();
+    const { resolved, metadata } = await resolveFilterIds(
+      api,
+      { person_id: '12345' },
+      { person_id: 'person' },
+    );
+
+    expect(resolved.person_id).toBe('12345');
+    expect(metadata).toEqual({});
+  });
+
+  it('passes through unmapped filter keys', async () => {
+    const api = mockApi();
+    const { resolved } = await resolveFilterIds(
+      api,
+      { unknown_key: 'some-value' },
+      { person_id: 'person' },
+    );
+
+    expect(resolved.unknown_key).toBe('some-value');
+  });
+
+  it('keeps original value on resolve error', async () => {
+    const api = mockApi({
+      getPeople: vi.fn().mockResolvedValue({ data: [], meta: {} }),
+    });
+
+    const { resolved } = await resolveFilterIds(
+      api,
+      { person_id: 'nobody@test.com' },
+      { person_id: 'person' },
+    );
+
+    expect(resolved.person_id).toBe('nobody@test.com');
+  });
+});
+
+// ============================================================================
+// ResolveError
+// ============================================================================
+
+describe('ResolveError', () => {
+  it('serializes to JSON with suggestions', () => {
+    const suggestions = [
+      { id: '1', type: 'person' as const, label: 'John', query: 'jo', exact: false },
+    ];
+    const error = new ResolveError('Not found', 'jo', 'person', suggestions);
+    expect(error.toJSON()).toEqual({
+      error: 'ResolveError',
+      message: 'Not found',
+      query: 'jo',
+      type: 'person',
+      suggestions,
+    });
+  });
+
+  it('serializes to JSON without suggestions', () => {
+    const error = new ResolveError('Not found', 'jo');
+    const json = error.toJSON();
+    expect(json.suggestions).toBeUndefined();
+    expect(json.type).toBeUndefined();
   });
 });
