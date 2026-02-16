@@ -22,6 +22,7 @@ import { handlePeople } from './people.js';
 // Resource handlers
 import { handleProjects } from './projects.js';
 import { handleReports } from './reports.js';
+import { type ResolvableResourceType } from './resolve.js';
 import { handleServices } from './services.js';
 import { handleTasks } from './tasks.js';
 import { handleTime } from './time.js';
@@ -127,7 +128,7 @@ export async function executeToolWithCredentials(
     no_hints,
     type,
     ...restArgs
-  } = args as unknown as ProductiveArgs & { no_hints?: boolean; type?: string };
+  } = args as unknown as ProductiveArgs & { no_hints?: boolean; type?: ResolvableResourceType };
 
   // Default compact to false for 'get' action (single resource), true for 'list'
   const isCompact = compact ?? action !== 'get';
