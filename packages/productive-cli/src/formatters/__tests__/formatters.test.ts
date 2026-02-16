@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 import type { JsonApiResource } from '../types.js';
 
@@ -13,14 +13,6 @@ import {
   formatPagination,
   formatResponse,
 } from '../index.js';
-
-// Mock colors to disable ANSI codes in tests
-vi.mock('../../utils/colors.js', () => ({
-  isColorEnabled: () => false,
-  colors: {
-    underline: (s: string) => s,
-  },
-}));
 
 describe('formatTimeEntry', () => {
   const timeEntry: JsonApiResource = {

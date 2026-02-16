@@ -2,8 +2,7 @@
  * Human-readable renderers for Comment resources
  */
 
-import type { FormattedComment } from '../../formatters/comment.js';
-import type { FormattedListResponse } from '../../formatters/types.js';
+import type { FormattedComment, FormattedListResponse } from '../../formatters/types.js';
 import type { RenderContext, ListRenderer, Renderer } from '../types.js';
 
 import { colors } from '../../utils/colors.js';

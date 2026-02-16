@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import type { JsonApiMeta } from '../types.js';
 
-import { formatPagination, hasMorePages } from '../pagination.js';
+import { formatPagination, hasMorePages } from '../index.js';
 
 describe('pagination', () => {
   describe('formatPagination', () => {
