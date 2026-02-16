@@ -27,11 +27,13 @@
  * ```
  */
 
+import type { ResolvableResourceType, ResolvedMetadata } from '@studiometa/productive-core';
+
+import { resolveFilterIds, needsResolution, ResolveError } from '@studiometa/productive-core';
+
 import type { CommandContext } from '../context.js';
-import type { ResolvableResourceType, ResolvedMetadata } from './resource-resolver.js';
 
 import { colors } from './colors.js';
-import { resolveFilterIds, needsResolution, ResolveError } from './resource-resolver.js';
 
 /**
  * Filter type mapping for common filter names
@@ -113,7 +115,6 @@ export async function resolveCommandFilters(
 
   // Resolve filters
   const { resolved, metadata } = await resolveFilterIds(ctx.api, filters, typeMapping, {
-    orgId: ctx.config.organizationId,
     projectId: options.projectId || (filters.project_id as string),
     first: true, // Always use first match for filter resolution
   });
@@ -163,7 +164,6 @@ export async function resolveValue(
     { value },
     { value: type },
     {
-      orgId: ctx.config.organizationId,
       projectId: options.projectId,
       first: true,
     },

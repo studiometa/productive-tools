@@ -1,17 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-import type { ProductiveApi } from '../../api.js';
+import type { ProductiveApi } from '@studiometa/productive-api';
 
 import {
   detectResourceType,
   isNumericId,
   needsResolution,
-  resolve,
+  resolveResource as resolve,
   resolveFilterValue,
   resolveFilterIds,
   ResolveError,
   type ResolvableResourceType,
-} from '../resource-resolver.js';
+} from '@studiometa/productive-core';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 describe('resource-resolver', () => {
   describe('detectResourceType', () => {
@@ -567,17 +566,18 @@ describe('resource-resolver', () => {
       expect(results[0].label).toBe('D-123');
     });
 
-    it('handles orgId option for caching', async () => {
-      mockApi.getPeople.mockResolvedValue({
-        data: [{ id: '500521', attributes: { first_name: 'John', last_name: 'Doe' } }],
+    it('handles resolution with project context', async () => {
+      mockApi.getServices.mockResolvedValue({
+        data: [{ id: '111', attributes: { name: 'Development' } }],
       });
 
-      const results = await resolve(mockApi as unknown as ProductiveApi, 'john@example.com', {
-        orgId: 'test-org',
+      const results = await resolve(mockApi as unknown as ProductiveApi, 'dev', {
+        type: 'service',
+        projectId: '777',
       });
 
       expect(results).toHaveLength(1);
-      expect(results[0].id).toBe('500521');
+      expect(results[0].id).toBe('111');
     });
   });
 
@@ -654,32 +654,6 @@ describe('resource-resolver', () => {
       await expect(
         resolveFilterValue(mockApi as unknown as ProductiveApi, 'unknown@example.com', 'person'),
       ).rejects.toThrow(ResolveError);
-    });
-  });
-
-  describe('resolve with caching', () => {
-    let mockApi: {
-      getPeople: ReturnType<typeof vi.fn>;
-    };
-
-    beforeEach(() => {
-      mockApi = {
-        getPeople: vi.fn(),
-      };
-    });
-
-    it('caches single result when orgId is provided', async () => {
-      mockApi.getPeople.mockResolvedValue({
-        data: [{ id: '500521', attributes: { first_name: 'John', last_name: 'Doe' } }],
-      });
-
-      const results = await resolve(mockApi as unknown as ProductiveApi, 'john@example.com', {
-        orgId: 'test-org-123',
-      });
-
-      expect(results).toHaveLength(1);
-      expect(results[0].id).toBe('500521');
-      // Caching is called internally but we can't directly verify without mocking setCachedResolve
     });
   });
 });

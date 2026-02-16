@@ -25,8 +25,9 @@
  * ```
  */
 
+import type { ResolvableResourceType } from '@studiometa/productive-core';
+
 import type { OutputFormat, ProductiveConfig } from './types.js';
-import type { ResolvableResourceType } from './utils/resource-resolver.js';
 import type { Spinner } from './utils/spinner.js';
 
 import { ProductiveApi } from './api.js';
