@@ -21,6 +21,22 @@ export {
   type McpResolveFunctions,
 } from './context/index.js';
 
+// Resource resolver
+export {
+  createResourceResolver,
+  resolve as resolveResource,
+  isNumericId,
+  detectResourceType,
+  ResolveError,
+  FILTER_TYPE_MAPPING,
+} from './resolvers/index.js';
+export type {
+  ResolveResult,
+  ResolveOptions,
+  ResolverCache,
+  CreateResolverOptions,
+} from './resolvers/index.js';
+
 // Executor types
 export type { Executor, ExecutorResult, PaginationOptions } from './executors/types.js';
 
