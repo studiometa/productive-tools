@@ -6,14 +6,16 @@
  * from CLI command handlers.
  */
 
+import type { ProductiveApi } from '@studiometa/productive-cli';
+
 import type { ExecutorContext, ResourceResolver, ResolvableResourceType } from './types.js';
 
 /**
  * Minimal interface for what we need from CommandContext.
- * Using a structural type avoids a direct dependency on the CLI package.
+ * Uses ProductiveApi directly for type compatibility.
  */
 export interface CommandContextLike {
-  api: { [key: string]: unknown };
+  api: ProductiveApi;
   config: { userId?: string; organizationId?: string };
   resolveFilters(
     filters: Record<string, string>,
@@ -72,7 +74,7 @@ function createResolverFromCommandContext(ctx: CommandContextLike): ResourceReso
  */
 export function fromCommandContext(ctx: CommandContextLike): ExecutorContext {
   return {
-    api: ctx.api as unknown as ExecutorContext['api'],
+    api: ctx.api,
     resolver: createResolverFromCommandContext(ctx),
     config: {
       userId: ctx.config.userId,

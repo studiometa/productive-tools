@@ -6,14 +6,16 @@
  * from MCP handlers.
  */
 
+import type { ProductiveApi } from '@studiometa/productive-cli';
+
 import type { ExecutorContext, ResourceResolver, ResolvableResourceType } from './types.js';
 
 /**
  * Minimal interface for what we need from HandlerContext.
- * Using a structural type avoids a direct dependency on the MCP package.
+ * Uses ProductiveApi directly for type compatibility.
  */
 export interface HandlerContextLike {
-  api: { [key: string]: unknown };
+  api: ProductiveApi;
 }
 
 /**
@@ -22,13 +24,13 @@ export interface HandlerContextLike {
  */
 export interface McpResolveFunctions {
   resolveFilterValue(
-    api: unknown,
+    api: ProductiveApi,
     value: string,
     type: string,
     projectId?: string,
   ): Promise<string>;
   resolveFilters(
-    api: unknown,
+    api: ProductiveApi,
     filters: Record<string, string>,
     projectId?: string,
   ): Promise<{
@@ -42,7 +44,7 @@ export interface McpResolveFunctions {
  * Create a ResourceResolver that delegates to MCP resolve functions.
  */
 function createResolverFromMcpContext(
-  api: unknown,
+  api: ProductiveApi,
   resolveFns: McpResolveFunctions,
 ): ResourceResolver {
   return {
@@ -94,7 +96,7 @@ export function fromHandlerContext(
   resolveFns: McpResolveFunctions,
 ): ExecutorContext {
   return {
-    api: ctx.api as unknown as ExecutorContext['api'],
+    api: ctx.api,
     resolver: createResolverFromMcpContext(ctx.api, resolveFns),
     config: {
       organizationId: '',
