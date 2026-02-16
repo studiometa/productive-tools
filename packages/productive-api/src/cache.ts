@@ -10,7 +10,7 @@ export interface ApiCache {
     orgId: string,
     data: T,
   ): Promise<void>;
-  invalidateAsync(resource: string): Promise<void>;
+  invalidateAsync(resource: string): Promise<void | number>;
   setOrgId(orgId: string): void;
 }
 
