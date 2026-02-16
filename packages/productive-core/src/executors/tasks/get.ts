@@ -9,7 +9,7 @@ export async function getTask(
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductiveTask>> {
   const response = await ctx.api.getTask(options.id, {
-    include: ['project', 'assignee', 'workflow_status'],
+    include: options.include ?? ['project', 'assignee', 'workflow_status'],
   });
-  return { data: response.data };
+  return { data: response.data, included: response.included };
 }

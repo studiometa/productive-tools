@@ -1,16 +1,19 @@
 /**
- * Bookings resource handler
+ * Bookings MCP handler.
  */
+
+import { fromHandlerContext, listBookings } from '@studiometa/productive-core';
 
 import type { BookingArgs, HandlerContext, ToolResult } from './types.js';
 
 import { ErrorMessages } from '../errors.js';
 import { formatBooking, formatListResponse } from '../formatters.js';
 import { getBookingHints } from '../hints.js';
+import { resolveFilters, resolveFilterValue, isNumericId } from './resolve.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
-/** Default includes for bookings */
-const DEFAULT_BOOKING_INCLUDE = ['person', 'service'];
+const resolveFns = { resolveFilterValue, resolveFilters, isNumericId };
+
 const VALID_ACTIONS = ['list', 'get', 'create', 'update'];
 
 export async function handleBookings(
@@ -20,28 +23,20 @@ export async function handleBookings(
 ): Promise<ToolResult> {
   const { api, formatOptions, filter, page, perPage, include: userInclude } = ctx;
   const { id, person_id, service_id, event_id, started_on, ended_on, time, note } = args;
-  // Merge default includes with user-provided includes
   const include = userInclude?.length
-    ? [...new Set([...DEFAULT_BOOKING_INCLUDE, ...userInclude])]
-    : DEFAULT_BOOKING_INCLUDE;
+    ? [...new Set(['person', 'service', ...userInclude])]
+    : ['person', 'service'];
 
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
+    // Use API directly to preserve include handling
     const result = await api.getBooking(id, { include });
-    const formatted = formatBooking(result.data, {
-      ...formatOptions,
-      included: result.included,
-    });
+    const formatted = formatBooking(result.data, { ...formatOptions, included: result.included });
 
-    // Add contextual hints unless disabled
     if (ctx.includeHints !== false) {
       const personId = result.data.relationships?.person?.data?.id;
-      return jsonResult({
-        ...formatted,
-        _hints: getBookingHints(id, personId),
-      });
+      return jsonResult({ ...formatted, _hints: getBookingHints(id, personId) });
     }
-
     return jsonResult(formatted);
   }
 
@@ -78,13 +73,12 @@ export async function handleBookings(
   }
 
   if (action === 'list') {
-    const result = await api.getBookings({ filter, page, perPage, include });
-    return jsonResult(
-      formatListResponse(result.data, formatBooking, result.meta, {
-        ...formatOptions,
-        included: result.included,
-      }),
+    const execCtx = fromHandlerContext(ctx, resolveFns);
+    const result = await listBookings(
+      { page, perPage, additionalFilters: filter, include },
+      execCtx,
     );
+    return jsonResult(formatListResponse(result.data, formatBooking, result.meta, formatOptions));
   }
 
   return inputErrorResult(ErrorMessages.invalidAction(action, 'bookings', VALID_ACTIONS));

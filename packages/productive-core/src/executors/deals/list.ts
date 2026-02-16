@@ -54,12 +54,13 @@ export async function listDeals(
     perPage: options.perPage ?? 100,
     filter: resolvedFilter,
     sort: options.sort,
-    include: ['company', 'deal_status', 'responsible'],
+    include: options.include ?? ['company', 'deal_status', 'responsible'],
   });
 
   return {
     data: response.data,
     meta: response.meta,
+    included: response.included,
     resolved: Object.keys(metadata).length > 0 ? metadata : undefined,
   };
 }

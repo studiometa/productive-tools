@@ -20,6 +20,7 @@ export interface ListTasksOptions extends PaginationOptions {
 
 export interface GetTaskOptions {
   id: string;
+  include?: string[];
 }
 
 export interface CreateTaskOptions {

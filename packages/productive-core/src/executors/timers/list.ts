@@ -23,6 +23,8 @@ export async function listTimers(
     page: options.page ?? 1,
     perPage: options.perPage ?? 100,
     filter,
+    include: options.include,
+    sort: options.sort,
   });
 
   return {

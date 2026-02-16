@@ -26,6 +26,7 @@ export async function listComments(
     page: options.page ?? 1,
     perPage: options.perPage ?? 100,
     filter,
+    include: options.include,
   });
 
   return {

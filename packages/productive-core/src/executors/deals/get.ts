@@ -10,7 +10,7 @@ export async function getDeal(
 ): Promise<ExecutorResult<ProductiveDeal>> {
   const resolvedId = await ctx.resolver.resolveValue(options.id, 'deal');
   const response = await ctx.api.getDeal(resolvedId, {
-    include: ['company', 'deal_status', 'responsible', 'project'],
+    include: options.include ?? ['company', 'deal_status', 'responsible', 'project'],
   });
-  return { data: response.data };
+  return { data: response.data, included: response.included };
 }

@@ -58,12 +58,13 @@ export async function listTasks(
     perPage: options.perPage ?? 100,
     filter: resolvedFilter,
     sort: options.sort,
-    include: ['project', 'assignee', 'workflow_status'],
+    include: options.include ?? ['project', 'assignee', 'workflow_status'],
   });
 
   return {
     data: response.data,
     meta: response.meta,
+    included: response.included,
     resolved: Object.keys(metadata).length > 0 ? metadata : undefined,
   };
 }

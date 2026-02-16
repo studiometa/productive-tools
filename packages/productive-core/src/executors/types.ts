@@ -8,7 +8,7 @@
  * Adapters (CLI, MCP) handle all I/O concerns.
  */
 
-import type { JsonApiMeta } from '@studiometa/productive-cli';
+import type { IncludedResource, JsonApiMeta } from '@studiometa/productive-cli';
 
 import type { ExecutorContext, ResolvedInfo } from '../context/types.js';
 
@@ -24,6 +24,9 @@ export interface ExecutorResult<T> {
   /** Pagination metadata (for list operations) */
   meta?: JsonApiMeta;
 
+  /** JSON:API included resources (for list/get with includes) */
+  included?: IncludedResource[];
+
   /** Information about any smart ID resolutions that occurred */
   resolved?: Record<string, ResolvedInfo>;
 }
@@ -35,6 +38,8 @@ export interface PaginationOptions {
   page?: number;
   perPage?: number;
   sort?: string;
+  /** JSON:API include parameter for sideloading related resources */
+  include?: string[];
 }
 
 /**

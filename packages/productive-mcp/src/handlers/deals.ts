@@ -1,6 +1,8 @@
 /**
- * Deals resource handler
+ * Deals MCP handler.
  */
+
+import { fromHandlerContext, listDeals, getDeal, createDeal } from '@studiometa/productive-core';
 
 import type { DealArgs, HandlerContext, ToolResult } from './types.js';
 
@@ -16,9 +18,8 @@ import {
 } from './resolve.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
-/** Default includes for deals */
-const DEFAULT_DEAL_INCLUDE_GET = ['company', 'deal_status', 'responsible'];
-const DEFAULT_DEAL_INCLUDE_LIST = ['company', 'deal_status'];
+const resolveFns = { resolveFilterValue, resolveFilters, isNumericId };
+
 const VALID_ACTIONS = ['list', 'get', 'create', 'update', 'resolve'];
 
 export async function handleDeals(
@@ -29,29 +30,23 @@ export async function handleDeals(
   const { api, formatOptions, filter, page, perPage, include: userInclude } = ctx;
   const { id, name, company_id, query, type } = args;
 
-  // Handle resolve action
   if (action === 'resolve') {
     return handleResolve({ query, type }, ctx);
   }
 
+  const execCtx = fromHandlerContext(ctx, resolveFns);
+
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
-    // Resolve ID if it's a human-friendly identifier (deal number)
-    const resolvedId = !isNumericId(id) ? await resolveFilterValue(api, id, 'deal') : id;
-    const include = userInclude?.length
-      ? [...new Set([...DEFAULT_DEAL_INCLUDE_GET, ...userInclude])]
-      : DEFAULT_DEAL_INCLUDE_GET;
-    const result = await api.getDeal(resolvedId, { include });
+    const getInclude = userInclude?.length
+      ? [...new Set(['company', 'deal_status', 'responsible', ...userInclude])]
+      : ['company', 'deal_status', 'responsible'];
+    const result = await getDeal({ id, include: getInclude }, execCtx);
     const formatted = formatDeal(result.data, { ...formatOptions, included: result.included });
 
-    // Add contextual hints unless disabled
     if (ctx.includeHints !== false) {
-      return jsonResult({
-        ...formatted,
-        _hints: getDealHints(id),
-      });
+      return jsonResult({ ...formatted, _hints: getDealHints(id) });
     }
-
     return jsonResult(formatted);
   }
 
@@ -59,16 +54,13 @@ export async function handleDeals(
     if (!name || !company_id) {
       return inputErrorResult(ErrorMessages.missingRequiredFields('deal', ['name', 'company_id']));
     }
-    // Resolve company_id if it's a human-friendly identifier
-    const resolvedCompanyId = !isNumericId(company_id)
-      ? await resolveFilterValue(api, company_id, 'company')
-      : company_id;
-    const result = await api.createDeal({ name, company_id: resolvedCompanyId });
+    const result = await createDeal({ name, companyId: company_id }, execCtx);
     return jsonResult({ success: true, ...formatDeal(result.data, formatOptions) });
   }
 
   if (action === 'update') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('update'));
+    // Use API directly — MCP update passes through simple fields
     const updateData: Parameters<typeof api.updateDeal>[1] = {};
     if (name !== undefined) updateData.name = name;
     const result = await api.updateDeal(id, updateData);
@@ -76,30 +68,22 @@ export async function handleDeals(
   }
 
   if (action === 'list') {
-    // Resolve any human-friendly identifiers in filters
-    const { resolved: resolvedFilter, metadata } = filter
-      ? await resolveFilters(api, filter)
-      : { resolved: filter, metadata: {} };
+    const listInclude = userInclude?.length
+      ? [...new Set(['company', 'deal_status', ...userInclude])]
+      : ['company', 'deal_status'];
+    const result = await listDeals(
+      { page, perPage, additionalFilters: filter, include: listInclude },
+      execCtx,
+    );
 
-    const include = userInclude?.length
-      ? [...new Set([...DEFAULT_DEAL_INCLUDE_LIST, ...userInclude])]
-      : DEFAULT_DEAL_INCLUDE_LIST;
-    const result = await api.getDeals({
-      filter: resolvedFilter,
-      page,
-      perPage,
-      include,
-    });
     const response = formatListResponse(result.data, formatDeal, result.meta, {
       ...formatOptions,
       included: result.included,
     });
 
-    // Include resolution metadata if any resolutions occurred
-    if (Object.keys(metadata).length > 0) {
-      return jsonResult({ ...response, _resolved: metadata });
+    if (result.resolved && Object.keys(result.resolved).length > 0) {
+      return jsonResult({ ...response, _resolved: result.resolved });
     }
-
     return jsonResult(response);
   }
 

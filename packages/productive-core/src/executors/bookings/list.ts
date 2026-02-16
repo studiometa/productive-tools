@@ -38,6 +38,7 @@ export async function listBookings(
     perPage: options.perPage ?? 100,
     filter: resolvedFilter,
     sort: options.sort,
+    include: options.include,
   });
 
   return {

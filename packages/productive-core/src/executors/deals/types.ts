@@ -16,6 +16,7 @@ export interface ListDealsOptions extends PaginationOptions {
 
 export interface GetDealOptions {
   id: string;
+  include?: string[];
 }
 
 export interface CreateDealOptions {
