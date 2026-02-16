@@ -48,6 +48,9 @@
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
+  "dependencies": {
+    "@studiometa/productive-core": "*"
+  },
   "devDependencies": {
     "@types/node": "^22.10.5",
     "@vitest/coverage-v8": "^4.0.18",
