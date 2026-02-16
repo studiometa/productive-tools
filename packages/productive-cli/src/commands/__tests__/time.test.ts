@@ -38,7 +38,7 @@ vi.mock('../../config.js', () => ({
   getConfig: vi.fn(() => ({
     apiToken: 'test-token',
     organizationId: 'test-org',
-    userId: 'test-user',
+    userId: '500521',
   })),
 }));
 
@@ -114,7 +114,7 @@ describe('handleTimeCommand', () => {
         format: 'json',
         from: '2024-01-01',
         to: '2024-01-31',
-        person: 'person-1',
+        person: '500521',
         project: 'project-1',
       });
 
@@ -124,7 +124,7 @@ describe('handleTimeCommand', () => {
         filter: {
           after: '2024-01-01',
           before: '2024-01-31',
-          person_id: 'person-1',
+          person_id: '500521',
           project_id: 'project-1',
         },
         sort: '',
@@ -139,7 +139,7 @@ describe('handleTimeCommand', () => {
 
       await handleTimeCommand('list', [], {
         format: 'json',
-        service: 'service-1',
+        service: '6028361',
         task: 'task-1',
         company: 'company-1',
         deal: 'deal-1',
@@ -152,7 +152,7 @@ describe('handleTimeCommand', () => {
         page: 1,
         perPage: 100,
         filter: {
-          service_id: 'service-1',
+          service_id: '6028361',
           task_id: 'task-1',
           company_id: 'company-1',
           deal_id: 'deal-1',
@@ -392,16 +392,16 @@ describe('handleTimeCommand', () => {
 
       await handleTimeCommand('add', [], {
         format: 'json',
-        person: 'person-1',
-        service: 'service-1',
+        person: '500521',
+        service: '6028361',
         date: '2024-01-15',
         time: '480',
         note: 'Test work',
       });
 
       expect(mockApi.createTimeEntry).toHaveBeenCalledWith({
-        person_id: 'person-1',
-        service_id: 'service-1',
+        person_id: '500521',
+        service_id: '6028361',
         date: '2024-01-15',
         time: 480,
         note: 'Test work',
@@ -425,13 +425,13 @@ describe('handleTimeCommand', () => {
 
       await handleTimeCommand('add', [], {
         format: 'json',
-        service: 'service-1',
+        service: '6028361',
         time: '480',
       });
 
       expect(mockApi.createTimeEntry).toHaveBeenCalledWith(
         expect.objectContaining({
-          person_id: 'test-user',
+          person_id: '500521',
         }),
       );
     });
@@ -452,8 +452,8 @@ describe('handleTimeCommand', () => {
 
       await handleTimeCommand('add', [], {
         format: 'json',
-        person: 'person-1',
-        service: 'service-1',
+        person: '500521',
+        service: '6028361',
         time: '480',
       });
 
@@ -479,8 +479,8 @@ describe('handleTimeCommand', () => {
       });
 
       await handleTimeCommand('add', [], {
-        person: 'person-1',
-        service: 'service-1',
+        person: '500521',
+        service: '6028361',
         time: '480',
         note: 'Test work',
       });
@@ -498,7 +498,7 @@ describe('handleTimeCommand', () => {
       await expect(
         handleTimeCommand('add', [], {
           format: 'json',
-          service: 'service-1',
+          service: '6028361',
           time: '480',
         }),
       ).rejects.toThrow('process.exit(4)'); // Exit code 4 for config errors
@@ -510,7 +510,7 @@ describe('handleTimeCommand', () => {
       await expect(
         handleTimeCommand('add', [], {
           format: 'json',
-          person: 'person-1',
+          person: '500521',
           time: '480',
         }),
       ).rejects.toThrow('process.exit(3)'); // Exit code 3 for validation errors
@@ -522,8 +522,8 @@ describe('handleTimeCommand', () => {
       await expect(
         handleTimeCommand('add', [], {
           format: 'json',
-          person: 'person-1',
-          service: 'service-1',
+          person: '500521',
+          service: '6028361',
         }),
       ).rejects.toThrow('process.exit(3)'); // Exit code 3 for validation errors
 
@@ -538,8 +538,8 @@ describe('handleTimeCommand', () => {
       await expect(
         handleTimeCommand('add', [], {
           format: 'json',
-          person: 'person-1',
-          service: 'service-1',
+          person: '500521',
+          service: '6028361',
           time: '480',
         }),
       ).rejects.toThrow('process.exit(1)');

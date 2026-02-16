@@ -4,7 +4,7 @@
 
 import type { ProductivePerson } from '@studiometa/productive-api';
 
-import type { ExecutorContext, ResolvableResourceType } from '../../context/types.js';
+import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListPeopleOptions } from './types.js';
 
@@ -18,11 +18,6 @@ const STATUS_MAP: Record<string, string> = {
   active: '1',
   deactivated: '2',
   inactive: '2',
-};
-
-const FILTER_TYPE_MAPPING: Record<string, ResolvableResourceType> = {
-  company_id: 'company',
-  project_id: 'project',
 };
 
 export function buildPeopleFilters(options: ListPeopleOptions): Record<string, string> {
@@ -51,10 +46,7 @@ export async function listPeople(
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductivePerson[]>> {
   const filter = buildPeopleFilters(options);
-  const { resolved: resolvedFilter, metadata } = await ctx.resolver.resolveFilters(
-    filter,
-    FILTER_TYPE_MAPPING,
-  );
+  const { resolved: resolvedFilter, metadata } = await ctx.resolver.resolveFilters(filter);
 
   const response = await ctx.api.getPeople({
     page: options.page ?? 1,

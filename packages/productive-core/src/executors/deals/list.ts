@@ -1,18 +1,12 @@
 import type { ProductiveDeal } from '@studiometa/productive-api';
 
-import type { ExecutorContext, ResolvableResourceType } from '../../context/types.js';
+import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListDealsOptions } from './types.js';
 
 const STATUS_MAP: Record<string, string> = { open: '1', won: '2', lost: '3' };
 const TYPE_MAP: Record<string, string> = { deal: '1', budget: '2' };
 const BUDGET_STATUS_MAP: Record<string, string> = { open: '1', closed: '2' };
-
-const FILTER_TYPE_MAPPING: Record<string, ResolvableResourceType> = {
-  company_id: 'company',
-  project_id: 'project',
-  responsible_id: 'person',
-};
 
 export function buildDealFilters(options: ListDealsOptions): Record<string, string> {
   const filter: Record<string, string> = {};
@@ -44,10 +38,7 @@ export async function listDeals(
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductiveDeal[]>> {
   const filter = buildDealFilters(options);
-  const { resolved: resolvedFilter, metadata } = await ctx.resolver.resolveFilters(
-    filter,
-    FILTER_TYPE_MAPPING,
-  );
+  const { resolved: resolvedFilter, metadata } = await ctx.resolver.resolveFilters(filter);
 
   const response = await ctx.api.getDeals({
     page: options.page ?? 1,

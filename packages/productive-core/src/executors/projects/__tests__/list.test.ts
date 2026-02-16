@@ -90,10 +90,7 @@ describe('listProjects', () => {
 
     const result = await listProjects({ companyId: 'Acme' }, ctx);
 
-    expect(resolveFilters).toHaveBeenCalledWith(
-      { company_id: 'Acme' },
-      expect.objectContaining({ company_id: 'company', responsible_id: 'person' }),
-    );
+    expect(resolveFilters).toHaveBeenCalledWith({ company_id: 'Acme' });
     expect(result.resolved).toBeDefined();
   });
 });

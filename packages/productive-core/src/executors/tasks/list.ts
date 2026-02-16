@@ -1,6 +1,6 @@
 import type { ProductiveTask } from '@studiometa/productive-api';
 
-import type { ExecutorContext, ResolvableResourceType } from '../../context/types.js';
+import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListTasksOptions } from './types.js';
 
@@ -8,13 +8,6 @@ const STATUS_MAP: Record<string, string> = {
   open: '1',
   completed: '2',
   done: '2',
-};
-
-const FILTER_TYPE_MAPPING: Record<string, ResolvableResourceType> = {
-  assignee_id: 'person',
-  creator_id: 'person',
-  project_id: 'project',
-  company_id: 'company',
 };
 
 export function buildTaskFilters(options: ListTasksOptions): Record<string, string> {
@@ -48,10 +41,7 @@ export async function listTasks(
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductiveTask[]>> {
   const filter = buildTaskFilters(options);
-  const { resolved: resolvedFilter, metadata } = await ctx.resolver.resolveFilters(
-    filter,
-    FILTER_TYPE_MAPPING,
-  );
+  const { resolved: resolvedFilter, metadata } = await ctx.resolver.resolveFilters(filter);
 
   const response = await ctx.api.getTasks({
     page: options.page ?? 1,

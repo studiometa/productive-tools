@@ -4,7 +4,7 @@
 
 import type { ProductiveProject } from '@studiometa/productive-api';
 
-import type { ExecutorContext, ResolvableResourceType } from '../../context/types.js';
+import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListProjectsOptions } from './types.js';
 
@@ -21,11 +21,6 @@ const STATUS_MAP: Record<string, string> = {
 };
 
 /** Type mapping for filter resolution */
-const FILTER_TYPE_MAPPING: Record<string, ResolvableResourceType> = {
-  company_id: 'company',
-  responsible_id: 'person',
-  person_id: 'person',
-};
 
 /**
  * Build the filter object from typed options.
@@ -61,10 +56,7 @@ export async function listProjects(
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductiveProject[]>> {
   const filter = buildProjectFilters(options);
-  const { resolved: resolvedFilter, metadata } = await ctx.resolver.resolveFilters(
-    filter,
-    FILTER_TYPE_MAPPING,
-  );
+  const { resolved: resolvedFilter, metadata } = await ctx.resolver.resolveFilters(filter);
 
   const response = await ctx.api.getProjects({
     page: options.page ?? 1,
