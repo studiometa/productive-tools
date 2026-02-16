@@ -566,5 +566,60 @@ describe('resource-resolver', () => {
 
       expect(results[0].label).toBe('D-123');
     });
+
+    it('handles orgId option for caching', async () => {
+      mockApi.getPeople.mockResolvedValue({
+        data: [{ id: '500521', attributes: { first_name: 'John', last_name: 'Doe' } }],
+      });
+
+      const results = await resolve(mockApi as unknown as ProductiveApi, 'john@example.com', {
+        orgId: 'test-org',
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id).toBe('500521');
+    });
+  });
+
+  describe('resolveFilterIds - edge cases', () => {
+    let mockApi: {
+      getPeople: ReturnType<typeof vi.fn>;
+      getProjects: ReturnType<typeof vi.fn>;
+    };
+
+    beforeEach(() => {
+      mockApi = {
+        getPeople: vi.fn(),
+        getProjects: vi.fn(),
+      };
+    });
+
+    it('keeps original value when resolution returns no results', async () => {
+      mockApi.getPeople.mockResolvedValue({ data: [] });
+
+      const { resolved, metadata } = await resolveFilterIds(
+        mockApi as unknown as ProductiveApi,
+        { assignee_id: 'unknown@example.com' },
+        { assignee_id: 'person' },
+      );
+
+      // Value is kept as original since resolution failed
+      expect(resolved.assignee_id).toBe('unknown@example.com');
+      expect(metadata.assignee_id).toBeUndefined();
+    });
+
+    it('keeps original value when API throws error', async () => {
+      mockApi.getPeople.mockRejectedValue(new Error('API Error'));
+
+      const { resolved, metadata } = await resolveFilterIds(
+        mockApi as unknown as ProductiveApi,
+        { assignee_id: 'john@example.com' },
+        { assignee_id: 'person' },
+      );
+
+      // Value is kept as original since resolution threw
+      expect(resolved.assignee_id).toBe('john@example.com');
+      expect(metadata.assignee_id).toBeUndefined();
+    });
   });
 });

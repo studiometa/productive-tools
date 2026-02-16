@@ -2252,4 +2252,118 @@ describe('smart ID resolution', () => {
       expect(content.matches).toBeDefined();
     });
   });
+
+  describe('no_hints option', () => {
+    it('should not include hints for time get when no_hints is true', async () => {
+      mockApi.getTimeEntry.mockResolvedValue({
+        data: { id: '123', type: 'time_entries', attributes: { date: '2024-01-15', time: 480 } },
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        {
+          resource: 'time',
+          action: 'get',
+          id: '123',
+          no_hints: true,
+        },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._hints).toBeUndefined();
+    });
+
+    it('should not include hints for projects get when no_hints is true', async () => {
+      mockApi.getProject.mockResolvedValue({
+        data: { id: '777', type: 'projects', attributes: { name: 'Test Project' } },
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        {
+          resource: 'projects',
+          action: 'get',
+          id: '777',
+          no_hints: true,
+        },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._hints).toBeUndefined();
+    });
+
+    it('should not include hints for people get when no_hints is true', async () => {
+      mockApi.getPerson.mockResolvedValue({
+        data: {
+          id: '500521',
+          type: 'people',
+          attributes: { first_name: 'John', last_name: 'Doe' },
+        },
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        {
+          resource: 'people',
+          action: 'get',
+          id: '500521',
+          no_hints: true,
+        },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._hints).toBeUndefined();
+    });
+
+    it('should not include hints for people me when no_hints is true', async () => {
+      mockApi.getPerson.mockResolvedValue({
+        data: {
+          id: 'test-user',
+          type: 'people',
+          attributes: { first_name: 'Test', last_name: 'User' },
+        },
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        {
+          resource: 'people',
+          action: 'me',
+          no_hints: true,
+        },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._hints).toBeUndefined();
+    });
+
+    it('should not include hints for deals get when no_hints is true', async () => {
+      mockApi.getDeal.mockResolvedValue({
+        data: { id: '888', type: 'deals', attributes: { name: 'Test Deal' } },
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        {
+          resource: 'deals',
+          action: 'get',
+          id: '888',
+          no_hints: true,
+        },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._hints).toBeUndefined();
+    });
+  });
 });
