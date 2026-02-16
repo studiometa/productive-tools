@@ -1,12 +1,17 @@
 /**
- * Services resource handler
+ * Services MCP handler.
  */
+
+import { fromHandlerContext, listServices } from '@studiometa/productive-core';
 
 import type { CommonArgs, HandlerContext, ToolResult } from './types.js';
 
 import { ErrorMessages } from '../errors.js';
 import { formatListResponse, formatService } from '../formatters.js';
+import { resolveFilters, resolveFilterValue, isNumericId } from './resolve.js';
 import { inputErrorResult, jsonResult } from './utils.js';
+
+const resolveFns = { resolveFilterValue, resolveFilters, isNumericId };
 
 const VALID_ACTIONS = ['list'];
 
@@ -15,10 +20,12 @@ export async function handleServices(
   _args: CommonArgs,
   ctx: HandlerContext,
 ): Promise<ToolResult> {
-  const { api, formatOptions, filter, page, perPage } = ctx;
+  const { formatOptions, filter, page, perPage } = ctx;
 
   if (action === 'list') {
-    const result = await api.getServices({ filter, page, perPage });
+    const execCtx = fromHandlerContext(ctx, resolveFns);
+    const result = await listServices({ page, perPage, additionalFilters: filter }, execCtx);
+
     return jsonResult(formatListResponse(result.data, formatService, result.meta, formatOptions));
   }
 

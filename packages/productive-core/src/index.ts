@@ -46,3 +46,26 @@ export type {
 // Project executors
 export { buildProjectFilters, getProject, listProjects } from './executors/projects/index.js';
 export type { GetProjectOptions, ListProjectsOptions } from './executors/projects/index.js';
+
+// People executors
+export { buildPeopleFilters, getPerson, listPeople } from './executors/people/index.js';
+export type { GetPersonOptions, ListPeopleOptions } from './executors/people/index.js';
+
+// Services executors
+export { buildServicesFilters, listServices } from './executors/services/index.js';
+export type { ListServicesOptions } from './executors/services/index.js';
+
+// Companies executors
+export {
+  buildCompanyFilters,
+  createCompany,
+  getCompany,
+  listCompanies,
+  updateCompany,
+} from './executors/companies/index.js';
+export type {
+  CreateCompanyOptions,
+  GetCompanyOptions,
+  ListCompaniesOptions,
+  UpdateCompanyOptions,
+} from './executors/companies/index.js';

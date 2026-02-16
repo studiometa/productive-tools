@@ -1,6 +1,15 @@
 /**
- * Handler implementations for companies command
+ * CLI adapter for companies command handlers.
  */
+
+import {
+  fromCommandContext,
+  listCompanies,
+  getCompany,
+  createCompany,
+  updateCompany,
+  ExecutorValidationError,
+} from '@studiometa/productive-core';
 
 import type { CommandContext } from '../../context.js';
 import type { OutputFormat } from '../../types.js';
@@ -11,58 +20,46 @@ import { formatCompany, formatListResponse } from '../../formatters/index.js';
 import { render, createRenderContext, humanCompanyDetailRenderer } from '../../renderers/index.js';
 import { colors } from '../../utils/colors.js';
 
-/**
- * Parse filter string into key-value pairs
- */
 function parseFilters(filterString: string): Record<string, string> {
   const filters: Record<string, string> = {};
   if (!filterString) return filters;
-
   filterString.split(',').forEach((pair) => {
     const [key, value] = pair.split('=');
-    if (key && value) {
-      filters[key.trim()] = value.trim();
-    }
+    if (key && value) filters[key.trim()] = value.trim();
   });
   return filters;
 }
 
-/**
- * List companies
- */
 export async function companiesList(ctx: CommandContext): Promise<void> {
   const spinner = ctx.createSpinner('Fetching companies...');
   spinner.start();
 
   await runCommand(async () => {
-    const filter: Record<string, string> = {};
+    const additionalFilters: Record<string, string> = {};
+    if (ctx.options.filter)
+      Object.assign(additionalFilters, parseFilters(String(ctx.options.filter)));
 
-    if (ctx.options.filter) {
-      Object.assign(filter, parseFilters(String(ctx.options.filter)));
-    }
-
-    // Filter by archived status
-    if (ctx.options.archived === true) {
-      filter.status = '2'; // archived
-    } else if (ctx.options.archived === false || ctx.options.archived === undefined) {
-      filter.status = '1'; // active (default)
-    }
-
+    const execCtx = fromCommandContext(ctx);
     const { page, perPage } = ctx.getPagination();
-    const response = await ctx.api.getCompanies({
-      page,
-      perPage,
-      filter,
-      sort: ctx.getSort(),
-    });
+    const result = await listCompanies(
+      {
+        archived: ctx.options.archived === true,
+        additionalFilters:
+          Object.keys(additionalFilters).length > 0 ? additionalFilters : undefined,
+        page,
+        perPage,
+        sort: ctx.getSort(),
+      },
+      execCtx,
+    );
 
     spinner.succeed();
 
     const format = (ctx.options.format || ctx.options.f || 'human') as OutputFormat;
-    const formattedData = formatListResponse(response.data, formatCompany, response.meta);
+    const formattedData = formatListResponse(result.data, formatCompany, result.meta);
 
     if (format === 'csv' || format === 'table') {
-      const data = response.data.map((c) => ({
+      const data = result.data.map((c) => ({
         id: c.id,
         name: c.attributes.name,
         code: c.attributes.company_code || '',
@@ -72,53 +69,37 @@ export async function companiesList(ctx: CommandContext): Promise<void> {
       }));
       ctx.formatter.output(data);
     } else {
-      const renderCtx = createRenderContext({
-        noColor: ctx.options['no-color'] === true,
-      });
+      const renderCtx = createRenderContext({ noColor: ctx.options['no-color'] === true });
       render('company', format, formattedData, renderCtx);
     }
   }, ctx.formatter);
 }
 
-/**
- * Get a single company by ID
- */
 export async function companiesGet(args: string[], ctx: CommandContext): Promise<void> {
   const [id] = args;
-
-  if (!id) {
-    exitWithValidationError('id', 'productive companies get <id>', ctx.formatter);
-  }
+  if (!id) exitWithValidationError('id', 'productive companies get <id>', ctx.formatter);
 
   const spinner = ctx.createSpinner('Fetching company...');
   spinner.start();
 
   await runCommand(async () => {
-    // Resolve company ID if it's a human-friendly identifier (name)
-    const resolvedId = await ctx.tryResolveValue(id, 'company');
-
-    const response = await ctx.api.getCompany(resolvedId);
-    const company = response.data;
+    const execCtx = fromCommandContext(ctx);
+    const result = await getCompany({ id }, execCtx);
 
     spinner.succeed();
 
     const format = (ctx.options.format || ctx.options.f || 'human') as OutputFormat;
-    const formattedData = formatCompany(company);
+    const formattedData = formatCompany(result.data);
 
     if (format === 'json') {
       ctx.formatter.output(formattedData);
     } else {
-      const renderCtx = createRenderContext({
-        noColor: ctx.options['no-color'] === true,
-      });
+      const renderCtx = createRenderContext({ noColor: ctx.options['no-color'] === true });
       humanCompanyDetailRenderer.render(formattedData, renderCtx);
     }
   }, ctx.formatter);
 }
 
-/**
- * Add a new company
- */
 export async function companiesAdd(ctx: CommandContext): Promise<void> {
   const spinner = ctx.createSpinner('Creating company...');
   spinner.start();
@@ -130,26 +111,27 @@ export async function companiesAdd(ctx: CommandContext): Promise<void> {
   }
 
   await runCommand(async () => {
-    const response = await ctx.api.createCompany({
-      name: String(ctx.options.name),
-      billing_name: ctx.options['billing-name'] ? String(ctx.options['billing-name']) : undefined,
-      vat: ctx.options.vat ? String(ctx.options.vat) : undefined,
-      default_currency: ctx.options.currency ? String(ctx.options.currency) : undefined,
-      company_code: ctx.options.code ? String(ctx.options.code) : undefined,
-      domain: ctx.options.domain ? String(ctx.options.domain) : undefined,
-      due_days: ctx.options['due-days'] ? parseInt(String(ctx.options['due-days'])) : undefined,
-    });
+    const execCtx = fromCommandContext(ctx);
+    const result = await createCompany(
+      {
+        name: String(ctx.options.name),
+        billingName: ctx.options['billing-name'] ? String(ctx.options['billing-name']) : undefined,
+        vat: ctx.options.vat ? String(ctx.options.vat) : undefined,
+        defaultCurrency: ctx.options.currency ? String(ctx.options.currency) : undefined,
+        companyCode: ctx.options.code ? String(ctx.options.code) : undefined,
+        domain: ctx.options.domain ? String(ctx.options.domain) : undefined,
+        dueDays: ctx.options['due-days'] ? parseInt(String(ctx.options['due-days'])) : undefined,
+      },
+      execCtx,
+    );
 
     spinner.succeed();
 
-    const company = response.data;
+    const company = result.data;
     const format = ctx.options.format || ctx.options.f || 'human';
 
     if (format === 'json') {
-      ctx.formatter.output({
-        status: 'success',
-        ...formatCompany(company),
-      });
+      ctx.formatter.output({ status: 'success', ...formatCompany(company) });
     } else {
       ctx.formatter.success('Company created');
       console.log(colors.cyan('ID:'), company.id);
@@ -161,50 +143,57 @@ export async function companiesAdd(ctx: CommandContext): Promise<void> {
   }, ctx.formatter);
 }
 
-/**
- * Update an existing company
- */
 export async function companiesUpdate(args: string[], ctx: CommandContext): Promise<void> {
   const [id] = args;
-
-  if (!id) {
+  if (!id)
     exitWithValidationError('id', 'productive companies update <id> [options]', ctx.formatter);
-  }
 
   const spinner = ctx.createSpinner('Updating company...');
   spinner.start();
 
   await runCommand(async () => {
-    const data: Parameters<typeof ctx.api.updateCompany>[1] = {};
+    const execCtx = fromCommandContext(ctx);
 
-    if (ctx.options.name !== undefined) data.name = String(ctx.options.name);
-    if (ctx.options['billing-name'] !== undefined)
-      data.billing_name = String(ctx.options['billing-name']);
-    if (ctx.options.vat !== undefined) data.vat = String(ctx.options.vat);
-    if (ctx.options.currency !== undefined) data.default_currency = String(ctx.options.currency);
-    if (ctx.options.code !== undefined) data.company_code = String(ctx.options.code);
-    if (ctx.options.domain !== undefined) data.domain = String(ctx.options.domain);
-    if (ctx.options['due-days'] !== undefined)
-      data.due_days = parseInt(String(ctx.options['due-days']));
-
-    if (Object.keys(data).length === 0) {
-      spinner.fail();
-      throw ValidationError.invalid(
-        'options',
-        data,
-        'No updates specified. Use --name, --billing-name, --vat, --currency, etc.',
+    try {
+      const result = await updateCompany(
+        {
+          id,
+          name: ctx.options.name !== undefined ? String(ctx.options.name) : undefined,
+          billingName:
+            ctx.options['billing-name'] !== undefined
+              ? String(ctx.options['billing-name'])
+              : undefined,
+          vat: ctx.options.vat !== undefined ? String(ctx.options.vat) : undefined,
+          defaultCurrency:
+            ctx.options.currency !== undefined ? String(ctx.options.currency) : undefined,
+          companyCode: ctx.options.code !== undefined ? String(ctx.options.code) : undefined,
+          domain: ctx.options.domain !== undefined ? String(ctx.options.domain) : undefined,
+          dueDays:
+            ctx.options['due-days'] !== undefined
+              ? parseInt(String(ctx.options['due-days']))
+              : undefined,
+        },
+        execCtx,
       );
-    }
 
-    const response = await ctx.api.updateCompany(id, data);
+      spinner.succeed();
 
-    spinner.succeed();
-
-    const format = ctx.options.format || ctx.options.f || 'human';
-    if (format === 'json') {
-      ctx.formatter.output({ status: 'success', id: response.data.id });
-    } else {
-      ctx.formatter.success(`Company ${id} updated`);
+      const format = ctx.options.format || ctx.options.f || 'human';
+      if (format === 'json') {
+        ctx.formatter.output({ status: 'success', id: result.data.id });
+      } else {
+        ctx.formatter.success(`Company ${id} updated`);
+      }
+    } catch (error) {
+      if (error instanceof ExecutorValidationError) {
+        spinner.fail();
+        throw ValidationError.invalid(
+          'options',
+          {},
+          'No updates specified. Use --name, --billing-name, --vat, --currency, etc.',
+        );
+      }
+      throw error;
     }
   }, ctx.formatter);
 }
