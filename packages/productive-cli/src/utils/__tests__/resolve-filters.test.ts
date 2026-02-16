@@ -222,4 +222,72 @@ describe('resolve-filters', () => {
       expect(result).toBe('unknown@example.com');
     });
   });
+
+  describe('resolveCommandFilters - additional cases', () => {
+    it('shows resolution info in human format when enabled', async () => {
+      const infoSpy = vi.fn();
+      mockCtx.options.format = 'human';
+      mockCtx.formatter = {
+        ...mockCtx.formatter,
+        info: infoSpy,
+      } as never;
+
+      mockApi.getPeople.mockResolvedValue({
+        data: [
+          {
+            id: '500521',
+            attributes: { first_name: 'John', last_name: 'Doe' },
+          },
+        ],
+      });
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      await resolveCommandFilters(
+        mockCtx,
+        { assignee_id: 'john@example.com' },
+        COMMON_FILTER_TYPES,
+        { showResolutionInfo: true },
+      );
+
+      expect(consoleSpy).toHaveBeenCalled();
+      const calls = consoleSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+      expect(calls).toContain('Resolved');
+
+      consoleSpy.mockRestore();
+    });
+
+    it('does not show resolution info in JSON format', async () => {
+      mockCtx.options.format = 'json';
+
+      mockApi.getPeople.mockResolvedValue({
+        data: [
+          {
+            id: '500521',
+            attributes: { first_name: 'John', last_name: 'Doe' },
+          },
+        ],
+      });
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      await resolveCommandFilters(
+        mockCtx,
+        { assignee_id: 'john@example.com' },
+        COMMON_FILTER_TYPES,
+        { showResolutionInfo: true },
+      );
+
+      // In JSON format, console.log should not be called with resolution info
+      const calls = consoleSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+      expect(calls).not.toContain('Resolved');
+
+      consoleSpy.mockRestore();
+    });
+
+    // Note: Service resolution tests require type='service' which is only passed
+    // when the filter type mapping indicates service_id. The resolution is triggered
+    // but string names like "Development" don't auto-detect to any type, so the
+    // service resolution requires explicit type mapping which is already tested.
+  });
 });

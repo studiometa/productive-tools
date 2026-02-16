@@ -372,3 +372,37 @@ describe('resolve command', () => {
     });
   });
 });
+
+describe('resolve help', () => {
+  let consoleSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleSpy.mockRestore();
+  });
+
+  it('shows main resolve help', async () => {
+    const { showResolveHelp } = await import('../resolve/help.js');
+    showResolveHelp();
+
+    expect(consoleSpy).toHaveBeenCalled();
+    const output = consoleSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(output).toContain('productive resolve');
+    expect(output).toContain('USAGE');
+    expect(output).toContain('OPTIONS');
+    expect(output).toContain('EXAMPLES');
+  });
+
+  it('shows detect subcommand help', async () => {
+    const { showResolveHelp } = await import('../resolve/help.js');
+    showResolveHelp('detect');
+
+    expect(consoleSpy).toHaveBeenCalled();
+    const output = consoleSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(output).toContain('productive resolve detect');
+    expect(output).toContain('Detect resource type');
+  });
+});

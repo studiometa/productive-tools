@@ -125,8 +125,9 @@ export async function executeToolWithCredentials(
     include,
     query,
     no_hints,
+    type,
     ...restArgs
-  } = args as unknown as ProductiveArgs & { no_hints?: boolean };
+  } = args as unknown as ProductiveArgs & { no_hints?: boolean; type?: string };
 
   // Default compact to false for 'get' action (single resource), true for 'list'
   const isCompact = compact ?? action !== 'get';
@@ -161,24 +162,26 @@ export async function executeToolWithCredentials(
     }
 
     // Route to appropriate resource handler
+    // Note: query and type are passed explicitly for resolve action support
+    const resolveArgs = { query, type };
     switch (resource) {
       case 'projects':
-        return await handleProjects(action, restArgs, ctx);
+        return await handleProjects(action, { ...restArgs, ...resolveArgs }, ctx);
 
       case 'time':
-        return await handleTime(action, restArgs, ctx);
+        return await handleTime(action, { ...restArgs, ...resolveArgs }, ctx);
 
       case 'tasks':
-        return await handleTasks(action, restArgs, ctx);
+        return await handleTasks(action, { ...restArgs, ...resolveArgs }, ctx);
 
       case 'services':
         return await handleServices(action, restArgs, ctx);
 
       case 'people':
-        return await handlePeople(action, restArgs, ctx, credentials);
+        return await handlePeople(action, { ...restArgs, ...resolveArgs }, ctx, credentials);
 
       case 'companies':
-        return await handleCompanies(action, restArgs, ctx);
+        return await handleCompanies(action, { ...restArgs, ...resolveArgs }, ctx);
 
       case 'comments':
         return await handleComments(action, restArgs, ctx);
@@ -187,7 +190,7 @@ export async function executeToolWithCredentials(
         return await handleTimers(action, restArgs, ctx);
 
       case 'deals':
-        return await handleDeals(action, restArgs, ctx);
+        return await handleDeals(action, { ...restArgs, ...resolveArgs }, ctx);
 
       case 'bookings':
         return await handleBookings(action, restArgs, ctx);
