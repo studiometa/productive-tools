@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Response includes `_resolved` metadata with original input and resolved label
 - **MCP**: Auto-resolution in `get` action for ID parameters ([#23])
   - `{ resource: "projects", action: "get", id: "PRJ-123" }` → works directly
+- **CLI**: Resolver functions added to `CommandContext` for better testability ([#23])
+  - `ctx.resolveFilters()` and `ctx.tryResolveValue()` methods
+  - Enables mocking resolution in tests without module-level mocks
+  - See [#24] for planned Nx-style architecture refactor
+
+[#23]: https://github.com/studiometa/productive-tools/pull/23
+[#24]: https://github.com/studiometa/productive-tools/issues/24
 
 ## [0.8.5] - 2026-02-10
 
