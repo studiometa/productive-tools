@@ -7,21 +7,34 @@ import type { CompanyArgs, HandlerContext, ToolResult } from './types.js';
 import { ErrorMessages } from '../errors.js';
 import { formatCompany, formatListResponse } from '../formatters.js';
 import { getCompanyHints } from '../hints.js';
+import {
+  resolveFilterValue,
+  handleResolve,
+  isNumericId,
+  type ResolvableResourceType,
+} from './resolve.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
-const VALID_ACTIONS = ['list', 'get', 'create', 'update'];
+const VALID_ACTIONS = ['list', 'get', 'create', 'update', 'resolve'];
 
 export async function handleCompanies(
   action: string,
-  args: CompanyArgs,
+  args: CompanyArgs & { query?: string; type?: ResolvableResourceType },
   ctx: HandlerContext,
 ): Promise<ToolResult> {
   const { api, formatOptions, filter, page, perPage } = ctx;
-  const { id, name } = args;
+  const { id, name, query, type } = args;
+
+  // Handle resolve action
+  if (action === 'resolve') {
+    return handleResolve({ query, type }, ctx);
+  }
 
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
-    const result = await api.getCompany(id);
+    // Resolve ID if it's a human-friendly identifier (name)
+    const resolvedId = !isNumericId(id) ? await resolveFilterValue(api, id, 'company') : id;
+    const result = await api.getCompany(resolvedId);
     const formatted = formatCompany(result.data, formatOptions);
 
     // Add contextual hints unless disabled
