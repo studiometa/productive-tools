@@ -20,6 +20,7 @@ import {
   formatTimer as cliFormatTimer,
   formatDeal as cliFormatDeal,
   formatBooking as cliFormatBooking,
+  formatAttachment as cliFormatAttachment,
   formatListResponse as cliFormatListResponse,
   type JsonApiResource,
   type JsonApiMeta,
@@ -213,6 +214,20 @@ export function formatBooking(
   const result = cliFormatBooking(booking, { ...MCP_FORMAT_OPTIONS, included: options?.included });
   if (options?.compact) {
     return compactify(result, ['approved_at', 'rejected_at', 'rejected_reason']);
+  }
+  return result;
+}
+
+/**
+ * Format attachment for agent consumption
+ */
+export function formatAttachment(
+  attachment: JsonApiResource,
+  options?: McpFormatOptions,
+): Record<string, unknown> {
+  const result = cliFormatAttachment(attachment, MCP_FORMAT_OPTIONS);
+  if (options?.compact) {
+    return compactify(result, ['url']);
   }
   return result;
 }

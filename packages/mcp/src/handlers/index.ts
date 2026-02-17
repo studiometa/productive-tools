@@ -14,6 +14,7 @@ import type { McpFormatOptions } from '../formatters.js';
 import type { HandlerContext, ToolResult } from './types.js';
 
 import { ErrorMessages, isUserInputError } from '../errors.js';
+import { handleAttachments } from './attachments.js';
 import { handleBookings } from './bookings.js';
 import { handleBudgets } from './budgets.js';
 import { handleComments } from './comments.js';
@@ -43,6 +44,7 @@ const VALID_RESOURCES = [
   'people',
   'companies',
   'comments',
+  'attachments',
   'timers',
   'deals',
   'bookings',
@@ -85,6 +87,8 @@ interface ProductiveArgs {
   // Comment fields
   body?: string;
   deal_id?: string;
+  // Attachment fields
+  comment_id?: string;
   // Timer fields
   time_entry_id?: string;
   // Booking fields
@@ -193,6 +197,9 @@ export async function executeToolWithCredentials(
 
       case 'comments':
         return await handleComments(action, restArgs, ctx);
+
+      case 'attachments':
+        return await handleAttachments(action, restArgs, ctx);
 
       case 'timers':
         return await handleTimers(action, restArgs, ctx);

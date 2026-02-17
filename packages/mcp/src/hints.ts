@@ -487,6 +487,51 @@ export function getCommentHints(
 }
 
 /**
+ * Generate hints for an attachment
+ */
+export function getAttachmentHints(
+  _attachmentId: string,
+  attachableType?: string,
+): ContextualHints {
+  const hints: ContextualHints = {
+    related_resources: [],
+    common_actions: [
+      {
+        action: 'Delete this attachment',
+        example: {
+          resource: 'attachments',
+          action: 'delete',
+          id: _attachmentId,
+        },
+      },
+    ],
+  };
+
+  if (attachableType) {
+    const resourceMap: Record<string, string> = {
+      Task: 'tasks',
+      Comment: 'comments',
+      Deal: 'deals',
+      Page: 'projects',
+    };
+
+    const resource = resourceMap[attachableType];
+    if (resource) {
+      hints.related_resources!.push({
+        resource,
+        description: `View the ${attachableType.toLowerCase()} this attachment belongs to`,
+        example: {
+          resource,
+          action: 'list',
+        },
+      });
+    }
+  }
+
+  return hints;
+}
+
+/**
  * Generate hints for a booking
  */
 export function getBookingHints(bookingId: string, personId?: string): ContextualHints {
