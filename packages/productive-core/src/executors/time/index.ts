@@ -2,7 +2,7 @@
  * Time entry executors — pure business logic for time tracking.
  */
 
-export { createTimeEntry, ExecutorValidationError } from './create.js';
+export { createTimeEntry } from './create.js';
 export { deleteTimeEntry, type DeleteResult } from './delete.js';
 export { getTimeEntry } from './get.js';
 export { buildTimeEntryFilters, listTimeEntries } from './list.js';

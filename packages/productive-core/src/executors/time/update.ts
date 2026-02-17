@@ -8,7 +8,7 @@ import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { UpdateTimeEntryOptions } from './types.js';
 
-import { ExecutorValidationError } from './create.js';
+import { ExecutorValidationError } from '../errors.js';
 
 /**
  * Update an existing time entry.

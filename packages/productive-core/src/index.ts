@@ -46,15 +46,15 @@ export type {
   CreateResolverOptions,
 } from './resolvers/index.js';
 
-// Executor types
+// Executor types and errors
 export type { Executor, ExecutorResult, PaginationOptions } from './executors/types.js';
+export { ExecutorValidationError } from './executors/errors.js';
 
 // Time executors
 export {
   buildTimeEntryFilters,
   createTimeEntry,
   deleteTimeEntry,
-  ExecutorValidationError,
   getTimeEntry,
   listTimeEntries,
   updateTimeEntry,

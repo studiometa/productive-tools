@@ -9,19 +9,6 @@ import type { ExecutorResult } from '../types.js';
 import type { CreateTimeEntryOptions } from './types.js';
 
 /**
- * Validation error for executor input.
- */
-export class ExecutorValidationError extends Error {
-  constructor(
-    message: string,
-    public readonly field: string,
-  ) {
-    super(message);
-    this.name = 'ExecutorValidationError';
-  }
-}
-
-/**
  * Create a new time entry.
  *
  * 1. Validates required fields

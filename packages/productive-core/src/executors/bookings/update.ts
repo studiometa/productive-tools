@@ -4,7 +4,7 @@ import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { UpdateBookingOptions } from './types.js';
 
-import { ExecutorValidationError } from '../time/create.js';
+import { ExecutorValidationError } from '../errors.js';
 
 export async function updateBooking(
   options: UpdateBookingOptions,
