@@ -171,8 +171,8 @@ export type {
 } from './executors/timers/index.js';
 
 // Budgets executors
-export { buildBudgetFilters, listBudgets } from './executors/budgets/index.js';
-export type { ListBudgetsOptions } from './executors/budgets/index.js';
+export { buildBudgetFilters, getBudget, listBudgets } from './executors/budgets/index.js';
+export type { GetBudgetOptions, ListBudgetsOptions } from './executors/budgets/index.js';
 
 // Reports executors
 export {
