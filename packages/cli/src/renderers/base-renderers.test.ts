@@ -124,6 +124,39 @@ describe('CsvRenderer', () => {
 
     expect(consoleSpy).toHaveBeenNthCalledWith(2, '1,,');
   });
+
+  it('should render single object as single row', () => {
+    const renderer = new CsvRenderer();
+    const data = { id: '1', name: 'Single Object' };
+
+    renderer.render(data, defaultCtx);
+
+    expect(consoleSpy).toHaveBeenNthCalledWith(1, 'id,name');
+    expect(consoleSpy).toHaveBeenNthCalledWith(2, '1,Single Object');
+  });
+
+  it('should render primitive values as string', () => {
+    const renderer = new CsvRenderer();
+    renderer.render('primitive value', defaultCtx);
+
+    expect(consoleSpy).toHaveBeenCalledWith('primitive value');
+  });
+
+  it('should render null as string', () => {
+    const renderer = new CsvRenderer();
+    renderer.render(null, defaultCtx);
+
+    expect(consoleSpy).toHaveBeenCalledWith('null');
+  });
+
+  it('should handle values with newlines', () => {
+    const renderer = new CsvRenderer();
+    const data = [{ id: '1', note: 'Line1\nLine2' }];
+
+    renderer.render(data, defaultCtx);
+
+    expect(consoleSpy).toHaveBeenNthCalledWith(2, '1,"Line1\nLine2"');
+  });
 });
 
 describe('TableRenderer', () => {
@@ -189,5 +222,30 @@ describe('TableRenderer', () => {
     expect(consoleSpy).toHaveBeenNthCalledWith(1, 'id  | name          ');
     expect(consoleSpy).toHaveBeenNthCalledWith(3, '1   | A             ');
     expect(consoleSpy).toHaveBeenNthCalledWith(4, '100 | Very Long Name');
+  });
+
+  it('should render single object as single row table', () => {
+    const renderer = new TableRenderer();
+    const data = { id: '1', name: 'Single Object' };
+
+    renderer.render(data, defaultCtx);
+
+    expect(consoleSpy).toHaveBeenNthCalledWith(1, 'id | name         ');
+    expect(consoleSpy).toHaveBeenNthCalledWith(2, '---+--------------');
+    expect(consoleSpy).toHaveBeenNthCalledWith(3, '1  | Single Object');
+  });
+
+  it('should render primitive values as string', () => {
+    const renderer = new TableRenderer();
+    renderer.render('primitive value', defaultCtx);
+
+    expect(consoleSpy).toHaveBeenCalledWith('primitive value');
+  });
+
+  it('should render null as string', () => {
+    const renderer = new TableRenderer();
+    renderer.render(null, defaultCtx);
+
+    expect(consoleSpy).toHaveBeenCalledWith('null');
   });
 });

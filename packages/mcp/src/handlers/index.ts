@@ -15,6 +15,7 @@ import type { HandlerContext, ToolResult } from './types.js';
 
 import { ErrorMessages, isUserInputError } from '../errors.js';
 import { handleBookings } from './bookings.js';
+import { handleBudgets } from './budgets.js';
 import { handleComments } from './comments.js';
 import { handleCompanies } from './companies.js';
 import { handleDeals } from './deals.js';
@@ -45,6 +46,7 @@ const VALID_RESOURCES = [
   'timers',
   'deals',
   'bookings',
+  'budgets',
   'reports',
 ];
 
@@ -200,6 +202,9 @@ export async function executeToolWithCredentials(
 
       case 'bookings':
         return await handleBookings(action, restArgs, ctx);
+
+      case 'budgets':
+        return await handleBudgets(action, restArgs, ctx);
 
       case 'reports':
         return await handleReports(action, restArgs, ctx);

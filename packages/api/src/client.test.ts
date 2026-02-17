@@ -459,6 +459,13 @@ describe('ProductiveApi requests', () => {
       const url = fetchSpy.mock.calls[0][0] as string;
       expect(url).toContain('/budgets');
     });
+
+    it('getBudget', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1' } });
+      await api.getBudget('1');
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('/budgets/1');
+    });
   });
 
   describe('companies', () => {

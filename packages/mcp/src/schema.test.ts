@@ -18,6 +18,7 @@ describe('schema', () => {
       expect(parse(ResourceSchema, 'projects')).toBe('projects');
       expect(parse(ResourceSchema, 'time')).toBe('time');
       expect(parse(ResourceSchema, 'tasks')).toBe('tasks');
+      expect(parse(ResourceSchema, 'budgets')).toBe('budgets');
       expect(parse(ResourceSchema, 'reports')).toBe('reports');
     });
 

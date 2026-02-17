@@ -146,10 +146,18 @@ export interface ProductiveBudget {
   id: string;
   type: 'budgets';
   attributes: {
+    name?: string;
+    budget_type?: number;
+    billable?: boolean;
+    started_on?: string;
+    ended_on?: string;
+    currency?: string;
     total_time_budget?: number;
     remaining_time_budget?: number;
     total_monetary_budget?: number;
     remaining_monetary_budget?: number;
+    created_at?: string;
+    updated_at?: string;
   };
   relationships?: Record<string, RelationshipData>;
 }

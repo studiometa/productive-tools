@@ -10,6 +10,9 @@ export function buildBudgetFilters(options: ListBudgetsOptions): Record<string, 
   if (options.additionalFilters) Object.assign(filter, options.additionalFilters);
   if (options.projectId) filter.project_id = options.projectId;
   if (options.companyId) filter.company_id = options.companyId;
+  if (options.dealId) filter.deal_id = options.dealId;
+  if (options.billable !== undefined) filter.billable = String(options.billable);
+  if (options.budgetType) filter.budget_type = options.budgetType;
 
   return filter;
 }

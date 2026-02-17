@@ -456,6 +456,10 @@ export class ProductiveApi {
     });
   }
 
+  async getBudget(id: string): Promise<ProductiveApiResponse<ProductiveBudget>> {
+    return this.request<ProductiveApiResponse<ProductiveBudget>>(`/budgets/${id}`);
+  }
+
   // Companies
   async getCompanies(params?: {
     page?: number;

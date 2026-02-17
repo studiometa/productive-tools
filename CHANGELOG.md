@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **API**: Enrich `ProductiveBudget` type with `name`, `budget_type`, `billable`, dates, `currency` fields ([#34])
+- **API**: Add `getBudget(id)` method to `ProductiveApi` client ([#34])
+- **Core**: Add `getBudget` executor and enrich `ListBudgetsOptions` with `dealId`, `billable`, `budgetType` filters ([#34])
+- **CLI**: Add `budgets get <id>` subcommand with detail renderer ([#34])
+- **MCP**: Add `budgets` resource handler with `list` and `get` actions ([#34])
 - **Core**: New `@studiometa/productive-core` package with executor architecture ([#25])
   - Pure executor functions `(options, context) → ExecutorResult<T>` for all 12 resource types
   - `ExecutorContext` with dependency injection: `api`, `resolver`, `config`
@@ -79,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#23]: https://github.com/studiometa/productive-tools/pull/23
 [#24]: https://github.com/studiometa/productive-tools/issues/24
 [#25]: https://github.com/studiometa/productive-tools/pull/25
+[#34]: https://github.com/studiometa/productive-tools/pull/34
 [#26]: https://github.com/studiometa/productive-tools/pull/26
 [#27]: https://github.com/studiometa/productive-tools/pull/27
 

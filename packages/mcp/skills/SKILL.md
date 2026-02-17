@@ -29,6 +29,7 @@ productive(resource, action, [parameters...])
 | `timers`    | `list`, `get`, `start`, `stop`, `help`               | Active timers           |
 | `deals`     | `list`, `get`, `create`, `update`, `resolve`, `help` | Sales deals             |
 | `bookings`  | `list`, `get`, `create`, `update`, `help`            | Resource scheduling     |
+| `budgets`   | `list`, `get`, `help`                                | Budget tracking         |
 | `reports`   | `get`, `help`                                        | Generate reports        |
 
 ### Getting Help
@@ -285,6 +286,22 @@ Response:
 { "resource": "timers", "action": "stop", "id": "67890" }
 ```
 
+### Budgets
+
+```json
+// List all budgets
+{ "resource": "budgets", "action": "list" }
+
+// List budgets for a project
+{ "resource": "budgets", "action": "list", "filter": { "project_id": "12345" } }
+
+// Get budget details
+{ "resource": "budgets", "action": "get", "id": "67890" }
+
+// List billable budgets
+{ "resource": "budgets", "action": "list", "filter": { "billable": "true" } }
+```
+
 ### Reports
 
 ```json
@@ -384,6 +401,14 @@ Response:
 - `after` / `before` - Date range
 - `booking_type` - Type: `event` (absence) or `service` (budget)
 - `draft` - Tentative status: `true`/`false`
+
+### Budgets
+
+- `project_id` - Filter by project
+- `company_id` - Filter by company
+- `deal_id` - Filter by deal
+- `billable` - Filter by billable status: `true`/`false`
+- `budget_type` - Filter by budget type
 
 ### Comments
 

@@ -44,6 +44,8 @@ vi.mock('@studiometa/productive-api', () => {
     getCompany: vi.fn(),
     createCompany: vi.fn(),
     updateCompany: vi.fn(),
+    getBudgets: vi.fn(),
+    getBudget: vi.fn(),
   };
 
   return {
@@ -59,6 +61,7 @@ vi.mock('@studiometa/productive-api', () => {
     formatBooking: vi.fn((booking) => ({ id: booking.id, ...booking.attributes })),
     formatComment: vi.fn((comment) => ({ id: comment.id, ...comment.attributes })),
     formatTimer: vi.fn((timer) => ({ id: timer.id, ...timer.attributes })),
+    formatBudget: vi.fn((budget) => ({ id: budget.id, ...budget.attributes })),
     formatCompany: vi.fn((company) => ({ id: company.id, ...company.attributes })),
     formatListResponse: vi.fn((data, formatter, meta) => ({
       data: data.map((item: Record<string, unknown>) => formatter(item)),
@@ -1405,6 +1408,113 @@ describe('handlers', () => {
         expect(result.content[0].text).toContain('Invalid action');
       });
     });
+
+    describe('budgets resource', () => {
+      it('should list budgets', async () => {
+        mockApi.getBudgets.mockResolvedValue({
+          data: [{ id: '1', type: 'budgets', attributes: { name: 'Q1 Budget' } }],
+          meta: { current_page: 1, total_pages: 1 },
+        });
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'budgets', action: 'list' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getBudgets).toHaveBeenCalled();
+      });
+
+      it('should get a budget by ID', async () => {
+        mockApi.getBudget.mockResolvedValue({
+          data: { id: '1', type: 'budgets', attributes: { name: 'Q1 Budget' } },
+        });
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'budgets', action: 'get', id: '1' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getBudget).toHaveBeenCalledWith('1');
+      });
+
+      it('should return error for get without ID', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'budgets', action: 'get' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('id');
+      });
+
+      it('should return error for invalid action', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'budgets', action: 'create' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Invalid action');
+      });
+
+      it('should include hints for get action by default', async () => {
+        mockApi.getBudget.mockResolvedValue({
+          data: { id: '42', type: 'budgets', attributes: { name: 'Test Budget' } },
+        });
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'budgets', action: 'get', id: '42' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        const content = JSON.parse(result.content[0].text as string);
+        expect(content._hints).toBeDefined();
+        expect(content._hints.related_resources).toBeInstanceOf(Array);
+      });
+
+      it('should not include hints when no_hints is true', async () => {
+        mockApi.getBudget.mockResolvedValue({
+          data: { id: '42', type: 'budgets', attributes: { name: 'Test Budget' } },
+        });
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'budgets', action: 'get', id: '42', no_hints: true },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        const content = JSON.parse(result.content[0].text as string);
+        expect(content._hints).toBeUndefined();
+      });
+
+      it('should pass filters to list', async () => {
+        mockApi.getBudgets.mockResolvedValue({
+          data: [],
+          meta: { current_page: 1, total_pages: 1 },
+        });
+
+        await executeToolWithCredentials(
+          'productive',
+          { resource: 'budgets', action: 'list', filter: { project_id: '123' } },
+          credentials,
+        );
+
+        expect(mockApi.getBudgets).toHaveBeenCalledWith(
+          expect.objectContaining({
+            filter: expect.objectContaining({ project_id: '123' }),
+          }),
+        );
+      });
+    });
   });
 });
 
@@ -1457,6 +1567,23 @@ describe('help handler', () => {
     const content = JSON.parse(result.content[0].text as string);
     expect(content.resource).toBe('time');
     expect(content.actions.create).toBeDefined();
+  });
+
+  it('should return detailed help for budgets resource', async () => {
+    const result = await executeToolWithCredentials(
+      'productive',
+      { resource: 'budgets', action: 'help' },
+      credentials,
+    );
+
+    expect(result.isError).toBeUndefined();
+    const content = JSON.parse(result.content[0].text as string);
+    expect(content.resource).toBe('budgets');
+    expect(content.actions.list).toBeDefined();
+    expect(content.actions.get).toBeDefined();
+    expect(content.filters).toBeDefined();
+    expect(content.fields).toBeDefined();
+    expect(content.examples).toBeDefined();
   });
 
   it('should return error for unknown resource in help', async () => {

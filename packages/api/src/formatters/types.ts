@@ -183,8 +183,17 @@ export interface FormattedService {
 export interface FormattedBudget {
   [key: string]: unknown;
   id: string;
+  name?: string;
+  budget_type?: number;
+  billable?: boolean;
+  started_on?: string;
+  ended_on?: string;
+  currency?: string;
   total_time_budget?: number;
   remaining_time_budget?: number;
   total_monetary_budget?: number;
   remaining_monetary_budget?: number;
+  // Optional timestamps (when includeTimestamps: true)
+  created_at?: string;
+  updated_at?: string;
 }

@@ -27,6 +27,26 @@ describe('buildBudgetFilters', () => {
     expect(filters.project_id).toBe('100');
     expect(filters.custom).toBe('value');
   });
+
+  it('maps dealId to deal_id filter', () => {
+    const filters = buildBudgetFilters({ dealId: '300' });
+    expect(filters.deal_id).toBe('300');
+  });
+
+  it('maps billable to string filter', () => {
+    const filters = buildBudgetFilters({ billable: true });
+    expect(filters.billable).toBe('true');
+  });
+
+  it('maps billable false to string filter', () => {
+    const filters = buildBudgetFilters({ billable: false });
+    expect(filters.billable).toBe('false');
+  });
+
+  it('maps budgetType to budget_type filter', () => {
+    const filters = buildBudgetFilters({ budgetType: '1' });
+    expect(filters.budget_type).toBe('1');
+  });
 });
 
 describe('listBudgets', () => {

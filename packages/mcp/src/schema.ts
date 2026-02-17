@@ -28,6 +28,7 @@ export const ResourceSchema = z.enum([
   'timers',
   'deals',
   'bookings',
+  'budgets',
   'reports',
 ]);
 
