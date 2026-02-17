@@ -1083,7 +1083,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBe(true);
-        expect(result.content[0].text).toContain('is required for creating company');
+        expect(result.content[0].text).toContain('is required for creating companies');
       });
 
       it('should handle update action', async () => {
