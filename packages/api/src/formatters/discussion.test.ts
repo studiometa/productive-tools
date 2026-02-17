@@ -53,6 +53,14 @@ describe('formatDiscussion', () => {
     expect(r.body).toBe('<p>Please review this section</p>');
   });
 
+  it('returns null body when body is empty and stripHtml is disabled', () => {
+    const r = formatDiscussion(
+      { ...fullDiscussion, attributes: { ...fullDiscussion.attributes, body: '' } },
+      { stripHtml: false },
+    );
+    expect(r.body).toBeNull();
+  });
+
   it('handles missing body and title', () => {
     const r = formatDiscussion({
       id: '2',

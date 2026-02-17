@@ -2824,6 +2824,17 @@ describe('smart ID resolution', () => {
       expect(result.isError).toBeUndefined();
     });
 
+    it('should return error for update without id', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'pages', action: 'update', title: 'Updated' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('id is required');
+    });
+
     it('should handle delete action', async () => {
       mockApi.deletePage.mockResolvedValue(undefined);
 
@@ -2837,6 +2848,17 @@ describe('smart ID resolution', () => {
       expect(mockApi.deletePage).toHaveBeenCalledWith('1');
     });
 
+    it('should return error for delete without id', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'pages', action: 'delete' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('id is required');
+    });
+
     it('should return error for invalid action', async () => {
       const result = await executeToolWithCredentials(
         'productive',
@@ -2846,6 +2868,44 @@ describe('smart ID resolution', () => {
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Invalid action');
+    });
+
+    it('should handle get action without hints when no_hints is true', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'pages', attributes: { title: 'Test Page' } },
+      };
+      mockApi.getPage.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'pages', action: 'get', id: '1', no_hints: true },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._hints).toBeUndefined();
+    });
+
+    it('should include _resolved in list when filter is resolved', async () => {
+      // Mock a filter that triggers resolution (e.g., filter by project name)
+      mockApi.getProjects.mockResolvedValue({
+        data: [{ id: '100', attributes: { name: 'Test Project' } }],
+      });
+      mockApi.getPages.mockResolvedValue({
+        data: [{ id: '1', type: 'pages', attributes: { title: 'Page 1' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'pages', action: 'list', filter: { project_id: 'Test Project' } },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._resolved).toBeDefined();
     });
   });
 
@@ -2936,6 +2996,17 @@ describe('smart ID resolution', () => {
       expect(result.isError).toBeUndefined();
     });
 
+    it('should return error for update without id', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'update', body: 'Updated' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('id is required');
+    });
+
     it('should handle delete action', async () => {
       mockApi.deleteDiscussion.mockResolvedValue(undefined);
 
@@ -2947,6 +3018,17 @@ describe('smart ID resolution', () => {
 
       expect(result.isError).toBeUndefined();
       expect(mockApi.deleteDiscussion).toHaveBeenCalledWith('1');
+    });
+
+    it('should return error for delete without id', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'delete' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('id is required');
     });
 
     it('should handle resolve action', async () => {
@@ -2994,6 +3076,76 @@ describe('smart ID resolution', () => {
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('id is required');
+    });
+
+    it('should return error for reopen without id', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'reopen' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('id is required');
+    });
+
+    it('should handle list with status filter', async () => {
+      const mockResponse = {
+        data: [{ id: '1', type: 'discussions', attributes: { body: 'Test', status: 2 } }],
+        meta: { current_page: 1, total_pages: 1 },
+      };
+      mockApi.getDiscussions.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'list', status: 'resolved' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(mockApi.getDiscussions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ status: '2' }),
+        }),
+      );
+    });
+
+    it('should handle get action without hints when no_hints is true', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'discussions', attributes: { body: 'Test', status: 1 } },
+      };
+      mockApi.getDiscussion.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'get', id: '1', no_hints: true },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._hints).toBeUndefined();
+    });
+
+    it('should include _resolved in list when filter is resolved', async () => {
+      // Mock a filter that triggers resolution (e.g., filter by person name)
+      mockApi.getPeople.mockResolvedValue({
+        data: [{ id: '500', attributes: { first_name: 'John', last_name: 'Doe' } }],
+      });
+      mockApi.getDiscussions.mockResolvedValue({
+        data: [{ id: '1', type: 'discussions', attributes: { body: 'Test', status: 1 } }],
+        meta: { current_page: 1, total_pages: 1 },
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'list', filter: { creator_id: 'John Doe' } },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._resolved).toBeDefined();
     });
 
     it('should return error for invalid action', async () => {

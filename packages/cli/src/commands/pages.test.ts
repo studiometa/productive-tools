@@ -169,6 +169,28 @@ describe('pages command', () => {
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
+    it('should list pages with short format option f', async () => {
+      const getPages = vi.fn().mockResolvedValue({
+        data: [
+          {
+            id: '1',
+            type: 'pages',
+            attributes: { title: 'Page 1' },
+          },
+        ],
+        meta: { total: 1 },
+      });
+
+      const ctx = createTestContext({
+        api: { getPages } as unknown as ProductiveApi,
+        options: { f: 'json' },
+      });
+
+      await pagesList(ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
     it('should list pages in table format', async () => {
       const getPages = vi.fn().mockResolvedValue({
         data: [
@@ -233,6 +255,51 @@ describe('pages command', () => {
       await pagesGet(['1'], ctx);
 
       expect(getPage).toHaveBeenCalledWith('1');
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should get a page in human format', async () => {
+      const getPage = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'pages',
+          attributes: {
+            title: 'Human Format Page',
+            body: 'Body content',
+            public: true,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-02T00:00:00Z',
+          },
+        },
+      });
+
+      const ctx = createTestContext({
+        api: { getPage } as unknown as ProductiveApi,
+        options: { format: 'human' },
+      });
+
+      await pagesGet(['1'], ctx);
+
+      expect(getPage).toHaveBeenCalledWith('1');
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should get a page with short format option f', async () => {
+      const getPage = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'pages',
+          attributes: { title: 'Test Page' },
+        },
+      });
+
+      const ctx = createTestContext({
+        api: { getPage } as unknown as ProductiveApi,
+        options: { f: 'json' },
+      });
+
+      await pagesGet(['1'], ctx);
+
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
@@ -324,6 +391,25 @@ describe('pages command', () => {
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
+    it('should create a page with short format option f', async () => {
+      const createPage = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'pages',
+          attributes: { title: 'New Page' },
+        },
+      });
+
+      const ctx = createTestContext({
+        api: { createPage } as unknown as ProductiveApi,
+        options: { title: 'New Page', project: '123', f: 'json' },
+      });
+
+      await pagesAdd(ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
     it('should exit with error when title is missing', async () => {
       const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
 
@@ -396,6 +482,21 @@ describe('pages command', () => {
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
+    it('should update a page with short format option f', async () => {
+      const updatePage = vi.fn().mockResolvedValue({
+        data: { id: '1', type: 'pages', attributes: {} },
+      });
+
+      const ctx = createTestContext({
+        api: { updatePage } as unknown as ProductiveApi,
+        options: { title: 'Updated', f: 'json' },
+      });
+
+      await pagesUpdate(['1'], ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
     it('should exit with error when id is missing', async () => {
       const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
 
@@ -429,6 +530,21 @@ describe('pages command', () => {
 
       expect(processExitSpy).toHaveBeenCalled();
     });
+
+    it('should rethrow non-ExecutorValidationError errors', async () => {
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+      const networkError = new Error('Network error');
+      const updatePage = vi.fn().mockRejectedValue(networkError);
+
+      const ctx = createTestContext({
+        api: { updatePage } as unknown as ProductiveApi,
+        options: { title: 'Updated', format: 'json' },
+      });
+
+      await pagesUpdate(['1'], ctx);
+
+      expect(processExitSpy).toHaveBeenCalled();
+    });
   });
 
   describe('pagesDelete', () => {
@@ -452,6 +568,19 @@ describe('pages command', () => {
       const ctx = createTestContext({
         api: { deletePage } as unknown as ProductiveApi,
         options: { format: 'human' },
+      });
+
+      await pagesDelete(['1'], ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should delete a page with short format option f', async () => {
+      const deletePage = vi.fn().mockResolvedValue(undefined);
+
+      const ctx = createTestContext({
+        api: { deletePage } as unknown as ProductiveApi,
+        options: { f: 'json' },
       });
 
       await pagesDelete(['1'], ctx);

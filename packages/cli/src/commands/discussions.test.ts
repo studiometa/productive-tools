@@ -206,6 +206,28 @@ describe('discussions command', () => {
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
+    it('should list discussions with short format option f', async () => {
+      const getDiscussions = vi.fn().mockResolvedValue({
+        data: [
+          {
+            id: '1',
+            type: 'discussions',
+            attributes: { body: 'Content', status: 1 },
+          },
+        ],
+        meta: { total: 1 },
+      });
+
+      const ctx = createTestContext({
+        api: { getDiscussions } as unknown as ProductiveApi,
+        options: { f: 'json' },
+      });
+
+      await discussionsList(ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
     it('should list discussions in table format', async () => {
       const getDiscussions = vi.fn().mockResolvedValue({
         data: [
@@ -265,6 +287,51 @@ describe('discussions command', () => {
       const ctx = createTestContext({
         api: { getDiscussion } as unknown as ProductiveApi,
         options: { format: 'json' },
+      });
+
+      await discussionsGet(['1'], ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should get a discussion in human format', async () => {
+      const getDiscussion = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'discussions',
+          attributes: {
+            title: 'Human Format Test',
+            body: 'Content body',
+            status: 1,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-02T00:00:00Z',
+          },
+        },
+      });
+
+      const ctx = createTestContext({
+        api: { getDiscussion } as unknown as ProductiveApi,
+        options: { format: 'human' },
+      });
+
+      await discussionsGet(['1'], ctx);
+
+      expect(getDiscussion).toHaveBeenCalledWith('1');
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should get a discussion with short format option f', async () => {
+      const getDiscussion = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'discussions',
+          attributes: { body: 'Content', status: 1 },
+        },
+      });
+
+      const ctx = createTestContext({
+        api: { getDiscussion } as unknown as ProductiveApi,
+        options: { f: 'json' },
       });
 
       await discussionsGet(['1'], ctx);
@@ -346,6 +413,25 @@ describe('discussions command', () => {
       const ctx = createTestContext({
         api: { createDiscussion } as unknown as ProductiveApi,
         options: { body: 'Review', 'page-id': '123', title: 'Title', format: 'human' },
+      });
+
+      await discussionsAdd(ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should create a discussion with short format option f', async () => {
+      const createDiscussion = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'discussions',
+          attributes: { body: 'Review', status: 1 },
+        },
+      });
+
+      const ctx = createTestContext({
+        api: { createDiscussion } as unknown as ProductiveApi,
+        options: { body: 'Review', 'page-id': '123', f: 'json' },
       });
 
       await discussionsAdd(ctx);
@@ -447,6 +533,21 @@ describe('discussions command', () => {
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
+    it('should update a discussion with short format option f', async () => {
+      const updateDiscussion = vi.fn().mockResolvedValue({
+        data: { id: '1', type: 'discussions', attributes: { status: 1 } },
+      });
+
+      const ctx = createTestContext({
+        api: { updateDiscussion } as unknown as ProductiveApi,
+        options: { title: 'Updated', f: 'json' },
+      });
+
+      await discussionsUpdate(['1'], ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
     it('should exit with error when id is missing', async () => {
       const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
 
@@ -480,6 +581,21 @@ describe('discussions command', () => {
 
       expect(processExitSpy).toHaveBeenCalled();
     });
+
+    it('should rethrow non-ExecutorValidationError errors', async () => {
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+      const networkError = new Error('Network error');
+      const updateDiscussion = vi.fn().mockRejectedValue(networkError);
+
+      const ctx = createTestContext({
+        api: { updateDiscussion } as unknown as ProductiveApi,
+        options: { title: 'Updated', format: 'json' },
+      });
+
+      await discussionsUpdate(['1'], ctx);
+
+      expect(processExitSpy).toHaveBeenCalled();
+    });
   });
 
   describe('discussionsDelete', () => {
@@ -503,6 +619,19 @@ describe('discussions command', () => {
       const ctx = createTestContext({
         api: { deleteDiscussion } as unknown as ProductiveApi,
         options: { format: 'human' },
+      });
+
+      await discussionsDelete(['1'], ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should delete a discussion with short format option f', async () => {
+      const deleteDiscussion = vi.fn().mockResolvedValue(undefined);
+
+      const ctx = createTestContext({
+        api: { deleteDiscussion } as unknown as ProductiveApi,
+        options: { f: 'json' },
       });
 
       await discussionsDelete(['1'], ctx);
@@ -565,6 +694,25 @@ describe('discussions command', () => {
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
+    it('should resolve a discussion with short format option f', async () => {
+      const resolveDiscussion = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'discussions',
+          attributes: { status: 2, resolved_at: '2024-01-05' },
+        },
+      });
+
+      const ctx = createTestContext({
+        api: { resolveDiscussion } as unknown as ProductiveApi,
+        options: { f: 'json' },
+      });
+
+      await discussionsResolve(['1'], ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
     it('should exit with error when id is missing', async () => {
       const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
 
@@ -613,6 +761,25 @@ describe('discussions command', () => {
       const ctx = createTestContext({
         api: { reopenDiscussion } as unknown as ProductiveApi,
         options: { format: 'human' },
+      });
+
+      await discussionsReopen(['1'], ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should reopen a discussion with short format option f', async () => {
+      const reopenDiscussion = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'discussions',
+          attributes: { status: 1, resolved_at: null },
+        },
+      });
+
+      const ctx = createTestContext({
+        api: { reopenDiscussion } as unknown as ProductiveApi,
+        options: { f: 'json' },
       });
 
       await discussionsReopen(['1'], ctx);

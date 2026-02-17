@@ -42,6 +42,14 @@ describe('formatPage', () => {
     expect(r.body).toBe('<p>Welcome to the docs</p>');
   });
 
+  it('returns null body when body is empty and stripHtml is disabled', () => {
+    const r = formatPage(
+      { ...fullPage, attributes: { ...fullPage.attributes, body: '' } },
+      { stripHtml: false },
+    );
+    expect(r.body).toBeNull();
+  });
+
   it('handles missing body', () => {
     const r = formatPage({ id: '2', type: 'pages', attributes: { title: 'Empty' } });
     expect(r.body).toBeNull();
