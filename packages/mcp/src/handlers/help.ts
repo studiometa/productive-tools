@@ -189,7 +189,6 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     description: 'Budget line items within projects',
     actions: {
       list: 'List services with optional filters',
-      get: 'Get a single service by ID',
     },
     filters: {
       project_id: 'Filter by project',
