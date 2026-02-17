@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **API**: Auto-migrate legacy config from `~/.config/` to `~/Library/Application Support/` on macOS ([8ba9e89], [#36])
+- **CLI**: Print one-time notice when config migration occurs ([8ba9e89], [#36])
+
 ## [0.9.0] - 2026-02-17
 
 ### Added
@@ -95,6 +100,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Silence `console.error` in unknown subcommand tests to clean up test output ([#26])
 
 [Unreleased]: https://github.com/studiometa/productive-tools/compare/0.9.0...HEAD
+[8ba9e89]: https://github.com/studiometa/productive-tools/commit/8ba9e89
+[#36]: https://github.com/studiometa/productive-tools/pull/36
 [0.9.0]: https://github.com/studiometa/productive-tools/compare/0.8.5...0.9.0
 [95c5cbe]: https://github.com/studiometa/productive-tools/commit/95c5cbe
 [c22d2da]: https://github.com/studiometa/productive-tools/commit/c22d2da

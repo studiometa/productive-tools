@@ -13,6 +13,12 @@ import {
 
 const config = new ConfigStore<ProductiveConfig>('productive-cli');
 
+if (config.didMigrate) {
+  console.error(
+    '\x1b[33m⚠ Config migrated from ~/.config/productive-cli/ to ~/Library/Application Support/productive-cli/\x1b[0m',
+  );
+}
+
 /**
  * Get a config value, checking keychain first for secure keys
  */
