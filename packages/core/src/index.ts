@@ -5,6 +5,10 @@
  * Provides executor functions with injectable dependencies for testability.
  */
 
+// Constants — single source of truth for resources, actions, report types
+export { RESOURCES, ACTIONS, REPORT_TYPES, VALID_REPORT_TYPES } from './constants.js';
+export type { Resource, Action, ReportType } from './constants.js';
+
 // Context
 export type {
   ExecutorConfig,
@@ -234,6 +238,5 @@ export {
   getReport,
   resolveGroup,
   resolveIncludes,
-  VALID_REPORT_TYPES,
 } from './executors/reports/index.js';
-export type { GetReportOptions, ReportType } from './executors/reports/index.js';
+export type { GetReportOptions } from './executors/reports/index.js';

@@ -8,7 +8,11 @@
  * - TypeScript type inference
  */
 
+import { RESOURCES, ACTIONS, REPORT_TYPES } from '@studiometa/productive-core';
 import { z, parse, safeParse, type ZodSafeParseResult, type ZodError } from 'zod';
+
+// Re-export types from core (canonical source of truth)
+export type { Resource, Action, ReportType } from '@studiometa/productive-core';
 
 // =============================================================================
 // Base Schemas
@@ -16,64 +20,21 @@ import { z, parse, safeParse, type ZodSafeParseResult, type ZodError } from 'zod
 
 /**
  * Resource types available in Productive.io
+ * Values derived from RESOURCES constant in constants.ts
  */
-export const ResourceSchema = z.enum([
-  'projects',
-  'time',
-  'tasks',
-  'services',
-  'people',
-  'companies',
-  'comments',
-  'attachments',
-  'timers',
-  'deals',
-  'bookings',
-  'budgets',
-  'pages',
-  'discussions',
-  'reports',
-]);
-
-export type Resource = z.infer<typeof ResourceSchema>;
+export const ResourceSchema = z.enum(RESOURCES);
 
 /**
  * Actions available for resources
+ * Values derived from ACTIONS constant in constants.ts
  */
-export const ActionSchema = z.enum([
-  'list',
-  'get',
-  'create',
-  'update',
-  'delete',
-  'resolve',
-  'reopen',
-  'me',
-  'start',
-  'stop',
-  'help',
-]);
-
-export type Action = z.infer<typeof ActionSchema>;
+export const ActionSchema = z.enum(ACTIONS);
 
 /**
  * Report types available in Productive.io
+ * Values derived from REPORT_TYPES constant in constants.ts
  */
-export const ReportTypeSchema = z.enum([
-  'time_reports',
-  'project_reports',
-  'budget_reports',
-  'person_reports',
-  'invoice_reports',
-  'payment_reports',
-  'service_reports',
-  'task_reports',
-  'company_reports',
-  'deal_reports',
-  'timesheet_reports',
-]);
-
-export type ReportType = z.infer<typeof ReportTypeSchema>;
+export const ReportTypeSchema = z.enum(REPORT_TYPES);
 
 // =============================================================================
 // Parameter Schemas

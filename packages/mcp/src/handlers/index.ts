@@ -7,7 +7,7 @@
  */
 
 import { ProductiveApi } from '@studiometa/productive-api';
-import { fromHandlerContext } from '@studiometa/productive-core';
+import { fromHandlerContext, RESOURCES } from '@studiometa/productive-core';
 
 import type { ProductiveCredentials } from '../auth.js';
 import type { McpFormatOptions } from '../formatters.js';
@@ -37,24 +37,8 @@ import { errorResult, formatError, inputErrorResult, toStringFilter } from './ut
 // Re-export types
 export type { ToolResult } from './types.js';
 
-/** Valid resources for the productive tool */
-const VALID_RESOURCES = [
-  'projects',
-  'time',
-  'tasks',
-  'services',
-  'people',
-  'companies',
-  'comments',
-  'attachments',
-  'timers',
-  'deals',
-  'bookings',
-  'budgets',
-  'pages',
-  'discussions',
-  'reports',
-];
+/** Valid resources for the productive tool (derived from core constants) */
+const VALID_RESOURCES = [...RESOURCES];
 
 /** Default page size for MCP (smaller than CLI to reduce token usage) */
 const DEFAULT_PER_PAGE = 20;

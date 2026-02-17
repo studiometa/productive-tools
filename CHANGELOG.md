@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **MCP**: Fix tool schema missing `pages`, `discussions`, `budgets`, `attachments` resources and `delete`, `resolve`, `reopen` actions — MCP clients rejected valid resources ([5c982a8], [#37])
+- **MCP**: Add missing `page_id`, `parent_page_id`, `comment_id` parameters to tool schema ([5c982a8], [#37])
+
+### Changed
+
+- **Core**: Centralize `RESOURCES`, `ACTIONS`, `REPORT_TYPES` constants as single source of truth in `core/constants.ts` ([56ce4c8], [#37])
+- **MCP**: Derive tool schema enums and description from core constants — no more manual sync ([59afd31], [#37])
+
 ## [0.9.1] - 2026-02-17
 
 ### Fixed
@@ -104,6 +114,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Silence `console.error` in unknown subcommand tests to clean up test output ([#26])
 
 [Unreleased]: https://github.com/studiometa/productive-tools/compare/0.9.1...HEAD
+[5c982a8]: https://github.com/studiometa/productive-tools/commit/5c982a8
+[59afd31]: https://github.com/studiometa/productive-tools/commit/59afd31
+[56ce4c8]: https://github.com/studiometa/productive-tools/commit/56ce4c8
+[#37]: https://github.com/studiometa/productive-tools/pull/37
 [0.9.1]: https://github.com/studiometa/productive-tools/compare/0.9.0...0.9.1
 [8ba9e89]: https://github.com/studiometa/productive-tools/commit/8ba9e89
 [b68c5f6]: https://github.com/studiometa/productive-tools/commit/b68c5f6

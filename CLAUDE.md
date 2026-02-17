@@ -50,6 +50,17 @@ productive-mcp   → productive-core    # MCP server handlers, OAuth
 - **productive-cli** (`packages/cli`): CLI commands (one directory per resource under `src/commands/`), human/table/CSV/JSON renderers, keychain config, SQLite cache, `CommandContext` for DI.
 - **productive-mcp** (`packages/mcp`): Single unified `productive` MCP tool, resource handlers, OAuth (stateless), HTTP server, MCP-specific formatters.
 
+### Centralized Constants
+
+`productive-core/src/constants.ts` is the **single source of truth** for `RESOURCES`, `ACTIONS`, and `REPORT_TYPES` arrays. Both MCP and CLI derive from these:
+
+- **MCP `schema.ts`** — Zod validation schemas use `z.enum(RESOURCES)`, `z.enum(ACTIONS)`, etc.
+- **MCP `tools.ts`** — the MCP tool `inputSchema` enums and `description` are generated from the constants.
+- **MCP `handlers/index.ts`** — `VALID_RESOURCES` derives from `RESOURCES`.
+- **Core `reports/types.ts`** — `ReportType` type and `VALID_REPORT_TYPES` derive from `REPORT_TYPES`.
+
+**When adding a new resource, action, or report type**, update `core/src/constants.ts` — it automatically propagates to validation, tool definition, and handler routing.
+
 ### Key Design Principles
 
 - **Executors are pure functions with zero side effects** — all dependencies injected via `ExecutorContext`. Tests use `createTestExecutorContext()`.
