@@ -289,6 +289,54 @@ export interface ProductiveAttachment {
   relationships?: Record<string, RelationshipData>;
 }
 
+export interface ProductivePage {
+  id: string;
+  type: 'pages';
+  attributes: {
+    title: string;
+    body?: string;
+    cover_image_url?: string;
+    cover_image_meta?: Record<string, unknown>;
+    icon_id?: string;
+    position?: number;
+    preferences?: Record<string, unknown>;
+    version_number?: number;
+    created_at: string;
+    updated_at: string;
+    edited_at?: string;
+    last_activity_at?: string;
+    public_access?: boolean;
+    public_uuid?: string;
+    public?: boolean;
+    parent_page_id?: string;
+    root_page_id?: string;
+    custom_fields?: Record<string, unknown>;
+  };
+  relationships?: {
+    project?: RelationshipData;
+    creator?: RelationshipData;
+    parent_page?: RelationshipData;
+    root_page?: RelationshipData;
+  };
+}
+
+export interface ProductiveDiscussion {
+  id: string;
+  type: 'discussions';
+  attributes: {
+    title?: string;
+    body?: string;
+    status: number; // 1=active, 2=resolved
+    created_at: string;
+    updated_at: string;
+    resolved_at?: string;
+  };
+  relationships?: {
+    page?: RelationshipData;
+    creator?: RelationshipData;
+  };
+}
+
 export interface ProductiveReport {
   id: string;
   type: string;

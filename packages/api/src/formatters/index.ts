@@ -27,6 +27,8 @@ export type { FormattedTimer } from './timer.js';
 export type { FormattedDeal } from './deal.js';
 export type { FormattedBooking } from './booking.js';
 export type { FormattedAttachment } from './attachment.js';
+export type { FormattedPage } from './page.js';
+export type { FormattedDiscussion } from './discussion.js';
 
 export { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
@@ -43,6 +45,8 @@ export { formatTimer } from './timer.js';
 export { formatDeal } from './deal.js';
 export { formatBooking } from './booking.js';
 export { formatAttachment } from './attachment.js';
+export { formatPage } from './page.js';
+export { formatDiscussion } from './discussion.js';
 
 // Pagination
 export { formatPagination, hasMorePages } from './pagination.js';
@@ -133,6 +137,8 @@ import { formatBudget } from './budget.js';
 import { formatComment } from './comment.js';
 import { formatCompany } from './company.js';
 import { formatDeal } from './deal.js';
+import { formatDiscussion } from './discussion.js';
+import { formatPage } from './page.js';
 import { formatPerson } from './person.js';
 import { formatProject } from './project.js';
 import { formatService } from './service.js';
@@ -204,6 +210,16 @@ function getFormatterForType(
       ) => Record<string, unknown>;
     case 'attachments':
       return formatAttachment as (
+        item: JsonApiResource,
+        options?: FormatOptions,
+      ) => Record<string, unknown>;
+    case 'pages':
+      return formatPage as (
+        item: JsonApiResource,
+        options?: FormatOptions,
+      ) => Record<string, unknown>;
+    case 'discussions':
+      return formatDiscussion as (
         item: JsonApiResource,
         options?: FormatOptions,
       ) => Record<string, unknown>;

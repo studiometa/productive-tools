@@ -21,6 +21,8 @@ import {
   formatDeal as cliFormatDeal,
   formatBooking as cliFormatBooking,
   formatAttachment as cliFormatAttachment,
+  formatPage as cliFormatPage,
+  formatDiscussion as cliFormatDiscussion,
   formatListResponse as cliFormatListResponse,
   type JsonApiResource,
   type JsonApiMeta,
@@ -228,6 +230,34 @@ export function formatAttachment(
   const result = cliFormatAttachment(attachment, MCP_FORMAT_OPTIONS);
   if (options?.compact) {
     return compactify(result, ['url']);
+  }
+  return result;
+}
+
+/**
+ * Format page for agent consumption
+ */
+export function formatPage(
+  page: JsonApiResource,
+  options?: McpFormatOptions,
+): Record<string, unknown> {
+  const result = cliFormatPage(page, MCP_FORMAT_OPTIONS);
+  if (options?.compact) {
+    return compactify(result, ['body', 'version_number']);
+  }
+  return result;
+}
+
+/**
+ * Format discussion for agent consumption
+ */
+export function formatDiscussion(
+  discussion: JsonApiResource,
+  options?: McpFormatOptions,
+): Record<string, unknown> {
+  const result = cliFormatDiscussion(discussion, MCP_FORMAT_OPTIONS);
+  if (options?.compact) {
+    return compactify(result, ['body']);
   }
   return result;
 }

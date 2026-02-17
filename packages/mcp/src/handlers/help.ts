@@ -502,6 +502,114 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     ],
   },
 
+  pages: {
+    description: 'Manage pages (wiki/docs) within projects',
+    actions: {
+      list: 'List pages with optional filters',
+      get: 'Get a single page by ID with full details',
+      create: 'Create a new page (requires title, project_id)',
+      update: 'Update an existing page',
+      delete: 'Delete a page',
+    },
+    filters: {
+      project_id: 'Filter by project',
+      creator_id: 'Filter by creator',
+      parent_page_id: 'Filter by parent page (for sub-pages)',
+    },
+    fields: {
+      id: 'Unique page identifier',
+      title: 'Page title',
+      body: 'Page body content (HTML)',
+      public: 'Whether the page is publicly accessible',
+      version_number: 'Current version number',
+      parent_page_id: 'Parent page ID (for sub-pages)',
+    },
+    examples: [
+      {
+        description: 'List pages for a project',
+        params: { resource: 'pages', action: 'list', filter: { project_id: '12345' } },
+      },
+      {
+        description: 'Get page details',
+        params: { resource: 'pages', action: 'get', id: '67890' },
+      },
+      {
+        description: 'Create a page',
+        params: {
+          resource: 'pages',
+          action: 'create',
+          title: 'Getting Started',
+          project_id: '12345',
+        },
+      },
+      {
+        description: 'Create a sub-page',
+        params: {
+          resource: 'pages',
+          action: 'create',
+          title: 'Sub-section',
+          project_id: '12345',
+          parent_page_id: '67890',
+        },
+      },
+      {
+        description: 'Delete a page',
+        params: { resource: 'pages', action: 'delete', id: '67890' },
+      },
+    ],
+  },
+
+  discussions: {
+    description: 'Manage discussions (comment threads on highlighted page content)',
+    actions: {
+      list: 'List discussions with optional filters',
+      get: 'Get a single discussion by ID',
+      create: 'Create a new discussion (requires body, page_id)',
+      update: 'Update an existing discussion',
+      delete: 'Delete a discussion',
+      resolve: 'Resolve a discussion (mark as resolved)',
+      reopen: 'Reopen a resolved discussion',
+    },
+    filters: {
+      page_id: 'Filter by page',
+      status: 'Filter by status: 1=active, 2=resolved',
+    },
+    fields: {
+      id: 'Unique discussion identifier',
+      title: 'Discussion title',
+      body: 'Discussion body (HTML)',
+      status: 'Status: active or resolved',
+      resolved_at: 'When the discussion was resolved',
+    },
+    examples: [
+      {
+        description: 'List discussions on a page',
+        params: { resource: 'discussions', action: 'list', filter: { page_id: '12345' } },
+      },
+      {
+        description: 'List active discussions',
+        params: { resource: 'discussions', action: 'list', status: 'active' },
+      },
+      {
+        description: 'Create a discussion',
+        params: {
+          resource: 'discussions',
+          action: 'create',
+          page_id: '12345',
+          body: 'Review this section',
+        },
+      },
+      {
+        description: 'Resolve a discussion',
+        params: { resource: 'discussions', action: 'resolve', id: '67890' },
+      },
+      {
+        description: 'Reopen a discussion',
+        params: { resource: 'discussions', action: 'reopen', id: '67890' },
+      },
+    ],
+  },
+
   reports: {
     description: 'Generate various reports (time, budget, project, etc.)',
     actions: {

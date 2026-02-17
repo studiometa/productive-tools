@@ -14,6 +14,8 @@ import type {
   ProductiveBooking,
   ProductiveAttachment,
   ProductiveReport,
+  ProductivePage,
+  ProductiveDiscussion,
   ProductiveConfig,
 } from './types.js';
 
@@ -961,6 +963,197 @@ export class ProductiveApi {
   async deleteAttachment(id: string): Promise<void> {
     await this.request<void>(`/attachments/${id}`, {
       method: 'DELETE',
+    });
+  }
+
+  // Pages
+  async getPages(params?: {
+    page?: number;
+    perPage?: number;
+    filter?: Record<string, string>;
+    sort?: string;
+  }): Promise<ProductiveApiResponse<ProductivePage[]>> {
+    const query: Record<string, string> = {};
+
+    if (params?.page) query['page[number]'] = String(params.page);
+    if (params?.perPage) query['page[size]'] = String(params.perPage);
+    if (params?.sort) query['sort'] = params.sort;
+    if (params?.filter) {
+      Object.entries(params.filter).forEach(([key, value]) => {
+        query[`filter[${key}]`] = value;
+      });
+    }
+
+    return this.request<ProductiveApiResponse<ProductivePage[]>>('/pages', { query });
+  }
+
+  async getPage(id: string): Promise<ProductiveApiResponse<ProductivePage>> {
+    return this.request<ProductiveApiResponse<ProductivePage>>(`/pages/${id}`);
+  }
+
+  async createPage(data: {
+    title: string;
+    body?: string;
+    project_id: string;
+    parent_page_id?: string;
+  }): Promise<ProductiveApiResponse<ProductivePage>> {
+    const relationships: Record<string, { data: { type: string; id: string } }> = {
+      project: { data: { type: 'projects', id: data.project_id } },
+    };
+
+    if (data.parent_page_id) {
+      relationships.parent_page = { data: { type: 'pages', id: data.parent_page_id } };
+    }
+
+    return this.request<ProductiveApiResponse<ProductivePage>>('/pages', {
+      method: 'POST',
+      body: {
+        data: {
+          type: 'pages',
+          attributes: {
+            title: data.title,
+            body: data.body,
+          },
+          relationships,
+        },
+      },
+    });
+  }
+
+  async updatePage(
+    id: string,
+    data: {
+      title?: string;
+      body?: string;
+    },
+  ): Promise<ProductiveApiResponse<ProductivePage>> {
+    const attributes: Record<string, unknown> = {};
+    if (data.title !== undefined) attributes.title = data.title;
+    if (data.body !== undefined) attributes.body = data.body;
+
+    return this.request<ProductiveApiResponse<ProductivePage>>(`/pages/${id}`, {
+      method: 'PATCH',
+      body: {
+        data: {
+          type: 'pages',
+          id,
+          attributes,
+        },
+      },
+    });
+  }
+
+  async deletePage(id: string): Promise<void> {
+    await this.request<void>(`/pages/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Discussions
+  async getDiscussions(params?: {
+    page?: number;
+    perPage?: number;
+    filter?: Record<string, string>;
+    sort?: string;
+  }): Promise<ProductiveApiResponse<ProductiveDiscussion[]>> {
+    const query: Record<string, string> = {};
+
+    if (params?.page) query['page[number]'] = String(params.page);
+    if (params?.perPage) query['page[size]'] = String(params.perPage);
+    if (params?.sort) query['sort'] = params.sort;
+    if (params?.filter) {
+      Object.entries(params.filter).forEach(([key, value]) => {
+        query[`filter[${key}]`] = value;
+      });
+    }
+
+    return this.request<ProductiveApiResponse<ProductiveDiscussion[]>>('/discussions', { query });
+  }
+
+  async getDiscussion(id: string): Promise<ProductiveApiResponse<ProductiveDiscussion>> {
+    return this.request<ProductiveApiResponse<ProductiveDiscussion>>(`/discussions/${id}`);
+  }
+
+  async createDiscussion(data: {
+    body: string;
+    page_id: string;
+    title?: string;
+  }): Promise<ProductiveApiResponse<ProductiveDiscussion>> {
+    const relationships: Record<string, { data: { type: string; id: string } }> = {
+      page: { data: { type: 'pages', id: data.page_id } },
+    };
+
+    return this.request<ProductiveApiResponse<ProductiveDiscussion>>('/discussions', {
+      method: 'POST',
+      body: {
+        data: {
+          type: 'discussions',
+          attributes: {
+            body: data.body,
+            title: data.title,
+          },
+          relationships,
+        },
+      },
+    });
+  }
+
+  async updateDiscussion(
+    id: string,
+    data: {
+      title?: string;
+      body?: string;
+    },
+  ): Promise<ProductiveApiResponse<ProductiveDiscussion>> {
+    const attributes: Record<string, unknown> = {};
+    if (data.title !== undefined) attributes.title = data.title;
+    if (data.body !== undefined) attributes.body = data.body;
+
+    return this.request<ProductiveApiResponse<ProductiveDiscussion>>(`/discussions/${id}`, {
+      method: 'PATCH',
+      body: {
+        data: {
+          type: 'discussions',
+          id,
+          attributes,
+        },
+      },
+    });
+  }
+
+  async deleteDiscussion(id: string): Promise<void> {
+    await this.request<void>(`/discussions/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async resolveDiscussion(id: string): Promise<ProductiveApiResponse<ProductiveDiscussion>> {
+    return this.request<ProductiveApiResponse<ProductiveDiscussion>>(`/discussions/${id}`, {
+      method: 'PATCH',
+      body: {
+        data: {
+          type: 'discussions',
+          id,
+          attributes: {
+            status: 2,
+          },
+        },
+      },
+    });
+  }
+
+  async reopenDiscussion(id: string): Promise<ProductiveApiResponse<ProductiveDiscussion>> {
+    return this.request<ProductiveApiResponse<ProductiveDiscussion>>(`/discussions/${id}`, {
+      method: 'PATCH',
+      body: {
+        data: {
+          type: 'discussions',
+          id,
+          attributes: {
+            status: 1,
+          },
+        },
+      },
     });
   }
 

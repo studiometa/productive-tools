@@ -20,7 +20,9 @@ import { handleBudgets } from './budgets.js';
 import { handleComments } from './comments.js';
 import { handleCompanies } from './companies.js';
 import { handleDeals } from './deals.js';
+import { handleDiscussions } from './discussions.js';
 import { handleHelp, handleHelpOverview } from './help.js';
+import { handlePages } from './pages.js';
 import { handlePeople } from './people.js';
 // Resource handlers
 import { handleProjects } from './projects.js';
@@ -49,6 +51,8 @@ const VALID_RESOURCES = [
   'deals',
   'bookings',
   'budgets',
+  'pages',
+  'discussions',
   'reports',
 ];
 
@@ -91,6 +95,9 @@ interface ProductiveArgs {
   comment_id?: string;
   // Timer fields
   time_entry_id?: string;
+  // Page fields
+  parent_page_id?: string;
+  page_id?: string;
   // Booking fields
   started_on?: string;
   ended_on?: string;
@@ -212,6 +219,11 @@ export async function executeToolWithCredentials(
 
       case 'budgets':
         return await handleBudgets(action, restArgs, ctx);
+      case 'pages':
+        return await handlePages(action, restArgs, ctx);
+
+      case 'discussions':
+        return await handleDiscussions(action, restArgs, ctx);
 
       case 'reports':
         return await handleReports(action, restArgs, ctx);

@@ -17,6 +17,8 @@ import {
   getAttachmentHints,
   getBookingHints,
   getTimerHints,
+  getPageHints,
+  getDiscussionHints,
 } from './hints.js';
 
 describe('hints', () => {
@@ -337,6 +339,74 @@ describe('hints', () => {
       const bookingsHint = hints.related_resources?.find((h) => h.resource === 'bookings');
       expect(bookingsHint).toBeDefined();
       expect(bookingsHint?.example.filter).toEqual({ budget_id: '12345' });
+    });
+  });
+
+  describe('getPageHints', () => {
+    it('returns hints with page ID', () => {
+      const hints = getPageHints('12345');
+
+      expect(hints.related_resources).toBeDefined();
+      expect(hints.related_resources?.length).toBeGreaterThan(0);
+
+      // Check discussions hint
+      const discussionsHint = hints.related_resources?.find((h) => h.resource === 'discussions');
+      expect(discussionsHint).toBeDefined();
+      expect(discussionsHint?.example).toEqual({
+        resource: 'discussions',
+        action: 'list',
+        filter: { page_id: '12345' },
+      });
+
+      // Check comments hint
+      const commentsHint = hints.related_resources?.find((h) => h.resource === 'comments');
+      expect(commentsHint).toBeDefined();
+
+      // Check common actions
+      expect(hints.common_actions).toBeDefined();
+      expect(hints.common_actions?.[0].action).toBe('Create a discussion');
+    });
+  });
+
+  describe('getDiscussionHints', () => {
+    it('returns hints with discussion ID', () => {
+      const hints = getDiscussionHints('12345');
+
+      expect(hints.related_resources).toBeDefined();
+      expect(hints.related_resources?.length).toBeGreaterThan(0);
+
+      // Check comments hint
+      const commentsHint = hints.related_resources?.find((h) => h.resource === 'comments');
+      expect(commentsHint).toBeDefined();
+      expect(commentsHint?.example).toEqual({
+        resource: 'comments',
+        action: 'list',
+        filter: { discussion_id: '12345' },
+      });
+
+      // Check common actions
+      expect(hints.common_actions).toBeDefined();
+      expect(hints.common_actions?.[0].action).toBe('Resolve this discussion');
+    });
+
+    it('includes page hint when page ID is provided', () => {
+      const hints = getDiscussionHints('12345', '67890');
+
+      const pageHint = hints.related_resources?.find((h) => h.resource === 'pages');
+      expect(pageHint).toBeDefined();
+      expect(pageHint?.description).toBe('Get the page this discussion is on');
+      expect(pageHint?.example).toEqual({
+        resource: 'pages',
+        action: 'get',
+        id: '67890',
+      });
+    });
+
+    it('does not include page hint when page ID is not provided', () => {
+      const hints = getDiscussionHints('12345');
+
+      const pageHint = hints.related_resources?.find((h) => h.resource === 'pages');
+      expect(pageHint).toBeUndefined();
     });
   });
 });

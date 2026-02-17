@@ -30,6 +30,8 @@ export const ResourceSchema = z.enum([
   'deals',
   'bookings',
   'budgets',
+  'pages',
+  'discussions',
   'reports',
 ]);
 
@@ -44,6 +46,8 @@ export const ActionSchema = z.enum([
   'create',
   'update',
   'delete',
+  'resolve',
+  'reopen',
   'me',
   'start',
   'stop',
@@ -293,6 +297,14 @@ export const ProductiveToolInputSchema = z.object({
 
   // Company fields
   name: z.string().trim().optional().describe('Company or deal name'),
+
+  // Page fields
+  page_id: z
+    .string()
+    .trim()
+    .optional()
+    .describe('Page ID. Find pages using resource="pages" action="list"'),
+  parent_page_id: z.string().trim().optional().describe('Parent page ID for creating sub-pages'),
 
   // Comment fields
   body: ParamBody.optional(),

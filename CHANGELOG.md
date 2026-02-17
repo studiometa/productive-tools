@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **API**: Add `ProductivePage` and `ProductiveDiscussion` types with full CRUD client methods ([#33])
+- **API**: Add `formatPage()` and `formatDiscussion()` formatters ([#33])
+- **Core**: Add page executors: `listPages`, `getPage`, `createPage`, `updatePage`, `deletePage` ([#33])
+- **Core**: Add discussion executors: `listDiscussions`, `getDiscussion`, `createDiscussion`, `updateDiscussion`, `deleteDiscussion`, `resolveDiscussion`, `reopenDiscussion` ([#33])
+- **CLI**: Add `pages` command with `list`, `get`, `create`, `update`, `delete` subcommands ([#33])
+- **CLI**: Add `discussions` command with `list`, `get`, `create`, `update`, `delete`, `resolve`, `reopen` subcommands ([#33])
+- **MCP**: Add `pages` and `discussions` resource handlers with full CRUD + resolve/reopen ([#33])
+- **MCP**: Add `delete`, `resolve`, `reopen` to `ActionSchema` ([#33])
 - **API**: Add `ProductiveAttachment` type, `getAttachments()`, `getAttachment()`, `deleteAttachment()` client methods ([#32])
 - **API**: Add `formatAttachment()` formatter with human-readable file size ([#32])
 - **Core**: Add `listAttachments`, `getAttachment`, `deleteAttachment` executors ([#32])
@@ -91,6 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#24]: https://github.com/studiometa/productive-tools/issues/24
 [#25]: https://github.com/studiometa/productive-tools/pull/25
 [#32]: https://github.com/studiometa/productive-tools/pull/32
+[#33]: https://github.com/studiometa/productive-tools/pull/33
 [#34]: https://github.com/studiometa/productive-tools/pull/34
 [#26]: https://github.com/studiometa/productive-tools/pull/26
 [#27]: https://github.com/studiometa/productive-tools/pull/27

@@ -11,6 +11,8 @@ import { handleCompletionHelper } from './commands/completion-helper.js';
 import { handleCompletionCommand, showCompletionHelp } from './commands/completion.js';
 import { handleConfigCommand, showConfigHelp } from './commands/config.js';
 import { handleDealsCommand, showDealsHelp } from './commands/deals/index.js';
+import { handleDiscussionsCommand, showDiscussionsHelp } from './commands/discussions/index.js';
+import { handlePagesCommand, showPagesHelp } from './commands/pages/index.js';
 import { handlePeopleCommand, showPeopleHelp } from './commands/people/index.js';
 import { handleProjectsCommand, showProjectsHelp } from './commands/projects/index.js';
 import { handleReportsCommand, showReportsHelp } from './commands/reports/index.js';
@@ -101,6 +103,22 @@ ${colors.bold('COMMANDS:')}
     get <id>            Get booking details
     add                 Create booking
     update <id>         Update booking
+
+  pages               Manage pages (docs)
+    list, ls            List pages
+    get <id>            Get page details
+    add                 Create page
+    update <id>         Update page
+    delete <id>         Delete page
+
+  discussions         Manage discussions on pages
+    list, ls            List discussions
+    get <id>            Get discussion details
+    add                 Create discussion
+    update <id>         Update discussion
+    delete <id>         Delete discussion
+    resolve <id>        Resolve discussion
+    reopen <id>         Reopen discussion
 
   reports             Generate reports
     time                Time reports
@@ -339,6 +357,22 @@ async function main(): Promise<void> {
           process.exit(0);
         }
         await handleBookingsCommand(subcommand || 'list', positional, options);
+        break;
+
+      case 'pages':
+        if (wantsHelp) {
+          showPagesHelp(subcommand);
+          process.exit(0);
+        }
+        await handlePagesCommand(subcommand || 'list', positional, options);
+        break;
+
+      case 'discussions':
+        if (wantsHelp) {
+          showDiscussionsHelp(subcommand);
+          process.exit(0);
+        }
+        await handleDiscussionsCommand(subcommand || 'list', positional, options);
         break;
 
       case 'reports':

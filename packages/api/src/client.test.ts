@@ -776,4 +776,180 @@ describe('ProductiveApi requests', () => {
       expect(url).toContain('filter%5Bafter%5D=2024-01-01');
     });
   });
+
+  describe('pages', () => {
+    it('getPages with params', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getPages({
+        page: 1,
+        perPage: 50,
+        filter: { project_id: '123' },
+        sort: '-created_at',
+      });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/pages');
+      expect(url).toContain('page%5Bnumber%5D=1');
+      expect(url).toContain('page%5Bsize%5D=50');
+      expect(url).toContain('filter%5Bproject_id%5D=123');
+      expect(url).toContain('sort=-created_at');
+    });
+
+    it('getPage', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1', type: 'pages', attributes: { title: 'Test' } } });
+      const result = await api.getPage('1');
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/pages/1');
+      expect(result.data.id).toBe('1');
+    });
+
+    it('createPage with all fields', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1' } });
+      await api.createPage({
+        title: 'New Page',
+        body: 'Content',
+        project_id: '10',
+        parent_page_id: '5',
+      });
+      const body = JSON.parse(fetchSpy.mock.calls[0][1]!.body as string);
+      expect(body.data.type).toBe('pages');
+      expect(body.data.attributes.title).toBe('New Page');
+      expect(body.data.attributes.body).toBe('Content');
+      expect(body.data.relationships.project.data.id).toBe('10');
+      expect(body.data.relationships.parent_page.data.id).toBe('5');
+    });
+
+    it('createPage without parent_page', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1' } });
+      await api.createPage({
+        title: 'New Page',
+        project_id: '10',
+      });
+      const body = JSON.parse(fetchSpy.mock.calls[0][1]!.body as string);
+      expect(body.data.relationships.parent_page).toBeUndefined();
+    });
+
+    it('updatePage', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1' } });
+      await api.updatePage('1', { title: 'Updated', body: 'New content' });
+      const body = JSON.parse(fetchSpy.mock.calls[0][1]!.body as string);
+      expect(body.data.type).toBe('pages');
+      expect(body.data.id).toBe('1');
+      expect(body.data.attributes.title).toBe('Updated');
+      expect(body.data.attributes.body).toBe('New content');
+    });
+
+    it('deletePage', async () => {
+      const api = createApi();
+      fetchSpy.mockResolvedValueOnce(new Response('null', { status: 200, statusText: 'OK' }));
+      await api.deletePage('1');
+      const [url, options] = fetchSpy.mock.calls[0];
+      expect(url).toContain('/pages/1');
+      expect(options!.method).toBe('DELETE');
+    });
+  });
+
+  describe('discussions', () => {
+    it('getDiscussions with params', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getDiscussions({
+        page: 1,
+        perPage: 50,
+        filter: { page_id: '123' },
+        sort: '-created_at',
+      });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/discussions');
+      expect(url).toContain('page%5Bnumber%5D=1');
+      expect(url).toContain('page%5Bsize%5D=50');
+      expect(url).toContain('filter%5Bpage_id%5D=123');
+      expect(url).toContain('sort=-created_at');
+    });
+
+    it('getDiscussion', async () => {
+      const api = createApi();
+      mockFetchResponse({
+        data: { id: '1', type: 'discussions', attributes: { body: 'Test', status: 1 } },
+      });
+      const result = await api.getDiscussion('1');
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/discussions/1');
+      expect(result.data.id).toBe('1');
+    });
+
+    it('createDiscussion with all fields', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1' } });
+      await api.createDiscussion({
+        body: 'Review needed',
+        page_id: '10',
+        title: 'Review Request',
+      });
+      const body = JSON.parse(fetchSpy.mock.calls[0][1]!.body as string);
+      expect(body.data.type).toBe('discussions');
+      expect(body.data.attributes.body).toBe('Review needed');
+      expect(body.data.attributes.title).toBe('Review Request');
+      expect(body.data.relationships.page.data.id).toBe('10');
+    });
+
+    it('createDiscussion without title', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1' } });
+      await api.createDiscussion({
+        body: 'Review needed',
+        page_id: '10',
+      });
+      const body = JSON.parse(fetchSpy.mock.calls[0][1]!.body as string);
+      expect(body.data.attributes.title).toBeUndefined();
+    });
+
+    it('updateDiscussion', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1' } });
+      await api.updateDiscussion('1', { title: 'Updated', body: 'New content' });
+      const body = JSON.parse(fetchSpy.mock.calls[0][1]!.body as string);
+      expect(body.data.type).toBe('discussions');
+      expect(body.data.id).toBe('1');
+      expect(body.data.attributes.title).toBe('Updated');
+      expect(body.data.attributes.body).toBe('New content');
+    });
+
+    it('deleteDiscussion', async () => {
+      const api = createApi();
+      fetchSpy.mockResolvedValueOnce(new Response('null', { status: 200, statusText: 'OK' }));
+      await api.deleteDiscussion('1');
+      const [url, options] = fetchSpy.mock.calls[0];
+      expect(url).toContain('/discussions/1');
+      expect(options!.method).toBe('DELETE');
+    });
+
+    it('resolveDiscussion', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1', type: 'discussions', attributes: { status: 2 } } });
+      const result = await api.resolveDiscussion('1');
+      const [url, options] = fetchSpy.mock.calls[0];
+      expect(url).toContain('/discussions/1');
+      expect(options!.method).toBe('PATCH');
+      const body = JSON.parse(options!.body as string);
+      expect(body.data.attributes.status).toBe(2);
+      expect(result.data.attributes.status).toBe(2);
+    });
+
+    it('reopenDiscussion', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1', type: 'discussions', attributes: { status: 1 } } });
+      const result = await api.reopenDiscussion('1');
+      const [url, options] = fetchSpy.mock.calls[0];
+      expect(url).toContain('/discussions/1');
+      expect(options!.method).toBe('PATCH');
+      const body = JSON.parse(options!.body as string);
+      expect(body.data.attributes.status).toBe(1);
+      expect(result.data.attributes.status).toBe(1);
+    });
+  });
 });

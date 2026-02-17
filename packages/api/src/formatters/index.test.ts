@@ -117,6 +117,8 @@ describe('formatResponse', () => {
       'deals',
       'bookings',
       'attachments',
+      'pages',
+      'discussions',
     ];
     for (const type of types) {
       const r = formatResponse({ data: [{ id: '1', type, attributes: {} }] }) as {
