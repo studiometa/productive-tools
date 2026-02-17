@@ -21,6 +21,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     actions: {
       list: 'List all projects with optional filters',
       get: 'Get a single project by ID with full details',
+      resolve: 'Look up by human-friendly identifier (email, project number, name)',
     },
     filters: {
       query: 'Text search on project name',
@@ -60,6 +61,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       get: 'Get a single task by ID with full details (description, comments, etc.)',
       create: 'Create a new task (requires title, project_id, task_list_id)',
       update: 'Update an existing task',
+      resolve: 'Look up by human-friendly identifier (email, project number, name)',
     },
     filters: {
       query: 'Text search on task title',
@@ -139,6 +141,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       get: 'Get a single time entry by ID',
       create: 'Create a new time entry (requires person_id, service_id, date, time)',
       update: 'Update an existing time entry',
+      resolve: 'Look up by human-friendly identifier (email, project number, name)',
     },
     filters: {
       person_id: 'Filter by person (use "me" for current user)',
@@ -219,6 +222,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       list: 'List people with optional filters',
       get: 'Get a single person by ID',
       me: 'Get the currently authenticated user',
+      resolve: 'Look up by human-friendly identifier (email, project number, name)',
     },
     filters: {
       query: 'Text search on name or email',
@@ -258,6 +262,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       get: 'Get a single company by ID',
       create: 'Create a new company (requires name)',
       update: 'Update an existing company',
+      resolve: 'Look up by human-friendly identifier (email, project number, name)',
     },
     filters: {
       query: 'Text search on company name',
@@ -388,6 +393,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       get: 'Get a single deal by ID',
       create: 'Create a new deal (requires name, company_id)',
       update: 'Update an existing deal',
+      resolve: 'Look up by human-friendly identifier (email, project number, name)',
     },
     filters: {
       query: 'Text search on deal name',
