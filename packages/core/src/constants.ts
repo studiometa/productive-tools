@@ -1,12 +1,14 @@
 /**
  * Shared constants for resources, actions, and report types.
  *
- * These arrays are the single source of truth, consumed by both:
- * - schema.ts (Zod validation schemas)
- * - tools.ts (MCP tool definition exposed to clients)
+ * These arrays are the single source of truth for the entire monorepo.
+ * Both CLI and MCP packages derive their resource/action lists from here.
  *
- * Adding a value here automatically updates both the validation
- * and the MCP tool definition — no manual sync needed.
+ * Adding a value here automatically propagates to:
+ * - Zod validation schemas (MCP schema.ts)
+ * - MCP tool definition exposed to clients (MCP tools.ts)
+ * - Handler routing (MCP handlers/index.ts)
+ * - CLI commands
  */
 
 /**
@@ -33,7 +35,9 @@ export const RESOURCES = [
 export type Resource = (typeof RESOURCES)[number];
 
 /**
- * Actions available for resources
+ * Actions available across all resources.
+ * Not every resource supports every action — see per-resource handler
+ * validation for what's actually supported.
  */
 export const ACTIONS = [
   'list',
@@ -69,3 +73,8 @@ export const REPORT_TYPES = [
 ] as const;
 
 export type ReportType = (typeof REPORT_TYPES)[number];
+
+/**
+ * @deprecated Use REPORT_TYPES instead
+ */
+export const VALID_REPORT_TYPES: ReportType[] = [...REPORT_TYPES];

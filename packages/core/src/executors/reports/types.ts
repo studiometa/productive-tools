@@ -1,17 +1,7 @@
+import type { ReportType } from '../../constants.js';
 import type { PaginationOptions } from '../types.js';
 
-export type ReportType =
-  | 'time_reports'
-  | 'project_reports'
-  | 'budget_reports'
-  | 'person_reports'
-  | 'invoice_reports'
-  | 'payment_reports'
-  | 'service_reports'
-  | 'task_reports'
-  | 'company_reports'
-  | 'deal_reports'
-  | 'timesheet_reports';
+export type { ReportType } from '../../constants.js';
 
 export interface GetReportOptions extends PaginationOptions {
   reportType: ReportType;
@@ -30,19 +20,7 @@ export interface GetReportOptions extends PaginationOptions {
   additionalFilters?: Record<string, string>;
 }
 
-export const VALID_REPORT_TYPES: ReportType[] = [
-  'time_reports',
-  'project_reports',
-  'budget_reports',
-  'person_reports',
-  'invoice_reports',
-  'payment_reports',
-  'service_reports',
-  'task_reports',
-  'company_reports',
-  'deal_reports',
-  'timesheet_reports',
-];
+export { REPORT_TYPES as VALID_REPORT_TYPES } from '../../constants.js';
 
 /** Default grouping per report type */
 export const DEFAULT_GROUPS: Partial<Record<ReportType, string>> = {

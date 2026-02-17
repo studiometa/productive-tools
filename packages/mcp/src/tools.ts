@@ -1,6 +1,6 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 
-import { RESOURCES, ACTIONS, REPORT_TYPES } from './constants.js';
+import { RESOURCES, ACTIONS, REPORT_TYPES } from '@studiometa/productive-core';
 
 /**
  * Generate the tool description dynamically from the constants.

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { RESOURCES, ACTIONS, REPORT_TYPES } from './constants.js';
+import { RESOURCES, ACTIONS, REPORT_TYPES, VALID_REPORT_TYPES } from './constants.js';
 
 describe('constants', () => {
   describe('RESOURCES', () => {
@@ -59,6 +59,12 @@ describe('constants', () => {
     it('should have unique values', () => {
       const unique = new Set(REPORT_TYPES);
       expect(unique.size).toBe(REPORT_TYPES.length);
+    });
+  });
+
+  describe('VALID_REPORT_TYPES (deprecated alias)', () => {
+    it('should contain the same values as REPORT_TYPES', () => {
+      expect(VALID_REPORT_TYPES).toEqual([...REPORT_TYPES]);
     });
   });
 });

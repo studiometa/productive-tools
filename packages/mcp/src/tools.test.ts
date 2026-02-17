@@ -1,6 +1,6 @@
+import { RESOURCES, ACTIONS, REPORT_TYPES } from '@studiometa/productive-core';
 import { describe, it, expect } from 'vitest';
 
-import { RESOURCES, ACTIONS, REPORT_TYPES } from './constants.js';
 import { TOOLS, STDIO_ONLY_TOOLS } from './tools.js';
 
 describe('tools', () => {

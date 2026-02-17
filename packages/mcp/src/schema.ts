@@ -8,12 +8,11 @@
  * - TypeScript type inference
  */
 
+import { RESOURCES, ACTIONS, REPORT_TYPES } from '@studiometa/productive-core';
 import { z, parse, safeParse, type ZodSafeParseResult, type ZodError } from 'zod';
 
-import { RESOURCES, ACTIONS, REPORT_TYPES } from './constants.js';
-
-// Re-export types from constants (canonical source of truth)
-export type { Resource, Action, ReportType } from './constants.js';
+// Re-export types from core (canonical source of truth)
+export type { Resource, Action, ReportType } from '@studiometa/productive-core';
 
 // =============================================================================
 // Base Schemas
