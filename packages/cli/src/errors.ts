@@ -480,7 +480,7 @@ export class CommandError extends CliError {
   static unknownCommand(command: string): CommandError {
     return new CommandError(`Unknown command: ${command}`, command, undefined, [
       'Run: productive --help to see available commands',
-      'Available commands: projects, time, tasks, people, services, budgets, companies, comments, timers, deals, bookings, reports',
+      'Available commands: projects, time, tasks, people, services, companies, comments, timers, deals, bookings, reports',
     ]);
   }
 
