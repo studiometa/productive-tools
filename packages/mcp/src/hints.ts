@@ -566,6 +566,116 @@ export function getBookingHints(bookingId: string, personId?: string): Contextua
 }
 
 /**
+ * Generate hints for a page
+ */
+export function getPageHints(pageId: string): ContextualHints {
+  return {
+    related_resources: [
+      {
+        resource: 'discussions',
+        description: 'Get discussions on this page',
+        example: {
+          resource: 'discussions',
+          action: 'list',
+          filter: { page_id: pageId },
+        },
+      },
+      {
+        resource: 'comments',
+        description: 'Get comments on this page',
+        example: {
+          resource: 'comments',
+          action: 'list',
+          filter: { page_id: pageId },
+        },
+      },
+      {
+        resource: 'pages',
+        description: 'Get sub-pages of this page',
+        example: {
+          resource: 'pages',
+          action: 'list',
+          filter: { parent_page_id: pageId },
+        },
+      },
+    ],
+    common_actions: [
+      {
+        action: 'Create a discussion',
+        example: {
+          resource: 'discussions',
+          action: 'create',
+          page_id: pageId,
+          body: '<your discussion>',
+        },
+      },
+      {
+        action: 'Create a sub-page',
+        example: {
+          resource: 'pages',
+          action: 'create',
+          parent_page_id: pageId,
+          title: '<sub-page title>',
+          project_id: '<project_id>',
+        },
+      },
+    ],
+  };
+}
+
+/**
+ * Generate hints for a discussion
+ */
+export function getDiscussionHints(discussionId: string, pageId?: string): ContextualHints {
+  const hints: ContextualHints = {
+    related_resources: [
+      {
+        resource: 'comments',
+        description: 'Get comments on this discussion',
+        example: {
+          resource: 'comments',
+          action: 'list',
+          filter: { discussion_id: discussionId },
+        },
+      },
+    ],
+    common_actions: [
+      {
+        action: 'Resolve this discussion',
+        example: {
+          resource: 'discussions',
+          action: 'resolve',
+          id: discussionId,
+        },
+      },
+      {
+        action: 'Add a comment',
+        example: {
+          resource: 'comments',
+          action: 'create',
+          discussion_id: discussionId,
+          body: '<your comment>',
+        },
+      },
+    ],
+  };
+
+  if (pageId) {
+    hints.related_resources!.push({
+      resource: 'pages',
+      description: 'Get the page this discussion is on',
+      example: {
+        resource: 'pages',
+        action: 'get',
+        id: pageId,
+      },
+    });
+  }
+
+  return hints;
+}
+
+/**
  * Generate hints for a timer
  */
 export function getTimerHints(timerId: string, serviceId?: string): ContextualHints {

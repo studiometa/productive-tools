@@ -100,3 +100,18 @@ export {
   humanAttachmentListRenderer,
   humanAttachmentDetailRenderer,
 } from './attachment.js';
+// Pages
+export {
+  HumanPageListRenderer,
+  HumanPageDetailRenderer,
+  humanPageListRenderer,
+  humanPageDetailRenderer,
+} from './page.js';
+
+// Discussions
+export {
+  HumanDiscussionListRenderer,
+  HumanDiscussionDetailRenderer,
+  humanDiscussionListRenderer,
+  humanDiscussionDetailRenderer,
+} from './discussion.js';

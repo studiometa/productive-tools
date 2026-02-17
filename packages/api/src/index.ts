@@ -28,6 +28,8 @@ export type {
   ProductiveCompany,
   ProductiveConfig,
   ProductiveDeal,
+  ProductiveDiscussion,
+  ProductivePage,
   ProductivePerson,
   ProductiveProject,
   ProductiveReport,
@@ -53,6 +55,8 @@ export {
   formatAttachment,
   formatBooking,
   formatBudget,
+  formatPage,
+  formatDiscussion,
   // List/single/auto formatting
   formatListResponse,
   formatSingleResponse,
@@ -87,6 +91,8 @@ export type { FormattedTimer } from './formatters/timer.js';
 export type { FormattedDeal } from './formatters/deal.js';
 export type { FormattedBooking } from './formatters/booking.js';
 export type { FormattedAttachment } from './formatters/attachment.js';
+export type { FormattedPage } from './formatters/page.js';
+export type { FormattedDiscussion } from './formatters/discussion.js';
 
 // Config (env vars + JSON file, no keychain)
 export { getConfig, setConfig, deleteConfig, clearConfig } from './config.js';

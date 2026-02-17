@@ -188,6 +188,44 @@ export type {
 export { buildBudgetFilters, getBudget, listBudgets } from './executors/budgets/index.js';
 export type { GetBudgetOptions, ListBudgetsOptions } from './executors/budgets/index.js';
 
+// Pages executors
+export {
+  buildPageFilters,
+  createPage,
+  deletePage,
+  getPage,
+  listPages,
+  updatePage,
+} from './executors/pages/index.js';
+export type {
+  CreatePageOptions,
+  DeletePageOptions,
+  GetPageOptions,
+  ListPagesOptions,
+  UpdatePageOptions,
+} from './executors/pages/index.js';
+
+// Discussions executors
+export {
+  buildDiscussionFilters,
+  createDiscussion,
+  deleteDiscussion,
+  getDiscussion,
+  listDiscussions,
+  reopenDiscussion,
+  resolveDiscussion,
+  updateDiscussion,
+} from './executors/discussions/index.js';
+export type {
+  CreateDiscussionOptions,
+  DeleteDiscussionOptions,
+  GetDiscussionOptions,
+  ListDiscussionsOptions,
+  ReopenDiscussionOptions,
+  ResolveDiscussionOptions,
+  UpdateDiscussionOptions,
+} from './executors/discussions/index.js';
+
 // Reports executors
 export {
   buildReportFilters,

@@ -49,6 +49,18 @@ vi.mock('@studiometa/productive-api', () => {
     getAttachments: vi.fn(),
     getAttachment: vi.fn(),
     deleteAttachment: vi.fn(),
+    getPages: vi.fn(),
+    getPage: vi.fn(),
+    createPage: vi.fn(),
+    updatePage: vi.fn(),
+    deletePage: vi.fn(),
+    getDiscussions: vi.fn(),
+    getDiscussion: vi.fn(),
+    createDiscussion: vi.fn(),
+    updateDiscussion: vi.fn(),
+    deleteDiscussion: vi.fn(),
+    resolveDiscussion: vi.fn(),
+    reopenDiscussion: vi.fn(),
   };
 
   return {
@@ -63,6 +75,8 @@ vi.mock('@studiometa/productive-api', () => {
     formatDeal: vi.fn((deal) => ({ id: deal.id, ...deal.attributes })),
     formatBooking: vi.fn((booking) => ({ id: booking.id, ...booking.attributes })),
     formatComment: vi.fn((comment) => ({ id: comment.id, ...comment.attributes })),
+    formatPage: vi.fn((page) => ({ id: page.id, ...page.attributes })),
+    formatDiscussion: vi.fn((discussion) => ({ id: discussion.id, ...discussion.attributes })),
     formatTimer: vi.fn((timer) => ({ id: timer.id, ...timer.attributes })),
     formatBudget: vi.fn((budget) => ({ id: budget.id, ...budget.attributes })),
     formatCompany: vi.fn((company) => ({ id: company.id, ...company.attributes })),
@@ -2720,6 +2734,277 @@ describe('smart ID resolution', () => {
       expect(result.isError).toBeUndefined();
       const content = JSON.parse(result.content[0].text as string);
       expect(content.matches).toBeDefined();
+    });
+  });
+
+  describe('pages resource', () => {
+    it('should handle list action', async () => {
+      const mockResponse = {
+        data: [{ id: '1', type: 'pages', attributes: { title: 'Page 1' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      };
+      mockApi.getPages.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'pages', action: 'list' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(mockApi.getPages).toHaveBeenCalled();
+    });
+
+    it('should handle get action', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'pages', attributes: { title: 'Test Page' } },
+      };
+      mockApi.getPage.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'pages', action: 'get', id: '1' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(mockApi.getPage).toHaveBeenCalledWith('1');
+    });
+
+    it('should return error for get without id', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'pages', action: 'get' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('id is required');
+    });
+
+    it('should handle create action', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'pages', attributes: { title: 'New Page' } },
+      };
+      mockApi.createPage.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'pages', action: 'create', title: 'New Page', project_id: '10' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(mockApi.createPage).toHaveBeenCalled();
+    });
+
+    it('should return error for create without required fields', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'pages', action: 'create', title: 'No project' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('required');
+    });
+
+    it('should handle update action', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'pages', attributes: { title: 'Updated' } },
+      };
+      mockApi.updatePage.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'pages', action: 'update', id: '1', title: 'Updated' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+    });
+
+    it('should handle delete action', async () => {
+      mockApi.deletePage.mockResolvedValue(undefined);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'pages', action: 'delete', id: '1' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(mockApi.deletePage).toHaveBeenCalledWith('1');
+    });
+
+    it('should return error for invalid action', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'pages', action: 'start' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Invalid action');
+    });
+  });
+
+  describe('discussions resource', () => {
+    it('should handle list action', async () => {
+      const mockResponse = {
+        data: [{ id: '1', type: 'discussions', attributes: { body: 'Test', status: 1 } }],
+        meta: { current_page: 1, total_pages: 1 },
+      };
+      mockApi.getDiscussions.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'list' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(mockApi.getDiscussions).toHaveBeenCalled();
+    });
+
+    it('should handle get action', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'discussions', attributes: { body: 'Test', status: 1 } },
+      };
+      mockApi.getDiscussion.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'get', id: '1' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(mockApi.getDiscussion).toHaveBeenCalledWith('1');
+    });
+
+    it('should return error for get without id', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'get' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('id is required');
+    });
+
+    it('should handle create action', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'discussions', attributes: { body: 'Review', status: 1 } },
+      };
+      mockApi.createDiscussion.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'create', body: 'Review', page_id: '10' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(mockApi.createDiscussion).toHaveBeenCalled();
+    });
+
+    it('should return error for create without required fields', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'create', body: 'Missing page' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('required');
+    });
+
+    it('should handle update action', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'discussions', attributes: { body: 'Updated', status: 1 } },
+      };
+      mockApi.updateDiscussion.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'update', id: '1', body: 'Updated' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+    });
+
+    it('should handle delete action', async () => {
+      mockApi.deleteDiscussion.mockResolvedValue(undefined);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'delete', id: '1' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(mockApi.deleteDiscussion).toHaveBeenCalledWith('1');
+    });
+
+    it('should handle resolve action', async () => {
+      const mockResponse = {
+        data: {
+          id: '1',
+          type: 'discussions',
+          attributes: { status: 2, resolved_at: '2024-01-05' },
+        },
+      };
+      mockApi.resolveDiscussion.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'resolve', id: '1' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(mockApi.resolveDiscussion).toHaveBeenCalledWith('1');
+    });
+
+    it('should handle reopen action', async () => {
+      const mockResponse = {
+        data: { id: '1', type: 'discussions', attributes: { status: 1, resolved_at: null } },
+      };
+      mockApi.reopenDiscussion.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'reopen', id: '1' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(mockApi.reopenDiscussion).toHaveBeenCalledWith('1');
+    });
+
+    it('should return error for resolve without id', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'resolve' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('id is required');
+    });
+
+    it('should return error for invalid action', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'discussions', action: 'start' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Invalid action');
     });
   });
 });

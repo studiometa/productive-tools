@@ -83,3 +83,5 @@ export type ResourceType =
   | 'deal'
   | 'booking'
   | 'attachment';
+  | 'page'
+  | 'discussion';

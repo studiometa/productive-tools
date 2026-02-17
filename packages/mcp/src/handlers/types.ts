@@ -109,6 +109,26 @@ export interface CompanyArgs extends CommonArgs {
 }
 
 /**
+ * Page-specific args
+ */
+export interface PageArgs extends CommonArgs {
+  title?: string;
+  body?: string;
+  parent_page_id?: string;
+  project_id?: string;
+}
+
+/**
+ * Discussion-specific args
+ */
+export interface DiscussionArgs extends CommonArgs {
+  title?: string;
+  body?: string;
+  page_id?: string;
+  status?: string;
+}
+
+/**
  * Resource handler function signature
  */
 export type ResourceHandler<T extends CommonArgs = CommonArgs> = (

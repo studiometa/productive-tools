@@ -32,6 +32,21 @@ productive(resource, action, [parameters...])
 | `bookings`    | `list`, `get`, `create`, `update`, `help`            | Resource scheduling     |
 | `budgets`     | `list`, `get`, `help`                                | Budget tracking         |
 | `reports`     | `get`, `help`                                        | Generate reports        |
+| Resource      | Actions                                                                  | Description             |
+| ------------- | ------------------------------------------------------------------------ | ----------------------- |
+| `projects`    | `list`, `get`, `resolve`, `help`                                         | Project management      |
+| `time`        | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Time tracking           |
+| `tasks`       | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Task management         |
+| `services`    | `list`, `get`, `resolve`, `help`                                         | Budget line items       |
+| `people`      | `list`, `get`, `me`, `resolve`, `help`                                   | Team members            |
+| `companies`   | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Client companies        |
+| `comments`    | `list`, `get`, `create`, `update`, `help`                                | Comments on tasks/deals |
+| `timers`      | `list`, `get`, `start`, `stop`, `help`                                   | Active timers           |
+| `deals`       | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Sales deals             |
+| `bookings`    | `list`, `get`, `create`, `update`, `help`                                | Resource scheduling     |
+| `pages`       | `list`, `get`, `create`, `update`, `delete`, `help`                      | Wiki/docs pages         |
+| `discussions` | `list`, `get`, `create`, `update`, `delete`, `resolve`, `reopen`, `help` | Discussions on pages    |
+| `reports`     | `get`, `help`                                                            | Generate reports        |
 
 ### Getting Help
 
@@ -325,6 +340,64 @@ Response:
 }
 ```
 
+### Pages (Docs)
+
+```json
+// List pages for a project
+{ "resource": "pages", "action": "list", "filter": { "project_id": "12345" } }
+
+// Get page details
+{ "resource": "pages", "action": "get", "id": "67890" }
+
+// Create a page
+{
+  "resource": "pages",
+  "action": "create",
+  "title": "Getting Started",
+  "project_id": "12345"
+}
+
+// Create a sub-page
+{
+  "resource": "pages",
+  "action": "create",
+  "title": "Installation",
+  "project_id": "12345",
+  "parent_page_id": "67890"
+}
+
+// Delete a page
+{ "resource": "pages", "action": "delete", "id": "67890" }
+```
+
+### Discussions
+
+```json
+// List discussions on a page
+{
+  "resource": "discussions",
+  "action": "list",
+  "filter": { "page_id": "12345" }
+}
+
+// List active discussions
+{ "resource": "discussions", "action": "list", "status": "active" }
+
+// Create a discussion
+{
+  "resource": "discussions",
+  "action": "create",
+  "page_id": "12345",
+  "body": "This section needs review"
+}
+
+// Resolve a discussion
+{ "resource": "discussions", "action": "resolve", "id": "67890" }
+
+// Reopen a resolved discussion
+{ "resource": "discussions", "action": "reopen", "id": "67890" }
+```
+
 ## Filters Reference
 
 ### Time Entries
@@ -410,6 +483,16 @@ Response:
 - `deal_id` - Filter by deal
 - `billable` - Filter by billable status: `true`/`false`
 - `budget_type` - Filter by budget type
+### Pages
+
+- `project_id` - Filter by project
+- `creator_id` - Filter by creator
+- `parent_page_id` - Filter by parent page (for sub-pages)
+
+### Discussions
+
+- `page_id` - Filter by page
+- `status` - Status: `1`=active, `2`=resolved (or "active", "resolved")
 
 ### Comments
 
