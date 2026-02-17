@@ -5,13 +5,22 @@
  * resolveFilters, etc.) is tested in productive-core.
  * This file tests the MCP-specific handleResolve wrapper.
  */
-import type { ProductiveApi } from '@studiometa/productive-api';
-
+import { createTestExecutorContext } from '@studiometa/productive-core';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import type { HandlerContext } from '../handlers/types.js';
 
 import { handleResolve } from '../handlers/resolve.js';
+
+function createMockCtx(apiOverrides: Record<string, unknown> = {}): HandlerContext {
+  const execCtx = createTestExecutorContext({ api: apiOverrides });
+
+  return {
+    formatOptions: { compact: false },
+    perPage: 20,
+    executor: () => execCtx,
+  };
+}
 
 describe('handleResolve', () => {
   let mockApi: {
@@ -27,11 +36,7 @@ describe('handleResolve', () => {
       getCompanies: vi.fn(),
     };
 
-    mockCtx = {
-      api: mockApi as unknown as ProductiveApi,
-      formatOptions: { compact: false },
-      perPage: 20,
-    };
+    mockCtx = createMockCtx(mockApi);
   });
 
   it('returns error when query is missing', async () => {
