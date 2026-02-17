@@ -2,7 +2,7 @@
  * Tasks MCP handler.
  */
 
-import { fromHandlerContext, listTasks, getTask } from '@studiometa/productive-core';
+import { listTasks, getTask, createTask, updateTask } from '@studiometa/productive-core';
 
 import type { HandlerContext, TaskArgs, ToolResult } from './types.js';
 
@@ -20,7 +20,7 @@ export async function handleTasks(
   args: TaskArgs & { query?: string; type?: ResolvableResourceType },
   ctx: HandlerContext,
 ): Promise<ToolResult> {
-  const { api, formatOptions, filter, page, perPage, include: userInclude } = ctx;
+  const { formatOptions, filter, page, perPage, include: userInclude } = ctx;
   const { id, title, project_id, task_list_id, description, assignee_id, query, type } = args;
   const include = userInclude?.length
     ? [...new Set([...DEFAULT_TASK_INCLUDE, ...userInclude])]
@@ -30,7 +30,7 @@ export async function handleTasks(
     return handleResolve({ query, type, project_id }, ctx);
   }
 
-  const execCtx = fromHandlerContext(ctx);
+  const execCtx = ctx.executor();
 
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
@@ -51,24 +51,30 @@ export async function handleTasks(
         ErrorMessages.missingRequiredFields('task', ['title', 'project_id', 'task_list_id']),
       );
     }
-    // Use API directly — MCP create passes through simple fields
-    const result = await api.createTask({
-      title,
-      project_id,
-      task_list_id,
-      assignee_id,
-      description,
-    });
+    const result = await createTask(
+      {
+        title,
+        projectId: project_id,
+        taskListId: task_list_id,
+        assigneeId: assignee_id,
+        description,
+      },
+      execCtx,
+    );
     return jsonResult({ success: true, ...formatTask(result.data, formatOptions) });
   }
 
   if (action === 'update') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('update'));
-    const updateData: Parameters<typeof api.updateTask>[1] = {};
-    if (title !== undefined) updateData.title = title;
-    if (description !== undefined) updateData.description = description;
-    if (assignee_id !== undefined) updateData.assignee_id = assignee_id;
-    const result = await api.updateTask(id, updateData);
+    const result = await updateTask(
+      {
+        id,
+        title,
+        description,
+        assigneeId: assignee_id,
+      },
+      execCtx,
+    );
     return jsonResult({ success: true, ...formatTask(result.data, formatOptions) });
   }
 

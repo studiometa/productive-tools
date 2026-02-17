@@ -38,7 +38,8 @@ export async function handleResolve(args: ResolveArgs, ctx: HandlerContext): Pro
   }
 
   try {
-    const results: ResolveResult[] = await resolveResource(ctx.api, query, {
+    const execCtx = ctx.executor();
+    const results: ResolveResult[] = await resolveResource(execCtx.api, query, {
       type,
       projectId: project_id,
     });

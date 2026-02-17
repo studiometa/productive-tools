@@ -2,7 +2,12 @@
  * Bookings MCP handler.
  */
 
-import { fromHandlerContext, listBookings } from '@studiometa/productive-core';
+import {
+  listBookings,
+  getBooking,
+  createBooking,
+  updateBooking,
+} from '@studiometa/productive-core';
 
 import type { BookingArgs, HandlerContext, ToolResult } from './types.js';
 
@@ -18,16 +23,17 @@ export async function handleBookings(
   args: BookingArgs,
   ctx: HandlerContext,
 ): Promise<ToolResult> {
-  const { api, formatOptions, filter, page, perPage, include: userInclude } = ctx;
+  const { formatOptions, filter, page, perPage, include: userInclude } = ctx;
   const { id, person_id, service_id, event_id, started_on, ended_on, time, note } = args;
   const include = userInclude?.length
     ? [...new Set(['person', 'service', ...userInclude])]
     : ['person', 'service'];
 
+  const execCtx = ctx.executor();
+
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
-    // Use API directly to preserve include handling
-    const result = await api.getBooking(id, { include });
+    const result = await getBooking({ id, include }, execCtx);
     const formatted = formatBooking(result.data, { ...formatOptions, included: result.included });
 
     if (ctx.includeHints !== false) {
@@ -46,31 +52,37 @@ export async function handleBookings(
     if (!service_id && !event_id) {
       return inputErrorResult(ErrorMessages.missingBookingTarget());
     }
-    const result = await api.createBooking({
-      person_id,
-      service_id,
-      event_id,
-      started_on,
-      ended_on,
-      time,
-      note,
-    });
+    const result = await createBooking(
+      {
+        personId: person_id,
+        serviceId: service_id ?? '',
+        startedOn: started_on,
+        endedOn: ended_on,
+        time,
+        note,
+        eventId: event_id,
+      },
+      execCtx,
+    );
     return jsonResult({ success: true, ...formatBooking(result.data, formatOptions) });
   }
 
   if (action === 'update') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('update'));
-    const updateData: Parameters<typeof api.updateBooking>[1] = {};
-    if (started_on !== undefined) updateData.started_on = started_on;
-    if (ended_on !== undefined) updateData.ended_on = ended_on;
-    if (time !== undefined) updateData.time = time;
-    if (note !== undefined) updateData.note = note;
-    const result = await api.updateBooking(id, updateData);
+    const result = await updateBooking(
+      {
+        id,
+        startedOn: started_on,
+        endedOn: ended_on,
+        time,
+        note,
+      },
+      execCtx,
+    );
     return jsonResult({ success: true, ...formatBooking(result.data, formatOptions) });
   }
 
   if (action === 'list') {
-    const execCtx = fromHandlerContext(ctx);
     const result = await listBookings(
       { page, perPage, additionalFilters: filter, include },
       execCtx,

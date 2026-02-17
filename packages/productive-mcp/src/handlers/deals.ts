@@ -2,7 +2,7 @@
  * Deals MCP handler.
  */
 
-import { fromHandlerContext, listDeals, getDeal, createDeal } from '@studiometa/productive-core';
+import { listDeals, getDeal, createDeal, updateDeal } from '@studiometa/productive-core';
 
 import type { DealArgs, HandlerContext, ToolResult } from './types.js';
 
@@ -19,14 +19,14 @@ export async function handleDeals(
   args: DealArgs & { query?: string; type?: ResolvableResourceType },
   ctx: HandlerContext,
 ): Promise<ToolResult> {
-  const { api, formatOptions, filter, page, perPage, include: userInclude } = ctx;
+  const { formatOptions, filter, page, perPage, include: userInclude } = ctx;
   const { id, name, company_id, query, type } = args;
 
   if (action === 'resolve') {
     return handleResolve({ query, type }, ctx);
   }
 
-  const execCtx = fromHandlerContext(ctx);
+  const execCtx = ctx.executor();
 
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
@@ -52,10 +52,7 @@ export async function handleDeals(
 
   if (action === 'update') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('update'));
-    // Use API directly — MCP update passes through simple fields
-    const updateData: Parameters<typeof api.updateDeal>[1] = {};
-    if (name !== undefined) updateData.name = name;
-    const result = await api.updateDeal(id, updateData);
+    const result = await updateDeal({ id, name }, execCtx);
     return jsonResult({ success: true, ...formatDeal(result.data, formatOptions) });
   }
 

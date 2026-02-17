@@ -2,7 +2,12 @@
  * Comments MCP handler.
  */
 
-import { fromHandlerContext, listComments } from '@studiometa/productive-core';
+import {
+  listComments,
+  getComment,
+  createComment,
+  updateComment,
+} from '@studiometa/productive-core';
 
 import type { CommentArgs, HandlerContext, ToolResult } from './types.js';
 
@@ -18,14 +23,15 @@ export async function handleComments(
   args: CommentArgs,
   ctx: HandlerContext,
 ): Promise<ToolResult> {
-  const { api, formatOptions, filter, page, perPage, include: userInclude } = ctx;
+  const { formatOptions, filter, page, perPage, include: userInclude } = ctx;
   const { id, body, task_id, deal_id, company_id } = args;
   const include = userInclude?.length ? [...new Set(['creator', ...userInclude])] : ['creator'];
 
+  const execCtx = ctx.executor();
+
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
-    // Use API directly to preserve include handling
-    const result = await api.getComment(id, { include });
+    const result = await getComment({ id, include }, execCtx);
     const formatted = formatComment(result.data, { ...formatOptions, included: result.included });
 
     if (ctx.includeHints !== false) {
@@ -51,7 +57,10 @@ export async function handleComments(
     if (!task_id && !deal_id && !company_id) {
       return inputErrorResult(ErrorMessages.missingCommentTarget());
     }
-    const result = await api.createComment({ body, task_id, deal_id, company_id });
+    const result = await createComment(
+      { body, taskId: task_id, dealId: deal_id, companyId: company_id },
+      execCtx,
+    );
     return jsonResult({ success: true, ...formatComment(result.data, formatOptions) });
   }
 
@@ -59,12 +68,11 @@ export async function handleComments(
     if (!id) return inputErrorResult(ErrorMessages.missingId('update'));
     if (!body)
       return inputErrorResult(ErrorMessages.missingRequiredFields('comment update', ['body']));
-    const result = await api.updateComment(id, { body });
+    const result = await updateComment({ id, body }, execCtx);
     return jsonResult({ success: true, ...formatComment(result.data, formatOptions) });
   }
 
   if (action === 'list') {
-    const execCtx = fromHandlerContext(ctx);
     const result = await listComments(
       { page, perPage, additionalFilters: filter, include },
       execCtx,

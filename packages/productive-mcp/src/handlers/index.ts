@@ -7,6 +7,7 @@
  */
 
 import { ProductiveApi } from '@studiometa/productive-api';
+import { fromHandlerContext } from '@studiometa/productive-core';
 
 import type { ProductiveCredentials } from '../auth.js';
 import type { McpFormatOptions } from '../formatters.js';
@@ -147,15 +148,17 @@ export async function executeToolWithCredentials(
   // Can be explicitly disabled with no_hints: true
   const includeHints = no_hints !== true && action === 'get' && !isCompact;
 
-  // Build handler context
+  // Build handler context — api is not exposed directly.
+  // Handlers access executors via ctx.executor() which creates an ExecutorContext.
+  const execCtx = fromHandlerContext({ api });
   const ctx: HandlerContext = {
-    api,
     formatOptions,
     filter: stringFilter,
     page,
     perPage,
     include,
     includeHints,
+    executor: () => execCtx,
   };
 
   try {

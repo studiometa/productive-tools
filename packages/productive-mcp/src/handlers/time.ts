@@ -6,7 +6,6 @@
  */
 
 import {
-  fromHandlerContext,
   listTimeEntries,
   getTimeEntry,
   createTimeEntry,
@@ -36,7 +35,7 @@ export async function handleTime(
     return handleResolve({ query, type, project_id }, ctx);
   }
 
-  const execCtx = fromHandlerContext(ctx);
+  const execCtx = ctx.executor();
 
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));

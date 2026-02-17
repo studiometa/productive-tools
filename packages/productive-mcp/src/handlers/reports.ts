@@ -2,12 +2,7 @@
  * Reports MCP handler.
  */
 
-import {
-  fromHandlerContext,
-  getReport,
-  VALID_REPORT_TYPES,
-  type ReportType,
-} from '@studiometa/productive-core';
+import { getReport, VALID_REPORT_TYPES, type ReportType } from '@studiometa/productive-core';
 
 import type { CommonArgs, HandlerContext, ToolResult } from './types.js';
 
@@ -59,7 +54,7 @@ export async function handleReports(
     return inputErrorResult(ErrorMessages.invalidReportType(report_type, [...VALID_REPORT_TYPES]));
   }
 
-  const execCtx = fromHandlerContext(ctx);
+  const execCtx = ctx.executor();
 
   const result = await getReport(
     {

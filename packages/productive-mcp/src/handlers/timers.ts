@@ -2,7 +2,7 @@
  * Timers MCP handler.
  */
 
-import { fromHandlerContext, listTimers, startTimer, stopTimer } from '@studiometa/productive-core';
+import { listTimers, getTimer, startTimer, stopTimer } from '@studiometa/productive-core';
 
 import type { HandlerContext, TimerArgs, ToolResult } from './types.js';
 
@@ -18,15 +18,14 @@ export async function handleTimers(
   args: TimerArgs,
   ctx: HandlerContext,
 ): Promise<ToolResult> {
-  const { api, formatOptions, filter, page, perPage, include } = ctx;
+  const { formatOptions, filter, page, perPage, include } = ctx;
   const { id, service_id, time_entry_id } = args;
 
-  const execCtx = fromHandlerContext(ctx);
+  const execCtx = ctx.executor();
 
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
-    // Use API directly to preserve include handling
-    const result = await api.getTimer(id, { include });
+    const result = await getTimer({ id, include }, execCtx);
     const formatted = formatTimer(result.data, formatOptions);
 
     if (ctx.includeHints !== false) {

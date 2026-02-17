@@ -2,7 +2,7 @@
  * People MCP handler.
  */
 
-import { fromHandlerContext, listPeople, getPerson } from '@studiometa/productive-core';
+import { listPeople, getPerson } from '@studiometa/productive-core';
 
 import type { ProductiveCredentials } from '../auth.js';
 import type { CommonArgs, HandlerContext, ToolResult } from './types.js';
@@ -28,7 +28,7 @@ export async function handlePeople(
     return handleResolve({ query, type }, ctx);
   }
 
-  const execCtx = fromHandlerContext(ctx);
+  const execCtx = ctx.executor();
 
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
@@ -44,9 +44,8 @@ export async function handlePeople(
 
   if (action === 'me') {
     if (credentials.userId) {
-      // Use API directly — userId from credentials is already a known ID, no resolution needed
-      const apiResult = await ctx.api.getPerson(credentials.userId);
-      const formatted = formatPerson(apiResult.data, formatOptions);
+      const result = await getPerson({ id: credentials.userId }, execCtx);
+      const formatted = formatPerson(result.data, formatOptions);
 
       if (ctx.includeHints !== false) {
         return jsonResult({ ...formatted, _hints: getPersonHints(credentials.userId) });

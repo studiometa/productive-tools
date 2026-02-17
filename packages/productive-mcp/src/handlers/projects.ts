@@ -2,7 +2,7 @@
  * Projects MCP handler.
  */
 
-import { fromHandlerContext, listProjects, getProject } from '@studiometa/productive-core';
+import { listProjects, getProject } from '@studiometa/productive-core';
 
 import type { CommonArgs, HandlerContext, ToolResult } from './types.js';
 
@@ -26,7 +26,7 @@ export async function handleProjects(
     return handleResolve({ query, type }, ctx);
   }
 
-  const execCtx = fromHandlerContext(ctx);
+  const execCtx = ctx.executor();
 
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));

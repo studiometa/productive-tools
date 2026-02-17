@@ -2,7 +2,7 @@
  * Services MCP handler.
  */
 
-import { fromHandlerContext, listServices } from '@studiometa/productive-core';
+import { listServices } from '@studiometa/productive-core';
 
 import type { CommonArgs, HandlerContext, ToolResult } from './types.js';
 
@@ -20,7 +20,7 @@ export async function handleServices(
   const { formatOptions, filter, page, perPage } = ctx;
 
   if (action === 'list') {
-    const execCtx = fromHandlerContext(ctx);
+    const execCtx = ctx.executor();
     const result = await listServices({ page, perPage, additionalFilters: filter }, execCtx);
 
     return jsonResult(formatListResponse(result.data, formatService, result.meta, formatOptions));

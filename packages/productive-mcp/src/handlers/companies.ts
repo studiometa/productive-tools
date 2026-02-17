@@ -3,10 +3,10 @@
  */
 
 import {
-  fromHandlerContext,
   listCompanies,
   getCompany,
   createCompany,
+  updateCompany,
 } from '@studiometa/productive-core';
 
 import type { CompanyArgs, HandlerContext, ToolResult } from './types.js';
@@ -31,7 +31,7 @@ export async function handleCompanies(
     return handleResolve({ query, type }, ctx);
   }
 
-  const execCtx = fromHandlerContext(ctx);
+  const execCtx = ctx.executor();
 
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
@@ -55,11 +55,8 @@ export async function handleCompanies(
   if (action === 'update') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('update'));
 
-    // Use API directly — MCP update passes through fields without validation
-    const updateData: Record<string, string> = {};
-    if (name !== undefined) updateData.name = name;
-    const apiResult = await ctx.api.updateCompany(id, updateData);
-    return jsonResult({ success: true, ...formatCompany(apiResult.data, formatOptions) });
+    const result = await updateCompany({ id, name }, execCtx);
+    return jsonResult({ success: true, ...formatCompany(result.data, formatOptions) });
   }
 
   if (action === 'list') {
