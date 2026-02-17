@@ -64,10 +64,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CLI: 996 tests, 85% statements
   - MCP: 324 tests, 97% statements
 - **CLI/MCP**: Comprehensive test coverage for smart ID resolution ([#23])
+- Colocate test files next to source files, removing `__tests__/` directories ([#26])
+- Fix `vi.mock()` and dynamic `import()` paths after test file relocation ([#26])
+- Silence `console.error` in unknown subcommand tests to clean up test output ([#26])
 
 [#23]: https://github.com/studiometa/productive-tools/pull/23
 [#24]: https://github.com/studiometa/productive-tools/issues/24
 [#25]: https://github.com/studiometa/productive-tools/pull/25
+[#26]: https://github.com/studiometa/productive-tools/pull/26
 
 ## [0.8.5] - 2026-02-10
 
