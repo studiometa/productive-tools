@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { handleApiCommand, showApiHelp } from './commands/api.js';
+import { handleAttachmentsCommand, showAttachmentsHelp } from './commands/attachments/index.js';
 import { handleBookingsCommand, showBookingsHelp } from './commands/bookings/index.js';
 import { handleBudgetsCommand, showBudgetsHelp } from './commands/budgets/index.js';
 import { handleCacheCommand, showCacheHelp } from './commands/cache.js';
@@ -77,6 +78,11 @@ ${colors.bold('COMMANDS:')}
     get <id>            Get comment details
     add                 Add a comment
     update <id>         Update comment
+
+  attachments         Manage attachments
+    list, ls            List attachments
+    get <id>            Get attachment details
+    delete, rm <id>     Delete an attachment
 
   timers              Manage timers (real-time tracking)
     list, ls            List timers
@@ -301,6 +307,14 @@ async function main(): Promise<void> {
           process.exit(0);
         }
         await handleCommentsCommand(subcommand || 'list', positional, options);
+        break;
+
+      case 'attachments':
+        if (wantsHelp) {
+          showAttachmentsHelp(subcommand);
+          process.exit(0);
+        }
+        await handleAttachmentsCommand(subcommand || 'list', positional, options);
         break;
 
       case 'timers':

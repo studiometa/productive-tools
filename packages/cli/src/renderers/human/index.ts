@@ -92,3 +92,11 @@ export {
   humanBookingListRenderer,
   humanBookingDetailRenderer,
 } from './booking.js';
+
+// Attachments
+export {
+  HumanAttachmentListRenderer,
+  HumanAttachmentDetailRenderer,
+  humanAttachmentListRenderer,
+  humanAttachmentDetailRenderer,
+} from './attachment.js';

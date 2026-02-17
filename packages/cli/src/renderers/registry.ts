@@ -8,6 +8,7 @@
 import type { GenericRenderer, OutputFormat, ResourceType, RenderContext } from './types.js';
 
 import { csvRenderer } from './csv.js';
+import { humanAttachmentListRenderer } from './human/attachment.js';
 import { humanBookingListRenderer } from './human/booking.js';
 import { humanBudgetListRenderer } from './human/budget.js';
 import { humanCommentListRenderer } from './human/comment.js';
@@ -141,3 +142,4 @@ registerRenderer('comment', 'human', humanCommentListRenderer);
 registerRenderer('timer', 'human', humanTimerListRenderer);
 registerRenderer('deal', 'human', humanDealListRenderer);
 registerRenderer('booking', 'human', humanBookingListRenderer);
+registerRenderer('attachment', 'human', humanAttachmentListRenderer);
