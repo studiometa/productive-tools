@@ -18,7 +18,7 @@ _productive_completions() {
   prev="\${COMP_WORDS[COMP_CWORD-1]}"
 
   # Main commands
-  commands="config projects p time t tasks people services svc budgets cache api completion help"
+  commands="config projects p time t tasks people services svc cache api completion help"
 
   # Subcommands for each command
   local config_cmds="set get validate clear"
@@ -27,7 +27,6 @@ _productive_completions() {
   local tasks_cmds="list ls get"
   local people_cmds="list ls get"
   local services_cmds="list ls"
-  local budgets_cmds="list ls"
   local cache_cmds="status clear"
   local completion_cmds="bash zsh fish"
 
@@ -69,9 +68,6 @@ _productive_completions() {
           ;;
         services|svc)
           COMPREPLY=( \$(compgen -W "\${services_cmds}" -- "\${cur}") )
-          ;;
-        budgets)
-          COMPREPLY=( \$(compgen -W "\${budgets_cmds}" -- "\${cur}") )
           ;;
         cache)
           COMPREPLY=( \$(compgen -W "\${cache_cmds}" -- "\${cur}") )
@@ -169,7 +165,6 @@ _productive() {
         'people:Manage people'
         'services:Manage services'
         'svc:Manage services (alias)'
-        'budgets:Manage budgets'
         'cache:Manage CLI cache'
         'api:Make custom API requests'
         'completion:Generate shell completion script'
@@ -235,14 +230,6 @@ _productive() {
             'ls:List services (alias)'
           )
           _describe 'services command' services_cmds
-          ;;
-        budgets)
-          local -a budgets_cmds
-          budgets_cmds=(
-            'list:List budgets'
-            'ls:List budgets (alias)'
-          )
-          _describe 'budgets command' budgets_cmds
           ;;
         cache)
           local -a cache_cmds
@@ -357,7 +344,6 @@ complete -c productive -f -n "__fish_use_subcommand" -a "tasks" -d "Manage tasks
 complete -c productive -f -n "__fish_use_subcommand" -a "people" -d "Manage people"
 complete -c productive -f -n "__fish_use_subcommand" -a "services" -d "Manage services"
 complete -c productive -f -n "__fish_use_subcommand" -a "svc" -d "Manage services (alias)"
-complete -c productive -f -n "__fish_use_subcommand" -a "budgets" -d "Manage budgets"
 complete -c productive -f -n "__fish_use_subcommand" -a "cache" -d "Manage CLI cache"
 complete -c productive -f -n "__fish_use_subcommand" -a "api" -d "Make custom API requests"
 complete -c productive -f -n "__fish_use_subcommand" -a "completion" -d "Generate shell completion script"
@@ -395,10 +381,6 @@ complete -c productive -f -n "__fish_seen_subcommand_from people" -a "get" -d "G
 # Services subcommands
 complete -c productive -f -n "__fish_seen_subcommand_from services svc" -a "list" -d "List services"
 complete -c productive -f -n "__fish_seen_subcommand_from services svc" -a "ls" -d "List services (alias)"
-
-# Budgets subcommands
-complete -c productive -f -n "__fish_seen_subcommand_from budgets" -a "list" -d "List budgets"
-complete -c productive -f -n "__fish_seen_subcommand_from budgets" -a "ls" -d "List budgets (alias)"
 
 # Cache subcommands
 complete -c productive -f -n "__fish_seen_subcommand_from cache" -a "status" -d "Show cache statistics"

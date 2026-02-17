@@ -7,7 +7,7 @@ import { colors } from '../../utils/colors.js';
 export function showDealsHelp(subcommand?: string): void {
   if (subcommand === 'list' || subcommand === 'ls') {
     console.log(`
-${colors.bold('productive deals list')} - List deals
+${colors.bold('productive deals list')} - List deals and budgets
 
 ${colors.bold('USAGE:')}
   productive deals list [options]
@@ -19,6 +19,7 @@ ${colors.bold('OPTIONS:')}
   --pipeline <id>       Filter by pipeline ID
   --status <status>     Filter by stage status: open, won, lost
   --type <type>         Filter by type: deal, budget
+  --budget              Shortcut for --type budget (list only budgets)
   --budget-status <s>   Filter by budget status: open, closed
   --filter <filters>    Generic filters (comma-separated key=value pairs)
   -p, --page <num>      Page number (default: 1)
@@ -26,11 +27,17 @@ ${colors.bold('OPTIONS:')}
   --sort <field>        Sort by field (prefix with - for descending)
   -f, --format <fmt>    Output format: json, human, csv, table
 
+${colors.bold('NOTE:')}
+  Budgets are a type of deal in Productive.io. Use ${colors.cyan('--budget')} or
+  ${colors.cyan('--type budget')} to filter only budgets.
+
 ${colors.bold('EXAMPLES:')}
   productive deals list
   productive deals list --status open
+  productive deals list --budget
+  productive deals list --budget --company 12345
+  productive deals list --budget --budget-status open
   productive deals list --type budget --company 12345
-  productive deals list --type budget --budget-status open
   productive deals list --responsible 456
   productive deals list --status won --format json
 `);
@@ -102,9 +109,9 @@ ${colors.bold('USAGE:')}
   productive deals <subcommand> [options]
 
 ${colors.bold('SUBCOMMANDS:')}
-  list, ls            List deals
-  get <id>            Get deal details
-  add, create         Create a new deal
+  list, ls            List deals (use --budget for budgets only)
+  get <id>            Get deal/budget details
+  add, create         Create a new deal or budget
   update <id>         Update an existing deal
 
 ${colors.bold('COMMON OPTIONS:')}
@@ -113,9 +120,15 @@ ${colors.bold('COMMON OPTIONS:')}
   -s, --size <num>    Page size (default: 100)
   -h, --help          Show help for a subcommand
 
+${colors.bold('NOTE:')}
+  Budgets are a type of deal in Productive.io. Use ${colors.cyan('--budget')} flag
+  with list or add to work with budgets specifically.
+
 ${colors.bold('EXAMPLES:')}
   productive deals list --status open
+  productive deals list --budget
   productive deals add --name "New Project" --company 12345
+  productive deals add --name "Q1 Budget" --company 12345 --budget
   productive deals get 67890
   productive deals update 67890 --name "Updated Name"
 

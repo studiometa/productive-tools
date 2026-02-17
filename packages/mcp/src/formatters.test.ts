@@ -8,7 +8,6 @@ import {
   formatTask,
   formatPerson,
   formatService,
-  formatBudget,
   formatListResponse,
 } from './formatters.js';
 
@@ -177,51 +176,6 @@ describe('formatters', () => {
 
       expect(result).toHaveProperty('id', '222');
       expect(result).toHaveProperty('name', 'Development');
-    });
-  });
-
-  describe('formatBudget', () => {
-    it('should format a budget', () => {
-      const budget: JsonApiResource = {
-        id: '333',
-        type: 'budgets',
-        attributes: {
-          name: 'Q1 Budget',
-          budget_type: 1,
-          billable: true,
-          total_time_budget: 4800,
-          remaining_time_budget: 2400,
-          total_monetary_budget: 50000,
-          remaining_monetary_budget: 25000,
-          currency: 'EUR',
-        },
-      };
-
-      const result = formatBudget(budget);
-
-      expect(result).toHaveProperty('id', '333');
-      expect(result).toHaveProperty('name', 'Q1 Budget');
-      expect(result).toHaveProperty('total_time_budget', 4800);
-      expect(result).toHaveProperty('currency', 'EUR');
-    });
-
-    it('should compact budget for list mode', () => {
-      const budget: JsonApiResource = {
-        id: '333',
-        type: 'budgets',
-        attributes: {
-          name: 'Q1 Budget',
-          budget_type: 1,
-          currency: 'EUR',
-          total_time_budget: 4800,
-        },
-      };
-
-      const result = formatBudget(budget, { compact: true });
-
-      expect(result).toHaveProperty('name', 'Q1 Budget');
-      expect(result).not.toHaveProperty('budget_type');
-      expect(result).not.toHaveProperty('currency');
     });
   });
 

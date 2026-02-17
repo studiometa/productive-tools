@@ -10,7 +10,6 @@ import type { GenericRenderer, OutputFormat, ResourceType, RenderContext } from 
 import { csvRenderer } from './csv.js';
 import { humanAttachmentListRenderer } from './human/attachment.js';
 import { humanBookingListRenderer } from './human/booking.js';
-import { humanBudgetListRenderer } from './human/budget.js';
 import { humanCommentListRenderer } from './human/comment.js';
 import { humanCompanyListRenderer } from './human/company.js';
 import { humanDealListRenderer } from './human/deal.js';
@@ -138,7 +137,6 @@ registerRenderer('task', 'human', humanTaskListRenderer);
 registerRenderer('task', 'kanban', kanbanRenderer);
 registerRenderer('person', 'human', humanPersonListRenderer);
 registerRenderer('service', 'human', humanServiceListRenderer);
-registerRenderer('budget', 'human', humanBudgetListRenderer);
 registerRenderer('company', 'human', humanCompanyListRenderer);
 registerRenderer('comment', 'human', humanCommentListRenderer);
 registerRenderer('timer', 'human', humanTimerListRenderer);

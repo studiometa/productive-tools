@@ -19,7 +19,6 @@ export default defineConfig({
       'executors/bookings/index': './src/executors/bookings/index.ts',
       'executors/comments/index': './src/executors/comments/index.ts',
       'executors/timers/index': './src/executors/timers/index.ts',
-      'executors/budgets/index': './src/executors/budgets/index.ts',
       'executors/reports/index': './src/executors/reports/index.ts',
     },
     external: ['@studiometa/productive-api'],

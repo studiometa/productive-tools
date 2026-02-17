@@ -8,7 +8,6 @@ import {
   getTaskHints,
   getProjectHints,
   getDealHints,
-  getBudgetHints,
   getPersonHints,
   getServiceHints,
   getCompanyHints,
@@ -315,30 +314,6 @@ describe('hints', () => {
       const serviceHint = hints.related_resources?.find((h) => h.resource === 'services');
       expect(serviceHint).toBeDefined();
       expect(serviceHint?.example.id).toBe('67890');
-    });
-  });
-
-  describe('getBudgetHints', () => {
-    it('returns hints with budget ID', () => {
-      const hints = getBudgetHints('12345');
-
-      expect(hints.related_resources).toBeDefined();
-      expect(hints.related_resources).toHaveLength(3);
-
-      // Check services hint
-      const servicesHint = hints.related_resources?.find((h) => h.resource === 'services');
-      expect(servicesHint).toBeDefined();
-      expect(servicesHint?.example.filter).toEqual({ budget_id: '12345' });
-
-      // Check time hint
-      const timeHint = hints.related_resources?.find((h) => h.resource === 'time');
-      expect(timeHint).toBeDefined();
-      expect(timeHint?.example.filter).toEqual({ budget_id: '12345' });
-
-      // Check bookings hint
-      const bookingsHint = hints.related_resources?.find((h) => h.resource === 'bookings');
-      expect(bookingsHint).toBeDefined();
-      expect(bookingsHint?.example.filter).toEqual({ budget_id: '12345' });
     });
   });
 

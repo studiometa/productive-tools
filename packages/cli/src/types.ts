@@ -4,7 +4,6 @@ export type {
   ProductiveApiMeta,
   ProductiveApiResponse,
   ProductiveBooking,
-  ProductiveBudget,
   ProductiveComment,
   ProductiveCompany,
   ProductiveConfig,

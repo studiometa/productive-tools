@@ -26,7 +26,6 @@ export const RESOURCES = [
   'timers',
   'deals',
   'bookings',
-  'budgets',
   'pages',
   'discussions',
   'reports',

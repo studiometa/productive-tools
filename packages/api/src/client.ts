@@ -6,7 +6,6 @@ import type {
   ProductiveTask,
   ProductivePerson,
   ProductiveService,
-  ProductiveBudget,
   ProductiveCompany,
   ProductiveComment,
   ProductiveTimer,
@@ -436,31 +435,6 @@ export class ProductiveApi {
     }
 
     return this.request<ProductiveApiResponse<ProductiveService[]>>('/services', { query });
-  }
-
-  // Budgets
-  async getBudgets(params?: {
-    page?: number;
-    perPage?: number;
-    filter?: Record<string, string>;
-  }): Promise<ProductiveApiResponse<ProductiveBudget[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
-
-    return this.request<ProductiveApiResponse<ProductiveBudget[]>>('/budgets', {
-      query,
-    });
-  }
-
-  async getBudget(id: string): Promise<ProductiveApiResponse<ProductiveBudget>> {
-    return this.request<ProductiveApiResponse<ProductiveBudget>>(`/budgets/${id}`);
   }
 
   // Companies

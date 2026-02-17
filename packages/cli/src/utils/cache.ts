@@ -18,7 +18,6 @@ const DEFAULT_TTLS: Record<string, number> = {
   '/services': 3600, // 1 hour
   '/time_entries': 300, // 5 minutes
   '/tasks': 900, // 15 minutes
-  '/budgets': 900, // 15 minutes
 };
 
 /**

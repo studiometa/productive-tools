@@ -38,7 +38,6 @@ const result = await listTasks({ projectId: '123' }, ctx);
 | `bookings`  | list, get, create, update         |
 | `comments`  | list, get, create, update         |
 | `timers`    | list, get, start, stop            |
-| `budgets`   | list                              |
 | `reports`   | get (11 report types)             |
 
 ### Context Bridges

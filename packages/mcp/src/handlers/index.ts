@@ -13,10 +13,9 @@ import type { ProductiveCredentials } from '../auth.js';
 import type { McpFormatOptions } from '../formatters.js';
 import type { HandlerContext, ToolResult } from './types.js';
 
-import { ErrorMessages, isUserInputError } from '../errors.js';
+import { ErrorMessages, UserInputError, isUserInputError } from '../errors.js';
 import { handleAttachments } from './attachments.js';
 import { handleBookings } from './bookings.js';
-import { handleBudgets } from './budgets.js';
 import { handleComments } from './comments.js';
 import { handleCompanies } from './companies.js';
 import { handleDeals } from './deals.js';
@@ -201,8 +200,6 @@ export async function executeToolWithCredentials(
       case 'bookings':
         return await handleBookings(action, restArgs, ctx);
 
-      case 'budgets':
-        return await handleBudgets(action, restArgs, ctx);
       case 'pages':
         return await handlePages(action, restArgs, ctx);
 
@@ -211,6 +208,19 @@ export async function executeToolWithCredentials(
 
       case 'reports':
         return await handleReports(action, restArgs, ctx);
+
+      case 'budgets':
+        return inputErrorResult(
+          new UserInputError(
+            'The "budgets" resource has been removed. Budgets are deals with budget=true.',
+            [
+              'Use resource="deals" with filter[budget]="true" to list budgets',
+              'Use resource="deals" with filter[type]="2" as an alternative',
+              'To create a budget: resource="deals" action="create" with budget=true',
+              'Use action="help" resource="deals" for full documentation',
+            ],
+          ),
+        );
 
       default:
         return inputErrorResult(ErrorMessages.unknownResource(resource, VALID_RESOURCES));

@@ -17,36 +17,35 @@ productive(resource, action, [parameters...])
 
 ### Resources & Actions
 
-| Resource      | Actions                                                                  | Description             |
-| ------------- | ------------------------------------------------------------------------ | ----------------------- |
-| `projects`    | `list`, `get`, `resolve`, `help`                                         | Project management      |
-| `time`        | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Time tracking           |
-| `tasks`       | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Task management         |
-| `services`    | `list`, `get`, `resolve`, `help`                                         | Budget line items       |
-| `people`      | `list`, `get`, `me`, `resolve`, `help`                                   | Team members            |
-| `companies`   | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Client companies        |
-| `comments`    | `list`, `get`, `create`, `update`, `help`                                | Comments on tasks/deals |
-| `attachments` | `list`, `get`, `delete`, `help`                                          | File attachments        |
-| `timers`      | `list`, `get`, `start`, `stop`, `help`                                   | Active timers           |
-| `deals`       | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Sales deals             |
-| `bookings`    | `list`, `get`, `create`, `update`, `help`                                | Resource scheduling     |
-| `budgets`     | `list`, `get`, `help`                                                    | Budget tracking         |
-| `reports`     | `get`, `help`                                                            | Generate reports        |
-| Resource      | Actions                                                                  | Description             |
-| ------------- | ------------------------------------------------------------------------ | ----------------------- |
-| `projects`    | `list`, `get`, `resolve`, `help`                                         | Project management      |
-| `time`        | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Time tracking           |
-| `tasks`       | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Task management         |
-| `services`    | `list`, `get`, `resolve`, `help`                                         | Budget line items       |
-| `people`      | `list`, `get`, `me`, `resolve`, `help`                                   | Team members            |
-| `companies`   | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Client companies        |
-| `comments`    | `list`, `get`, `create`, `update`, `help`                                | Comments on tasks/deals |
-| `timers`      | `list`, `get`, `start`, `stop`, `help`                                   | Active timers           |
-| `deals`       | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Sales deals             |
-| `bookings`    | `list`, `get`, `create`, `update`, `help`                                | Resource scheduling     |
-| `pages`       | `list`, `get`, `create`, `update`, `delete`, `help`                      | Wiki/docs pages         |
-| `discussions` | `list`, `get`, `create`, `update`, `delete`, `resolve`, `reopen`, `help` | Discussions on pages    |
-| `reports`     | `get`, `help`                                                            | Generate reports        |
+| Resource      | Actions                                                                  | Description                                                   |
+| ------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| `projects`    | `list`, `get`, `resolve`, `help`                                         | Project management                                            |
+| `time`        | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Time tracking                                                 |
+| `tasks`       | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Task management                                               |
+| `services`    | `list`, `get`, `resolve`, `help`                                         | Budget line items                                             |
+| `people`      | `list`, `get`, `me`, `resolve`, `help`                                   | Team members                                                  |
+| `companies`   | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Client companies                                              |
+| `comments`    | `list`, `get`, `create`, `update`, `help`                                | Comments on tasks/deals                                       |
+| `attachments` | `list`, `get`, `delete`, `help`                                          | File attachments                                              |
+| `timers`      | `list`, `get`, `start`, `stop`, `help`                                   | Active timers                                                 |
+| `deals`       | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Sales deals & budgets (use `filter[budget]=true` for budgets) |
+| `bookings`    | `list`, `get`, `create`, `update`, `help`                                | Resource scheduling                                           |
+| `reports`     | `get`, `help`                                                            | Generate reports                                              |
+| Resource      | Actions                                                                  | Description                                                   |
+| ------------- | ------------------------------------------------------------------------ | -----------------------                                       |
+| `projects`    | `list`, `get`, `resolve`, `help`                                         | Project management                                            |
+| `time`        | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Time tracking                                                 |
+| `tasks`       | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Task management                                               |
+| `services`    | `list`, `get`, `resolve`, `help`                                         | Budget line items                                             |
+| `people`      | `list`, `get`, `me`, `resolve`, `help`                                   | Team members                                                  |
+| `companies`   | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Client companies                                              |
+| `comments`    | `list`, `get`, `create`, `update`, `help`                                | Comments on tasks/deals                                       |
+| `timers`      | `list`, `get`, `start`, `stop`, `help`                                   | Active timers                                                 |
+| `deals`       | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Sales deals & budgets                                         |
+| `bookings`    | `list`, `get`, `create`, `update`, `help`                                | Resource scheduling                                           |
+| `pages`       | `list`, `get`, `create`, `update`, `delete`, `help`                      | Wiki/docs pages                                               |
+| `discussions` | `list`, `get`, `create`, `update`, `delete`, `resolve`, `reopen`, `help` | Discussions on pages                                          |
+| `reports`     | `get`, `help`                                                            | Generate reports                                              |
 
 ### Getting Help
 
@@ -302,22 +301,6 @@ Response:
 { "resource": "timers", "action": "stop", "id": "67890" }
 ```
 
-### Budgets
-
-```json
-// List all budgets
-{ "resource": "budgets", "action": "list" }
-
-// List budgets for a project
-{ "resource": "budgets", "action": "list", "filter": { "project_id": "12345" } }
-
-// Get budget details
-{ "resource": "budgets", "action": "get", "id": "67890" }
-
-// List billable budgets
-{ "resource": "budgets", "action": "list", "filter": { "billable": "true" } }
-```
-
 ### Reports
 
 ```json
@@ -463,7 +446,10 @@ Response:
 - `pipeline_id` - Filter by pipeline
 - `stage_status_id` - Stage: `1`=open, `2`=won, `3`=lost
 - `type` - Type: `1`=deal, `2`=budget
+- `budget` - Filter by budget flag: `true`=budgets only, `false`=deals only
 - `budget_status` - Budget status: `1`=open, `2`=closed
+
+> **Note:** Budgets are deals with `budget=true`. There is no separate `/budgets` endpoint. Use `filter[budget]=true` or `filter[type]=2` to list only budgets.
 
 ### Bookings
 
@@ -475,14 +461,6 @@ Response:
 - `after` / `before` - Date range
 - `booking_type` - Type: `event` (absence) or `service` (budget)
 - `draft` - Tentative status: `true`/`false`
-
-### Budgets
-
-- `project_id` - Filter by project
-- `company_id` - Filter by company
-- `deal_id` - Filter by deal
-- `billable` - Filter by billable status: `true`/`false`
-- `budget_type` - Filter by budget type
 
 ### Pages
 

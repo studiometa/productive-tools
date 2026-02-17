@@ -36,6 +36,7 @@ function parseListOptions(ctx: CommandContext): ListDealsOptions {
   if (ctx.options.pipeline) options.pipelineId = String(ctx.options.pipeline);
   if (ctx.options.status) options.status = String(ctx.options.status);
   if (ctx.options.type) options.dealType = String(ctx.options.type);
+  if (ctx.options.budget === true) options.dealType = 'budget';
   if (ctx.options['budget-status']) options.budgetStatus = String(ctx.options['budget-status']);
 
   const { page, perPage } = ctx.getPagination();

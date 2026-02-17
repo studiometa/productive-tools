@@ -188,10 +188,6 @@ export type {
   ListAttachmentsOptions,
 } from './executors/attachments/index.js';
 
-// Budgets executors
-export { buildBudgetFilters, getBudget, listBudgets } from './executors/budgets/index.js';
-export type { GetBudgetOptions, ListBudgetsOptions } from './executors/budgets/index.js';
-
 // Pages executors
 export {
   buildPageFilters,

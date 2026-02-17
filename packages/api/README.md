@@ -75,7 +75,6 @@ The `ProductiveApi` class provides methods for:
 - **Tasks** — `getTasks`, `getTask`, `createTask`, `updateTask`
 - **People** — `getPeople`, `getPerson`
 - **Services** — `getServices`
-- **Budgets** — `getBudgets`
 - **Companies** — `getCompanies`, `getCompany`, `createCompany`, `updateCompany`
 - **Comments** — `getComments`, `getComment`, `createComment`, `updateComment`
 - **Timers** — `getTimers`, `getTimer`, `startTimer`, `stopTimer`

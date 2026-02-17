@@ -23,7 +23,6 @@ export type {
   ProductiveApiResponse,
   ProductiveAttachment,
   ProductiveBooking,
-  ProductiveBudget,
   ProductiveComment,
   ProductiveCompany,
   ProductiveConfig,
@@ -54,7 +53,6 @@ export {
   formatDeal,
   formatAttachment,
   formatBooking,
-  formatBudget,
   formatPage,
   formatDiscussion,
   // List/single/auto formatting
@@ -82,7 +80,6 @@ export type {
   FormattedTask,
   FormattedPerson,
   FormattedService,
-  FormattedBudget,
 } from './formatters/types.js';
 
 export type { FormattedCompany } from './formatters/company.js';

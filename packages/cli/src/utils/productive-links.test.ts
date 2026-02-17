@@ -7,7 +7,6 @@ import {
   serviceUrl,
   timeEntriesUrl,
   personUrl,
-  budgetUrl,
   linkedId,
   linkedProject,
   linkedTask,
@@ -70,13 +69,6 @@ describe('productive-links', () => {
     });
   });
 
-  describe('budgetUrl', () => {
-    it('should generate correct budget URL', () => {
-      const url = budgetUrl('444');
-      expect(url).toBe('https://app.productive.io/test-org-123/budgets/444');
-    });
-  });
-
   describe('linkedId', () => {
     it('should create clickable link for project', () => {
       const result = linkedId('456', 'project');
@@ -107,12 +99,6 @@ describe('productive-links', () => {
       const result = linkedId('999', 'time');
       expect(result).toContain('#999');
       expect(result).toContain('https://app.productive.io/test-org-123/time');
-    });
-
-    it('should create clickable link for budget', () => {
-      const result = linkedId('444', 'budget');
-      expect(result).toContain('#444');
-      expect(result).toContain('https://app.productive.io/test-org-123/budgets/444');
     });
 
     it('should return plain ID when colors disabled', () => {
@@ -202,11 +188,6 @@ describe('productive-links without org ID', () => {
 
   it('should return empty string for personUrl without org ID', () => {
     const url = personUrl('333');
-    expect(url).toBe('');
-  });
-
-  it('should return empty string for budgetUrl without org ID', () => {
-    const url = budgetUrl('444');
     expect(url).toBe('');
   });
 

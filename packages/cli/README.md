@@ -47,11 +47,10 @@ productive <command> [subcommand] [options]
 | `tasks`      |       | List, get, create, update tasks                              |
 | `people`     |       | List and get people                                          |
 | `services`   | `svc` | List services                                                |
-| `budgets`    |       | List budgets                                                 |
 | `companies`  |       | List, get, create, update companies                          |
 | `comments`   |       | List, get, create, update comments                           |
 | `timers`     |       | List, get, start, stop timers                                |
-| `deals`      |       | List, get, create, update deals                              |
+| `deals`      |       | List, get, create, update deals and budgets (`--budget`)     |
 | `bookings`   |       | List, get, create, update bookings                           |
 | `reports`    |       | Generate reports (time, project, budget, person)             |
 | `resolve`    |       | Resolve human-friendly IDs (email, project number)           |

@@ -212,43 +212,6 @@ export function getDealHints(dealId: string): ContextualHints {
 }
 
 /**
- * Generate hints for a budget
- */
-export function getBudgetHints(budgetId: string): ContextualHints {
-  return {
-    related_resources: [
-      {
-        resource: 'services',
-        description: 'Get services (budget lines) for this budget',
-        example: {
-          resource: 'services',
-          action: 'list',
-          filter: { budget_id: budgetId },
-        },
-      },
-      {
-        resource: 'time',
-        description: 'Get time entries for this budget',
-        example: {
-          resource: 'time',
-          action: 'list',
-          filter: { budget_id: budgetId },
-        },
-      },
-      {
-        resource: 'bookings',
-        description: 'Get bookings for this budget',
-        example: {
-          resource: 'bookings',
-          action: 'list',
-          filter: { budget_id: budgetId },
-        },
-      },
-    ],
-  };
-}
-
-/**
  * Generate hints for a person
  */
 export function getPersonHints(personId: string): ContextualHints {

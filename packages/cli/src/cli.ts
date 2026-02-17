@@ -3,7 +3,6 @@
 import { handleApiCommand, showApiHelp } from './commands/api.js';
 import { handleAttachmentsCommand, showAttachmentsHelp } from './commands/attachments/index.js';
 import { handleBookingsCommand, showBookingsHelp } from './commands/bookings/index.js';
-import { handleBudgetsCommand, showBudgetsHelp } from './commands/budgets/index.js';
 import { handleCacheCommand, showCacheHelp } from './commands/cache.js';
 import { handleCommentsCommand, showCommentsHelp } from './commands/comments/index.js';
 import { handleCompaniesCommand, showCompaniesHelp } from './commands/companies/index.js';
@@ -66,9 +65,6 @@ ${colors.bold('COMMANDS:')}
   services, svc       Manage services
     list, ls            List services
 
-  budgets             Manage budgets
-    list, ls            List budgets
-
   companies           Manage companies (clients)
     list, ls            List companies
     get <id>            Get company details
@@ -93,9 +89,9 @@ ${colors.bold('COMMANDS:')}
     stop <id>           Stop a timer
 
   deals               Manage deals and budgets
-    list, ls            List deals
-    get <id>            Get deal details
-    add                 Create deal/budget
+    list, ls            List deals (use --budget for budgets only)
+    get <id>            Get deal/budget details
+    add                 Create deal/budget (use --budget for budgets)
     update <id>         Update deal
 
   bookings            Manage resource bookings
@@ -301,14 +297,6 @@ async function main(): Promise<void> {
           process.exit(0);
         }
         await handleServicesCommand(subcommand || 'list', positional, options);
-        break;
-
-      case 'budgets':
-        if (wantsHelp) {
-          showBudgetsHelp(subcommand);
-          process.exit(0);
-        }
-        await handleBudgetsCommand(subcommand || 'list', positional, options);
         break;
 
       case 'companies':

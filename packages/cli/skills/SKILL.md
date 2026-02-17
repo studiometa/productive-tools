@@ -183,13 +183,6 @@ productive svc ls                     # Alias
 productive services list --filter deal_id=<id>
 ```
 
-### Budgets (Deals)
-
-```bash
-productive budgets list
-productive budgets get <id>
-```
-
 ### Companies
 
 ```bash

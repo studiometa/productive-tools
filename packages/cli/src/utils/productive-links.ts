@@ -68,21 +68,12 @@ export function personUrl(personId: string): string {
 }
 
 /**
- * Generate URL to a budget in Productive.io
- */
-export function budgetUrl(budgetId: string): string {
-  const orgId = getOrgId();
-  if (!orgId) return '';
-  return `${PRODUCTIVE_BASE_URL}/${orgId}/budgets/${budgetId}`;
-}
-
-/**
  * Format an ID as a clickable link
  * Shows as #ID and links to the appropriate Productive.io page
  */
 export function linkedId(
   id: string,
-  type: 'project' | 'task' | 'service' | 'person' | 'time' | 'budget',
+  type: 'project' | 'task' | 'service' | 'person' | 'time',
 ): string {
   let url: string;
 
@@ -101,9 +92,6 @@ export function linkedId(
       break;
     case 'time':
       url = timeEntriesUrl();
-      break;
-    case 'budget':
-      url = budgetUrl(id);
       break;
     default:
       url = '';

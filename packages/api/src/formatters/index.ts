@@ -18,7 +18,6 @@ export type {
   FormattedTask,
   FormattedPerson,
   FormattedService,
-  FormattedBudget,
 } from './types.js';
 
 export type { FormattedCompany } from './company.js';
@@ -38,7 +37,6 @@ export { formatProject } from './project.js';
 export { formatTask } from './task.js';
 export { formatPerson } from './person.js';
 export { formatService } from './service.js';
-export { formatBudget } from './budget.js';
 export { formatCompany } from './company.js';
 export { formatComment } from './comment.js';
 export { formatTimer } from './timer.js';
@@ -133,7 +131,6 @@ export function formatSingleResponse<T>(
 
 import { formatAttachment } from './attachment.js';
 import { formatBooking } from './booking.js';
-import { formatBudget } from './budget.js';
 import { formatComment } from './comment.js';
 import { formatCompany } from './company.js';
 import { formatDeal } from './deal.js';
@@ -175,11 +172,6 @@ function getFormatterForType(
       ) => Record<string, unknown>;
     case 'services':
       return formatService as (
-        item: JsonApiResource,
-        options?: FormatOptions,
-      ) => Record<string, unknown>;
-    case 'budgets':
-      return formatBudget as (
         item: JsonApiResource,
         options?: FormatOptions,
       ) => Record<string, unknown>;

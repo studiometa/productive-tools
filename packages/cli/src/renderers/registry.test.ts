@@ -55,9 +55,9 @@ describe('renderer registry', () => {
         render: vi.fn(),
       };
 
-      registerRenderer('budget', 'human', mockRenderer);
+      registerRenderer('deal', 'human', mockRenderer);
 
-      expect(getRenderer('budget', 'human')).toBe(mockRenderer);
+      expect(getRenderer('deal', 'human')).toBe(mockRenderer);
     });
 
     it('should allow overriding wildcard with specific renderer', () => {

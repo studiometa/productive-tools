@@ -14,7 +14,6 @@ import {
   formatTask as cliFormatTask,
   formatPerson as cliFormatPerson,
   formatService as cliFormatService,
-  formatBudget as cliFormatBudget,
   formatCompany as cliFormatCompany,
   formatComment as cliFormatComment,
   formatTimer as cliFormatTimer,
@@ -138,20 +137,6 @@ export function formatService(
   const result = cliFormatService(service, MCP_FORMAT_OPTIONS);
   if (options?.compact) {
     return compactify(result, ['budgeted_time', 'worked_time']);
-  }
-  return result;
-}
-
-/**
- * Format budget for agent consumption
- */
-export function formatBudget(
-  budget: JsonApiResource,
-  options?: McpFormatOptions,
-): Record<string, unknown> {
-  const result = cliFormatBudget(budget, MCP_FORMAT_OPTIONS);
-  if (options?.compact) {
-    return compactify(result, ['budget_type', 'currency']);
   }
   return result;
 }

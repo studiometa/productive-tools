@@ -110,7 +110,6 @@ describe('formatResponse', () => {
       'projects',
       'people',
       'services',
-      'budgets',
       'companies',
       'comments',
       'timers',
