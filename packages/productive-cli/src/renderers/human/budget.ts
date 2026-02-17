@@ -4,7 +4,8 @@
  * Displays budgets with time and monetary budget information.
  */
 
-import type { FormattedBudget, FormattedPagination } from '../../formatters/types.js';
+import type { FormattedBudget, FormattedPagination } from '@studiometa/productive-api';
+
 import type { ListRenderer, RenderContext } from '../types.js';
 
 import { colors } from '../../utils/colors.js';

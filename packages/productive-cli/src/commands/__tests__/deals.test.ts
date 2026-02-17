@@ -1,58 +1,29 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { ProductiveApi } from '../../api.js';
+import type { ProductiveApi } from '../../api.js';
+
+import { createTestContext } from '../../context.js';
+import { dealsList, dealsGet, dealsAdd, dealsUpdate } from '../deals/handlers.js';
 import { handleDealsCommand } from '../deals/index.js';
-
-vi.mock('../../api.js', () => ({
-  ProductiveApi: vi.fn(function () {}),
-  ProductiveApiError: class ProductiveApiError extends Error {
-    constructor(
-      message: string,
-      public statusCode?: number,
-      public response?: unknown,
-    ) {
-      super(message);
-      this.name = 'ProductiveApiError';
-    }
-  },
-}));
-
-vi.mock('../../output.js', () => ({
-  OutputFormatter: vi.fn(function (format, noColor) {
-    return {
-      format,
-      noColor,
-      output: vi.fn(),
-      error: vi.fn(),
-      success: vi.fn(),
-    };
-  }),
-  createSpinner: vi.fn(() => ({
-    start: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-  })),
-}));
 
 describe('deals command', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
-  describe('list command', () => {
+  describe('dealsList', () => {
     it('should list deals', async () => {
-      const mockDeals = {
+      const getDeals = vi.fn().mockResolvedValue({
         data: [
           {
             id: '1',
+            type: 'deals',
             attributes: {
               name: 'Big Deal',
               number: 'D-001',
@@ -64,35 +35,35 @@ describe('deals command', () => {
         ],
         meta: { total: 1, page: 1, per_page: 100 },
         included: [],
-      };
-
-      const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleDealsCommand('list', [], {});
+      const ctx = createTestContext({
+        api: { getDeals } as unknown as ProductiveApi,
+      });
 
-      expect(mockApi.getDeals).toHaveBeenCalledWith({
+      await dealsList(ctx);
+
+      expect(getDeals).toHaveBeenCalledWith({
         page: 1,
         perPage: 100,
         filter: {},
         sort: '',
         include: ['company', 'deal_status', 'responsible'],
       });
-      expect(processExitSpy).not.toHaveBeenCalled();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should filter by company', async () => {
-      const mockDeals = { data: [], meta: {}, included: [] };
-      const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getDeals = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getDeals } as unknown as ProductiveApi,
+        options: { company: '123', format: 'json' },
       });
 
-      await handleDealsCommand('list', [], { company: '123' });
+      await dealsList(ctx);
 
-      expect(mockApi.getDeals).toHaveBeenCalledWith(
+      expect(getDeals).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: { company_id: '123' },
         }),
@@ -100,15 +71,16 @@ describe('deals command', () => {
     });
 
     it('should filter by status (open)', async () => {
-      const mockDeals = { data: [], meta: {}, included: [] };
-      const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getDeals = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getDeals } as unknown as ProductiveApi,
+        options: { status: 'open', format: 'json' },
       });
 
-      await handleDealsCommand('list', [], { status: 'open' });
+      await dealsList(ctx);
 
-      expect(mockApi.getDeals).toHaveBeenCalledWith(
+      expect(getDeals).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: { stage_status_id: '1' },
         }),
@@ -116,15 +88,16 @@ describe('deals command', () => {
     });
 
     it('should filter by status (won)', async () => {
-      const mockDeals = { data: [], meta: {}, included: [] };
-      const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getDeals = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getDeals } as unknown as ProductiveApi,
+        options: { status: 'won', format: 'json' },
       });
 
-      await handleDealsCommand('list', [], { status: 'won' });
+      await dealsList(ctx);
 
-      expect(mockApi.getDeals).toHaveBeenCalledWith(
+      expect(getDeals).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: { stage_status_id: '2' },
         }),
@@ -132,15 +105,16 @@ describe('deals command', () => {
     });
 
     it('should filter by status (lost)', async () => {
-      const mockDeals = { data: [], meta: {}, included: [] };
-      const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getDeals = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getDeals } as unknown as ProductiveApi,
+        options: { status: 'lost', format: 'json' },
       });
 
-      await handleDealsCommand('list', [], { status: 'lost' });
+      await dealsList(ctx);
 
-      expect(mockApi.getDeals).toHaveBeenCalledWith(
+      expect(getDeals).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: { stage_status_id: '3' },
         }),
@@ -148,15 +122,16 @@ describe('deals command', () => {
     });
 
     it('should filter by type (deal)', async () => {
-      const mockDeals = { data: [], meta: {}, included: [] };
-      const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getDeals = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getDeals } as unknown as ProductiveApi,
+        options: { type: 'deal', format: 'json' },
       });
 
-      await handleDealsCommand('list', [], { type: 'deal' });
+      await dealsList(ctx);
 
-      expect(mockApi.getDeals).toHaveBeenCalledWith(
+      expect(getDeals).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: { type: '1' },
         }),
@@ -164,15 +139,16 @@ describe('deals command', () => {
     });
 
     it('should filter by type (budget)', async () => {
-      const mockDeals = { data: [], meta: {}, included: [] };
-      const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getDeals = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getDeals } as unknown as ProductiveApi,
+        options: { type: 'budget', format: 'json' },
       });
 
-      await handleDealsCommand('list', [], { type: 'budget' });
+      await dealsList(ctx);
 
-      expect(mockApi.getDeals).toHaveBeenCalledWith(
+      expect(getDeals).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: { type: '2' },
         }),
@@ -180,20 +156,22 @@ describe('deals command', () => {
     });
 
     it('should filter deals with extended filters', async () => {
-      const mockDeals = { data: [], meta: {}, included: [] };
-      const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getDeals = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getDeals } as unknown as ProductiveApi,
+        options: {
+          project: 'project-1',
+          responsible: 'person-1',
+          pipeline: 'pipeline-1',
+          'budget-status': 'open',
+          format: 'json',
+        },
       });
 
-      await handleDealsCommand('list', [], {
-        project: 'project-1',
-        responsible: 'person-1',
-        pipeline: 'pipeline-1',
-        'budget-status': 'open',
-      });
+      await dealsList(ctx);
 
-      expect(mockApi.getDeals).toHaveBeenCalledWith(
+      expect(getDeals).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: {
             project_id: 'project-1',
@@ -206,15 +184,16 @@ describe('deals command', () => {
     });
 
     it('should filter deals by budget-status closed', async () => {
-      const mockDeals = { data: [], meta: {}, included: [] };
-      const mockApi = { getDeals: vi.fn().mockResolvedValue(mockDeals) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const getDeals = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+      const ctx = createTestContext({
+        api: { getDeals } as unknown as ProductiveApi,
+        options: { 'budget-status': 'closed', format: 'json' },
       });
 
-      await handleDealsCommand('list', [], { 'budget-status': 'closed' });
+      await dealsList(ctx);
 
-      expect(mockApi.getDeals).toHaveBeenCalledWith(
+      expect(getDeals).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: { budget_status: '2' },
         }),
@@ -222,11 +201,12 @@ describe('deals command', () => {
     });
   });
 
-  describe('get command', () => {
+  describe('dealsGet', () => {
     it('should get a deal by id', async () => {
-      const mockDeal = {
+      const getDeal = vi.fn().mockResolvedValue({
         data: {
           id: '1',
+          type: 'deals',
           attributes: {
             name: 'Big Deal',
             number: 'D-001',
@@ -234,24 +214,27 @@ describe('deals command', () => {
           },
         },
         included: [],
-      };
-
-      const mockApi = { getDeal: vi.fn().mockResolvedValue(mockDeal) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleDealsCommand('get', ['1'], {});
+      const ctx = createTestContext({
+        api: { getDeal } as unknown as ProductiveApi,
+        options: { format: 'json' },
+      });
 
-      expect(mockApi.getDeal).toHaveBeenCalledWith('1', {
+      await dealsGet(['1'], ctx);
+
+      expect(getDeal).toHaveBeenCalledWith('1', {
         include: ['company', 'deal_status', 'responsible', 'project'],
       });
-      expect(processExitSpy).not.toHaveBeenCalled();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should exit with error when id is missing', async () => {
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+      const ctx = createTestContext();
+
       try {
-        await handleDealsCommand('get', [], {});
+        await dealsGet([], ctx);
       } catch {
         // exitWithValidationError throws
       }
@@ -260,11 +243,12 @@ describe('deals command', () => {
     });
   });
 
-  describe('add command', () => {
+  describe('dealsAdd', () => {
     it('should create a deal', async () => {
-      const mockDeal = {
+      const createDeal = vi.fn().mockResolvedValue({
         data: {
           id: '1',
+          type: 'deals',
           attributes: {
             name: 'New Deal',
             number: 'D-002',
@@ -272,16 +256,16 @@ describe('deals command', () => {
             created_at: '2024-01-15T00:00:00Z',
           },
         },
-      };
-
-      const mockApi = { createDeal: vi.fn().mockResolvedValue(mockDeal) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleDealsCommand('add', [], { name: 'New Deal', company: '123' });
+      const ctx = createTestContext({
+        api: { createDeal } as unknown as ProductiveApi,
+        options: { name: 'New Deal', company: '123', format: 'json' },
+      });
 
-      expect(mockApi.createDeal).toHaveBeenCalledWith({
+      await dealsAdd(ctx);
+
+      expect(createDeal).toHaveBeenCalledWith({
         name: 'New Deal',
         company_id: '123',
         date: undefined,
@@ -292,9 +276,10 @@ describe('deals command', () => {
     });
 
     it('should create a budget', async () => {
-      const mockDeal = {
+      const createDeal = vi.fn().mockResolvedValue({
         data: {
           id: '1',
+          type: 'deals',
           attributes: {
             name: 'New Budget',
             number: 'B-001',
@@ -302,16 +287,16 @@ describe('deals command', () => {
             created_at: '2024-01-15T00:00:00Z',
           },
         },
-      };
-
-      const mockApi = { createDeal: vi.fn().mockResolvedValue(mockDeal) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
       });
 
-      await handleDealsCommand('add', [], { name: 'New Budget', company: '123', budget: true });
+      const ctx = createTestContext({
+        api: { createDeal } as unknown as ProductiveApi,
+        options: { name: 'New Budget', company: '123', budget: true, format: 'json' },
+      });
 
-      expect(mockApi.createDeal).toHaveBeenCalledWith({
+      await dealsAdd(ctx);
+
+      expect(createDeal).toHaveBeenCalledWith({
         name: 'New Budget',
         company_id: '123',
         date: undefined,
@@ -321,34 +306,55 @@ describe('deals command', () => {
     });
 
     it('should exit with error when name is missing', async () => {
-      await handleDealsCommand('add', [], { company: '123' });
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { company: '123', format: 'json' },
+      });
+
+      await dealsAdd(ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
 
     it('should exit with error when company is missing', async () => {
-      await handleDealsCommand('add', [], { name: 'New Deal' });
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { name: 'New Deal', format: 'json' },
+      });
+
+      await dealsAdd(ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
   });
 
-  describe('update command', () => {
+  describe('dealsUpdate', () => {
     it('should update a deal', async () => {
-      const mockDeal = { data: { id: '1', attributes: {} } };
-      const mockApi = { updateDeal: vi.fn().mockResolvedValue(mockDeal) };
-      vi.mocked(ProductiveApi).mockImplementation(function () {
-        return mockApi as any;
+      const updateDeal = vi.fn().mockResolvedValue({
+        data: { id: '1', type: 'deals', attributes: {} },
       });
 
-      await handleDealsCommand('update', ['1'], { name: 'Updated Deal' });
+      const ctx = createTestContext({
+        api: { updateDeal } as unknown as ProductiveApi,
+        options: { name: 'Updated Deal', format: 'json' },
+      });
 
-      expect(mockApi.updateDeal).toHaveBeenCalledWith('1', { name: 'Updated Deal' });
+      await dealsUpdate(['1'], ctx);
+
+      expect(updateDeal).toHaveBeenCalledWith('1', { name: 'Updated Deal' });
     });
 
     it('should exit with error when id is missing', async () => {
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { name: 'Updated', format: 'json' },
+      });
+
       try {
-        await handleDealsCommand('update', [], { name: 'Updated' });
+        await dealsUpdate([], ctx);
       } catch {
         // exitWithValidationError throws
       }
@@ -357,15 +363,109 @@ describe('deals command', () => {
     });
 
     it('should exit with error when no updates specified', async () => {
-      await handleDealsCommand('update', ['1'], {});
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        options: { format: 'json' },
+      });
+
+      await dealsUpdate(['1'], ctx);
 
       expect(processExitSpy).toHaveBeenCalled();
     });
   });
 
-  describe('unknown subcommand', () => {
+  describe('format variants', () => {
+    const mockDeal = {
+      id: '1',
+      type: 'deals',
+      attributes: {
+        name: 'Big Deal',
+        sales_status_id: 1,
+        value: 50000,
+        currency: 'EUR',
+        probability: 75,
+        created_at: '2024-01-15T10:00:00Z',
+      },
+      relationships: {
+        company: { data: { id: 'c1' } },
+        responsible: { data: { id: 'p1' } },
+      },
+    };
+
+    it('should list deals in csv format', async () => {
+      const getDeals = vi
+        .fn()
+        .mockResolvedValue({ data: [mockDeal], meta: { total: 1 }, included: [] });
+      const ctx = createTestContext({
+        api: { getDeals } as unknown as ProductiveApi,
+        options: { format: 'csv' },
+      });
+      await dealsList(ctx);
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should list deals in human format', async () => {
+      const getDeals = vi
+        .fn()
+        .mockResolvedValue({ data: [mockDeal], meta: { total: 1 }, included: [] });
+      const ctx = createTestContext({
+        api: { getDeals } as unknown as ProductiveApi,
+        options: { format: 'human' },
+      });
+      await dealsList(ctx);
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should get a deal in human format', async () => {
+      const getDeal = vi.fn().mockResolvedValue({ data: mockDeal, included: [] });
+      const ctx = createTestContext({
+        api: { getDeal } as unknown as ProductiveApi,
+        options: { format: 'human' },
+      });
+      await dealsGet(['1'], ctx);
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should create a deal in human format', async () => {
+      const createDeal = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'deals',
+          attributes: { name: 'New Deal', sales_status_id: 1, created_at: '2024-01-15T10:00:00Z' },
+          relationships: { company: { data: { id: '100' } } },
+        },
+      });
+      const ctx = createTestContext({
+        api: { createDeal } as unknown as ProductiveApi,
+        options: { name: 'New Deal', company: '100', format: 'human' },
+      });
+      await dealsAdd(ctx);
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should update a deal in human format', async () => {
+      const updateDeal = vi.fn().mockResolvedValue({
+        data: { id: '1', type: 'deals', attributes: {} },
+      });
+      const ctx = createTestContext({
+        api: { updateDeal } as unknown as ProductiveApi,
+        options: { name: 'Updated', format: 'human' },
+      });
+      await dealsUpdate(['1'], ctx);
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('command routing', () => {
     it('should exit with error for unknown subcommand', async () => {
-      await handleDealsCommand('unknown', [], {});
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      await handleDealsCommand('unknown', [], {
+        format: 'json',
+        token: 'test-token',
+        'org-id': 'test-org',
+      });
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });

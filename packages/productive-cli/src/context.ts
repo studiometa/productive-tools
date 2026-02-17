@@ -25,8 +25,9 @@
  * ```
  */
 
+import type { ResolvableResourceType } from '@studiometa/productive-core';
+
 import type { OutputFormat, ProductiveConfig } from './types.js';
-import type { ResolvableResourceType } from './utils/resource-resolver.js';
 import type { Spinner } from './utils/spinner.js';
 
 import { ProductiveApi } from './api.js';
@@ -209,8 +210,8 @@ export function createContext(options: CommandOptions = {}): CommandContext {
 export function createTestContext(overrides: Partial<CommandContext> = {}): CommandContext {
   const defaultConfig: ProductiveConfig = {
     apiToken: 'test-token',
-    organizationId: 'test-org',
-    userId: 'test-user',
+    organizationId: '12345',
+    userId: '500521',
     baseUrl: 'https://api.productive.io/api/v2',
   };
 
@@ -227,8 +228,6 @@ export function createTestContext(overrides: Partial<CommandContext> = {}): Comm
     stop: () => noopSpinner,
     setText: () => noopSpinner,
   } as unknown as Spinner;
-
-  const defaultFormatter = new OutputFormatter('json', true);
 
   // Create a mock cache (disabled)
   const mockCache = new CacheStore(false);
@@ -249,15 +248,25 @@ export function createTestContext(overrides: Partial<CommandContext> = {}): Comm
     },
   ) as ProductiveApi;
 
+  const opts = overrides.options ?? defaultOptions;
+  const format = (opts.format || opts.f || 'json') as OutputFormat;
+  const noColor = opts['no-color'] !== false;
+  const formatter = overrides.formatter ?? new OutputFormatter(format, noColor);
+
   return {
     api: overrides.api ?? mockApi,
-    formatter: overrides.formatter ?? defaultFormatter,
+    formatter,
     config: overrides.config ?? defaultConfig,
     cache: overrides.cache ?? mockCache,
-    options: overrides.options ?? defaultOptions,
+    options: opts,
     createSpinner: overrides.createSpinner ?? (() => noopSpinner),
-    getPagination: overrides.getPagination ?? (() => ({ page: 1, perPage: 100 })),
-    getSort: overrides.getSort ?? (() => ''),
+    getPagination:
+      overrides.getPagination ??
+      (() => ({
+        page: parseInt(String(opts.page || opts.p || '1')),
+        perPage: parseInt(String(opts.size || opts.s || '100')),
+      })),
+    getSort: overrides.getSort ?? (() => String(opts.sort || '')),
     resolveFilters: overrides.resolveFilters ?? noopResolveFilters,
     tryResolveValue: overrides.tryResolveValue ?? noopTryResolveValue,
   };

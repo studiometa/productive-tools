@@ -1,7 +1,7 @@
 /**
  * Response formatters for agent-friendly output
  *
- * This module re-exports formatters from @studiometa/productive-cli
+ * This module re-exports formatters from @studiometa/productive-api
  * with MCP-specific defaults (no relationship IDs, no timestamps).
  *
  * Supports compact mode to reduce token usage by omitting verbose fields
@@ -24,7 +24,7 @@ import {
   type JsonApiMeta,
   type FormatOptions,
   type FormattedPagination,
-} from '@studiometa/productive-cli';
+} from '@studiometa/productive-api';
 
 // Re-export types
 export type { JsonApiResource, JsonApiMeta, FormatOptions, FormattedPagination };

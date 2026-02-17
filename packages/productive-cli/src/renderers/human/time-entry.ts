@@ -4,7 +4,8 @@
  * Displays time entries with formatted dates, durations, and notes.
  */
 
-import type { FormattedTimeEntry, FormattedPagination } from '../../formatters/types.js';
+import type { FormattedTimeEntry, FormattedPagination } from '@studiometa/productive-api';
+
 import type { ListRenderer, Renderer, RenderContext } from '../types.js';
 
 import { colors } from '../../utils/colors.js';

@@ -5,7 +5,7 @@
  * Each renderer handles a specific output format (json, csv, table, human, kanban).
  */
 
-import type { FormattedPagination } from '../formatters/types.js';
+import type { FormattedPagination } from '@studiometa/productive-api';
 
 /**
  * Supported output formats

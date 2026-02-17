@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { setColorEnabled } from '../colors.js';
 import {
@@ -7,7 +7,12 @@ import {
   serviceUrl,
   timeEntriesUrl,
   personUrl,
+  budgetUrl,
   linkedId,
+  linkedProject,
+  linkedTask,
+  linkedPerson,
+  linkedService,
 } from '../productive-links.js';
 
 // Mock the config module
@@ -65,6 +70,13 @@ describe('productive-links', () => {
     });
   });
 
+  describe('budgetUrl', () => {
+    it('should generate correct budget URL', () => {
+      const url = budgetUrl('444');
+      expect(url).toBe('https://app.productive.io/test-org-123/budgets/444');
+    });
+  });
+
   describe('linkedId', () => {
     it('should create clickable link for project', () => {
       const result = linkedId('456', 'project');
@@ -91,6 +103,18 @@ describe('productive-links', () => {
       expect(result).toContain('https://app.productive.io/test-org-123/people/333');
     });
 
+    it('should create clickable link for time', () => {
+      const result = linkedId('999', 'time');
+      expect(result).toContain('#999');
+      expect(result).toContain('https://app.productive.io/test-org-123/time');
+    });
+
+    it('should create clickable link for budget', () => {
+      const result = linkedId('444', 'budget');
+      expect(result).toContain('#444');
+      expect(result).toContain('https://app.productive.io/test-org-123/budgets/444');
+    });
+
     it('should return plain ID when colors disabled', () => {
       setColorEnabled(false);
       const result = linkedId('456', 'project');
@@ -98,21 +122,118 @@ describe('productive-links', () => {
       expect(result).not.toContain('\x1b]8;;');
     });
   });
+
+  describe('linkedProject', () => {
+    it('should create clickable link for project text', () => {
+      const result = linkedProject('My Project', '456');
+      expect(result).toContain('My Project');
+      expect(result).toContain('https://app.productive.io/test-org-123/projects/456');
+      expect(result).toContain('\x1b]8;;');
+    });
+  });
+
+  describe('linkedTask', () => {
+    it('should create clickable link for task text', () => {
+      const result = linkedTask('My Task', '789');
+      expect(result).toContain('My Task');
+      expect(result).toContain('https://app.productive.io/test-org-123/tasks/789');
+      expect(result).toContain('\x1b]8;;');
+    });
+  });
+
+  describe('linkedPerson', () => {
+    it('should create clickable link for person text', () => {
+      const result = linkedPerson('John Doe', '333');
+      expect(result).toContain('John Doe');
+      expect(result).toContain('https://app.productive.io/test-org-123/people/333');
+      expect(result).toContain('\x1b]8;;');
+    });
+  });
+
+  describe('linkedService', () => {
+    it('should create clickable link for service text without deal', () => {
+      const result = linkedService('Dev Service', '111');
+      expect(result).toContain('Dev Service');
+      expect(result).toContain('https://app.productive.io/test-org-123/services/111');
+      expect(result).toContain('\x1b]8;;');
+    });
+
+    it('should create clickable link for service text with deal', () => {
+      const result = linkedService('Dev Service', '111', '222');
+      expect(result).toContain('Dev Service');
+      expect(result).toContain(
+        'https://app.productive.io/test-org-123/deals/222/budget?service=111',
+      );
+    });
+  });
 });
 
 describe('productive-links without org ID', () => {
   beforeEach(async () => {
-    // Reset module to test without org ID
-    vi.doMock('../../config.js', () => ({
-      getConfig: vi.fn(() => ({ organizationId: undefined })),
-    }));
+    setColorEnabled(true);
+    const configModule = await import('../../config.js');
+    vi.mocked(configModule.getConfig).mockReturnValue({ organizationId: undefined } as any);
   });
 
-  it('should return empty string when org ID is missing', async () => {
-    // Note: Due to module caching, this test may need adjustment
-    // The mock above should cause projectUrl to return ''
-    await import('../productive-links.js');
-    // The mock is set up but due to module caching, the test mainly
-    // verifies the code path exists
+  afterEach(async () => {
+    const configModule = await import('../../config.js');
+    vi.mocked(configModule.getConfig).mockReturnValue({ organizationId: 'test-org-123' } as any);
+  });
+
+  it('should return empty string for projectUrl without org ID', () => {
+    const url = projectUrl('456');
+    expect(url).toBe('');
+  });
+
+  it('should return empty string for taskUrl without org ID', () => {
+    const url = taskUrl('789');
+    expect(url).toBe('');
+  });
+
+  it('should return empty string for serviceUrl without org ID', () => {
+    expect(serviceUrl('111')).toBe('');
+    expect(serviceUrl('111', '222')).toBe('');
+  });
+
+  it('should return empty string for timeEntriesUrl without org ID', () => {
+    expect(timeEntriesUrl()).toBe('');
+    expect(timeEntriesUrl('2024-01-15')).toBe('');
+  });
+
+  it('should return empty string for personUrl without org ID', () => {
+    const url = personUrl('333');
+    expect(url).toBe('');
+  });
+
+  it('should return empty string for budgetUrl without org ID', () => {
+    const url = budgetUrl('444');
+    expect(url).toBe('');
+  });
+
+  it('should return plain ID text for linkedId without org ID', () => {
+    const result = linkedId('456', 'project');
+    expect(result).toContain('#456');
+    // Should not contain OSC 8 link since URL is empty
+    expect(result).not.toContain('\x1b]8;;https');
+  });
+
+  it('should return plain text for linkedProject without org ID', () => {
+    const result = linkedProject('My Project', '456');
+    expect(result).toBe('My Project');
+  });
+
+  it('should return plain text for linkedTask without org ID', () => {
+    const result = linkedTask('My Task', '789');
+    expect(result).toBe('My Task');
+  });
+
+  it('should return plain text for linkedPerson without org ID', () => {
+    const result = linkedPerson('John Doe', '333');
+    expect(result).toBe('John Doe');
+  });
+
+  it('should return plain text for linkedService without org ID', () => {
+    expect(linkedService('Dev Service', '111')).toBe('Dev Service');
+    expect(linkedService('Dev Service', '111', '222')).toBe('Dev Service');
   });
 });

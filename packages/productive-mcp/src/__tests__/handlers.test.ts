@@ -6,7 +6,7 @@ import { UserInputError } from '../errors.js';
 import { executeToolWithCredentials } from '../handlers.js';
 
 // Mock the ProductiveApi
-vi.mock('@studiometa/productive-cli', () => {
+vi.mock('@studiometa/productive-api', () => {
   const mockApi = {
     getProjects: vi.fn(),
     getProject: vi.fn(),
@@ -67,13 +67,13 @@ vi.mock('@studiometa/productive-cli', () => {
   };
 });
 
-import { ProductiveApi } from '@studiometa/productive-cli';
+import { ProductiveApi } from '@studiometa/productive-api';
 
 describe('handlers', () => {
   const credentials: ProductiveCredentials = {
     apiToken: 'test-token',
     organizationId: 'test-org',
-    userId: 'test-user',
+    userId: '500521',
   };
 
   let mockApi: ReturnType<typeof ProductiveApi>;
@@ -360,7 +360,7 @@ describe('handlers', () => {
       it('should handle me action with userId', async () => {
         const mockResponse = {
           data: {
-            id: 'test-user',
+            id: '500521',
             type: 'people',
             attributes: { first_name: 'Test', last_name: 'User' },
           },
@@ -374,7 +374,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBeUndefined();
-        expect(mockApi.getPerson).toHaveBeenCalledWith('test-user');
+        expect(mockApi.getPerson).toHaveBeenCalledWith('500521');
       });
 
       it('should handle me action without userId', async () => {
@@ -1412,7 +1412,7 @@ describe('help handler', () => {
   const credentials: ProductiveCredentials = {
     apiToken: 'test-token',
     organizationId: 'test-org',
-    userId: 'test-user',
+    userId: '500521',
   };
 
   it('should return overview when no resource specified', async () => {
@@ -1477,7 +1477,7 @@ describe('query parameter', () => {
   const credentials: ProductiveCredentials = {
     apiToken: 'test-token',
     organizationId: 'test-org',
-    userId: 'test-user',
+    userId: '500521',
   };
 
   let mockApi: ReturnType<typeof ProductiveApi>;
@@ -1530,7 +1530,7 @@ describe('include parameter', () => {
   const credentials: ProductiveCredentials = {
     apiToken: 'test-token',
     organizationId: 'test-org',
-    userId: 'test-user',
+    userId: '500521',
   };
 
   let mockApi: ReturnType<typeof ProductiveApi>;
@@ -1835,7 +1835,7 @@ describe('smart ID resolution', () => {
   const credentials: ProductiveCredentials = {
     apiToken: 'test-token',
     organizationId: 'test-org',
-    userId: 'test-user',
+    userId: '500521',
   };
 
   let mockApi: ReturnType<typeof ProductiveApi>;
@@ -2324,7 +2324,7 @@ describe('smart ID resolution', () => {
     it('should not include hints for people me when no_hints is true', async () => {
       mockApi.getPerson.mockResolvedValue({
         data: {
-          id: 'test-user',
+          id: '500521',
           type: 'people',
           attributes: { first_name: 'Test', last_name: 'User' },
         },

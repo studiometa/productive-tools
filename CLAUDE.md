@@ -27,6 +27,56 @@
 - These scripts update version in root and all workspace packages simultaneously
 - Version is injected at build time from package.json (no manual sync needed)
 
+## Architecture
+
+4-package monorepo with clean dependency layering:
+
+```
+productive-api     → (nothing)          # types, API client, formatters
+productive-core    → productive-api     # executors with dependency injection
+productive-cli     → productive-core    # CLI commands, renderers, config+cache
+productive-mcp     → productive-core    # MCP server handlers, OAuth
+                   → productive-api
+```
+
+- **productive-api**: `ProductiveApi` (explicit config injection), resource types, formatters, `ProductiveApiError`, `ApiCache` interface
+- **productive-core**: pure executor functions `(options, context) → ExecutorResult<T>`, `ExecutorContext` with DI, `createResourceResolver()` factory, bridge functions (`fromCommandContext`, `fromHandlerContext`)
+- **productive-cli**: CLI commands, human/table/CSV renderers, keychain config, SQLite cache. Formatters re-export from `productive-api`.
+- **productive-mcp**: MCP tool handlers, OAuth, MCP-specific compact formatters. `resolve.ts` is a thin wrapper around core's resolver.
+
+Key principle: **executors are pure functions with zero side effects** — all dependencies injected via `ExecutorContext`. Tests use `createTestExecutorContext()` with no `vi.mock` needed.
+
+Resource resolution (email → person ID, project number → project ID) is handled by `createResourceResolver()` in core. Bridge functions create a resolver automatically — CLI/MCP handlers just call `fromCommandContext(ctx)` or `fromHandlerContext(ctx)`.
+
+## Testing Rules
+
+These rules are **mandatory** for all code in this monorepo:
+
+1. **Each package must have its own test suite approaching 100% coverage.** Every source file must have corresponding tests. Coverage thresholds are enforced per package in `vite.config.ts`.
+
+2. **Dependency injection everywhere.** Tests must use DI instead of `vi.mock()` wherever possible. The only acceptable uses of `vi.mock()` are for mocking Node.js built-in modules (e.g., `node:fs`, `node:os`) or third-party modules that don't support DI.
+   - **productive-core**: Use `createTestExecutorContext()` — never mock modules.
+   - **productive-cli**: Use `createTestContext()` with mock API/config/cache — test handler functions directly.
+   - **productive-mcp**: Use `createTestHandlerContext()` — test handler functions directly.
+   - **productive-api**: Use constructor injection (`new ProductiveApi({ config, fetch, cache })`) — mock the `fetch` function, never the module.
+
+3. **File system operations must be mocked.** Never read/write real user files in tests. Use `memfs` (already a devDependency) or mock `node:fs` to avoid side effects. The `config-store.ts`, `keychain-store.ts`, and `sqlite-cache.ts` tests must all use in-memory or mocked file systems.
+
+4. **Test file conventions:**
+   - Colocated tests go in `__tests__/` directories next to the source file.
+   - Test file names match source: `foo.ts` → `__tests__/foo.test.ts`.
+   - CLI command tests are centralized in `src/commands/__tests__/` (one file per resource).
+
+5. **No real API calls in tests.** All HTTP requests must be mocked via DI (injected `fetch`) or mock API objects.
+
+Build order: `productive-api` → `productive-core` → `productive-cli` / `productive-mcp`
+
+After changing `productive-core` source, rebuild before running CLI/MCP tests:
+
+```bash
+cd packages/productive-core && npx vite build
+```
+
 ---
 
 # AI Agents & Automation
@@ -280,41 +330,30 @@ done
 
 ## API Client Library
 
-For more complex integrations, use the Node.js library:
+For more complex integrations, use the `@studiometa/productive-api` package:
 
 ```typescript
-import { ProductiveApi, setConfig } from '@studiometa/productive-cli';
+import { ProductiveApi, ProductiveApiError } from '@studiometa/productive-api';
 
-// Configure
-setConfig('apiToken', process.env.PRODUCTIVE_API_TOKEN);
-setConfig('organizationId', process.env.PRODUCTIVE_ORG_ID);
-setConfig('userId', process.env.PRODUCTIVE_USER_ID);
+// Initialize with explicit config (no side effects)
+const api = new ProductiveApi({
+  config: {
+    apiToken: process.env.PRODUCTIVE_API_TOKEN!,
+    organizationId: process.env.PRODUCTIVE_ORG_ID!,
+  },
+});
 
-// Initialize API client
-const api = new ProductiveApi();
-
-// Async/await pattern
 async function automateTimeTracking() {
   try {
-    // Get active projects
-    const projects = await api.getProjects({
-      page: 1,
-      perPage: 100,
-      filter: {},
-    });
-
-    // Get services for first project
+    const projects = await api.getProjects({ page: 1, perPage: 100 });
     const projectId = projects.data[0].id;
-    const services = await api.getServices({
-      filter: { project_id: projectId },
-    });
+    const services = await api.getServices({ filter: { project_id: projectId } });
 
-    // Create time entry
     const timeEntry = await api.createTimeEntry({
       person_id: process.env.PRODUCTIVE_USER_ID!,
       service_id: services.data[0].id,
       date: new Date().toISOString().split('T')[0],
-      time: 480, // 8 hours
+      time: 480,
       note: 'Automated entry',
     });
 
@@ -322,13 +361,10 @@ async function automateTimeTracking() {
   } catch (error) {
     if (error instanceof ProductiveApiError) {
       console.error('API Error:', error.message, error.statusCode);
-    } else {
-      console.error('Unexpected error:', error);
     }
+    throw error;
   }
 }
-
-automateTimeTracking();
 ```
 
 ## Response Schemas
@@ -425,7 +461,12 @@ productive projects list --page 2 --size 100 --format json
 Programmatic pagination:
 
 ```typescript
-const api = new ProductiveApi();
+const api = new ProductiveApi({
+  config: {
+    apiToken: process.env.PRODUCTIVE_API_TOKEN!,
+    organizationId: process.env.PRODUCTIVE_ORG_ID!,
+  },
+});
 let page = 1;
 let allProjects = [];
 

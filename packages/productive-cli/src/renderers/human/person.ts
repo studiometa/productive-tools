@@ -4,7 +4,8 @@
  * Displays people with name, email, and status information.
  */
 
-import type { FormattedPerson, FormattedPagination } from '../../formatters/types.js';
+import type { FormattedPerson, FormattedPagination } from '@studiometa/productive-api';
+
 import type { ListRenderer, Renderer, RenderContext } from '../types.js';
 
 import { colors } from '../../utils/colors.js';

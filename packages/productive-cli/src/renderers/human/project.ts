@@ -4,7 +4,8 @@
  * Displays projects with name, status, and budget information.
  */
 
-import type { FormattedProject, FormattedPagination } from '../../formatters/types.js';
+import type { FormattedProject, FormattedPagination } from '@studiometa/productive-api';
+
 import type { ListRenderer, Renderer, RenderContext } from '../types.js';
 
 import { colors } from '../../utils/colors.js';

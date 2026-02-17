@@ -1,6 +1,7 @@
+import { ConfigStore } from '@studiometa/productive-api';
+
 import type { ProductiveConfig } from './types.js';
 
-import { ConfigStore } from './utils/config-store.js';
 import {
   getKeychainValue,
   setKeychainValue,

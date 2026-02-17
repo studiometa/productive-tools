@@ -3,17 +3,29 @@
  */
 
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import type { ProductiveApi } from '@studiometa/productive-cli';
+import type { ExecutorContext } from '@studiometa/productive-core';
 
 import type { McpFormatOptions } from '../formatters.js';
 
 export type ToolResult = CallToolResult;
 
 /**
- * Context passed to each resource handler
+ * Context passed to each resource handler.
+ *
+ * Provides `executor()` to get an ExecutorContext for calling core executors.
+ * Does NOT expose the raw API client — handlers must go through executors
+ * to enforce the architecture contract.
+ *
+ * @example
+ * ```typescript
+ * export async function handleProjects(action, args, ctx) {
+ *   const execCtx = ctx.executor();
+ *   const result = await listProjects(options, execCtx);
+ *   return jsonResult(formatListResponse(result.data, ...));
+ * }
+ * ```
  */
 export interface HandlerContext {
-  api: ProductiveApi;
   formatOptions: McpFormatOptions;
   filter?: Record<string, string>;
   page?: number;
@@ -21,6 +33,8 @@ export interface HandlerContext {
   include?: string[];
   /** Whether to include contextual hints in responses (default: true) */
   includeHints?: boolean;
+  /** Get an ExecutorContext for calling core executors */
+  executor(): ExecutorContext;
 }
 
 /**

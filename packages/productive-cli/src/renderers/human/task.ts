@@ -4,7 +4,8 @@
  * Displays tasks with status, assignee, project, and time tracking info.
  */
 
-import type { FormattedTask, FormattedPagination } from '../../formatters/types.js';
+import type { FormattedTask, FormattedPagination } from '@studiometa/productive-api';
+
 import type { ListRenderer, Renderer, RenderContext } from '../types.js';
 
 import { colors } from '../../utils/colors.js';

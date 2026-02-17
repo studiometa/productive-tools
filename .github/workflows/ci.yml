@@ -28,8 +28,8 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
-      - name: Build CLI (required for MCP typecheck)
-        run: npm run build --workspace=@studiometa/productive-cli
+      - name: Build all packages
+        run: npm run build
 
       - name: Type check
         run: npm run typecheck
@@ -52,8 +52,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build CLI (required for MCP tests)
-        run: npm run build --workspace=@studiometa/productive-cli
+      - name: Build all packages
+        run: npm run build
 
       - name: Run tests with coverage
         run: npm run test:ci
@@ -63,7 +63,7 @@ jobs:
         if: matrix.node-version == '24'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./packages/productive-cli/coverage/lcov.info,./packages/productive-mcp/coverage/lcov.info
+          files: ./packages/productive-api/coverage/lcov.info,./packages/productive-core/coverage/lcov.info,./packages/productive-cli/coverage/lcov.info,./packages/productive-mcp/coverage/lcov.info
           fail_ci_if_error: false
           flags: unittests
           name: codecov-umbrella
@@ -73,7 +73,7 @@ jobs:
         if: ${{ !cancelled() && matrix.node-version == '24' }}
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./packages/productive-cli/test-results/junit.xml,./packages/productive-mcp/test-results/junit.xml
+          files: ./packages/productive-api/test-results/junit.xml,./packages/productive-core/test-results/junit.xml,./packages/productive-cli/test-results/junit.xml,./packages/productive-mcp/test-results/junit.xml
           report_type: test_results
 
       - name: Generate coverage summary
@@ -82,35 +82,50 @@ jobs:
           echo "## Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          echo "### @studiometa/productive-cli" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          cat packages/productive-cli/coverage/coverage-summary.json | jq -r '.total | "Statements: \(.statements.pct)%\nBranches: \(.branches.pct)%\nFunctions: \(.functions.pct)%\nLines: \(.lines.pct)%"' >> $GITHUB_STEP_SUMMARY || echo "Coverage summary not available" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          for pkg in productive-api productive-core productive-cli productive-mcp; do
+            echo "### @studiometa/$pkg" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat packages/$pkg/coverage/coverage-summary.json | jq -r '.total | "Statements: \(.statements.pct)%\nBranches: \(.branches.pct)%\nFunctions: \(.functions.pct)%\nLines: \(.lines.pct)%"' >> $GITHUB_STEP_SUMMARY || echo "Coverage summary not available" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          done
 
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### @studiometa/productive-mcp" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          cat packages/productive-mcp/coverage/coverage-summary.json | jq -r '.total | "Statements: \(.statements.pct)%\nBranches: \(.branches.pct)%\nFunctions: \(.functions.pct)%\nLines: \(.lines.pct)%"' >> $GITHUB_STEP_SUMMARY || echo "Coverage summary not available" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload CLI coverage artifacts
+      - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
         if: matrix.node-version == '24'
         with:
-          name: coverage-cli
-          path: packages/productive-cli/coverage/
+          name: coverage
+          path: |
+            packages/productive-api/coverage/
+            packages/productive-core/coverage/
+            packages/productive-cli/coverage/
+            packages/productive-mcp/coverage/
 
-      - name: Upload MCP coverage artifacts
-        uses: actions/upload-artifact@v4
-        if: matrix.node-version == '24'
-        with:
-          name: coverage-mcp
-          path: packages/productive-mcp/coverage/
+  semgrep:
+    name: Semgrep Security Scan
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: >
+          semgrep scan
+          --config p/typescript
+          --config p/nodejs
+          --config p/secrets
+          --config p/owasp-top-ten
+          --error
+          --exclude='node_modules'
+          --exclude='dist'
+          --exclude='coverage'
+          .
 
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, semgrep]
     steps:
       - uses: actions/checkout@v4
 
@@ -126,14 +141,12 @@ jobs:
       - name: Build all packages
         run: npm run build
 
-      - name: Upload CLI build artifacts
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist-cli
-          path: packages/productive-cli/dist/
-
-      - name: Upload MCP build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-mcp
-          path: packages/productive-mcp/dist/
+          name: dist
+          path: |
+            packages/productive-api/dist/
+            packages/productive-core/dist/
+            packages/productive-cli/dist/
+            packages/productive-mcp/dist/

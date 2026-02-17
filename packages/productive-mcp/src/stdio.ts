@@ -7,7 +7,7 @@
 
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
-import { getConfig, setConfig } from '@studiometa/productive-cli';
+import { getConfig, setConfig } from '@studiometa/productive-api';
 
 import { executeToolWithCredentials } from './handlers.js';
 import { TOOLS, STDIO_ONLY_TOOLS } from './tools.js';

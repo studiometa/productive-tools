@@ -1,128 +1,92 @@
 /**
- * Handler implementations for bookings command
+ * CLI adapter for bookings command handlers.
  */
+
+import { formatBooking, formatListResponse } from '@studiometa/productive-api';
+import {
+  fromCommandContext,
+  getBooking,
+  listBookings,
+  createBooking,
+  updateBooking,
+  type ListBookingsOptions,
+} from '@studiometa/productive-core';
 
 import type { CommandContext } from '../../context.js';
 import type { OutputFormat } from '../../types.js';
 
 import { handleError, exitWithValidationError, runCommand } from '../../error-handler.js';
 import { ValidationError } from '../../errors.js';
-import { formatBooking, formatListResponse } from '../../formatters/index.js';
 import { render, createRenderContext, humanBookingDetailRenderer } from '../../renderers/index.js';
 import { colors } from '../../utils/colors.js';
+import { parseFilters } from '../../utils/parse-filters.js';
 
-/**
- * Parse filter string into key-value pairs
- */
-function parseFilters(filterString: string): Record<string, string> {
-  const filters: Record<string, string> = {};
-  if (!filterString) return filters;
-
-  filterString.split(',').forEach((pair) => {
-    const [key, value] = pair.split('=');
-    if (key && value) {
-      filters[key.trim()] = value.trim();
-    }
-  });
-  return filters;
-}
-
-/**
- * Format duration in minutes to human-readable string
- */
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
-  if (hours > 0) {
-    return `${hours}h ${mins}m`;
-  }
+  if (hours > 0) return `${hours}h ${mins}m`;
   return `${mins}m`;
 }
 
-/**
- * List bookings
- */
+function parseListOptions(ctx: CommandContext): ListBookingsOptions {
+  const options: ListBookingsOptions = {};
+
+  const additionalFilters: Record<string, string> = {};
+  if (ctx.options.filter)
+    Object.assign(additionalFilters, parseFilters(String(ctx.options.filter)));
+
+  if (ctx.options.mine && ctx.config.userId) {
+    options.personId = ctx.config.userId;
+  } else if (ctx.options.person) {
+    options.personId = String(ctx.options.person);
+  }
+  if (ctx.options.project) options.projectId = String(ctx.options.project);
+  if (ctx.options.company) options.companyId = String(ctx.options.company);
+  if (ctx.options.service) options.serviceId = String(ctx.options.service);
+  if (ctx.options.event) options.eventId = String(ctx.options.event);
+  if (ctx.options.from) options.after = String(ctx.options.from);
+  if (ctx.options.to) options.before = String(ctx.options.to);
+
+  // Booking type filtering
+  if (ctx.options.type) {
+    const typeValue = String(ctx.options.type).toLowerCase();
+    if (typeValue === 'absence' || typeValue === 'event') {
+      additionalFilters.booking_type = 'event';
+    } else if (typeValue === 'budget' || typeValue === 'service') {
+      additionalFilters.booking_type = 'service';
+    }
+  }
+
+  if (ctx.options.tentative !== undefined) {
+    options.draft = ctx.options.tentative === true;
+  }
+
+  if (Object.keys(additionalFilters).length > 0) options.additionalFilters = additionalFilters;
+
+  const { page, perPage } = ctx.getPagination();
+  options.page = page;
+  options.perPage = perPage;
+  options.sort = ctx.getSort() || 'started_on';
+  options.include = ['person', 'service'];
+
+  return options;
+}
+
 export async function bookingsList(ctx: CommandContext): Promise<void> {
   const spinner = ctx.createSpinner('Fetching bookings...');
   spinner.start();
 
   await runCommand(async () => {
-    const filter: Record<string, string> = {};
-
-    if (ctx.options.filter) {
-      Object.assign(filter, parseFilters(String(ctx.options.filter)));
-    }
-
-    // Person filtering
-    if (ctx.options.mine && ctx.config.userId) {
-      filter.person_id = ctx.config.userId;
-    } else if (ctx.options.person) {
-      filter.person_id = String(ctx.options.person);
-    }
-
-    // Resource filtering
-    if (ctx.options.project) {
-      filter.project_id = String(ctx.options.project);
-    }
-    if (ctx.options.company) {
-      filter.company_id = String(ctx.options.company);
-    }
-    if (ctx.options.service) {
-      filter.service_id = String(ctx.options.service);
-    }
-    if (ctx.options.event) {
-      filter.event_id = String(ctx.options.event);
-    }
-
-    // Date range filtering
-    if (ctx.options.from) {
-      filter.after = String(ctx.options.from);
-    }
-    if (ctx.options.to) {
-      filter.before = String(ctx.options.to);
-    }
-
-    // Booking type filtering (event=absence, service=budget)
-    if (ctx.options.type) {
-      const typeValue = String(ctx.options.type).toLowerCase();
-      if (typeValue === 'absence' || typeValue === 'event') {
-        filter.booking_type = 'event';
-      } else if (typeValue === 'budget' || typeValue === 'service') {
-        filter.booking_type = 'service';
-      }
-    }
-
-    // Draft/tentative filtering
-    if (ctx.options.tentative !== undefined) {
-      filter.draft = ctx.options.tentative ? 'true' : 'false';
-    }
-
-    // Include tentative bookings by default unless explicitly filtered
-    if (filter.draft === undefined) {
-      filter.with_draft = 'true';
-    }
-
-    // Resolve any human-friendly identifiers (email, project number, etc.)
-    const { resolved: resolvedFilter } = await ctx.resolveFilters(filter);
-
-    const { page, perPage } = ctx.getPagination();
-    const response = await ctx.api.getBookings({
-      page,
-      perPage,
-      filter: resolvedFilter,
-      sort: ctx.getSort() || 'started_on',
-      include: ['person', 'service'],
-    });
+    const execCtx = fromCommandContext(ctx);
+    const result = await listBookings(parseListOptions(ctx), execCtx);
 
     spinner.succeed();
 
     const format = (ctx.options.format || ctx.options.f || 'human') as OutputFormat;
-    const formattedData = formatListResponse(response.data, formatBooking, response.meta, {
-      included: response.included,
-    });
+    const formattedData = formatListResponse(result.data, formatBooking, result.meta);
 
     if (format === 'csv' || format === 'table') {
-      const data = response.data.map((b) => ({
+      const data = result.data.map((b) => ({
         id: b.id,
         start: b.attributes.started_on,
         end: b.attributes.ended_on,
@@ -132,124 +96,96 @@ export async function bookingsList(ctx: CommandContext): Promise<void> {
       }));
       ctx.formatter.output(data);
     } else {
-      const renderCtx = createRenderContext({
-        noColor: ctx.options['no-color'] === true,
-      });
+      const renderCtx = createRenderContext({ noColor: ctx.options['no-color'] === true });
       render('booking', format, formattedData, renderCtx);
     }
   }, ctx.formatter);
 }
 
-/**
- * Get a single booking by ID
- */
 export async function bookingsGet(args: string[], ctx: CommandContext): Promise<void> {
   const [id] = args;
-
-  if (!id) {
-    exitWithValidationError('id', 'productive bookings get <id>', ctx.formatter);
-  }
+  if (!id) exitWithValidationError('id', 'productive bookings get <id>', ctx.formatter);
 
   const spinner = ctx.createSpinner('Fetching booking...');
   spinner.start();
 
   await runCommand(async () => {
-    const response = await ctx.api.getBooking(id, {
-      include: ['person', 'service', 'event', 'approver'],
-    });
-    const booking = response.data;
+    const execCtx = fromCommandContext(ctx);
+    const result = await getBooking(
+      { id, include: ['person', 'service', 'event', 'approver'] },
+      execCtx,
+    );
 
     spinner.succeed();
 
     const format = (ctx.options.format || ctx.options.f || 'human') as OutputFormat;
-    const formattedData = formatBooking(booking, { included: response.included });
+    const formattedData = formatBooking(result.data, { included: result.included });
 
     if (format === 'json') {
       ctx.formatter.output(formattedData);
     } else {
-      const renderCtx = createRenderContext({
-        noColor: ctx.options['no-color'] === true,
-      });
+      const renderCtx = createRenderContext({ noColor: ctx.options['no-color'] === true });
       humanBookingDetailRenderer.render(formattedData, renderCtx);
     }
   }, ctx.formatter);
 }
 
-/**
- * Add a new booking
- */
 export async function bookingsAdd(ctx: CommandContext): Promise<void> {
   const spinner = ctx.createSpinner('Creating booking...');
   spinner.start();
 
-  // Validate required fields
   const personId = String(ctx.options.person || ctx.config.userId || '');
   if (!personId) {
     spinner.fail();
     handleError(ValidationError.required('person'), ctx.formatter);
     return;
   }
-
   if (!ctx.options.from) {
     spinner.fail();
     handleError(ValidationError.required('from'), ctx.formatter);
     return;
   }
-
   if (!ctx.options.to) {
     spinner.fail();
     handleError(ValidationError.required('to'), ctx.formatter);
     return;
   }
-
-  // Must have either service or event
   if (!ctx.options.service && !ctx.options.event) {
     spinner.fail();
     handleError(
-      ValidationError.invalid(
-        'options',
-        undefined,
-        'Must specify --service (for budget booking) or --event (for absence booking)',
-      ),
+      ValidationError.invalid('options', undefined, 'Must specify --service or --event'),
       ctx.formatter,
     );
     return;
   }
 
   await runCommand(async () => {
-    // Resolve person ID if it's a human-friendly identifier
-    const resolvedPersonId = await ctx.tryResolveValue(personId, 'person');
-
-    // Resolve service ID if provided and is a human-friendly identifier
-    const resolvedServiceId = ctx.options.service
-      ? await ctx.tryResolveValue(String(ctx.options.service), 'service')
-      : undefined;
-
-    const response = await ctx.api.createBooking({
-      person_id: resolvedPersonId,
-      service_id: resolvedServiceId,
-      event_id: ctx.options.event ? String(ctx.options.event) : undefined,
-      started_on: String(ctx.options.from),
-      ended_on: String(ctx.options.to),
-      time: ctx.options.time ? parseInt(String(ctx.options.time)) : undefined,
-      total_time: ctx.options['total-time']
-        ? parseInt(String(ctx.options['total-time']))
-        : undefined,
-      percentage: ctx.options.percentage ? parseInt(String(ctx.options.percentage)) : undefined,
-      draft: ctx.options.tentative === true,
-      note: ctx.options.note ? String(ctx.options.note) : undefined,
-    });
+    const execCtx = fromCommandContext(ctx);
+    const result = await createBooking(
+      {
+        personId,
+        serviceId: ctx.options.service ? String(ctx.options.service) : undefined,
+        eventId: ctx.options.event ? String(ctx.options.event) : undefined,
+        startedOn: String(ctx.options.from),
+        endedOn: String(ctx.options.to),
+        time: ctx.options.time ? parseInt(String(ctx.options.time)) : undefined,
+        totalTime: ctx.options['total-time']
+          ? parseInt(String(ctx.options['total-time']))
+          : undefined,
+        percentage: ctx.options.percentage ? parseInt(String(ctx.options.percentage)) : undefined,
+        draft: ctx.options.tentative === true,
+        note: ctx.options.note ? String(ctx.options.note) : undefined,
+      },
+      execCtx,
+    );
 
     spinner.succeed();
 
-    const booking = response.data;
+    const booking = result.data;
     const format = ctx.options.format || ctx.options.f || 'human';
 
     if (format === 'json') {
-      ctx.formatter.output({
-        status: 'success',
-        ...formatBooking(booking),
-      });
+      ctx.formatter.output({ status: 'success', ...formatBooking(booking) });
     } else {
       ctx.formatter.success('Booking created');
       console.log(colors.cyan('ID:'), booking.id);
@@ -257,56 +193,52 @@ export async function bookingsAdd(ctx: CommandContext): Promise<void> {
         colors.cyan('Period:'),
         `${booking.attributes.started_on} → ${booking.attributes.ended_on}`,
       );
-      if (booking.attributes.draft) {
-        console.log(colors.yellow('Status: Tentative'));
-      }
+      if (booking.attributes.draft) console.log(colors.yellow('Status: Tentative'));
     }
   }, ctx.formatter);
 }
 
-/**
- * Update an existing booking
- */
 export async function bookingsUpdate(args: string[], ctx: CommandContext): Promise<void> {
   const [id] = args;
-
-  if (!id) {
+  if (!id)
     exitWithValidationError('id', 'productive bookings update <id> [options]', ctx.formatter);
-  }
 
   const spinner = ctx.createSpinner('Updating booking...');
   spinner.start();
 
   await runCommand(async () => {
-    const data: Parameters<typeof ctx.api.updateBooking>[1] = {};
+    const execCtx = fromCommandContext(ctx);
 
-    if (ctx.options.from !== undefined) data.started_on = String(ctx.options.from);
-    if (ctx.options.to !== undefined) data.ended_on = String(ctx.options.to);
-    if (ctx.options.time !== undefined) data.time = parseInt(String(ctx.options.time));
-    if (ctx.options['total-time'] !== undefined)
-      data.total_time = parseInt(String(ctx.options['total-time']));
-    if (ctx.options.percentage !== undefined)
-      data.percentage = parseInt(String(ctx.options.percentage));
-    if (ctx.options.tentative !== undefined) data.draft = ctx.options.tentative === true;
-    if (ctx.options.confirm !== undefined) data.draft = false;
-    if (ctx.options.note !== undefined) data.note = String(ctx.options.note);
+    // Build draft value: --confirm overrides --tentative
+    let draft: boolean | undefined;
+    if (ctx.options.confirm !== undefined) draft = false;
+    else if (ctx.options.tentative !== undefined) draft = ctx.options.tentative === true;
 
-    if (Object.keys(data).length === 0) {
-      spinner.fail();
-      throw ValidationError.invalid(
-        'options',
-        data,
-        'No updates specified. Use --from, --to, --time, --tentative, --confirm, --note, etc.',
-      );
-    }
-
-    const response = await ctx.api.updateBooking(id, data);
+    const result = await updateBooking(
+      {
+        id,
+        startedOn: ctx.options.from !== undefined ? String(ctx.options.from) : undefined,
+        endedOn: ctx.options.to !== undefined ? String(ctx.options.to) : undefined,
+        time: ctx.options.time !== undefined ? parseInt(String(ctx.options.time)) : undefined,
+        totalTime:
+          ctx.options['total-time'] !== undefined
+            ? parseInt(String(ctx.options['total-time']))
+            : undefined,
+        percentage:
+          ctx.options.percentage !== undefined
+            ? parseInt(String(ctx.options.percentage))
+            : undefined,
+        draft,
+        note: ctx.options.note !== undefined ? String(ctx.options.note) : undefined,
+      },
+      execCtx,
+    );
 
     spinner.succeed();
 
     const format = ctx.options.format || ctx.options.f || 'human';
     if (format === 'json') {
-      ctx.formatter.output({ status: 'success', id: response.data.id });
+      ctx.formatter.output({ status: 'success', id: result.data.id });
     } else {
       ctx.formatter.success(`Booking ${id} updated`);
     }

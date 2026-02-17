@@ -2,14 +2,20 @@
  * Handler implementations for resolve command
  */
 
+import type { ResolvableResourceType, ResolveResult } from '@studiometa/productive-core';
+
+import {
+  resolveResource as resolve,
+  detectResourceType,
+  ResolveError,
+} from '@studiometa/productive-core';
+
 import type { CommandContext } from '../../context.js';
 import type { OutputFormat } from '../../types.js';
-import type { ResolvableResourceType, ResolveResult } from '../../utils/resource-resolver.js';
 
 import { runCommand } from '../../error-handler.js';
 import { ValidationError } from '../../errors.js';
 import { colors } from '../../utils/colors.js';
-import { resolve, detectResourceType, ResolveError } from '../../utils/resource-resolver.js';
 
 /**
  * Format a resolve result for human output
@@ -53,7 +59,6 @@ export async function resolveIdentifier(args: string[], ctx: CommandContext): Pr
         type,
         projectId,
         first,
-        orgId: ctx.config.organizationId,
       });
 
       spinner.succeed();

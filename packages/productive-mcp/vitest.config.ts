@@ -22,7 +22,14 @@ export default defineConfig({
         'src/**/__tests__/**',
         'src/index.ts', // Entry point with startup code only
         'src/server.ts', // Entry point with startup code only
+        'src/http.ts', // HTTP server infrastructure (SSE, routing) — tested via integration
       ],
+      thresholds: {
+        statements: 90,
+        branches: 85,
+        functions: 90,
+        lines: 90,
+      },
     },
   },
 });

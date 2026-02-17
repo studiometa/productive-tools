@@ -1,13 +1,32 @@
 /**
- * Handler implementations for time command
+ * CLI adapter for time command handlers.
+ *
+ * These are thin wrappers that:
+ * 1. Parse CLI options into typed executor options
+ * 2. Manage spinners
+ * 3. Call executors for business logic
+ * 4. Format and render output
+ *
+ * All business logic lives in @studiometa/productive-core executors.
  */
+
+import { formatTimeEntry, formatListResponse } from '@studiometa/productive-api';
+import {
+  fromCommandContext,
+  listTimeEntries,
+  getTimeEntry,
+  createTimeEntry,
+  updateTimeEntry,
+  deleteTimeEntry,
+  ExecutorValidationError,
+  type ListTimeEntriesOptions,
+} from '@studiometa/productive-core';
 
 import type { CommandContext } from '../../context.js';
 import type { OutputFormat } from '../../types.js';
 
 import { handleError, exitWithValidationError, runCommand } from '../../error-handler.js';
 import { ValidationError, ConfigError } from '../../errors.js';
-import { formatTimeEntry, formatListResponse } from '../../formatters/index.js';
 import {
   render,
   createRenderContext,
@@ -15,21 +34,70 @@ import {
 } from '../../renderers/index.js';
 import { colors } from '../../utils/colors.js';
 import { parseDate, parseDateRange } from '../../utils/date.js';
+import { parseFilters } from '../../utils/parse-filters.js';
 
 /**
- * Parse filter string into key-value pairs
+ * Parse CLI options into ListTimeEntriesOptions.
+ * Handles date parsing, --mine flag, and generic filter strings.
  */
-function parseFilters(filterString: string): Record<string, string> {
-  const filters: Record<string, string> = {};
-  if (!filterString) return filters;
+function parseListOptions(ctx: CommandContext): ListTimeEntriesOptions {
+  const options: ListTimeEntriesOptions = {};
 
-  filterString.split(',').forEach((pair) => {
-    const [key, value] = pair.split('=');
-    if (key && value) {
-      filters[key.trim()] = value.trim();
+  // Parse generic filters
+  const additionalFilters: Record<string, string> = {};
+  if (ctx.options.filter) {
+    Object.assign(additionalFilters, parseFilters(String(ctx.options.filter)));
+  }
+  if (Object.keys(additionalFilters).length > 0) {
+    options.additionalFilters = additionalFilters;
+  }
+
+  // Date filtering with smart parsing
+  if (ctx.options.date) {
+    const range = parseDateRange(String(ctx.options.date));
+    if (range) {
+      options.after = range.from;
+      options.before = range.to;
     }
-  });
-  return filters;
+  }
+  // --from and --to override --date
+  if (ctx.options.from) {
+    const parsed = parseDate(String(ctx.options.from));
+    if (parsed) options.after = parsed;
+  }
+  if (ctx.options.to) {
+    const parsed = parseDate(String(ctx.options.to));
+    if (parsed) options.before = parsed;
+  }
+
+  // Person filtering
+  if (ctx.options.mine && ctx.config.userId) {
+    options.personId = ctx.config.userId;
+  } else if (ctx.options.person) {
+    options.personId = String(ctx.options.person);
+  }
+
+  // Resource filtering
+  if (ctx.options.project) options.projectId = String(ctx.options.project);
+  if (ctx.options.service) options.serviceId = String(ctx.options.service);
+  if (ctx.options.task) options.taskId = String(ctx.options.task);
+  if (ctx.options.company) options.companyId = String(ctx.options.company);
+  if (ctx.options.deal) options.dealId = String(ctx.options.deal);
+  if (ctx.options.budget) options.budgetId = String(ctx.options.budget);
+
+  // Enum filters
+  if (ctx.options.status) options.status = String(ctx.options.status);
+  if (ctx.options['billing-type']) options.billingType = String(ctx.options['billing-type']);
+  if (ctx.options['invoicing-status'])
+    options.invoicingStatus = String(ctx.options['invoicing-status']);
+
+  // Pagination
+  const { page, perPage } = ctx.getPagination();
+  options.page = page;
+  options.perPage = perPage;
+  options.sort = ctx.getSort();
+
+  return options;
 }
 
 /**
@@ -40,104 +108,17 @@ export async function timeList(ctx: CommandContext): Promise<void> {
   spinner.start();
 
   await runCommand(async () => {
-    const filter: Record<string, string> = {};
-
-    // Parse generic filters first
-    if (ctx.options.filter) {
-      Object.assign(filter, parseFilters(String(ctx.options.filter)));
-    }
-
-    // Date filtering with smart parsing
-    if (ctx.options.date) {
-      const range = parseDateRange(String(ctx.options.date));
-      if (range) {
-        filter.after = range.from;
-        filter.before = range.to;
-      }
-    }
-    // --from and --to override --date
-    if (ctx.options.from) {
-      const parsed = parseDate(String(ctx.options.from));
-      if (parsed) filter.after = parsed;
-    }
-    if (ctx.options.to) {
-      const parsed = parseDate(String(ctx.options.to));
-      if (parsed) filter.before = parsed;
-    }
-
-    // Person filtering
-    if (ctx.options.mine && ctx.config.userId) {
-      filter.person_id = ctx.config.userId;
-    } else if (ctx.options.person) {
-      filter.person_id = String(ctx.options.person);
-    }
-
-    // Resource filtering
-    if (ctx.options.project) filter.project_id = String(ctx.options.project);
-    if (ctx.options.service) filter.service_id = String(ctx.options.service);
-    if (ctx.options.task) filter.task_id = String(ctx.options.task);
-    if (ctx.options.company) filter.company_id = String(ctx.options.company);
-    if (ctx.options.deal) filter.deal_id = String(ctx.options.deal);
-    if (ctx.options.budget) filter.budget_id = String(ctx.options.budget);
-
-    // Status filtering (approved, unapproved, rejected)
-    if (ctx.options.status) {
-      const statusMap: Record<string, string> = {
-        approved: '1',
-        unapproved: '2',
-        rejected: '3',
-      };
-      const statusValue = statusMap[String(ctx.options.status).toLowerCase()];
-      if (statusValue) {
-        filter.status = statusValue;
-      }
-    }
-
-    // Billing type filtering (fixed, actuals, non_billable)
-    if (ctx.options['billing-type']) {
-      const billingMap: Record<string, string> = {
-        fixed: '1',
-        actuals: '2',
-        non_billable: '3',
-      };
-      const billingValue = billingMap[String(ctx.options['billing-type']).toLowerCase()];
-      if (billingValue) {
-        filter.billing_type_id = billingValue;
-      }
-    }
-
-    // Invoicing status filtering (not_invoiced, drafted, finalized)
-    if (ctx.options['invoicing-status']) {
-      const invoicingMap: Record<string, string> = {
-        not_invoiced: '1',
-        drafted: '2',
-        finalized: '3',
-      };
-      const invoicingValue = invoicingMap[String(ctx.options['invoicing-status']).toLowerCase()];
-      if (invoicingValue) {
-        filter.invoicing_status = invoicingValue;
-      }
-    }
-
-    // Resolve any human-friendly identifiers (email, project number, etc.)
-    const { resolved: resolvedFilter } = await ctx.resolveFilters(filter);
-
-    const { page, perPage } = ctx.getPagination();
-    const response = await ctx.api.getTimeEntries({
-      page,
-      perPage,
-      filter: resolvedFilter,
-      sort: ctx.getSort(),
-    });
+    const execCtx = fromCommandContext(ctx);
+    const options = parseListOptions(ctx);
+    const result = await listTimeEntries(options, execCtx);
 
     spinner.succeed();
 
     const format = (ctx.options.format || ctx.options.f || 'human') as OutputFormat;
-    const formattedData = formatListResponse(response.data, formatTimeEntry, response.meta);
+    const formattedData = formatListResponse(result.data, formatTimeEntry, result.meta);
 
     if (format === 'csv' || format === 'table') {
-      // For CSV/table, flatten the data for OutputFormatter
-      const data = response.data.map((e) => ({
+      const data = result.data.map((e) => ({
         id: e.id,
         date: e.attributes.date,
         hours: (e.attributes.time / 60).toFixed(2),
@@ -147,7 +128,6 @@ export async function timeList(ctx: CommandContext): Promise<void> {
       }));
       ctx.formatter.output(data);
     } else {
-      // Use renderer for json and human formats
       const renderCtx = createRenderContext({
         noColor: ctx.options['no-color'] === true,
       });
@@ -170,8 +150,9 @@ export async function timeGet(args: string[], ctx: CommandContext): Promise<void
   spinner.start();
 
   await runCommand(async () => {
-    const response = await ctx.api.getTimeEntry(id);
-    const entry = response.data;
+    const execCtx = fromCommandContext(ctx);
+    const result = await getTimeEntry({ id }, execCtx);
+    const entry = result.data;
 
     spinner.succeed();
 
@@ -181,7 +162,6 @@ export async function timeGet(args: string[], ctx: CommandContext): Promise<void
     if (format === 'json') {
       ctx.formatter.output(formattedData);
     } else {
-      // Use detail renderer for human format
       const renderCtx = createRenderContext({
         noColor: ctx.options['no-color'] === true,
       });
@@ -197,7 +177,7 @@ export async function timeAdd(ctx: CommandContext): Promise<void> {
   const spinner = ctx.createSpinner('Creating time entry...');
   spinner.start();
 
-  // Validate required fields before making API call
+  // Validate required fields before making API call (CLI-specific validation with error formatting)
   const personId = String(ctx.options.person || ctx.config.userId || '');
   if (!personId) {
     spinner.fail();
@@ -221,25 +201,21 @@ export async function timeAdd(ctx: CommandContext): Promise<void> {
   }
 
   await runCommand(async () => {
-    const date = String(ctx.options.date || new Date().toISOString().split('T')[0]);
-
-    // Resolve person ID if it's a human-friendly identifier
-    const resolvedPersonId = await ctx.tryResolveValue(personId, 'person');
-
-    // Resolve service ID if it's a human-friendly identifier (name)
-    const resolvedServiceId = await ctx.tryResolveValue(String(ctx.options.service), 'service');
-
-    const response = await ctx.api.createTimeEntry({
-      person_id: resolvedPersonId,
-      service_id: resolvedServiceId,
-      date,
-      time: parseInt(String(ctx.options.time)),
-      note: String(ctx.options.note || ''),
-    });
+    const execCtx = fromCommandContext(ctx);
+    const result = await createTimeEntry(
+      {
+        personId,
+        serviceId: String(ctx.options.service),
+        time: parseInt(String(ctx.options.time)),
+        date: ctx.options.date ? String(ctx.options.date) : undefined,
+        note: ctx.options.note ? String(ctx.options.note) : undefined,
+      },
+      execCtx,
+    );
 
     spinner.succeed();
 
-    const entry = response.data;
+    const entry = result.data;
     const hours = Math.floor(entry.attributes.time / 60);
     const minutes = entry.attributes.time % 60;
 
@@ -275,29 +251,37 @@ export async function timeUpdate(args: string[], ctx: CommandContext): Promise<v
   spinner.start();
 
   await runCommand(async () => {
-    const data: { time?: number; note?: string; date?: string } = {};
-    if (ctx.options.time) data.time = parseInt(String(ctx.options.time));
-    if (ctx.options.note) data.note = String(ctx.options.note);
-    if (ctx.options.date) data.date = String(ctx.options.date);
+    const execCtx = fromCommandContext(ctx);
 
-    if (Object.keys(data).length === 0) {
-      spinner.fail();
-      throw ValidationError.invalid(
-        'options',
-        data,
-        'No updates specified. Use --time, --note, or --date',
+    try {
+      const result = await updateTimeEntry(
+        {
+          id,
+          time: ctx.options.time ? parseInt(String(ctx.options.time)) : undefined,
+          note: ctx.options.note ? String(ctx.options.note) : undefined,
+          date: ctx.options.date ? String(ctx.options.date) : undefined,
+        },
+        execCtx,
       );
-    }
 
-    const response = await ctx.api.updateTimeEntry(id, data);
+      spinner.succeed();
 
-    spinner.succeed();
-
-    const format = ctx.options.format || ctx.options.f || 'human';
-    if (format === 'json') {
-      ctx.formatter.output({ status: 'success', id: response.data.id });
-    } else {
-      ctx.formatter.success(`Time entry ${id} updated`);
+      const format = ctx.options.format || ctx.options.f || 'human';
+      if (format === 'json') {
+        ctx.formatter.output({ status: 'success', id: result.data.id });
+      } else {
+        ctx.formatter.success(`Time entry ${id} updated`);
+      }
+    } catch (error) {
+      if (error instanceof ExecutorValidationError) {
+        spinner.fail();
+        throw ValidationError.invalid(
+          'options',
+          {},
+          'No updates specified. Use --time, --note, or --date',
+        );
+      }
+      throw error;
     }
   }, ctx.formatter);
 }
@@ -316,7 +300,8 @@ export async function timeDelete(args: string[], ctx: CommandContext): Promise<v
   spinner.start();
 
   await runCommand(async () => {
-    await ctx.api.deleteTimeEntry(id);
+    const execCtx = fromCommandContext(ctx);
+    await deleteTimeEntry({ id }, execCtx);
 
     spinner.succeed();
 

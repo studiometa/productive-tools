@@ -1,6 +1,8 @@
+import type { ProductiveApi } from '@studiometa/productive-api';
+
+import { ResolveError } from '@studiometa/productive-core';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { ProductiveApi } from '../../api.js';
 import type { CommandContext } from '../../context.js';
 
 import {
@@ -9,7 +11,6 @@ import {
   tryResolveValue,
   COMMON_FILTER_TYPES,
 } from '../resolve-filters.js';
-import { ResolveError } from '../resource-resolver.js';
 
 describe('resolve-filters', () => {
   let mockApi: {

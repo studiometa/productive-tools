@@ -4,7 +4,8 @@
  * Displays services with name and time budget information.
  */
 
-import type { FormattedService, FormattedPagination } from '../../formatters/types.js';
+import type { FormattedService, FormattedPagination } from '@studiometa/productive-api';
+
 import type { ListRenderer, RenderContext } from '../types.js';
 
 import { colors } from '../../utils/colors.js';

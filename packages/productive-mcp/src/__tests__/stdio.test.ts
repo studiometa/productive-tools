@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockGetConfig = vi.fn();
 const mockSetConfig = vi.fn();
 
-vi.mock('@studiometa/productive-cli', () => ({
+vi.mock('@studiometa/productive-api', () => ({
   getConfig: () => mockGetConfig(),
   setConfig: (key: string, value: string) => mockSetConfig(key, value),
 }));

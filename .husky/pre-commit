@@ -3,11 +3,11 @@
 # Run lint-staged for code quality
 npx lint-staged
 
-# Check for secrets with semgrep (if available)
+# Check for secrets with semgrep
 if command -v semgrep >/dev/null 2>&1; then
-  echo "🔍 Checking for secrets with semgrep..."
-  semgrep scan --config p/secrets --error --quiet .
+  echo "🔍 Checking for secrets..."
+  npm run semgrep:secrets
 else
   echo "ℹ️  Skipping secret detection (semgrep not installed)"
-  echo "   Install with: brew install semgrep"
+  echo "   Install with: pip install semgrep"
 fi

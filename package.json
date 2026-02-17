@@ -25,7 +25,7 @@
   "type": "module",
   "scripts": {
     "dev": "npm run dev --workspaces",
-    "build": "npm run build --workspaces",
+    "build": "npm run build -w @studiometa/productive-api && npm run build -w @studiometa/productive-core && npm run build -w @studiometa/productive-cli && npm run build -w @studiometa/productive-mcp",
     "test": "npm run test --workspaces",
     "test:watch": "npm run test:watch --workspaces",
     "test:ci": "npm run test:ci --workspaces --if-present",
@@ -35,6 +35,8 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "typecheck": "npm run typecheck --workspaces",
+    "semgrep": "semgrep scan --config p/typescript --config p/nodejs --config p/secrets --config p/owasp-top-ten --error --exclude='node_modules' --exclude='dist' --exclude='coverage' .",
+    "semgrep:secrets": "semgrep scan --config p/secrets --error --quiet --exclude='node_modules' --exclude='dist' --exclude='coverage' .",
     "clean": "rm -rf packages/*/dist packages/*/node_modules node_modules",
     "version:patch": "npm version --include-workspace-root --workspaces --no-git-tag-version patch",
     "version:minor": "npm version --include-workspace-root --workspaces --no-git-tag-version minor",
@@ -43,16 +45,16 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "^4.1.0-beta.4",
     "husky": "9.1.7",
     "lint-staged": "16.2.7",
     "memfs": "4.56.2",
     "oxfmt": "0.28.0",
     "oxlint": "1.43.0",
-    "oxlint-tsgolint": "0.11.4",
+    "oxlint-tsgolint": "^0.14.0",
     "typescript": "^5.7.3",
-    "vite": "^7.3.1",
-    "vitest": "^4.0.18"
+    "vite": "^8.0.0-beta.14",
+    "vitest": "^4.1.0-beta.4"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

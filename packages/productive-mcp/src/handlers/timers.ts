@@ -1,6 +1,8 @@
 /**
- * Timers resource handler
+ * Timers MCP handler.
  */
+
+import { listTimers, getTimer, startTimer, stopTimer } from '@studiometa/productive-core';
 
 import type { HandlerContext, TimerArgs, ToolResult } from './types.js';
 
@@ -16,23 +18,19 @@ export async function handleTimers(
   args: TimerArgs,
   ctx: HandlerContext,
 ): Promise<ToolResult> {
-  const { api, formatOptions, filter, page, perPage, include } = ctx;
+  const { formatOptions, filter, page, perPage, include } = ctx;
   const { id, service_id, time_entry_id } = args;
+
+  const execCtx = ctx.executor();
 
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
-    const result = await api.getTimer(id, { include });
+    const result = await getTimer({ id, include }, execCtx);
     const formatted = formatTimer(result.data, formatOptions);
 
-    // Add contextual hints unless disabled
     if (ctx.includeHints !== false) {
-      // Timer doesn't have service relationship directly, only time_entry
-      return jsonResult({
-        ...formatted,
-        _hints: getTimerHints(id),
-      });
+      return jsonResult({ ...formatted, _hints: getTimerHints(id) });
     }
-
     return jsonResult(formatted);
   }
 
@@ -40,18 +38,18 @@ export async function handleTimers(
     if (!service_id && !time_entry_id) {
       return inputErrorResult(ErrorMessages.missingServiceForTimer());
     }
-    const result = await api.startTimer({ service_id, time_entry_id });
+    const result = await startTimer({ serviceId: service_id, timeEntryId: time_entry_id }, execCtx);
     return jsonResult({ success: true, ...formatTimer(result.data, formatOptions) });
   }
 
   if (action === 'stop') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('stop'));
-    const result = await api.stopTimer(id);
+    const result = await stopTimer({ id }, execCtx);
     return jsonResult({ success: true, ...formatTimer(result.data, formatOptions) });
   }
 
   if (action === 'list') {
-    const result = await api.getTimers({ filter, page, perPage, include });
+    const result = await listTimers({ page, perPage, additionalFilters: filter, include }, execCtx);
     return jsonResult(formatListResponse(result.data, formatTimer, result.meta, formatOptions));
   }
 

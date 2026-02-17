@@ -262,13 +262,6 @@ describe('resolve command', () => {
       expect(consoleErrorSpy).toHaveBeenCalled();
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
-
-    // Skipping this test - the handler test is complex due to async error handling.
-    // The underlying resolve function is fully tested in resource-resolver.test.ts
-    // which covers the explicit type case.
-    it.skip('uses explicit type when provided', async () => {
-      // Test covered in resource-resolver.test.ts
-    });
   });
 
   describe('detectType', () => {

@@ -4,7 +4,8 @@
  * Displays tasks grouped by workflow status in a multi-column board layout.
  */
 
-import type { FormattedTask, FormattedPagination } from '../../formatters/types.js';
+import type { FormattedTask, FormattedPagination } from '@studiometa/productive-api';
+
 import type { ListRenderer, RenderContext } from '../types.js';
 
 import { colors } from '../../utils/colors.js';
@@ -135,7 +136,9 @@ export class KanbanRenderer implements ListRenderer<FormattedTask> {
       }
     }
 
-    const columns = Array.from(statusMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    const columns = Array.from(statusMap.values())
+      .slice()
+      .toSorted((a, b) => a.name.localeCompare(b.name));
 
     if (defaultColumn.tasks.length > 0) {
       columns.push(defaultColumn);
