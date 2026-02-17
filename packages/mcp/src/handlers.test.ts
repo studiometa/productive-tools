@@ -44,8 +44,6 @@ vi.mock('@studiometa/productive-api', () => {
     getCompany: vi.fn(),
     createCompany: vi.fn(),
     updateCompany: vi.fn(),
-    getBudgets: vi.fn(),
-    getBudget: vi.fn(),
     getAttachments: vi.fn(),
     getAttachment: vi.fn(),
     deleteAttachment: vi.fn(),
