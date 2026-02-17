@@ -94,6 +94,14 @@ export interface BookingArgs extends CommonArgs {
 }
 
 /**
+ * Attachment-specific args
+ */
+export interface AttachmentArgs extends CommonArgs {
+  comment_id?: string;
+  deal_id?: string;
+}
+
+/**
  * Company-specific args
  */
 export interface CompanyArgs extends CommonArgs {

@@ -46,6 +46,9 @@ vi.mock('@studiometa/productive-api', () => {
     updateCompany: vi.fn(),
     getBudgets: vi.fn(),
     getBudget: vi.fn(),
+    getAttachments: vi.fn(),
+    getAttachment: vi.fn(),
+    deleteAttachment: vi.fn(),
   };
 
   return {
@@ -63,6 +66,7 @@ vi.mock('@studiometa/productive-api', () => {
     formatTimer: vi.fn((timer) => ({ id: timer.id, ...timer.attributes })),
     formatBudget: vi.fn((budget) => ({ id: budget.id, ...budget.attributes })),
     formatCompany: vi.fn((company) => ({ id: company.id, ...company.attributes })),
+    formatAttachment: vi.fn((attachment) => ({ id: attachment.id, ...attachment.attributes })),
     formatListResponse: vi.fn((data, formatter, meta) => ({
       data: data.map((item: Record<string, unknown>) => formatter(item)),
       meta,
@@ -1910,6 +1914,187 @@ describe('include parameter', () => {
         '123',
         expect.objectContaining({
           include: expect.arrayContaining(['creator', 'deal']),
+        }),
+      );
+    });
+  });
+
+  describe('attachments', () => {
+    it('should handle list action', async () => {
+      const mockResponse = {
+        data: [
+          {
+            id: '1',
+            type: 'attachments',
+            attributes: { name: 'file.png', content_type: 'image/png', size: 1024 },
+          },
+        ],
+        meta: { current_page: 1, total_pages: 1 },
+      };
+      mockApi.getAttachments.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'attachments', action: 'list' },
+        credentials,
+      );
+
+      expect(result.isError).toBeFalsy();
+      expect(mockApi.getAttachments).toHaveBeenCalled();
+    });
+
+    it('should handle get action', async () => {
+      const mockResponse = {
+        data: {
+          id: '1',
+          type: 'attachments',
+          attributes: { name: 'file.png', content_type: 'image/png', size: 1024 },
+        },
+      };
+      mockApi.getAttachment.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'attachments', action: 'get', id: '1' },
+        credentials,
+      );
+
+      expect(result.isError).toBeFalsy();
+      expect(mockApi.getAttachment).toHaveBeenCalledWith('1');
+    });
+
+    it('should handle delete action', async () => {
+      mockApi.deleteAttachment.mockResolvedValue(undefined);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'attachments', action: 'delete', id: '42' },
+        credentials,
+      );
+
+      expect(result.isError).toBeFalsy();
+      expect(mockApi.deleteAttachment).toHaveBeenCalledWith('42');
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content.success).toBe(true);
+      expect(content.deleted).toBe('42');
+    });
+
+    it('should return error for get without id', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'attachments', action: 'get' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+    });
+
+    it('should return error for delete without id', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'attachments', action: 'delete' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+    });
+
+    it('should return error for invalid action', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'attachments', action: 'create' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+    });
+
+    it('should pass filter for list', async () => {
+      const mockResponse = { data: [], meta: {} };
+      mockApi.getAttachments.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'attachments', action: 'list', filter: { task_id: '123' } },
+        credentials,
+      );
+
+      expect(mockApi.getAttachments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ task_id: '123' }),
+        }),
+      );
+    });
+
+    it('should handle get action with no_hints', async () => {
+      const mockResponse = {
+        data: {
+          id: '1',
+          type: 'attachments',
+          attributes: { name: 'file.png', content_type: 'image/png', size: 1024 },
+        },
+      };
+      mockApi.getAttachment.mockResolvedValue(mockResponse);
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'attachments', action: 'get', id: '1', no_hints: true },
+        credentials,
+      );
+
+      expect(result.isError).toBeFalsy();
+      const content = JSON.parse(result.content[0].text as string);
+      // When no_hints is true, _hints should not be included
+      expect(content._hints).toBeUndefined();
+    });
+
+    it('should pass task_id filter', async () => {
+      const mockResponse = { data: [], meta: {} };
+      mockApi.getAttachments.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'attachments', action: 'list', task_id: '456' },
+        credentials,
+      );
+
+      expect(mockApi.getAttachments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ task_id: '456' }),
+        }),
+      );
+    });
+
+    it('should pass comment_id filter', async () => {
+      const mockResponse = { data: [], meta: {} };
+      mockApi.getAttachments.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'attachments', action: 'list', comment_id: '789' },
+        credentials,
+      );
+
+      expect(mockApi.getAttachments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ comment_id: '789' }),
+        }),
+      );
+    });
+
+    it('should pass deal_id filter', async () => {
+      const mockResponse = { data: [], meta: {} };
+      mockApi.getAttachments.mockResolvedValue(mockResponse);
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'attachments', action: 'list', deal_id: '101' },
+        credentials,
+      );
+
+      expect(mockApi.getAttachments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ deal_id: '101' }),
         }),
       );
     });

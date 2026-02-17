@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **API**: Add `ProductiveAttachment` type, `getAttachments()`, `getAttachment()`, `deleteAttachment()` client methods ([#32])
+- **API**: Add `formatAttachment()` formatter with human-readable file size ([#32])
+- **Core**: Add `listAttachments`, `getAttachment`, `deleteAttachment` executors ([#32])
+- **CLI**: Add `attachments` command with `list`, `get`, `delete` subcommands ([#32])
+- **MCP**: Add `attachments` resource handler with `list`, `get`, `delete` actions ([#32])
+- **MCP**: Add `delete` to `ActionSchema` (also unblocks time entry delete) ([#32])
 - **API**: Enrich `ProductiveBudget` type with `name`, `budget_type`, `billable`, dates, `currency` fields ([#34])
 - **API**: Add `getBudget(id)` method to `ProductiveApi` client ([#34])
 - **Core**: Add `getBudget` executor and enrich `ListBudgetsOptions` with `dealId`, `billable`, `budgetType` filters ([#34])
@@ -84,6 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#23]: https://github.com/studiometa/productive-tools/pull/23
 [#24]: https://github.com/studiometa/productive-tools/issues/24
 [#25]: https://github.com/studiometa/productive-tools/pull/25
+[#32]: https://github.com/studiometa/productive-tools/pull/32
 [#34]: https://github.com/studiometa/productive-tools/pull/34
 [#26]: https://github.com/studiometa/productive-tools/pull/26
 [#27]: https://github.com/studiometa/productive-tools/pull/27

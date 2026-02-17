@@ -283,6 +283,44 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     ],
   },
 
+  attachments: {
+    description: 'File attachments on tasks, comments, deals, and pages',
+    actions: {
+      list: 'List attachments with optional filters',
+      get: 'Get a single attachment by ID',
+      delete: 'Delete an attachment by ID',
+    },
+    filters: {
+      task_id: 'Filter by task',
+      comment_id: 'Filter by comment',
+      deal_id: 'Filter by deal',
+      page_id: 'Filter by page',
+    },
+    fields: {
+      id: 'Unique attachment identifier',
+      name: 'File name',
+      content_type: 'MIME type (e.g., image/png, application/pdf)',
+      size: 'File size in bytes',
+      size_human: 'Human-readable file size (e.g., 1.5 MB)',
+      url: 'Download URL',
+      attachable_type: 'Parent resource type (Task, Comment, Deal, Page)',
+    },
+    examples: [
+      {
+        description: 'List attachments on a task',
+        params: { resource: 'attachments', action: 'list', filter: { task_id: '12345' } },
+      },
+      {
+        description: 'Get attachment details',
+        params: { resource: 'attachments', action: 'get', id: '67890' },
+      },
+      {
+        description: 'Delete an attachment',
+        params: { resource: 'attachments', action: 'delete', id: '67890' },
+      },
+    ],
+  },
+
   comments: {
     description: 'Comments on tasks, deals, and other resources',
     actions: {

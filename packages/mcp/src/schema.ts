@@ -25,6 +25,7 @@ export const ResourceSchema = z.enum([
   'people',
   'companies',
   'comments',
+  'attachments',
   'timers',
   'deals',
   'bookings',
@@ -42,6 +43,7 @@ export const ActionSchema = z.enum([
   'get',
   'create',
   'update',
+  'delete',
   'me',
   'start',
   'stop',
@@ -294,6 +296,9 @@ export const ProductiveToolInputSchema = z.object({
 
   // Comment fields
   body: ParamBody.optional(),
+
+  // Attachment fields
+  comment_id: z.string().trim().optional().describe('Comment ID for filtering attachments'),
 
   // Timer fields
   time_entry_id: z.string().trim().optional().describe('Time entry ID to associate with timer'),

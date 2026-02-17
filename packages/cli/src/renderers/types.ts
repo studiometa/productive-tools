@@ -81,4 +81,5 @@ export type ResourceType =
   | 'comment'
   | 'timer'
   | 'deal'
-  | 'booking';
+  | 'booking'
+  | 'attachment';

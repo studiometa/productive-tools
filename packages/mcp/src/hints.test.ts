@@ -14,6 +14,7 @@ import {
   getCompanyHints,
   getTimeEntryHints,
   getCommentHints,
+  getAttachmentHints,
   getBookingHints,
   getTimerHints,
 } from './hints.js';
@@ -200,6 +201,81 @@ describe('hints', () => {
 
     it('returns empty hints when no commentable info', () => {
       const hints = getCommentHints('12345');
+
+      expect(hints.related_resources).toEqual([]);
+    });
+  });
+
+  describe('getAttachmentHints', () => {
+    it('returns hints with attachment ID', () => {
+      const hints = getAttachmentHints('12345');
+
+      expect(hints.common_actions).toBeDefined();
+      expect(hints.common_actions).toHaveLength(1);
+      expect(hints.common_actions?.[0].action).toBe('Delete this attachment');
+      expect(hints.common_actions?.[0].example).toEqual({
+        resource: 'attachments',
+        action: 'delete',
+        id: '12345',
+      });
+    });
+
+    it('returns empty related_resources when no attachableType', () => {
+      const hints = getAttachmentHints('12345');
+
+      expect(hints.related_resources).toEqual([]);
+    });
+
+    it('returns task hint when attachableType is Task', () => {
+      const hints = getAttachmentHints('12345', 'Task');
+
+      const taskHint = hints.related_resources?.find((h) => h.resource === 'tasks');
+      expect(taskHint).toBeDefined();
+      expect(taskHint?.description).toBe('View the task this attachment belongs to');
+      expect(taskHint?.example).toEqual({
+        resource: 'tasks',
+        action: 'list',
+      });
+    });
+
+    it('returns comment hint when attachableType is Comment', () => {
+      const hints = getAttachmentHints('12345', 'Comment');
+
+      const commentHint = hints.related_resources?.find((h) => h.resource === 'comments');
+      expect(commentHint).toBeDefined();
+      expect(commentHint?.description).toBe('View the comment this attachment belongs to');
+      expect(commentHint?.example).toEqual({
+        resource: 'comments',
+        action: 'list',
+      });
+    });
+
+    it('returns deal hint when attachableType is Deal', () => {
+      const hints = getAttachmentHints('12345', 'Deal');
+
+      const dealHint = hints.related_resources?.find((h) => h.resource === 'deals');
+      expect(dealHint).toBeDefined();
+      expect(dealHint?.description).toBe('View the deal this attachment belongs to');
+      expect(dealHint?.example).toEqual({
+        resource: 'deals',
+        action: 'list',
+      });
+    });
+
+    it('returns projects hint when attachableType is Page', () => {
+      const hints = getAttachmentHints('12345', 'Page');
+
+      const projectsHint = hints.related_resources?.find((h) => h.resource === 'projects');
+      expect(projectsHint).toBeDefined();
+      expect(projectsHint?.description).toBe('View the page this attachment belongs to');
+      expect(projectsHint?.example).toEqual({
+        resource: 'projects',
+        action: 'list',
+      });
+    });
+
+    it('returns empty related_resources for unknown attachableType', () => {
+      const hints = getAttachmentHints('12345', 'UnknownType');
 
       expect(hints.related_resources).toEqual([]);
     });

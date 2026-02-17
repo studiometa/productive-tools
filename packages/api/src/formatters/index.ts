@@ -26,6 +26,7 @@ export type { FormattedComment } from './comment.js';
 export type { FormattedTimer } from './timer.js';
 export type { FormattedDeal } from './deal.js';
 export type { FormattedBooking } from './booking.js';
+export type { FormattedAttachment } from './attachment.js';
 
 export { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
@@ -41,6 +42,7 @@ export { formatComment } from './comment.js';
 export { formatTimer } from './timer.js';
 export { formatDeal } from './deal.js';
 export { formatBooking } from './booking.js';
+export { formatAttachment } from './attachment.js';
 
 // Pagination
 export { formatPagination, hasMorePages } from './pagination.js';
@@ -125,6 +127,7 @@ export function formatSingleResponse<T>(
 // Generic formatter (auto-detect type)
 // ============================================================================
 
+import { formatAttachment } from './attachment.js';
 import { formatBooking } from './booking.js';
 import { formatBudget } from './budget.js';
 import { formatComment } from './comment.js';
@@ -196,6 +199,11 @@ function getFormatterForType(
       ) => Record<string, unknown>;
     case 'bookings':
       return formatBooking as (
+        item: JsonApiResource,
+        options?: FormatOptions,
+      ) => Record<string, unknown>;
+    case 'attachments':
+      return formatAttachment as (
         item: JsonApiResource,
         options?: FormatOptions,
       ) => Record<string, unknown>;

@@ -170,6 +170,20 @@ export type {
   StopTimerOptions,
 } from './executors/timers/index.js';
 
+// Attachments executors
+export {
+  buildAttachmentFilters,
+  deleteAttachment,
+  getAttachment,
+  listAttachments,
+} from './executors/attachments/index.js';
+export type {
+  DeleteAttachmentOptions,
+  DeleteAttachmentResult,
+  GetAttachmentOptions,
+  ListAttachmentsOptions,
+} from './executors/attachments/index.js';
+
 // Budgets executors
 export { buildBudgetFilters, getBudget, listBudgets } from './executors/budgets/index.js';
 export type { GetBudgetOptions, ListBudgetsOptions } from './executors/budgets/index.js';

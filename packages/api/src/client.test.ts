@@ -727,6 +727,37 @@ describe('ProductiveApi requests', () => {
     });
   });
 
+  describe('attachments', () => {
+    it('getAttachments with filters', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getAttachments({ page: 1, perPage: 20, filter: { task_id: '123' } });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/attachments');
+      expect(url).toContain('filter%5Btask_id%5D=123');
+    });
+
+    it('getAttachment by id', async () => {
+      const api = createApi();
+      mockFetchResponse({
+        data: { id: '1', type: 'attachments', attributes: { name: 'file.png' } },
+      });
+      await api.getAttachment('1');
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/attachments/1');
+    });
+
+    it('deleteAttachment by id', async () => {
+      const api = createApi();
+      fetchSpy.mockReset();
+      fetchSpy.mockResolvedValueOnce(new Response('null', { status: 200, statusText: 'OK' }));
+      await api.deleteAttachment('42');
+      const [url, options] = fetchSpy.mock.calls[0];
+      expect(url).toContain('/attachments/42');
+      expect(options!.method).toBe('DELETE');
+    });
+  });
+
   describe('reports', () => {
     it('getReports with all params', async () => {
       const api = createApi();
