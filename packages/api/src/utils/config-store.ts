@@ -1,19 +1,25 @@
 /**
  * Simple configuration storage using native Node.js fs
  * Respects XDG Base Directory specification
+ *
+ * On macOS, uses ~/Library/Application Support by default.
+ * If a legacy config exists at ~/.config (from older versions),
+ * it is automatically migrated on first access.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync, rmdirSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 
 export class ConfigStore<T extends Record<string, unknown>> {
   private configPath: string;
   private cache: T | null = null;
+  private migrated = false;
 
   constructor(projectName: string) {
     const configDir = this.getConfigDir();
     this.configPath = join(configDir, projectName, 'config.json');
+    this.migrateFromLegacyPath(projectName);
   }
 
   private getConfigDir(): string {
@@ -30,6 +36,74 @@ export class ConfigStore<T extends Record<string, unknown>> {
       // Linux/Unix: respect XDG_CONFIG_HOME or fallback to ~/.config
       return process.env.XDG_CONFIG_HOME || join(homedir(), '.config');
     }
+  }
+
+  /**
+   * Migrate config from legacy ~/.config path to the macOS-native path.
+   *
+   * Earlier versions used ~/.config on all platforms. On macOS (without
+   * XDG_CONFIG_HOME set), the correct path is ~/Library/Application Support.
+   * This migrates data automatically and removes the legacy file.
+   */
+  private migrateFromLegacyPath(projectName: string): void {
+    // Only migrate on macOS when XDG_CONFIG_HOME is not set
+    if (process.platform !== 'darwin' || process.env.XDG_CONFIG_HOME) {
+      return;
+    }
+
+    const legacyPath = join(homedir(), '.config', projectName, 'config.json');
+
+    // No legacy file to migrate from
+    if (!existsSync(legacyPath)) {
+      return;
+    }
+
+    // Read legacy config
+    let legacyData: T;
+    try {
+      const raw = readFileSync(legacyPath, 'utf-8');
+      legacyData = JSON.parse(raw) as T;
+    } catch {
+      return;
+    }
+
+    // Nothing to migrate if legacy config is empty
+    if (Object.keys(legacyData).length === 0) {
+      return;
+    }
+
+    // Load current config (may be empty or have some values)
+    const currentData = this.load();
+
+    // Merge: legacy values fill in missing keys, current values take precedence
+    const merged = { ...legacyData, ...currentData } as T;
+
+    // Only write if there's actually something new to add
+    const currentKeys = Object.keys(currentData);
+    const legacyKeys = Object.keys(legacyData);
+    const hasNewKeys = legacyKeys.some((key) => !currentKeys.includes(key));
+
+    if (hasNewKeys) {
+      this.save(merged);
+      this.migrated = true;
+    }
+
+    // Clean up legacy file
+    try {
+      unlinkSync(legacyPath);
+      // Remove directory if empty
+      const legacyDir = dirname(legacyPath);
+      rmdirSync(legacyDir);
+    } catch {
+      // Ignore errors (directory not empty, permissions, etc.)
+    }
+  }
+
+  /**
+   * Whether a migration from legacy config path occurred.
+   */
+  get didMigrate(): boolean {
+    return this.migrated;
   }
 
   private ensureConfigDir(): void {
