@@ -23,13 +23,16 @@ export default defineConfig({
     },
     external: ['@studiometa/productive-api'],
   }),
-  test: createTestConfig({
-    coverageExclude: ['src/index.ts'],
-    coverageThresholds: {
-      statements: 90,
-      branches: 90,
-      functions: 90,
-      lines: 90,
-    },
-  }),
+  test: {
+    ...createTestConfig({
+      coverageExclude: ['src/index.ts'],
+      coverageThresholds: {
+        statements: 90,
+        branches: 90,
+        functions: 90,
+        lines: 90,
+      },
+    }),
+    isolate: false,
+  },
 });
