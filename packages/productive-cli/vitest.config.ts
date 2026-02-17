@@ -14,7 +14,6 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: [
         'src/**/*.test.ts',
-        'src/**/__tests__/**',
         'src/cli.ts', // CLI entry point - wiring only
         'src/index.ts', // Package exports - no logic
         'src/types.ts', // Type definitions only

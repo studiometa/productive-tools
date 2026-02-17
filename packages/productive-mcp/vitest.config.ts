@@ -19,7 +19,6 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: [
         'src/**/*.test.ts',
-        'src/**/__tests__/**',
         'src/index.ts', // Entry point with startup code only
         'src/server.ts', // Entry point with startup code only
         'src/http.ts', // HTTP server infrastructure (SSE, routing) — tested via integration
