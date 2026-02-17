@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI**: Extract `createCommandRouter` utility — refactors tasks command as proof of concept ([d273eae], [#49])
 - **CLI**: Migrate remaining 13 CLI commands to `createCommandRouter` factory ([5ecb958], [#69], [#67])
 - **MCP**: Migrate services, companies, and pages handlers to `createResourceHandler` factory ([c908a2a], [#70], [#68])
+- **MCP**: Extend `createResourceHandler` with `customActions`, `listFilterFromArgs`, `resolveArgsFromArgs`, and `validateArgs` ([81a632b], [#72], [#71])
+- **MCP**: Migrate deals, tasks, time, attachments, bookings, comments, discussions, and timers handlers to factory ([81a632b], [#72], [#71])
 
 ### Fixed
 
@@ -188,6 +190,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#68]: https://github.com/studiometa/productive-tools/issues/68
 [#69]: https://github.com/studiometa/productive-tools/pull/69
 [#70]: https://github.com/studiometa/productive-tools/pull/70
+[81a632b]: https://github.com/studiometa/productive-tools/commit/81a632b
+[#71]: https://github.com/studiometa/productive-tools/issues/71
+[#72]: https://github.com/studiometa/productive-tools/pull/72
 [0.9.2]: https://github.com/studiometa/productive-tools/compare/0.9.1...0.9.2
 [5c982a8]: https://github.com/studiometa/productive-tools/commit/5c982a8
 [59afd31]: https://github.com/studiometa/productive-tools/commit/59afd31
