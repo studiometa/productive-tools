@@ -270,6 +270,25 @@ export interface ProductiveComment {
   };
 }
 
+export interface ProductiveAttachment {
+  id: string;
+  type: 'attachments';
+  attributes: {
+    name: string;
+    content_type: string;
+    size: number;
+    url: string;
+    thumb?: string;
+    temp_url?: string;
+    resized?: string;
+    created_at: string;
+    deleted_at?: string;
+    attachment_type?: string;
+    attachable_type?: string;
+  };
+  relationships?: Record<string, RelationshipData>;
+}
+
 export interface ProductiveReport {
   id: string;
   type: string;
