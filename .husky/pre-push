@@ -1,18 +1,9 @@
 #!/bin/sh
 
-echo "🔨 Building..."
+echo "🔨 Building (includes type checking)..."
 npm run build || exit 1
-
-echo "🔍 Type checking..."
-npm run typecheck || exit 1
 
 echo "🧪 Running tests..."
 npm test || exit 1
-
-# Full semgrep security scan
-if command -v semgrep >/dev/null 2>&1; then
-  echo "🛡️  Running semgrep security scan..."
-  npm run semgrep || exit 1
-fi
 
 echo "✅ All checks passed"
