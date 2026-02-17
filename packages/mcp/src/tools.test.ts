@@ -31,9 +31,13 @@ describe('tools', () => {
         'people',
         'companies',
         'comments',
+        'attachments',
         'timers',
         'deals',
         'bookings',
+        'budgets',
+        'pages',
+        'discussions',
         'reports',
       ]);
     });
@@ -46,6 +50,9 @@ describe('tools', () => {
         'get',
         'create',
         'update',
+        'delete',
+        'resolve',
+        'reopen',
         'me',
         'start',
         'stop',
@@ -102,15 +109,15 @@ describe('tools', () => {
   describe('token optimization', () => {
     it('should have reasonable tool schema size', () => {
       const totalSize = JSON.stringify(TOOLS).length;
-      // Single tool with expanded resources, reports, include parameter, and MCP annotations should be under 2600 bytes
-      expect(totalSize).toBeLessThan(2600);
+      // Single tool with all resources (including pages, discussions, budgets, attachments) and MCP annotations
+      expect(totalSize).toBeLessThan(3200);
     });
 
-    it('should estimate under 700 tokens', () => {
+    it('should estimate under 800 tokens', () => {
       const totalSize = JSON.stringify(TOOLS).length;
       const estimatedTokens = Math.ceil(totalSize / 4);
-      // With reports, include parameter, enhanced descriptions, and MCP annotations, token budget increased
-      expect(estimatedTokens).toBeLessThan(700);
+      // With all resources, actions, and enhanced descriptions
+      expect(estimatedTokens).toBeLessThan(800);
     });
   });
 });

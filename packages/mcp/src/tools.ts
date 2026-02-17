@@ -15,7 +15,7 @@ export const TOOLS: Tool[] = [
   {
     name: 'productive',
     description:
-      'Productive.io API. Resources: projects, time, tasks, services, people, companies, comments, timers, deals, bookings, reports. Actions: list, get, create, update (varies by resource), start/stop (timers), me (people), help (documentation). Use query for text search on list actions. Reports: use resource=reports, action=get with report_type. Filters: project_id, person_id, service_id, company_id, after/before (dates). Use include to fetch related data. Use compact=false for full details (default for get, true for list). Use action=help with a resource for detailed documentation.',
+      'Productive.io API. Resources: projects, time, tasks, services, people, companies, comments, attachments, timers, deals, bookings, budgets, pages, discussions, reports. Actions: list, get, create, update, delete (varies by resource), resolve/reopen (tasks), start/stop (timers), me (people), help (documentation). Use query for text search on list actions. Reports: use resource=reports, action=get with report_type. Filters: project_id, person_id, service_id, company_id, after/before (dates). Use include to fetch related data. Use compact=false for full details (default for get, true for list). Use action=help with a resource for detailed documentation.',
     annotations: {
       title: 'Productive.io',
       readOnlyHint: false,
@@ -36,15 +36,31 @@ export const TOOLS: Tool[] = [
             'people',
             'companies',
             'comments',
+            'attachments',
             'timers',
             'deals',
             'bookings',
+            'budgets',
+            'pages',
+            'discussions',
             'reports',
           ],
         },
         action: {
           type: 'string',
-          enum: ['list', 'get', 'create', 'update', 'me', 'start', 'stop', 'help'],
+          enum: [
+            'list',
+            'get',
+            'create',
+            'update',
+            'delete',
+            'resolve',
+            'reopen',
+            'me',
+            'start',
+            'stop',
+            'help',
+          ],
           description: 'Action to perform. Use "help" for detailed documentation on a resource.',
         },
         id: { type: 'string' },
@@ -80,9 +96,17 @@ export const TOOLS: Tool[] = [
         assignee_id: { type: 'string' },
         // Company fields
         name: { type: 'string' },
+        // Page fields
+        page_id: {
+          type: 'string',
+          description: 'Page ID. Find pages using resource="pages" action="list"',
+        },
+        parent_page_id: { type: 'string', description: 'Parent page ID for creating sub-pages' },
         // Comment fields
         body: { type: 'string' },
         deal_id: { type: 'string' },
+        // Attachment fields
+        comment_id: { type: 'string', description: 'Comment ID for filtering attachments' },
         // Timer fields
         time_entry_id: { type: 'string' },
         // Booking fields
