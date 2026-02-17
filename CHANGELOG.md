@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-02-17
+
 ### Added
 
 - **API**: Add `ProductivePage` and `ProductiveDiscussion` types with full CRUD client methods ([#33])
@@ -82,17 +84,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- 1,746 tests across 4 packages, all passing ([#25])
-  - API: 179 tests, 94% statements
-  - Core: 247 tests, 98% statements
-  - CLI: 996 tests, 85% statements
-  - MCP: 324 tests, 97% statements
+- 2,142 tests across 4 packages, all passing ([#25], [#32], [#33], [#34])
+  - API: 229 tests
+  - Core: 295 tests
+  - CLI: 1,229 tests
+  - MCP: 389 tests
 - **CLI/MCP**: Comprehensive test coverage for smart ID resolution ([#23])
 - Colocate test files next to source files, removing `__tests__/` directories ([#26])
 - Fix `vi.mock()` and dynamic `import()` paths after test file relocation ([#26])
 - Silence `console.error` in unknown subcommand tests to clean up test output ([#26])
 
-[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.8.5...HEAD
+[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.9.0...HEAD
+[0.9.0]: https://github.com/studiometa/productive-tools/compare/0.8.5...0.9.0
 [95c5cbe]: https://github.com/studiometa/productive-tools/commit/95c5cbe
 [c22d2da]: https://github.com/studiometa/productive-tools/commit/c22d2da
 [#23]: https://github.com/studiometa/productive-tools/pull/23

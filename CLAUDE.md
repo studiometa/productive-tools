@@ -29,7 +29,7 @@ Instructions for AI agents contributing to this codebase.
   - `npm run version:major` — bump major (e.g., 0.8.5 → 1.0.0)
 - These scripts update version in root and all workspace packages simultaneously
 - Version is injected at build time from package.json (no manual sync needed)
-- Exception: `@studiometa/productive-api` has its own version (currently 0.4.x)
+- All 4 packages share the same version (synced by `scripts/sync-versions.js` at publish time)
 
 ## Architecture
 

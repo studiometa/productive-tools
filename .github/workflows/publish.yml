@@ -24,8 +24,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Build CLI (required for MCP typecheck)
-        run: npm run build --workspace=@studiometa/productive-cli
+      - name: Build all packages
+        run: npm run build
 
       - name: Type check
         run: npm run typecheck
@@ -71,15 +71,30 @@ jobs:
           echo "NPM_TAG=$NPM_TAG" >> $GITHUB_ENV
           echo "IS_PRERELEASE=$IS_PRERELEASE" >> $GITHUB_ENV
 
+      - name: Sync inter-package versions
+        run: node scripts/sync-versions.js
+
+      - name: Publish @studiometa/productive-api
+        run: npm publish --provenance --access public --tag ${{ env.NPM_TAG }}
+        working-directory: packages/api
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @studiometa/productive-core
+        run: npm publish --provenance --access public --tag ${{ env.NPM_TAG }}
+        working-directory: packages/core
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Publish @studiometa/productive-cli
         run: npm publish --provenance --access public --tag ${{ env.NPM_TAG }}
-        working-directory: packages/productive-cli
+        working-directory: packages/cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @studiometa/productive-mcp
         run: npm publish --provenance --access public --tag ${{ env.NPM_TAG }}
-        working-directory: packages/productive-mcp
+        working-directory: packages/mcp
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
