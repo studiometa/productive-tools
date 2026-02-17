@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Core**: New `@studiometa/productive-core` package with executor architecture ([#25])
+  - Pure executor functions `(options, context) → ExecutorResult<T>` for all 12 resource types
+  - `ExecutorContext` with dependency injection: `api`, `resolver`, `config`
+  - `createTestExecutorContext()` for zero-mock testing
+  - `createResourceResolver()` factory with optional cache injection
+  - Bridge functions: `fromCommandContext()`, `fromHandlerContext()`
+- **API**: New `@studiometa/productive-api` package as foundation layer ([#25])
+  - `ProductiveApi` client with explicit config injection (no side effects)
+  - All resource types, formatters, `ProductiveApiError`, `ApiCache` interface
+  - Shared config, html utils, config-store
 - **CLI**: `resolve` command for looking up resources by human-friendly identifiers ([#23])
   - Resolve people by email: `productive resolve "user@example.com"`
   - Resolve projects by number: `productive resolve "PRJ-123"`
@@ -31,20 +41,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Architecture**: Restructured from 3 to 4 packages with clean dependency layering ([#25])
+  - `productive-api → (nothing)`, `productive-core → api`, `productive-cli → core + api`, `productive-mcp → core + api`
+  - MCP no longer depends on CLI
+  - Zero reverse/circular imports
+- **CLI**: All handlers now delegate to core executors — zero direct `ctx.api` calls ([#25])
+  - CLI `api.ts`: 971 → 30 LOC (thin wrapper), `types.ts`: 280 → 30 LOC (re-exports)
+  - Formatters re-exported from `@studiometa/productive-api` (deleted 12 duplicate files)
 - **CLI**: Resolver functions added to `CommandContext` for better testability ([#23])
   - `ctx.resolveFilters()` and `ctx.tryResolveValue()` methods
-  - Enables mocking resolution in tests without module-level mocks
-  - See [#24] for planned Nx-style architecture refactor
+- **MCP**: Handlers use `ctx.executor()` instead of direct API calls ([#25])
+  - `resolve.ts`: 460 → 62 LOC thin wrapper around core resolver
+- **Testing**: `vi.mock()` calls reduced from 197 to 16 across the monorepo ([#25])
+  - Remaining mocks are for Node.js builtins (`node:fs`, `node:os`) and singletons only
+  - Coverage thresholds enforced: API 90/80, Core 90/90, CLI 84/70, MCP 90/85
 
 ### Tests
 
+- 1,746 tests across 4 packages, all passing ([#25])
+  - API: 179 tests, 94% statements
+  - Core: 247 tests, 98% statements
+  - CLI: 996 tests, 85% statements
+  - MCP: 324 tests, 97% statements
 - **CLI/MCP**: Comprehensive test coverage for smart ID resolution ([#23])
-  - Tests for `no_hints` option in MCP handlers
-  - Edge case tests for resolver error handling
-  - Tests for `resolveFilters` and `tryResolveValue` functions
 
 [#23]: https://github.com/studiometa/productive-tools/pull/23
 [#24]: https://github.com/studiometa/productive-tools/issues/24
+[#25]: https://github.com/studiometa/productive-tools/pull/25
 
 ## [0.8.5] - 2026-02-10
 
