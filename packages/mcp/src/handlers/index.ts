@@ -212,10 +212,9 @@ export async function executeToolWithCredentials(
       case 'budgets':
         return inputErrorResult(
           new UserInputError(
-            'The "budgets" resource has been removed. Budgets are deals with budget=true.',
+            'The "budgets" resource has been removed. Budgets are deals with type=2.',
             [
-              'Use resource="deals" with filter[budget]="true" to list budgets',
-              'Use resource="deals" with filter[type]="2" as an alternative',
+              'Use resource="deals" with filter[type]="2" to list only budgets',
               'To create a budget: resource="deals" action="create" with budget=true',
               'Use action="help" resource="deals" for full documentation',
             ],

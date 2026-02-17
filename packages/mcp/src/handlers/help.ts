@@ -383,7 +383,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
 
   deals: {
     description:
-      'Sales deals, opportunities, and budgets. Budgets are deals with budget=true — use filter[type]=2 or filter[budget]=true to list only budgets.',
+      'Sales deals, opportunities, and budgets. Budgets are deals with budget=true — use filter[type]=2 to list only budgets.',
     actions: {
       list: 'List deals with optional filters',
       get: 'Get a single deal by ID',
@@ -398,7 +398,6 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       pipeline_id: 'Filter by pipeline',
       stage_status_id: 'Filter by stage: 1=open, 2=won, 3=lost',
       type: 'Filter by type: 1=deal, 2=budget',
-      budget: 'Filter by budget flag: true=budgets only, false=deals only',
       budget_status: 'Filter by budget status: 1=open, 2=closed',
     },
     includes: ['company', 'deal_status', 'responsible', 'project'],
@@ -421,17 +420,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       },
       {
         description: 'List only budgets',
-        params: { resource: 'deals', action: 'list', filter: { budget: 'true' } },
-      },
-      {
-        description: 'Create a budget',
-        params: {
-          resource: 'deals',
-          action: 'create',
-          name: 'Q1 Budget',
-          company_id: '12345',
-          budget: 'true',
-        },
+        params: { resource: 'deals', action: 'list', filter: { type: '2' } },
       },
     ],
   },

@@ -1439,7 +1439,7 @@ describe('handlers', () => {
         const text = result.content[0].text as string;
         expect(text).toContain('removed');
         expect(text).toContain('deals');
-        expect(text).toContain('budget=true');
+        expect(text).toContain('type=2');
       });
     });
   });
