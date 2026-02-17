@@ -20,8 +20,8 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     description: 'Manage projects in Productive.io',
     actions: {
       list: 'List all projects with optional filters',
-      get: 'Get a single project by ID with full details',
-      resolve: 'Look up by human-friendly identifier (email, project number, name)',
+      get: 'Get a single project by ID (supports PRJ-123, P-123 format)',
+      resolve: 'Resolve by project number (PRJ-123, P-123)',
     },
     filters: {
       query: 'Text search on project name',
@@ -61,7 +61,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       get: 'Get a single task by ID with full details (description, comments, etc.)',
       create: 'Create a new task (requires title, project_id, task_list_id)',
       update: 'Update an existing task',
-      resolve: 'Look up by human-friendly identifier (email, project number, name)',
+      resolve: 'Resolve by text search',
     },
     filters: {
       query: 'Text search on task title',
@@ -142,7 +142,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       create: 'Create a new time entry (requires person_id, service_id, date, time)',
       update: 'Update an existing time entry',
       delete: 'Delete a time entry',
-      resolve: 'Look up by human-friendly identifier (email, project number, name)',
+      resolve: 'Resolve related resources (person, project, service)',
     },
     filters: {
       person_id: 'Filter by person (use "me" for current user)',
@@ -193,6 +193,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     description: 'Budget line items within projects',
     actions: {
       list: 'List services with optional filters',
+      get: 'Get a single service by ID',
     },
     filters: {
       project_id: 'Filter by project',
@@ -221,9 +222,9 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     description: 'Team members and contacts',
     actions: {
       list: 'List people with optional filters',
-      get: 'Get a single person by ID',
+      get: 'Get a single person by ID (supports email address)',
       me: 'Get the currently authenticated user',
-      resolve: 'Look up by human-friendly identifier (email, project number, name)',
+      resolve: 'Resolve by email address',
     },
     filters: {
       query: 'Text search on name or email',
@@ -260,10 +261,10 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     description: 'Client companies and organizations',
     actions: {
       list: 'List companies with optional filters',
-      get: 'Get a single company by ID',
+      get: 'Get a single company by ID (supports company name)',
       create: 'Create a new company (requires name)',
       update: 'Update an existing company',
-      resolve: 'Look up by human-friendly identifier (email, project number, name)',
+      resolve: 'Resolve by company name',
     },
     filters: {
       query: 'Text search on company name',
@@ -391,10 +392,10 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       'Sales deals, opportunities, and budgets. Budgets are deals with budget=true — use filter[type]=2 to list only budgets.',
     actions: {
       list: 'List deals with optional filters',
-      get: 'Get a single deal by ID',
+      get: 'Get a single deal by ID (supports D-123, DEAL-123 format)',
       create: 'Create a new deal (requires name, company_id)',
       update: 'Update an existing deal',
-      resolve: 'Look up by human-friendly identifier (email, project number, name)',
+      resolve: 'Resolve by deal number (D-123, DEAL-123)',
     },
     filters: {
       query: 'Text search on deal name',
