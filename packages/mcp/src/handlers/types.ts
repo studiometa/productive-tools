@@ -63,6 +63,13 @@ export interface TaskArgs extends CommonArgs {
 }
 
 /**
+ * Time entry-specific args
+ */
+export interface TimeArgs extends CommonArgs {
+  project_id?: string;
+}
+
+/**
  * Comment-specific args
  */
 export interface CommentArgs extends CommonArgs {

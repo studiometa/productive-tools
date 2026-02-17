@@ -13,119 +13,47 @@ import {
   deleteTimeEntry,
 } from '@studiometa/productive-core';
 
-import type { CommonArgs, HandlerContext, ToolResult } from './types.js';
+import type { TimeArgs } from './types.js';
 
-import { ErrorMessages } from '../errors.js';
-import { formatListResponse, formatTimeEntry } from '../formatters.js';
+import { formatTimeEntry } from '../formatters.js';
 import { getTimeEntryHints } from '../hints.js';
-import { handleResolve, type ResolvableResourceType } from './resolve.js';
-import { inputErrorResult, jsonResult } from './utils.js';
+import { createResourceHandler } from './factory.js';
 
-const VALID_ACTIONS = ['list', 'get', 'create', 'update', 'delete', 'resolve'];
-
-export async function handleTime(
-  action: string,
-  args: CommonArgs & { query?: string; type?: ResolvableResourceType; project_id?: string },
-  ctx: HandlerContext,
-): Promise<ToolResult> {
-  const { formatOptions, filter, page, perPage } = ctx;
-  const { id, person_id, service_id, task_id, time, date, note, query, type, project_id } = args;
-
-  // Handle resolve action (MCP-specific, no executor equivalent)
-  if (action === 'resolve') {
-    return handleResolve({ query, type, project_id }, ctx);
-  }
-
-  const execCtx = ctx.executor();
-
-  if (action === 'get') {
-    if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
-
-    const result = await getTimeEntry({ id }, execCtx);
-    const formatted = formatTimeEntry(result.data, formatOptions);
-
-    // Add contextual hints unless disabled (MCP-specific)
-    if (ctx.includeHints !== false) {
-      const serviceId = result.data.relationships?.service?.data?.id;
-      return jsonResult({
-        ...formatted,
-        _hints: getTimeEntryHints(id, undefined, serviceId),
-      });
-    }
-
-    return jsonResult(formatted);
-  }
-
-  if (action === 'create') {
-    if (!person_id || !service_id || !time || !date) {
-      return inputErrorResult(
-        ErrorMessages.missingRequiredFields('time entry', [
-          'person_id',
-          'service_id',
-          'time',
-          'date',
-        ]),
-      );
-    }
-
-    const result = await createTimeEntry(
-      {
-        personId: person_id,
-        serviceId: service_id,
-        time,
-        date,
-        note: note ?? undefined,
-        taskId: task_id,
-        projectId: project_id,
-      },
-      execCtx,
-    );
-
-    return jsonResult({ success: true, ...formatTimeEntry(result.data, formatOptions) });
-  }
-
-  if (action === 'update') {
-    if (!id) return inputErrorResult(ErrorMessages.missingId('update'));
-
-    const result = await updateTimeEntry(
-      {
-        id,
-        time: time ?? undefined,
-        date: date ?? undefined,
-        note: note ?? undefined,
-      },
-      execCtx,
-    );
-
-    return jsonResult({ success: true, ...formatTimeEntry(result.data, formatOptions) });
-  }
-
-  if (action === 'delete') {
-    if (!id) return inputErrorResult(ErrorMessages.missingId('delete'));
-    const execCtx = ctx.executor();
-    await deleteTimeEntry({ id }, execCtx);
-    return jsonResult({ success: true, deleted: id });
-  }
-
-  if (action === 'list') {
-    const result = await listTimeEntries(
-      {
-        page,
-        perPage,
-        additionalFilters: filter,
-      },
-      execCtx,
-    );
-
-    const response = formatListResponse(result.data, formatTimeEntry, result.meta, formatOptions);
-
-    // Include resolution metadata if any resolutions occurred
-    if (result.resolved && Object.keys(result.resolved).length > 0) {
-      return jsonResult({ ...response, _resolved: result.resolved });
-    }
-
-    return jsonResult(response);
-  }
-
-  return inputErrorResult(ErrorMessages.invalidAction(action, 'time', VALID_ACTIONS));
-}
+export const handleTime = createResourceHandler<TimeArgs>({
+  resource: 'time',
+  displayName: 'time entry',
+  actions: ['list', 'get', 'create', 'update', 'delete', 'resolve'],
+  formatter: formatTimeEntry,
+  hints: (data, id) => {
+    const serviceId = data.relationships?.service?.data?.id;
+    return getTimeEntryHints(id, undefined, serviceId);
+  },
+  supportsResolve: true,
+  resolveArgsFromArgs: (args) => ({ project_id: args.project_id }),
+  create: {
+    required: ['person_id', 'service_id', 'time', 'date'],
+    mapOptions: (args) => ({
+      personId: args.person_id,
+      serviceId: args.service_id,
+      time: args.time,
+      date: args.date,
+      note: args.note ?? undefined,
+      taskId: args.task_id,
+      projectId: args.project_id,
+    }),
+  },
+  update: {
+    mapOptions: (args) => ({
+      time: args.time ?? undefined,
+      date: args.date ?? undefined,
+      note: args.note ?? undefined,
+    }),
+  },
+  executors: {
+    list: listTimeEntries,
+    get: getTimeEntry,
+    create: createTimeEntry,
+    update: updateTimeEntry,
+    delete: deleteTimeEntry,
+  },
+});

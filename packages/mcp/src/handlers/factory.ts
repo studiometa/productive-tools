@@ -17,6 +17,9 @@ import { formatListResponse } from '../formatters.js';
 import { handleResolve, type ResolvableResourceType } from './resolve.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
+// Re-export for use in customActions
+export type { ExecutorContext };
+
 /**
  * Result type from executors (list operations)
  */
@@ -43,6 +46,8 @@ interface CreateConfig<TArgs> {
   required: (keyof TArgs)[];
   /** Custom validation (return error message or undefined if valid) */
   validate?: (args: TArgs) => string | undefined;
+  /** Custom validation that returns a ToolResult on error, or undefined if valid */
+  validateArgs?: (args: TArgs) => ToolResult | undefined;
   /** Map args to executor options */
   mapOptions: (args: TArgs) => Record<string, unknown>;
 }
@@ -51,6 +56,8 @@ interface CreateConfig<TArgs> {
  * Configuration for the update action
  */
 interface UpdateConfig<TArgs> {
+  /** Fields that can be updated - if none provided, error is returned */
+  allowedFields?: (keyof TArgs)[];
   /** Map args to executor options (id is handled automatically) */
   mapOptions: (args: TArgs) => Record<string, unknown>;
 }
@@ -61,6 +68,9 @@ interface UpdateConfig<TArgs> {
 export interface ResourceHandlerConfig<TArgs extends CommonArgs = CommonArgs> {
   /** Resource name (e.g., 'projects', 'tasks') */
   resource: string;
+
+  /** Display name for error messages (defaults to resource) */
+  displayName?: string;
 
   /** Valid actions for this resource */
   actions: string[];
@@ -80,6 +90,18 @@ export interface ResourceHandlerConfig<TArgs extends CommonArgs = CommonArgs> {
   /** Whether this resource supports the resolve action */
   supportsResolve?: boolean;
 
+  /** Extract additional filters from args for list operations */
+  listFilterFromArgs?: (args: TArgs) => Record<string, string>;
+
+  /** Extract extra args to pass to handleResolve (e.g., project_id for tasks/time) */
+  resolveArgsFromArgs?: (args: TArgs) => Record<string, string | undefined>;
+
+  /** Custom action handlers for non-CRUD actions (e.g., resolve/reopen for discussions, start/stop for timers) */
+  customActions?: Record<
+    string,
+    (args: TArgs, ctx: HandlerContext, execCtx: ExecutorContext) => Promise<ToolResult>
+  >;
+
   /** Create action configuration (if supported) */
   create?: CreateConfig<TArgs>;
 
@@ -88,28 +110,16 @@ export interface ResourceHandlerConfig<TArgs extends CommonArgs = CommonArgs> {
 
   /** Executors for each action */
   executors: {
-    list: (
-      options: {
-        page?: number;
-        perPage?: number;
-        additionalFilters?: Record<string, string>;
-        include?: string[];
-      },
-      ctx: ExecutorContext,
-    ) => Promise<ListExecutorResult>;
-    get?: (
-      options: { id: string; include?: string[] },
-      ctx: ExecutorContext,
-    ) => Promise<SingleExecutorResult>;
-    create?: (
-      options: Record<string, unknown>,
-      ctx: ExecutorContext,
-    ) => Promise<SingleExecutorResult>;
-    update?: (
-      options: Record<string, unknown>,
-      ctx: ExecutorContext,
-    ) => Promise<SingleExecutorResult>;
-    delete?: (options: { id: string }, ctx: ExecutorContext) => Promise<void>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    list: (options: any, ctx: ExecutorContext) => Promise<ListExecutorResult>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    get?: (options: any, ctx: ExecutorContext) => Promise<SingleExecutorResult>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    create?: (options: any, ctx: ExecutorContext) => Promise<SingleExecutorResult>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    update?: (options: any, ctx: ExecutorContext) => Promise<SingleExecutorResult>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete?: (options: any, ctx: ExecutorContext) => Promise<unknown>;
   };
 }
 
@@ -150,11 +160,15 @@ export function createResourceHandler<TArgs extends CommonArgs = CommonArgs>(
 ) => Promise<ToolResult> {
   const {
     resource,
+    displayName = resource,
     actions,
     formatter,
     hints,
     defaultInclude,
     supportsResolve,
+    listFilterFromArgs,
+    resolveArgsFromArgs,
+    customActions,
     create: createConfig,
     update: updateConfig,
     executors,
@@ -168,15 +182,20 @@ export function createResourceHandler<TArgs extends CommonArgs = CommonArgs>(
     const { formatOptions, filter, page, perPage, include: userInclude } = ctx;
     const { id, query, type } = args;
 
-    // Handle resolve action
+    const execCtx = ctx.executor();
+
+    // Handle custom actions first (before built-in resolve, to allow overriding)
+    if (customActions?.[action]) {
+      return customActions[action](args, ctx, execCtx);
+    }
+
+    // Handle resolve action (for query resolution, not domain-specific resolve)
     if (action === 'resolve') {
       if (!supportsResolve) {
         return inputErrorResult(ErrorMessages.invalidAction(action, resource, actions));
       }
-      return handleResolve({ query, type }, ctx);
+      return handleResolve({ query, type, ...resolveArgsFromArgs?.(args) }, ctx);
     }
-
-    const execCtx = ctx.executor();
 
     // Handle get action
     if (action === 'get') {
@@ -205,19 +224,25 @@ export function createResourceHandler<TArgs extends CommonArgs = CommonArgs>(
         return inputErrorResult(ErrorMessages.invalidAction(action, resource, actions));
       }
 
-      // Check required fields
+      // Check required fields first
       const missingFields = createConfig.required.filter((field) => !args[field]);
       if (missingFields.length > 0) {
         return inputErrorResult(
-          ErrorMessages.missingRequiredFields(resource, missingFields as string[]),
+          ErrorMessages.missingRequiredFields(displayName, missingFields as string[]),
         );
+      }
+
+      // Run custom args validation if provided (returns ToolResult on error)
+      if (createConfig.validateArgs) {
+        const errorResult = createConfig.validateArgs(args);
+        if (errorResult) return errorResult;
       }
 
       // Run custom validation if provided
       if (createConfig.validate) {
         const errorMessage = createConfig.validate(args);
         if (errorMessage) {
-          return inputErrorResult(ErrorMessages.missingRequiredFields(resource, [errorMessage]));
+          return inputErrorResult(ErrorMessages.missingRequiredFields(displayName, [errorMessage]));
         }
       }
 
@@ -232,6 +257,16 @@ export function createResourceHandler<TArgs extends CommonArgs = CommonArgs>(
         return inputErrorResult(ErrorMessages.invalidAction(action, resource, actions));
       }
       if (!id) return inputErrorResult(ErrorMessages.missingId('update'));
+
+      // Validate at least one allowed field is provided
+      if (updateConfig.allowedFields && updateConfig.allowedFields.length > 0) {
+        const hasAnyField = updateConfig.allowedFields.some((field) => args[field] !== undefined);
+        if (!hasAnyField) {
+          return inputErrorResult(
+            ErrorMessages.noUpdateFieldsSpecified(updateConfig.allowedFields as string[]),
+          );
+        }
+      }
 
       const options = { id, ...updateConfig.mapOptions(args) };
       const result = await executors.update(options, execCtx);
@@ -252,10 +287,11 @@ export function createResourceHandler<TArgs extends CommonArgs = CommonArgs>(
     // Handle list action
     if (action === 'list') {
       const include = mergeIncludes(userInclude, defaultInclude?.list);
-      const result = await executors.list(
-        { page, perPage, additionalFilters: filter, include },
-        execCtx,
-      );
+      const additionalFilters = {
+        ...filter,
+        ...listFilterFromArgs?.(args),
+      };
+      const result = await executors.list({ page, perPage, additionalFilters, include }, execCtx);
 
       const response = formatListResponse(result.data, formatter, result.meta, {
         ...formatOptions,

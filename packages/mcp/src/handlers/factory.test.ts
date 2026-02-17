@@ -446,4 +446,272 @@ describe('createResourceHandler', () => {
       expect((result.content[0] as { text: string }).text).toContain('Invalid action');
     });
   });
+
+  describe('customActions', () => {
+    it('should call custom action handler when action matches', async () => {
+      interface TimerArgs {
+        id?: string;
+        service_id?: string;
+      }
+      const customStartHandler = vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: JSON.stringify({ success: true, action: 'start' }) }],
+      });
+
+      const handler = createResourceHandler<TimerArgs>({
+        resource: 'timers',
+        actions: ['list', 'get', 'start', 'stop'],
+        formatter: mockFormatter,
+        customActions: {
+          start: customStartHandler,
+        },
+        executors: {
+          list: vi.fn(),
+          get: vi.fn(),
+        },
+      });
+
+      const ctx = createMockHandlerContext();
+      const result = await handler('start', { service_id: '456' }, ctx);
+
+      expect(customStartHandler).toHaveBeenCalledWith(
+        { service_id: '456' },
+        ctx,
+        expect.anything(), // ExecutorContext
+      );
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse((result.content[0] as { text: string }).text);
+      expect(content.success).toBe(true);
+      expect(content.action).toBe('start');
+    });
+
+    it('should still error on unknown actions even with customActions defined', async () => {
+      const handler = createResourceHandler({
+        resource: 'timers',
+        actions: ['list', 'start'],
+        formatter: mockFormatter,
+        customActions: {
+          start: vi.fn(),
+        },
+        executors: { list: vi.fn() },
+      });
+
+      const result = await handler('unknown', {}, createMockHandlerContext());
+
+      expect(result.isError).toBe(true);
+      expect((result.content[0] as { text: string }).text).toContain('Invalid action');
+    });
+  });
+
+  describe('listFilterFromArgs', () => {
+    it('should merge filters from args into list call', async () => {
+      interface AttachmentArgs {
+        id?: string;
+        task_id?: string;
+        comment_id?: string;
+      }
+      const listExecutor = vi.fn().mockResolvedValue({ data: [] });
+
+      const handler = createResourceHandler<AttachmentArgs>({
+        resource: 'attachments',
+        actions: ['list'],
+        formatter: mockFormatter,
+        listFilterFromArgs: (args) => {
+          const filters: Record<string, string> = {};
+          if (args.task_id) filters.task_id = args.task_id;
+          if (args.comment_id) filters.comment_id = args.comment_id;
+          return filters;
+        },
+        executors: { list: listExecutor },
+      });
+
+      await handler(
+        'list',
+        { task_id: '123', comment_id: '456' },
+        createMockHandlerContext({ filter: { existing: 'filter' } }),
+      );
+
+      expect(listExecutor).toHaveBeenCalledWith(
+        expect.objectContaining({
+          additionalFilters: {
+            existing: 'filter',
+            task_id: '123',
+            comment_id: '456',
+          },
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('should work with empty args', async () => {
+      const listExecutor = vi.fn().mockResolvedValue({ data: [] });
+
+      const handler = createResourceHandler({
+        resource: 'attachments',
+        actions: ['list'],
+        formatter: mockFormatter,
+        listFilterFromArgs: () => ({}),
+        executors: { list: listExecutor },
+      });
+
+      await handler('list', {}, createMockHandlerContext({ filter: { foo: 'bar' } }));
+
+      expect(listExecutor).toHaveBeenCalledWith(
+        expect.objectContaining({
+          additionalFilters: { foo: 'bar' },
+        }),
+        expect.anything(),
+      );
+    });
+  });
+
+  describe('resolveArgsFromArgs', () => {
+    it('should forward extra args to resolve handler', async () => {
+      interface TaskArgs {
+        id?: string;
+        project_id?: string;
+      }
+
+      // We can't easily test handleResolve directly, but we can verify the handler
+      // is called with supportsResolve and the args extraction works
+      const handler = createResourceHandler<TaskArgs>({
+        resource: 'tasks',
+        actions: ['list', 'resolve'],
+        formatter: mockFormatter,
+        supportsResolve: true,
+        resolveArgsFromArgs: (args) => ({ project_id: args.project_id }),
+        executors: { list: vi.fn() },
+      });
+
+      // The resolve action will fail because handleResolve needs real context,
+      // but we can verify the action doesn't error as "invalid action"
+      const result = await handler(
+        'resolve',
+        { query: 'test', project_id: 'proj-123' },
+        createMockHandlerContext(),
+      );
+
+      // The error should be from handleResolve (query required or similar), not "invalid action"
+      // Since we're testing the factory, we just verify resolve is attempted
+      expect(result.isError).toBe(true);
+      expect((result.content[0] as { text: string }).text).not.toContain('Invalid action');
+    });
+  });
+
+  describe('create.validateArgs', () => {
+    it('should return error result from validateArgs', async () => {
+      interface BookingArgs {
+        id?: string;
+        person_id?: string;
+        service_id?: string;
+        event_id?: string;
+      }
+      const customErrorResult = {
+        isError: true as const,
+        content: [{ type: 'text' as const, text: 'Custom validation error' }],
+      };
+
+      const handler = createResourceHandler<BookingArgs>({
+        resource: 'bookings',
+        actions: ['list', 'create'],
+        formatter: mockFormatter,
+        create: {
+          required: ['person_id'],
+          validateArgs: (args) => {
+            if (!args.service_id && !args.event_id) {
+              return customErrorResult;
+            }
+            return undefined;
+          },
+          mapOptions: (args) => ({ personId: args.person_id }),
+        },
+        executors: {
+          list: vi.fn(),
+          create: vi.fn().mockResolvedValue({ data: mockProject }),
+        },
+      });
+
+      const result = await handler(
+        'create',
+        { person_id: '123' }, // Missing service_id and event_id
+        createMockHandlerContext(),
+      );
+
+      expect(result.isError).toBe(true);
+      expect((result.content[0] as { text: string }).text).toBe('Custom validation error');
+    });
+
+    it('should proceed to create when validateArgs returns undefined', async () => {
+      interface BookingArgs {
+        id?: string;
+        person_id?: string;
+        service_id?: string;
+      }
+      const createExecutor = vi.fn().mockResolvedValue({ data: mockProject });
+
+      const handler = createResourceHandler<BookingArgs>({
+        resource: 'bookings',
+        actions: ['list', 'create'],
+        formatter: mockFormatter,
+        create: {
+          required: ['person_id'],
+          validateArgs: (args) => {
+            if (!args.service_id) {
+              return undefined; // Valid - don't require service_id
+            }
+            return undefined;
+          },
+          mapOptions: (args) => ({ personId: args.person_id, serviceId: args.service_id }),
+        },
+        executors: {
+          list: vi.fn(),
+          create: createExecutor,
+        },
+      });
+
+      const result = await handler(
+        'create',
+        { person_id: '123', service_id: '456' },
+        createMockHandlerContext(),
+      );
+
+      expect(createExecutor).toHaveBeenCalled();
+      expect(result.isError).toBeUndefined();
+    });
+
+    it('should run validateArgs after required fields check', async () => {
+      interface TestArgs {
+        id?: string;
+        required_field?: string;
+      }
+      const validateArgsCalled = vi.fn();
+      const customErrorResult = {
+        isError: true as const,
+        content: [{ type: 'text' as const, text: 'validateArgs error' }],
+      };
+
+      const handler = createResourceHandler<TestArgs>({
+        resource: 'test',
+        actions: ['list', 'create'],
+        formatter: mockFormatter,
+        create: {
+          required: ['required_field'],
+          validateArgs: () => {
+            validateArgsCalled();
+            return customErrorResult;
+          },
+          mapOptions: () => ({}),
+        },
+        executors: {
+          list: vi.fn(),
+          create: vi.fn(),
+        },
+      });
+
+      // Without required field, validateArgs should NOT be called
+      const result = await handler('create', {}, createMockHandlerContext());
+
+      expect(validateArgsCalled).not.toHaveBeenCalled();
+      expect((result.content[0] as { text: string }).text).toContain('required_field');
+    });
+  });
 });

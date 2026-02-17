@@ -4,54 +4,49 @@
 
 import { listTimers, getTimer, startTimer, stopTimer } from '@studiometa/productive-core';
 
-import type { HandlerContext, TimerArgs, ToolResult } from './types.js';
+import type { TimerArgs } from './types.js';
 
 import { ErrorMessages } from '../errors.js';
-import { formatListResponse, formatTimer } from '../formatters.js';
+import { formatTimer } from '../formatters.js';
 import { getTimerHints } from '../hints.js';
+import { createResourceHandler } from './factory.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
-const VALID_ACTIONS = ['list', 'get', 'start', 'stop'];
-
-export async function handleTimers(
-  action: string,
-  args: TimerArgs,
-  ctx: HandlerContext,
-): Promise<ToolResult> {
-  const { formatOptions, filter, page, perPage, include } = ctx;
-  const { id, service_id, time_entry_id } = args;
-
-  const execCtx = ctx.executor();
-
-  if (action === 'get') {
-    if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
-    const result = await getTimer({ id, include }, execCtx);
-    const formatted = formatTimer(result.data, formatOptions);
-
-    if (ctx.includeHints !== false) {
-      return jsonResult({ ...formatted, _hints: getTimerHints(id) });
-    }
-    return jsonResult(formatted);
-  }
-
-  if (action === 'start' || action === 'create') {
-    if (!service_id && !time_entry_id) {
-      return inputErrorResult(ErrorMessages.missingServiceForTimer());
-    }
-    const result = await startTimer({ serviceId: service_id, timeEntryId: time_entry_id }, execCtx);
-    return jsonResult({ success: true, ...formatTimer(result.data, formatOptions) });
-  }
-
-  if (action === 'stop') {
-    if (!id) return inputErrorResult(ErrorMessages.missingId('stop'));
-    const result = await stopTimer({ id }, execCtx);
-    return jsonResult({ success: true, ...formatTimer(result.data, formatOptions) });
-  }
-
-  if (action === 'list') {
-    const result = await listTimers({ page, perPage, additionalFilters: filter, include }, execCtx);
-    return jsonResult(formatListResponse(result.data, formatTimer, result.meta, formatOptions));
-  }
-
-  return inputErrorResult(ErrorMessages.invalidAction(action, 'timers', VALID_ACTIONS));
-}
+export const handleTimers = createResourceHandler<TimerArgs>({
+  resource: 'timers',
+  actions: ['list', 'get', 'start', 'stop'],
+  formatter: formatTimer,
+  hints: (_data, id) => getTimerHints(id),
+  customActions: {
+    start: async (args, ctx, execCtx) => {
+      if (!args.service_id && !args.time_entry_id) {
+        return inputErrorResult(ErrorMessages.missingServiceForTimer());
+      }
+      const result = await startTimer(
+        { serviceId: args.service_id, timeEntryId: args.time_entry_id },
+        execCtx,
+      );
+      return jsonResult({ success: true, ...formatTimer(result.data, ctx.formatOptions) });
+    },
+    create: async (args, ctx, execCtx) => {
+      // 'create' is an alias for 'start'
+      if (!args.service_id && !args.time_entry_id) {
+        return inputErrorResult(ErrorMessages.missingServiceForTimer());
+      }
+      const result = await startTimer(
+        { serviceId: args.service_id, timeEntryId: args.time_entry_id },
+        execCtx,
+      );
+      return jsonResult({ success: true, ...formatTimer(result.data, ctx.formatOptions) });
+    },
+    stop: async (args, ctx, execCtx) => {
+      if (!args.id) return inputErrorResult(ErrorMessages.missingId('stop'));
+      const result = await stopTimer({ id: args.id }, execCtx);
+      return jsonResult({ success: true, ...formatTimer(result.data, ctx.formatOptions) });
+    },
+  },
+  executors: {
+    list: listTimers,
+    get: getTimer,
+  },
+});

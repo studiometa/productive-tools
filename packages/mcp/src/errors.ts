@@ -107,6 +107,13 @@ export const ErrorMessages = {
       'Find services using resource="services" with action="list"',
     ]),
 
+  // Update-specific errors
+  noUpdateFieldsSpecified: (allowedFields: string[]) =>
+    new UserInputError(
+      `No updates specified. Provide at least one of: ${allowedFields.join(', ')}`,
+      ['Specify at least one field to update', `Updatable fields are: ${allowedFields.join(', ')}`],
+    ),
+
   // API errors
   apiError: (statusCode: number, message: string) => {
     const hints: string[] = [];

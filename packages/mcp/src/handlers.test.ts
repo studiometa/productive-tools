@@ -950,7 +950,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBe(true);
-        expect(result.content[0].text).toContain('are required for creating task');
+        expect(result.content[0].text).toContain('is required for creating task');
       });
 
       it('should return error for update without id', async () => {
@@ -1183,7 +1183,8 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBe(true);
-        expect(result.content[0].text).toContain('is required for creating comment update');
+        expect(result.content[0].text).toContain('No updates specified');
+        expect(result.content[0].text).toContain('body');
       });
 
       it('should handle update action', async () => {
@@ -1223,7 +1224,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBe(true);
-        expect(result.content[0].text).toContain('are required for creating deal');
+        expect(result.content[0].text).toContain('is required for creating deal');
       });
 
       it('should handle create action', async () => {
