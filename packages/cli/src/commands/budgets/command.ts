@@ -6,7 +6,7 @@ import type { OutputFormat } from '../../types.js';
 
 import { createContext, type CommandOptions } from '../../context.js';
 import { OutputFormatter } from '../../output.js';
-import { budgetsList } from './handlers.js';
+import { budgetsList, budgetsGet } from './handlers.js';
 
 /**
  * Handle budgets command
@@ -25,6 +25,9 @@ export async function handleBudgetsCommand(
     case 'list':
     case 'ls':
       await budgetsList(ctx);
+      break;
+    case 'get':
+      await budgetsGet(args, ctx);
       break;
     default:
       formatter.error(`Unknown budgets subcommand: ${subcommand}`);

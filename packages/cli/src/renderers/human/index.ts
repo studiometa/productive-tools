@@ -46,7 +46,12 @@ export {
 export { HumanServiceListRenderer, humanServiceListRenderer } from './service.js';
 
 // Budgets
-export { HumanBudgetListRenderer, humanBudgetListRenderer } from './budget.js';
+export {
+  HumanBudgetListRenderer,
+  HumanBudgetDetailRenderer,
+  humanBudgetListRenderer,
+  humanBudgetDetailRenderer,
+} from './budget.js';
 
 // Companies
 export {

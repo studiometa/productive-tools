@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ProductiveApi } from '../api.js';
 
 import { createTestContext } from '../context.js';
-import { budgetsList } from './budgets/handlers.js';
+import { budgetsList, budgetsGet } from './budgets/handlers.js';
 import { handleBudgetsCommand } from './budgets/index.js';
 
 describe('budgets command', () => {
@@ -25,6 +25,7 @@ describe('budgets command', () => {
             id: '1',
             type: 'budgets',
             attributes: {
+              name: 'Q1 Budget',
               total_time_budget: 100,
               remaining_time_budget: 50,
               total_monetary_budget: 10000,
@@ -35,6 +36,7 @@ describe('budgets command', () => {
             id: '2',
             type: 'budgets',
             attributes: {
+              name: 'Q2 Budget',
               total_time_budget: 200,
               remaining_time_budget: 150,
               total_monetary_budget: null,
@@ -61,6 +63,7 @@ describe('budgets command', () => {
             id: '1',
             type: 'budgets',
             attributes: {
+              name: 'Test Budget',
               total_time_budget: 100,
               remaining_time_budget: 50,
               total_monetary_budget: 10000,
@@ -99,6 +102,40 @@ describe('budgets command', () => {
         page: 1,
         perPage: 100,
         filter: { project_id: '123' },
+      });
+    });
+
+    it('should filter budgets by deal', async () => {
+      const getBudgets = vi.fn().mockResolvedValue({ data: [], meta: { total: 0 } });
+
+      const ctx = createTestContext({
+        api: { getBudgets } as unknown as ProductiveApi,
+        options: { deal: '456', format: 'json' },
+      });
+
+      await budgetsList(ctx);
+
+      expect(getBudgets).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: { deal_id: '456' },
+      });
+    });
+
+    it('should filter budgets by billable', async () => {
+      const getBudgets = vi.fn().mockResolvedValue({ data: [], meta: { total: 0 } });
+
+      const ctx = createTestContext({
+        api: { getBudgets } as unknown as ProductiveApi,
+        options: { billable: 'true', format: 'json' },
+      });
+
+      await budgetsList(ctx);
+
+      expect(getBudgets).toHaveBeenCalledWith({
+        page: 1,
+        perPage: 100,
+        filter: { billable: 'true' },
       });
     });
 
@@ -170,6 +207,87 @@ describe('budgets command', () => {
       await budgetsList(ctx);
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('budgetsGet', () => {
+    it('should get a budget by ID in human format', async () => {
+      const getBudget = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'budgets',
+          attributes: {
+            name: 'Q1 Budget',
+            billable: true,
+            started_on: '2024-01-01',
+            ended_on: '2024-03-31',
+            total_time_budget: 4800,
+            remaining_time_budget: 2400,
+            total_monetary_budget: 50000,
+            remaining_monetary_budget: 25000,
+            created_at: '2024-01-01T00:00:00Z',
+          },
+        },
+      });
+
+      const ctx = createTestContext({
+        api: { getBudget } as unknown as ProductiveApi,
+      });
+
+      await budgetsGet(['1'], ctx);
+
+      expect(getBudget).toHaveBeenCalledWith('1');
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should get a budget by ID in json format', async () => {
+      const getBudget = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'budgets',
+          attributes: {
+            name: 'Test Budget',
+            total_time_budget: 100,
+          },
+        },
+      });
+
+      const ctx = createTestContext({
+        api: { getBudget } as unknown as ProductiveApi,
+        options: { format: 'json' },
+      });
+
+      await budgetsGet(['1'], ctx);
+
+      expect(getBudget).toHaveBeenCalledWith('1');
+    });
+
+    it('should exit with error if no ID provided', async () => {
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext();
+
+      try {
+        await budgetsGet([], ctx);
+      } catch {
+        // exitWithValidationError throws
+      }
+
+      expect(processExitSpy).toHaveBeenCalledWith(3);
+    });
+
+    it('should handle API errors', async () => {
+      const { ProductiveApiError } = await import('@studiometa/productive-api');
+      const getBudget = vi.fn().mockRejectedValue(new ProductiveApiError('Not found', 404));
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const ctx = createTestContext({
+        api: { getBudget } as unknown as ProductiveApi,
+      });
+
+      await budgetsGet(['999'], ctx);
+
+      expect(processExitSpy).toHaveBeenCalledWith(5);
     });
   });
 
