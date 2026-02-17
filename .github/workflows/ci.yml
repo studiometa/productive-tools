@@ -101,10 +101,31 @@ jobs:
             packages/productive-cli/coverage/
             packages/productive-mcp/coverage/
 
+  semgrep:
+    name: Semgrep Security Scan
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: >
+          semgrep scan
+          --config p/typescript
+          --config p/nodejs
+          --config p/secrets
+          --config p/owasp-top-ten
+          --error
+          --exclude='node_modules'
+          --exclude='dist'
+          --exclude='coverage'
+          .
+
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, semgrep]
     steps:
       - uses: actions/checkout@v4
 

@@ -35,6 +35,8 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "typecheck": "npm run typecheck --workspaces",
+    "semgrep": "semgrep scan --config p/typescript --config p/nodejs --config p/secrets --config p/owasp-top-ten --error --exclude='node_modules' --exclude='dist' --exclude='coverage' .",
+    "semgrep:secrets": "semgrep scan --config p/secrets --error --quiet --exclude='node_modules' --exclude='dist' --exclude='coverage' .",
     "clean": "rm -rf packages/*/dist packages/*/node_modules node_modules",
     "version:patch": "npm version --include-workspace-root --workspaces --no-git-tag-version patch",
     "version:minor": "npm version --include-workspace-root --workspaces --no-git-tag-version minor",
