@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MCP**: Document ID resolution patterns in help — `get` descriptions now mention supported formats ([cc3e59e], [#47])
 - **MCP**: Extract `createResourceHandler` factory for MCP handlers — refactors projects as proof of concept ([1dff6d8], [#50])
 - **CLI**: Extract `createCommandRouter` utility — refactors tasks command as proof of concept ([d273eae], [#49])
+- **CLI**: Migrate remaining 13 CLI commands to `createCommandRouter` factory ([5ecb958], [#69], [#67])
+- **MCP**: Migrate services, companies, and pages handlers to `createResourceHandler` factory ([c908a2a], [#70], [#68])
 
 ### Fixed
 
@@ -180,6 +182,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#51]: https://github.com/studiometa/productive-tools/issues/51
 [#52]: https://github.com/studiometa/productive-tools/issues/52
 [#53]: https://github.com/studiometa/productive-tools/issues/53
+[5ecb958]: https://github.com/studiometa/productive-tools/commit/5ecb958
+[c908a2a]: https://github.com/studiometa/productive-tools/commit/c908a2a
+[#67]: https://github.com/studiometa/productive-tools/issues/67
+[#68]: https://github.com/studiometa/productive-tools/issues/68
+[#69]: https://github.com/studiometa/productive-tools/pull/69
+[#70]: https://github.com/studiometa/productive-tools/pull/70
 [0.9.2]: https://github.com/studiometa/productive-tools/compare/0.9.1...0.9.2
 [5c982a8]: https://github.com/studiometa/productive-tools/commit/5c982a8
 [59afd31]: https://github.com/studiometa/productive-tools/commit/59afd31
