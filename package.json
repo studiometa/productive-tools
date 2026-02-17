@@ -17,7 +17,7 @@
   "author": "Studio Meta",
   "repository": {
     "type": "git",
-    "url": "https://github.com/studiometa/productive-cli"
+    "url": "https://github.com/studiometa/productive-tools"
   },
   "workspaces": [
     "packages/*"

@@ -1,0 +1,106 @@
+{
+  "name": "@studiometa/productive-mcp",
+  "version": "0.8.5",
+  "description": "MCP server for Productive.io API - Model Context Protocol integration for Claude Desktop",
+  "keywords": [
+    "ai",
+    "claude",
+    "http",
+    "mcp",
+    "model-context-protocol",
+    "productive",
+    "project-management",
+    "remote"
+  ],
+  "license": "MIT",
+  "author": "Studio Meta",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/studiometa/productive-tools",
+    "directory": "packages/mcp"
+  },
+  "bin": {
+    "productive-mcp": "./dist/index.js",
+    "productive-mcp-server": "./dist/server.js"
+  },
+  "files": [
+    "dist",
+    "skills"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    },
+    "./auth": {
+      "types": "./dist/auth.d.ts",
+      "import": "./dist/auth.js"
+    },
+    "./crypto": {
+      "types": "./dist/crypto.d.ts",
+      "import": "./dist/crypto.js"
+    },
+    "./oauth": {
+      "types": "./dist/oauth.d.ts",
+      "import": "./dist/oauth.js"
+    },
+    "./tools": {
+      "types": "./dist/tools.d.ts",
+      "import": "./dist/tools.js"
+    },
+    "./handlers": {
+      "types": "./dist/handlers.d.ts",
+      "import": "./dist/handlers.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "dev": "vite build --watch",
+    "dev:server": "node --watch dist/server.js",
+    "build": "vite build && tsc --emitDeclarationOnly && node scripts/postbuild.js",
+    "prepublishOnly": "node scripts/prepublish.js",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ci": "vitest run --coverage",
+    "lint": "oxlint src",
+    "format": "oxfmt --write src",
+    "format:check": "oxfmt --check src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@studiometa/productive-api": "*",
+    "@studiometa/productive-core": "*",
+    "h3": "^1.15.1",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@vitest/coverage-v8": "^4.1.0-beta.4",
+    "oxlint": "^1.43.0",
+    "typescript": "^5.7.3",
+    "vite": "^8.0.0-beta.14",
+    "vitest": "^4.1.0-beta.4"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
