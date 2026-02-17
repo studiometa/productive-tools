@@ -57,6 +57,45 @@ describe('HumanBudgetListRenderer', () => {
     new HumanBudgetListRenderer().render({ data: [] }, ctx);
     expect(spy).not.toHaveBeenCalled();
   });
+
+  it('renders list item with undefined remaining time budget', () => {
+    new HumanBudgetListRenderer().render(
+      {
+        data: [
+          {
+            id: '10',
+            name: 'Undefined Remaining Time',
+            total_time_budget: 100,
+            remaining_time_budget: undefined,
+          },
+        ],
+      },
+      ctx,
+    );
+    expect(spy).toHaveBeenCalled();
+    const output = spy.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(output).toContain('Time:');
+  });
+
+  it('renders list item with undefined remaining monetary budget', () => {
+    new HumanBudgetListRenderer().render(
+      {
+        data: [
+          {
+            id: '11',
+            name: 'Undefined Remaining Money',
+            total_monetary_budget: 5000,
+            remaining_monetary_budget: undefined,
+            currency: 'USD',
+          },
+        ],
+      },
+      ctx,
+    );
+    expect(spy).toHaveBeenCalled();
+    const output = spy.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(output).toContain('Cost:');
+  });
 });
 
 describe('HumanBudgetDetailRenderer', () => {
@@ -211,6 +250,22 @@ describe('HumanBudgetDetailRenderer', () => {
         name: 'Zero Remaining Money',
         total_monetary_budget: 5000,
         remaining_monetary_budget: 0,
+        currency: 'EUR',
+      },
+      ctx,
+    );
+    expect(spy).toHaveBeenCalled();
+    const output = spy.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(output).toContain('Cost:');
+  });
+
+  it('renders budget with undefined remaining monetary', () => {
+    new HumanBudgetDetailRenderer().render(
+      {
+        id: '10',
+        name: 'Undefined Remaining Money',
+        total_monetary_budget: 5000,
+        remaining_monetary_budget: undefined,
         currency: 'EUR',
       },
       ctx,

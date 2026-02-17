@@ -335,6 +335,60 @@ describe('budgets command', () => {
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
+    it('should use f shorthand for format in list (without format option)', async () => {
+      const getBudgets = vi.fn().mockResolvedValue({
+        data: [
+          {
+            id: '1',
+            type: 'budgets',
+            attributes: {
+              name: 'Budget with f shorthand',
+              total_time_budget: 100,
+              remaining_time_budget: 50,
+            },
+          },
+        ],
+        meta: { total: 1 },
+      });
+
+      // Test f shorthand without format option - must not have format key at all
+      const ctx = createTestContext({
+        api: { getBudgets } as unknown as ProductiveApi,
+        options: { f: 'csv', 'no-color': true },
+      });
+
+      await budgetsList(ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should default to human format when no format specified', async () => {
+      const getBudgets = vi.fn().mockResolvedValue({
+        data: [
+          {
+            id: '1',
+            type: 'budgets',
+            attributes: {
+              name: 'Budget with default format',
+              total_time_budget: 100,
+              remaining_time_budget: 50,
+            },
+          },
+        ],
+        meta: { total: 1 },
+      });
+
+      // Test default format (human) when neither format nor f is provided
+      const ctx = createTestContext({
+        api: { getBudgets } as unknown as ProductiveApi,
+        options: { 'no-color': true },
+      });
+
+      await budgetsList(ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
     it('should handle API errors', async () => {
       const { ProductiveApiError } = await import('@studiometa/productive-api');
       const getBudgets = vi.fn().mockRejectedValue(new ProductiveApiError('API Error', 500));
@@ -431,6 +485,56 @@ describe('budgets command', () => {
       const ctx = createTestContext({
         api: { getBudget } as unknown as ProductiveApi,
         options: { f: 'json' },
+      });
+
+      await budgetsGet(['1'], ctx);
+
+      expect(getBudget).toHaveBeenCalledWith('1');
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should use f shorthand for human format in get (without format option)', async () => {
+      const getBudget = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'budgets',
+          attributes: {
+            name: 'Budget with f shorthand',
+            total_time_budget: 200,
+            remaining_time_budget: 100,
+          },
+        },
+      });
+
+      // Test f shorthand without format option - must not have format key at all
+      const ctx = createTestContext({
+        api: { getBudget } as unknown as ProductiveApi,
+        options: { f: 'human', 'no-color': true },
+      });
+
+      await budgetsGet(['1'], ctx);
+
+      expect(getBudget).toHaveBeenCalledWith('1');
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should default to human format in get when no format specified', async () => {
+      const getBudget = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'budgets',
+          attributes: {
+            name: 'Budget with default format',
+            total_time_budget: 200,
+            remaining_time_budget: 100,
+          },
+        },
+      });
+
+      // Test default format (human) when neither format nor f is provided
+      const ctx = createTestContext({
+        api: { getBudget } as unknown as ProductiveApi,
+        options: { 'no-color': true },
       });
 
       await budgetsGet(['1'], ctx);
