@@ -28,25 +28,16 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
-      - name: Build all packages
-        run: npm run build
-
-      - name: Type check
-        run: npm run typecheck
-
-  test:
-    name: Test & Coverage
+  build:
+    name: Build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [24]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -55,35 +46,92 @@ jobs:
       - name: Build all packages
         run: npm run build
 
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: |
+            packages/api/dist/
+            packages/core/dist/
+            packages/cli/dist/
+            packages/mcp/dist/
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: packages/
+
+      - name: Type check
+        run: npm run typecheck
+
+  test:
+    name: Test & Coverage
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: packages/
+
       - name: Run tests with coverage
         run: npm run test:ci
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
-        if: matrix.node-version == '24'
+        if: ${{ !cancelled() }}
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./packages/productive-api/coverage/lcov.info,./packages/productive-core/coverage/lcov.info,./packages/productive-cli/coverage/lcov.info,./packages/productive-mcp/coverage/lcov.info
+          files: ./packages/api/coverage/lcov.info,./packages/core/coverage/lcov.info,./packages/cli/coverage/lcov.info,./packages/mcp/coverage/lcov.info
           fail_ci_if_error: false
           flags: unittests
           name: codecov-umbrella
 
       - name: Upload test results to Codecov
         uses: codecov/codecov-action@v5
-        if: ${{ !cancelled() && matrix.node-version == '24' }}
+        if: ${{ !cancelled() }}
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./packages/productive-api/test-results/junit.xml,./packages/productive-core/test-results/junit.xml,./packages/productive-cli/test-results/junit.xml,./packages/productive-mcp/test-results/junit.xml
+          files: ./packages/api/test-results/junit.xml,./packages/core/test-results/junit.xml,./packages/cli/test-results/junit.xml,./packages/mcp/test-results/junit.xml
           report_type: test_results
 
       - name: Generate coverage summary
-        if: matrix.node-version == '24'
+        if: ${{ !cancelled() }}
         run: |
           echo "## Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          for pkg in productive-api productive-core productive-cli productive-mcp; do
-            echo "### @studiometa/$pkg" >> $GITHUB_STEP_SUMMARY
+          for pkg in api core cli mcp; do
+            echo "### @studiometa/productive-$pkg" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             cat packages/$pkg/coverage/coverage-summary.json | jq -r '.total | "Statements: \(.statements.pct)%\nBranches: \(.branches.pct)%\nFunctions: \(.functions.pct)%\nLines: \(.lines.pct)%"' >> $GITHUB_STEP_SUMMARY || echo "Coverage summary not available" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
@@ -92,14 +140,14 @@ jobs:
 
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
-        if: matrix.node-version == '24'
+        if: ${{ !cancelled() }}
         with:
           name: coverage
           path: |
-            packages/productive-api/coverage/
-            packages/productive-core/coverage/
-            packages/productive-cli/coverage/
-            packages/productive-mcp/coverage/
+            packages/api/coverage/
+            packages/core/coverage/
+            packages/cli/coverage/
+            packages/mcp/coverage/
 
   semgrep:
     name: Semgrep Security Scan
@@ -122,31 +170,20 @@ jobs:
           --exclude='coverage'
           .
 
-  build:
-    name: Build
+  ci-pass:
+    name: CI Pass
     runs-on: ubuntu-latest
-    needs: [lint, test, semgrep]
+    if: always()
+    needs: [lint, build, typecheck, test, semgrep]
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build all packages
-        run: npm run build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: |
-            packages/productive-api/dist/
-            packages/productive-core/dist/
-            packages/productive-cli/dist/
-            packages/productive-mcp/dist/
+      - name: Check all jobs
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" ]] ||
+             [[ "${{ needs.build.result }}" != "success" ]] ||
+             [[ "${{ needs.typecheck.result }}" != "success" ]] ||
+             [[ "${{ needs.test.result }}" != "success" ]] ||
+             [[ "${{ needs.semgrep.result }}" != "success" ]]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi
+          echo "All jobs passed"

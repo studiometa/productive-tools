@@ -48,7 +48,7 @@
     "lint": "oxlint src",
     "format": "oxfmt --write src",
     "format:check": "oxfmt --check src",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
     "@studiometa/productive-api": "*"
