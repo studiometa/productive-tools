@@ -698,6 +698,7 @@ describe('tasks command', () => {
 
   describe('command routing', () => {
     it('should handle unknown subcommand', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
       const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
 
       await handleTasksCommand('unknown', [], {

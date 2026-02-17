@@ -278,6 +278,7 @@ describe('companies command', () => {
 
   describe('command routing', () => {
     it('should exit with error for unknown subcommand', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
       const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
 
       await handleCompaniesCommand('unknown', [], {

@@ -372,6 +372,7 @@ describe('projects command', () => {
     // which internally creates a real context. Kept minimal.
 
     it('should handle unknown subcommand', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
       const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
 
       await handleProjectsCommand('unknown', [], {
