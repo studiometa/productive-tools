@@ -49,7 +49,6 @@ export default defineConfig({
         'src/renderers/human/index.ts', // Barrel re-export
         'scripts/**',
         '**/*.test.ts',
-        '**/__tests__/**',
         '*.config.ts',
       ],
       thresholds: {
