@@ -15,7 +15,8 @@ Instructions for AI agents contributing to this codebase.
 - Prefix entries with package name when relevant: `**CLI**: ...`, `**MCP**: ...`, `**API**: ...`, `**Core**: ...`
 - Use `[hash]` format for commit references (not bare hashes)
 - Use `[#N]` format for PR references (GitHub style, not `!N` GitLab style)
-- Add link definitions at the bottom of the file:
+- Add link definitions at the end of each release section (not in a shared footer):
+  - Version: `[X.Y.Z]: https://github.com/studiometa/productive-tools/compare/prev...X.Y.Z`
   - Commits: `[hash]: https://github.com/studiometa/productive-tools/commit/hash`
   - PRs: `[#N]: https://github.com/studiometa/productive-tools/pull/N`
 - Keep entries concise, single line with references at the end

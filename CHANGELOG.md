@@ -68,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `vi.mock()` and dynamic `import()` paths after test file relocation ([#26])
 - Silence `console.error` in unknown subcommand tests to clean up test output ([#26])
 
+[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.8.5...HEAD
 [#23]: https://github.com/studiometa/productive-tools/pull/23
 [#24]: https://github.com/studiometa/productive-tools/issues/24
 [#25]: https://github.com/studiometa/productive-tools/pull/25
@@ -79,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **MCP**: Expose `hidden` attribute for comments to distinguish private from public ([fcf6a7b], [#21])
 
+[0.8.5]: https://github.com/studiometa/productive-tools/compare/0.8.4...0.8.5
 [fcf6a7b]: https://github.com/studiometa/productive-tools/commit/fcf6a7b
 [#21]: https://github.com/studiometa/productive-tools/pull/21
 
@@ -89,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MCP**: Add version to stderr startup message for debugging ([c5f9898])
 - Fix 0.8.3 version link in changelog ([0b181de])
 
+[0.8.4]: https://github.com/studiometa/productive-tools/compare/0.8.3...0.8.4
 [c5f9898]: https://github.com/studiometa/productive-tools/commit/c5f9898
 [0b181de]: https://github.com/studiometa/productive-tools/commit/0b181de
 
@@ -115,6 +118,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix test mocks for vitest 4 compatibility — arrow functions replaced with function expressions for class constructors ([80cbb77], [#19])
 - Fix exit code assertions for 404 errors (`NOT_FOUND_ERROR = 5`) ([80cbb77], [#19])
 
+[0.8.3]: https://github.com/studiometa/productive-tools/compare/0.8.2...0.8.3
 [47061f4]: https://github.com/studiometa/productive-tools/commit/47061f4
 [1873439]: https://github.com/studiometa/productive-tools/commit/1873439
 [be0e07f]: https://github.com/studiometa/productive-tools/commit/be0e07f
@@ -138,6 +142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI**: Extended filters for timers - `time-entry` ([fd593e0], [#17])
 - **MCP**: Updated skill documentation with all new filter options ([d18d2e9], [#17])
 
+[0.8.2]: https://github.com/studiometa/productive-tools/compare/0.8.1...0.8.2
 [e5b3d7f]: https://github.com/studiometa/productive-tools/commit/e5b3d7f
 [ea85a0b]: https://github.com/studiometa/productive-tools/commit/ea85a0b
 [d2910fe]: https://github.com/studiometa/productive-tools/commit/d2910fe
@@ -152,6 +157,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **MCP**: Clarify `query` parameter documentation - behavior varies by resource and may include related fields ([ee87df8])
 
+[0.8.1]: https://github.com/studiometa/productive-tools/compare/0.8.0...0.8.1
 [ee87df8]: https://github.com/studiometa/productive-tools/commit/ee87df8
 
 ## [0.8.0] - 2026-02-03
@@ -174,6 +180,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI**: Error messages now include hints to guide users on how to resolve issues ([5557df1], [#16])
 - **MCP**: Error messages now include hints to guide LLMs on how to resolve issues ([2dfe416], [#15])
 
+[0.8.0]: https://github.com/studiometa/productive-tools/compare/0.7.0...0.8.0
 [1d8336c]: https://github.com/studiometa/productive-tools/commit/1d8336c
 [3d40f18]: https://github.com/studiometa/productive-tools/commit/3d40f18
 [d20ff5f]: https://github.com/studiometa/productive-tools/commit/d20ff5f
@@ -208,6 +215,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **MCP**: Smart `compact` defaults - `false` for `get` actions, `true` for `list` ([34019d6], [#12])
 
+[0.7.0]: https://github.com/studiometa/productive-tools/compare/0.6.4...0.7.0
 [34019d6]: https://github.com/studiometa/productive-tools/commit/34019d6
 [5c7c67b]: https://github.com/studiometa/productive-tools/commit/5c7c67b
 [ce971b8]: https://github.com/studiometa/productive-tools/commit/ce971b8
@@ -223,11 +231,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **MCP**: Add `WWW-Authenticate` header on 401 responses to trigger OAuth re-authentication (RFC 6750) ([65aa7d5])
 
+[0.6.4]: https://github.com/studiometa/productive-tools/compare/0.6.3...0.6.4
+[65aa7d5]: https://github.com/studiometa/productive-tools/commit/65aa7d5
+
 ## [0.6.3] - 2026-02-02
 
 ### Added
 
 - **MCP**: OAuth Protected Resource Metadata endpoint `/.well-known/oauth-protected-resource` (RFC 9728 / MCP spec 2025-03-26) ([aa25804])
+
+[0.6.3]: https://github.com/studiometa/productive-tools/compare/0.6.2...0.6.3
+[aa25804]: https://github.com/studiometa/productive-tools/commit/aa25804
 
 ## [0.6.2] - 2026-02-02
 
@@ -235,11 +249,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **MCP**: Prepublish script to sync CLI dependency version automatically ([ed4293c])
 
+[0.6.2]: https://github.com/studiometa/productive-tools/compare/0.6.1...0.6.2
+[ed4293c]: https://github.com/studiometa/productive-tools/commit/ed4293c
+
 ## [0.6.1] - 2026-02-02
 
 ### Fixed
 
 - **MCP**: Pin CLI dependency to ^0.6.0 to ensure formatBooking export is available
+
+[0.6.1]: https://github.com/studiometa/productive-tools/compare/0.6.0...0.6.1
 
 ## [0.6.0] - 2026-02-02
 
@@ -273,6 +292,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - postbuild.js uses safe format strings ([f20c87d], [#9])
 - crypto.ts specifies GCM auth tag length ([e75a3f5], [#9])
 
+[0.6.0]: https://github.com/studiometa/productive-tools/compare/0.5.0...0.6.0
+[86ba32e]: https://github.com/studiometa/productive-tools/commit/86ba32e
+[bf263a7]: https://github.com/studiometa/productive-tools/commit/bf263a7
+[8e19f00]: https://github.com/studiometa/productive-tools/commit/8e19f00
+[1496a9d]: https://github.com/studiometa/productive-tools/commit/1496a9d
+[381a9df]: https://github.com/studiometa/productive-tools/commit/381a9df
+[c6c0cd4]: https://github.com/studiometa/productive-tools/commit/c6c0cd4
+[f28defc]: https://github.com/studiometa/productive-tools/commit/f28defc
+[537a598]: https://github.com/studiometa/productive-tools/commit/537a598
+[8880538]: https://github.com/studiometa/productive-tools/commit/8880538
+[e0e5197]: https://github.com/studiometa/productive-tools/commit/e0e5197
+[db471fa]: https://github.com/studiometa/productive-tools/commit/db471fa
+[12f79cf]: https://github.com/studiometa/productive-tools/commit/12f79cf
+[d9d8dc5]: https://github.com/studiometa/productive-tools/commit/d9d8dc5
+[2462b82]: https://github.com/studiometa/productive-tools/commit/2462b82
+[d68dc10]: https://github.com/studiometa/productive-tools/commit/d68dc10
+[8a10051]: https://github.com/studiometa/productive-tools/commit/8a10051
+[294b323]: https://github.com/studiometa/productive-tools/commit/294b323
+[ca186cc]: https://github.com/studiometa/productive-tools/commit/ca186cc
+[781dd4b]: https://github.com/studiometa/productive-tools/commit/781dd4b
+[f20c87d]: https://github.com/studiometa/productive-tools/commit/f20c87d
+[e75a3f5]: https://github.com/studiometa/productive-tools/commit/e75a3f5
+[#6]: https://github.com/studiometa/productive-tools/pull/6
+[#8]: https://github.com/studiometa/productive-tools/pull/8
+[#9]: https://github.com/studiometa/productive-tools/pull/9
+[#10]: https://github.com/studiometa/productive-tools/pull/10
+
 ## [0.5.0] - 2026-02-02
 
 ### Changed
@@ -286,11 +332,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **CI**: Simplified GitHub release notes ([f0ef187], [#5])
 
+[0.5.0]: https://github.com/studiometa/productive-tools/compare/0.4.6...0.5.0
+[a622bc1]: https://github.com/studiometa/productive-tools/commit/a622bc1
+[f0ef187]: https://github.com/studiometa/productive-tools/commit/f0ef187
+[#4]: https://github.com/studiometa/productive-tools/pull/4
+[#5]: https://github.com/studiometa/productive-tools/pull/5
+
 ## [0.4.6] - 2026-02-02
 
 ### Fixed
 
 - **MCP**: Tool execution correctly passes credentials to ProductiveApi ([e50803d])
+
+[0.4.6]: https://github.com/studiometa/productive-tools/compare/0.4.5...0.4.6
+[e50803d]: https://github.com/studiometa/productive-tools/commit/e50803d
 
 ## [0.4.5] - 2026-02-02
 
@@ -298,17 +353,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Repository URL now points to productive-tools monorepo ([ce27b36])
 
+[0.4.5]: https://github.com/studiometa/productive-tools/compare/0.4.4...0.4.5
+[ce27b36]: https://github.com/studiometa/productive-tools/commit/ce27b36
+
 ## [0.4.4] - 2026-02-02
 
 ### Changed
 
 - Version is now dynamically injected from package.json at build time ([9f66138])
 
+[0.4.4]: https://github.com/studiometa/productive-tools/compare/0.4.3...0.4.4
+[9f66138]: https://github.com/studiometa/productive-tools/commit/9f66138
+
 ## [0.4.3] - 2026-02-02
 
 ### Fixed
 
 - **CI**: Tag pattern updated to match tags without v prefix ([fff06a8])
+
+[0.4.3]: https://github.com/studiometa/productive-tools/compare/0.4.2...0.4.3
+[fff06a8]: https://github.com/studiometa/productive-tools/commit/fff06a8
 
 ## [0.4.2] - 2026-02-02
 
@@ -320,17 +384,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **MCP**: Use centralized version constant ([b51d506])
 
+[0.4.2]: https://github.com/studiometa/productive-tools/compare/0.4.1...0.4.2
+[db8bea3]: https://github.com/studiometa/productive-tools/commit/db8bea3
+[b51d506]: https://github.com/studiometa/productive-tools/commit/b51d506
+
 ## [0.4.1] - 2026-02-02
 
 ### Fixed
 
-- **MCP**: Use centralized version constant ([b51d506])
+- **MCP**: Use centralized version constant ([b51d506-2])
+
+[0.4.1]: https://github.com/studiometa/productive-tools/compare/0.4.0...0.4.1
+[b51d506-2]: https://github.com/studiometa/productive-tools/commit/b51d506
 
 ## [0.4.0] - 2026-02-01
 
 ### Added
 
 - **MCP**: OAuth 2.0 support for Claude Desktop ([f46e8bd], [#3])
+
+[0.4.0]: https://github.com/studiometa/productive-tools/compare/v0.3.0...0.4.0
+[f46e8bd]: https://github.com/studiometa/productive-tools/commit/f46e8bd
+[#3]: https://github.com/studiometa/productive-tools/pull/3
 
 ## [0.3.0] - 2026-02-01
 
@@ -349,6 +424,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - CI workflow now builds CLI before running MCP tests ([76966a4])
 
+[0.3.0]: https://github.com/studiometa/productive-tools/compare/0.2.4...v0.3.0
+[e5fa4fc]: https://github.com/studiometa/productive-tools/commit/e5fa4fc
+[cc93bf8]: https://github.com/studiometa/productive-tools/commit/cc93bf8
+[76966a4]: https://github.com/studiometa/productive-tools/commit/76966a4
+[14ad00b]: https://github.com/studiometa/productive-tools/commit/14ad00b
+[6df0e37]: https://github.com/studiometa/productive-tools/commit/6df0e37
+[0538e59]: https://github.com/studiometa/productive-tools/commit/0538e59
+[fcfd100]: https://github.com/studiometa/productive-tools/commit/fcfd100
+[1e8df6e]: https://github.com/studiometa/productive-tools/commit/1e8df6e
+[1535a27]: https://github.com/studiometa/productive-tools/commit/1535a27
+[07c5302]: https://github.com/studiometa/productive-tools/commit/07c5302
+[1b399c4]: https://github.com/studiometa/productive-tools/commit/1b399c4
+[bad60f9]: https://github.com/studiometa/productive-tools/commit/bad60f9
+[fdcdd3f]: https://github.com/studiometa/productive-tools/commit/fdcdd3f
+[33ea6cb]: https://github.com/studiometa/productive-tools/commit/33ea6cb
+[5251a31]: https://github.com/studiometa/productive-tools/commit/5251a31
+
 ## [0.2.4] - 2026-01-21
 
 ### Added
@@ -362,6 +454,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Works in Bash, Zsh, and Fish shells
   - Fast and responsive using SQLite cache
   - Graceful fallback when cache is empty
+
+[0.2.4]: https://github.com/studiometa/productive-tools/compare/0.2.3...0.2.4
+[6a6382c]: https://github.com/studiometa/productive-tools/commit/6a6382c
 
 ## [0.2.3] - 2026-01-21
 
@@ -382,11 +477,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Warning no longer appears on any CLI command
   - Applied at module load time for complete coverage
 
+[0.2.3]: https://github.com/studiometa/productive-tools/compare/0.2.2...0.2.3
+[a634018]: https://github.com/studiometa/productive-tools/commit/a634018
+[d9a16f7]: https://github.com/studiometa/productive-tools/commit/d9a16f7
+[1e92112]: https://github.com/studiometa/productive-tools/commit/1e92112
+
 ## [0.2.2] - 2026-01-21
 
 ### Fixed
 
 - Suppress SQLite experimental warning during module import
+
+[0.2.2]: https://github.com/studiometa/productive-tools/compare/0.2.1...0.2.2
 
 ## [0.2.1] - 2026-01-21
 
@@ -397,6 +499,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Linux: libsecret (via `secret-tool` CLI)
   - Automatic fallback to config file when keychain is unavailable
   - API tokens are automatically stored securely
+
+[0.2.1]: https://github.com/studiometa/productive-tools/compare/0.2.0...0.2.1
+[20b8c1e]: https://github.com/studiometa/productive-tools/commit/20b8c1e
 
 ## [0.2.0] - 2026-01-21
 
@@ -440,6 +545,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated documentation to match fox-pilot style guide
 - Enhanced README with better structure and examples
 - Improved error messages and API compatibility
+
+[0.2.0]: https://github.com/studiometa/productive-tools/compare/0.1.0...0.2.0
+[94cc95d]: https://github.com/studiometa/productive-tools/commit/94cc95d
+[92a1e4b]: https://github.com/studiometa/productive-tools/commit/92a1e4b
+[de9f8de]: https://github.com/studiometa/productive-tools/commit/de9f8de
+[9616f81]: https://github.com/studiometa/productive-tools/commit/9616f81
+[9ec58a9]: https://github.com/studiometa/productive-tools/commit/9ec58a9
+[28a3dce]: https://github.com/studiometa/productive-tools/commit/28a3dce
+[d7d1d2b]: https://github.com/studiometa/productive-tools/commit/d7d1d2b
+[a696ac2]: https://github.com/studiometa/productive-tools/commit/a696ac2
+[7f0e8ec]: https://github.com/studiometa/productive-tools/commit/7f0e8ec
+[79f2858]: https://github.com/studiometa/productive-tools/commit/79f2858
+[8c5b8a5]: https://github.com/studiometa/productive-tools/commit/8c5b8a5
 
 ## [0.1.0] - 2026-01-16
 
@@ -518,103 +636,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ESM** module format
 - **XDG** compliant configuration storage
 
-[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.8.5...HEAD
-[#23]: https://github.com/studiometa/productive-tools/pull/23
-[0.8.4]: https://github.com/studiometa/productive-tools/compare/0.8.3...0.8.4
-[0.8.3]: https://github.com/studiometa/productive-tools/compare/0.8.2...0.8.3
-[0.8.2]: https://github.com/studiometa/productive-tools/compare/0.8.1...0.8.2
-[0.8.1]: https://github.com/studiometa/productive-tools/compare/0.8.0...0.8.1
-[0.8.0]: https://github.com/studiometa/productive-tools/compare/0.7.0...0.8.0
-[0.7.0]: https://github.com/studiometa/productive-tools/compare/0.6.4...0.7.0
-[0.6.4]: https://github.com/studiometa/productive-tools/compare/0.6.3...0.6.4
-[0.6.3]: https://github.com/studiometa/productive-tools/compare/0.6.2...0.6.3
-[0.6.2]: https://github.com/studiometa/productive-tools/compare/0.6.1...0.6.2
-[0.6.1]: https://github.com/studiometa/productive-tools/compare/0.6.0...0.6.1
-[0.6.0]: https://github.com/studiometa/productive-tools/compare/0.5.0...0.6.0
-[0.5.0]: https://github.com/studiometa/productive-tools/compare/0.4.6...0.5.0
-[0.4.6]: https://github.com/studiometa/productive-tools/compare/0.4.5...0.4.6
-[0.4.5]: https://github.com/studiometa/productive-tools/compare/0.4.4...0.4.5
-[0.4.4]: https://github.com/studiometa/productive-tools/compare/0.4.3...0.4.4
-[0.4.3]: https://github.com/studiometa/productive-tools/compare/0.4.2...0.4.3
-[0.4.2]: https://github.com/studiometa/productive-tools/compare/0.4.1...0.4.2
-[0.4.1]: https://github.com/studiometa/productive-tools/compare/0.4.0...0.4.1
-[0.4.0]: https://github.com/studiometa/productive-tools/compare/v0.3.0...0.4.0
-[0.3.0]: https://github.com/studiometa/productive-tools/compare/0.2.4...v0.3.0
-[0.2.4]: https://github.com/studiometa/productive-tools/compare/0.2.3...0.2.4
-[0.2.3]: https://github.com/studiometa/productive-tools/compare/0.2.2...0.2.3
-[0.2.2]: https://github.com/studiometa/productive-tools/compare/0.2.1...0.2.2
-[0.2.1]: https://github.com/studiometa/productive-tools/compare/0.2.0...0.2.1
-[0.2.0]: https://github.com/studiometa/productive-tools/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/studiometa/productive-tools/releases/tag/0.1.0
-[#3]: https://github.com/studiometa/productive-tools/pull/3
-[#4]: https://github.com/studiometa/productive-tools/pull/4
-[#5]: https://github.com/studiometa/productive-tools/pull/5
-[#6]: https://github.com/studiometa/productive-tools/pull/6
-[#8]: https://github.com/studiometa/productive-tools/pull/8
-[#9]: https://github.com/studiometa/productive-tools/pull/9
-[#10]: https://github.com/studiometa/productive-tools/pull/10
-[0538e59]: https://github.com/studiometa/productive-tools/commit/0538e59
-[07c5302]: https://github.com/studiometa/productive-tools/commit/07c5302
-[12f79cf]: https://github.com/studiometa/productive-tools/commit/12f79cf
-[1496a9d]: https://github.com/studiometa/productive-tools/commit/1496a9d
-[14ad00b]: https://github.com/studiometa/productive-tools/commit/14ad00b
-[1535a27]: https://github.com/studiometa/productive-tools/commit/1535a27
-[1b399c4]: https://github.com/studiometa/productive-tools/commit/1b399c4
-[1e8df6e]: https://github.com/studiometa/productive-tools/commit/1e8df6e
-[1e92112]: https://github.com/studiometa/productive-tools/commit/1e92112
-[20b8c1e]: https://github.com/studiometa/productive-tools/commit/20b8c1e
-[2462b82]: https://github.com/studiometa/productive-tools/commit/2462b82
-[28a3dce]: https://github.com/studiometa/productive-tools/commit/28a3dce
-[294b323]: https://github.com/studiometa/productive-tools/commit/294b323
-[33ea6cb]: https://github.com/studiometa/productive-tools/commit/33ea6cb
-[381a9df]: https://github.com/studiometa/productive-tools/commit/381a9df
-[3f4cb09]: https://github.com/studiometa/productive-tools/commit/3f4cb09
-[5251a31]: https://github.com/studiometa/productive-tools/commit/5251a31
-[6a6382c]: https://github.com/studiometa/productive-tools/commit/6a6382c
-[6df0e37]: https://github.com/studiometa/productive-tools/commit/6df0e37
-[76966a4]: https://github.com/studiometa/productive-tools/commit/76966a4
-[781dd4b]: https://github.com/studiometa/productive-tools/commit/781dd4b
-[79f2858]: https://github.com/studiometa/productive-tools/commit/79f2858
-[7f0e8ec]: https://github.com/studiometa/productive-tools/commit/7f0e8ec
-[86ba32e]: https://github.com/studiometa/productive-tools/commit/86ba32e
-[8880538]: https://github.com/studiometa/productive-tools/commit/8880538
-[8a10051]: https://github.com/studiometa/productive-tools/commit/8a10051
-[8c5b8a5]: https://github.com/studiometa/productive-tools/commit/8c5b8a5
-[8e19f00]: https://github.com/studiometa/productive-tools/commit/8e19f00
-[92a1e4b]: https://github.com/studiometa/productive-tools/commit/92a1e4b
-[94cc95d]: https://github.com/studiometa/productive-tools/commit/94cc95d
-[9616f81]: https://github.com/studiometa/productive-tools/commit/9616f81
-[9ec58a9]: https://github.com/studiometa/productive-tools/commit/9ec58a9
-[a634018]: https://github.com/studiometa/productive-tools/commit/a634018
-[a696ac2]: https://github.com/studiometa/productive-tools/commit/a696ac2
-[bad60f9]: https://github.com/studiometa/productive-tools/commit/bad60f9
-[bf263a7]: https://github.com/studiometa/productive-tools/commit/bf263a7
-[c6c0cd4]: https://github.com/studiometa/productive-tools/commit/c6c0cd4
-[cc93bf8]: https://github.com/studiometa/productive-tools/commit/cc93bf8
-[d68dc10]: https://github.com/studiometa/productive-tools/commit/d68dc10
-[d7d1d2b]: https://github.com/studiometa/productive-tools/commit/d7d1d2b
-[d9a16f7]: https://github.com/studiometa/productive-tools/commit/d9a16f7
-[d9d8dc5]: https://github.com/studiometa/productive-tools/commit/d9d8dc5
-[db471fa]: https://github.com/studiometa/productive-tools/commit/db471fa
-[de9f8de]: https://github.com/studiometa/productive-tools/commit/de9f8de
-[e0e5197]: https://github.com/studiometa/productive-tools/commit/e0e5197
-[e5fa4fc]: https://github.com/studiometa/productive-tools/commit/e5fa4fc
-[e75a3f5]: https://github.com/studiometa/productive-tools/commit/e75a3f5
-[f20c87d]: https://github.com/studiometa/productive-tools/commit/f20c87d
-[f28defc]: https://github.com/studiometa/productive-tools/commit/f28defc
-[fcfd100]: https://github.com/studiometa/productive-tools/commit/fcfd100
-[fdcdd3f]: https://github.com/studiometa/productive-tools/commit/fdcdd3f
-[537a598]: https://github.com/studiometa/productive-tools/commit/537a598
-[a622bc1]: https://github.com/studiometa/productive-tools/commit/a622bc1
-[f0ef187]: https://github.com/studiometa/productive-tools/commit/f0ef187
-[e50803d]: https://github.com/studiometa/productive-tools/commit/e50803d
-[ce27b36]: https://github.com/studiometa/productive-tools/commit/ce27b36
-[9f66138]: https://github.com/studiometa/productive-tools/commit/9f66138
-[fff06a8]: https://github.com/studiometa/productive-tools/commit/fff06a8
-[db8bea3]: https://github.com/studiometa/productive-tools/commit/db8bea3
-[b51d506]: https://github.com/studiometa/productive-tools/commit/b51d506
-[f46e8bd]: https://github.com/studiometa/productive-tools/commit/f46e8bd
-[65aa7d5]: https://github.com/studiometa/productive-tools/commit/65aa7d5
-[aa25804]: https://github.com/studiometa/productive-tools/commit/aa25804
-[ca186cc]: https://github.com/studiometa/productive-tools/commit/ca186cc
-[ed4293c]: https://github.com/studiometa/productive-tools/commit/ed4293c
