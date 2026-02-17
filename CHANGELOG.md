@@ -41,6 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Centralize `tsconfig.json` and Vite config with shared `tsconfig.base.json` and `vite.config.base.ts` ([95c5cbe], [#27])
+- Single `vite.config.ts` per package for both build and test (remove separate `vitest.config.ts` files) ([95c5cbe], [#27])
+- Fix MCP build target `node20` → `node24` to match engines requirement ([95c5cbe], [#27])
+- Add missing coverage thresholds to CLI package ([c22d2da], [#27])
+- Remove unused `vitest/globals` from tsconfig types and `globals: true` from vitest config ([95c5cbe], [#27])
 - **Architecture**: Restructured from 3 to 4 packages with clean dependency layering ([#25])
   - `productive-api → (nothing)`, `productive-core → api`, `productive-cli → core + api`, `productive-mcp → core + api`
   - MCP no longer depends on CLI
@@ -69,10 +74,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Silence `console.error` in unknown subcommand tests to clean up test output ([#26])
 
 [Unreleased]: https://github.com/studiometa/productive-tools/compare/0.8.5...HEAD
+[95c5cbe]: https://github.com/studiometa/productive-tools/commit/95c5cbe
+[c22d2da]: https://github.com/studiometa/productive-tools/commit/c22d2da
 [#23]: https://github.com/studiometa/productive-tools/pull/23
 [#24]: https://github.com/studiometa/productive-tools/issues/24
 [#25]: https://github.com/studiometa/productive-tools/pull/25
 [#26]: https://github.com/studiometa/productive-tools/pull/26
+[#27]: https://github.com/studiometa/productive-tools/pull/27
 
 ## [0.8.5] - 2026-02-10
 
