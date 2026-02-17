@@ -25,8 +25,8 @@
   "type": "module",
   "scripts": {
     "dev": "npm run dev --workspaces",
-    "build": "npm run build -w @studiometa/productive-api && npm run build -w @studiometa/productive-core && npm run build -w @studiometa/productive-cli && npm run build -w @studiometa/productive-mcp",
-    "test": "npm run test --workspaces",
+    "build": "npm run build -w @studiometa/productive-api && npm run build -w @studiometa/productive-core && (npm run build -w @studiometa/productive-cli & npm run build -w @studiometa/productive-mcp & wait)",
+    "test": "vitest run",
     "test:watch": "npm run test:watch --workspaces",
     "test:ci": "npm run test:ci --workspaces --if-present",
     "lint": "oxlint",

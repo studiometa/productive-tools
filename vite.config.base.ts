@@ -50,6 +50,7 @@ export function versionDefine(): Record<string, string> {
  * Each package provides its own coverage thresholds and excludes.
  */
 export function createTestConfig(options?: {
+  name?: string;
   setupFiles?: string[];
   coverageExclude?: string[];
   coverageThresholds?: {
@@ -59,9 +60,10 @@ export function createTestConfig(options?: {
     lines?: number;
   };
 }): VitestUserConfig['test'] {
-  const { setupFiles, coverageExclude = [], coverageThresholds } = options ?? {};
+  const { name, setupFiles, coverageExclude = [], coverageThresholds } = options ?? {};
 
   return {
+    name,
     environment: 'node',
     setupFiles,
     reporters: process.env.CI ? ['default', 'junit'] : ['default'],

@@ -25,6 +25,7 @@ export default defineConfig({
   }),
   test: {
     ...createTestConfig({
+      name: 'core',
       coverageExclude: ['src/index.ts'],
       coverageThresholds: {
         statements: 90,

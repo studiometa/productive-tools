@@ -12,6 +12,7 @@ export default defineConfig({
     external: ['@studiometa/productive-api', '@studiometa/productive-core'],
   }),
   test: createTestConfig({
+    name: 'cli',
     setupFiles: ['./vitest.setup.ts'],
     coverageExclude: [
       'src/cli.ts',
