@@ -10,12 +10,14 @@ export interface ListCommentsOptions extends PaginationOptions {
 
 export interface GetCommentOptions {
   id: string;
+  include?: string[];
 }
 
 export interface CreateCommentOptions {
   body: string;
   taskId?: string;
   dealId?: string;
+  companyId?: string;
 }
 
 export interface UpdateCommentOptions {

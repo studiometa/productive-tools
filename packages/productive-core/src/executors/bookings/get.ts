@@ -8,6 +8,8 @@ export async function getBooking(
   options: GetBookingOptions,
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductiveBooking>> {
-  const response = await ctx.api.getBooking(options.id);
-  return { data: response.data };
+  const response = await ctx.api.getBooking(options.id, {
+    include: options.include,
+  });
+  return { data: response.data, included: response.included };
 }

@@ -18,7 +18,7 @@ describe('getComment', () => {
 
     const result = await getComment({ id: '1' }, ctx);
 
-    expect(getCommentApi).toHaveBeenCalledWith('1');
+    expect(getCommentApi).toHaveBeenCalledWith('1', { include: undefined });
     expect(result.data).toEqual(mockComment);
   });
 });

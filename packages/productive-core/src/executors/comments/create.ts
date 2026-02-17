@@ -12,6 +12,7 @@ export async function createComment(
     body: options.body,
     task_id: options.taskId,
     deal_id: options.dealId,
+    company_id: options.companyId,
   });
 
   return { data: response.data };

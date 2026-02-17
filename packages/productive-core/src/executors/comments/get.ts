@@ -8,6 +8,8 @@ export async function getComment(
   options: GetCommentOptions,
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductiveComment>> {
-  const response = await ctx.api.getComment(options.id);
-  return { data: response.data };
+  const response = await ctx.api.getComment(options.id, {
+    include: options.include,
+  });
+  return { data: response.data, included: response.included };
 }

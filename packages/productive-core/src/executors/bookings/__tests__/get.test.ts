@@ -18,7 +18,7 @@ describe('getBooking', () => {
 
     const result = await getBooking({ id: '1' }, ctx);
 
-    expect(getBookingApi).toHaveBeenCalledWith('1');
+    expect(getBookingApi).toHaveBeenCalledWith('1', { include: undefined });
     expect(result.data).toEqual(mockBooking);
   });
 });

@@ -8,6 +8,8 @@ export async function getTimer(
   options: GetTimerOptions,
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductiveTimer>> {
-  const response = await ctx.api.getTimer(options.id);
-  return { data: response.data };
+  const response = await ctx.api.getTimer(options.id, {
+    include: options.include,
+  });
+  return { data: response.data, included: response.included };
 }

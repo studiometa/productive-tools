@@ -7,6 +7,7 @@ export interface ListTimersOptions extends PaginationOptions {
 
 export interface GetTimerOptions {
   id: string;
+  include?: string[];
 }
 
 export interface StartTimerOptions {

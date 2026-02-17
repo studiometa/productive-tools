@@ -20,7 +20,7 @@ describe('getTimer', () => {
 
     const result = await getTimer({ id: '123' }, ctx);
 
-    expect(getTimerApi).toHaveBeenCalledWith('123');
+    expect(getTimerApi).toHaveBeenCalledWith('123', { include: undefined });
     expect(result.data).toEqual(mockTimer);
   });
 });

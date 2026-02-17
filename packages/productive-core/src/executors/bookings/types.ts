@@ -18,6 +18,7 @@ export interface ListBookingsOptions extends PaginationOptions {
 
 export interface GetBookingOptions {
   id: string;
+  include?: string[];
 }
 
 export interface CreateBookingOptions {
