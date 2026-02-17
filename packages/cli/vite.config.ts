@@ -1,62 +1,24 @@
-import { readFileSync } from 'node:fs';
-import { builtinModules } from 'node:module';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
-const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
+import { createBuildConfig, createTestConfig, versionDefine } from '../../vite.config.base.ts';
 
 export default defineConfig({
-  define: {
-    __VERSION__: JSON.stringify(pkg.version),
-  },
-  build: {
-    lib: {
-      entry: {
-        index: './src/index.ts',
-        cli: './src/cli.ts',
-      },
-      formats: ['es'],
-      fileName: (format, entryName) => `${entryName}.js`,
+  define: versionDefine(),
+  build: createBuildConfig({
+    entry: {
+      index: './src/index.ts',
+      cli: './src/cli.ts',
     },
-    rollupOptions: {
-      external: [
-        '@studiometa/productive-api',
-        '@studiometa/productive-core',
-        ...builtinModules,
-        ...builtinModules.map((m) => `node:${m}`),
-      ],
-      output: {
-        preserveModules: false,
-      },
-    },
-    target: 'node24',
-    minify: false,
-    sourcemap: true,
-  },
-  test: {
-    globals: true,
-    environment: 'node',
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'json-summary', 'html', 'lcov'],
-      exclude: [
-        'node_modules/**',
-        'dist/**',
-        'src/cli.ts', // CLI entry point, tested via e2e
-        'src/index.ts', // Entry point, CLI is not a library
-        'src/types.ts', // Type definitions only
-        'src/commands/*/index.ts', // Barrel re-exports
-        'src/renderers/index.ts', // Barrel re-export
-        'src/renderers/human/index.ts', // Barrel re-export
-        'scripts/**',
-        '**/*.test.ts',
-        '*.config.ts',
-      ],
-      thresholds: {
-        statements: 84,
-        branches: 70,
-        functions: 90,
-        lines: 84,
-      },
-    },
-  },
+    external: ['@studiometa/productive-api', '@studiometa/productive-core'],
+  }),
+  test: createTestConfig({
+    setupFiles: ['./vitest.setup.ts'],
+    coverageExclude: [
+      'src/cli.ts',
+      'src/index.ts',
+      'src/types.ts',
+      'src/commands/completion.ts',
+      'src/commands/completion-helper.ts',
+    ],
+  }),
 });

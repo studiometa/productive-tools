@@ -1,44 +1,38 @@
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
-const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
+import { createBuildConfig, createTestConfig, versionDefine } from '../../vite.config.base.ts';
 
 export default defineConfig({
-  define: {
-    __VERSION__: JSON.stringify(pkg.version),
-  },
-  build: {
-    lib: {
-      entry: {
-        index: resolve(__dirname, 'src/index.ts'),
-        server: resolve(__dirname, 'src/server.ts'),
-        auth: resolve(__dirname, 'src/auth.ts'),
-        crypto: resolve(__dirname, 'src/crypto.ts'),
-        oauth: resolve(__dirname, 'src/oauth.ts'),
-        tools: resolve(__dirname, 'src/tools.ts'),
-        handlers: resolve(__dirname, 'src/handlers.ts'),
-        stdio: resolve(__dirname, 'src/stdio.ts'),
-        http: resolve(__dirname, 'src/http.ts'),
-      },
-      formats: ['es'],
-      fileName: (_, entryName) => `${entryName}.js`,
+  define: versionDefine(),
+  build: createBuildConfig({
+    entry: {
+      index: './src/index.ts',
+      server: './src/server.ts',
+      auth: './src/auth.ts',
+      crypto: './src/crypto.ts',
+      oauth: './src/oauth.ts',
+      tools: './src/tools.ts',
+      handlers: './src/handlers.ts',
+      stdio: './src/stdio.ts',
+      http: './src/http.ts',
     },
-    rollupOptions: {
-      external: [
-        '@modelcontextprotocol/sdk',
-        '@modelcontextprotocol/sdk/server/index.js',
-        '@modelcontextprotocol/sdk/server/stdio.js',
-        '@modelcontextprotocol/sdk/types.js',
-        '@studiometa/productive-api',
-        '@studiometa/productive-core',
-        'h3',
-        /^node:/,
-      ],
+    external: [
+      '@modelcontextprotocol/sdk',
+      '@modelcontextprotocol/sdk/server/index.js',
+      '@modelcontextprotocol/sdk/server/stdio.js',
+      '@modelcontextprotocol/sdk/types.js',
+      '@studiometa/productive-api',
+      '@studiometa/productive-core',
+      'h3',
+    ],
+  }),
+  test: createTestConfig({
+    coverageExclude: ['src/index.ts', 'src/server.ts', 'src/http.ts'],
+    coverageThresholds: {
+      statements: 90,
+      branches: 85,
+      functions: 90,
+      lines: 90,
     },
-    target: 'node20',
-    minify: false,
-    sourcemap: true,
-    outDir: 'dist',
-  },
+  }),
 });
