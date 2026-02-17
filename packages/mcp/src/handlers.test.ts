@@ -265,6 +265,33 @@ describe('handlers', () => {
 
         expect(result.isError).toBe(true);
       });
+
+      it('should handle delete action', async () => {
+        mockApi.deleteTimeEntry.mockResolvedValue(undefined);
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'time', action: 'delete', id: '789' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        const content = JSON.parse(result.content[0].text as string);
+        expect(content.success).toBe(true);
+        expect(content.deleted).toBe('789');
+        expect(mockApi.deleteTimeEntry).toHaveBeenCalledWith('789');
+      });
+
+      it('should return error for delete without id', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'time', action: 'delete' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('id is required for delete');
+      });
     });
 
     describe('tasks resource', () => {

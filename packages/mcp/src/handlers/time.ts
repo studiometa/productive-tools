@@ -10,6 +10,7 @@ import {
   getTimeEntry,
   createTimeEntry,
   updateTimeEntry,
+  deleteTimeEntry,
 } from '@studiometa/productive-core';
 
 import type { CommonArgs, HandlerContext, ToolResult } from './types.js';
@@ -20,7 +21,7 @@ import { getTimeEntryHints } from '../hints.js';
 import { handleResolve, type ResolvableResourceType } from './resolve.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
-const VALID_ACTIONS = ['list', 'get', 'create', 'update', 'resolve'];
+const VALID_ACTIONS = ['list', 'get', 'create', 'update', 'delete', 'resolve'];
 
 export async function handleTime(
   action: string,
@@ -97,6 +98,13 @@ export async function handleTime(
     );
 
     return jsonResult({ success: true, ...formatTimeEntry(result.data, formatOptions) });
+  }
+
+  if (action === 'delete') {
+    if (!id) return inputErrorResult(ErrorMessages.missingId('delete'));
+    const execCtx = ctx.executor();
+    await deleteTimeEntry({ id }, execCtx);
+    return jsonResult({ success: true, deleted: id });
   }
 
   if (action === 'list') {

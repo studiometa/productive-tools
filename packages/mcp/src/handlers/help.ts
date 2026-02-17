@@ -141,6 +141,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       get: 'Get a single time entry by ID',
       create: 'Create a new time entry (requires person_id, service_id, date, time)',
       update: 'Update an existing time entry',
+      delete: 'Delete a time entry',
       resolve: 'Look up by human-friendly identifier (email, project number, name)',
     },
     filters: {
