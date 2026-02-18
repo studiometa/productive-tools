@@ -1,0 +1,15 @@
+{
+  "data": {
+    "id": "101",
+    "type": "projects",
+    "attributes": {
+      "name": "Alpha Website",
+      "project_number": "PRJ-001",
+      "archived": false,
+      "budget": 10000,
+      "created_at": "2024-01-01T00:00:00.000Z",
+      "updated_at": "2024-06-01T00:00:00.000Z"
+    },
+    "relationships": {}
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "data": [
+    {
+      "id": "201",
+      "type": "tasks",
+      "attributes": {
+        "title": "Design landing page",
+        "description": "Create mockups for the landing page",
+        "number": 1,
+        "task_number": 1,
+        "closed": false,
+        "due_date": "2024-09-01",
+        "created_at": "2024-07-01T00:00:00.000Z",
+        "updated_at": "2024-07-15T00:00:00.000Z"
+      },
+      "relationships": {
+        "project": {
+          "data": { "type": "projects", "id": "101" }
+        }
+      }
+    },
+    {
+      "id": "202",
+      "type": "tasks",
+      "attributes": {
+        "title": "Implement API integration",
+        "description": "Connect frontend to backend API",
+        "number": 2,
+        "task_number": 2,
+        "closed": false,
+        "due_date": "2024-09-15",
+        "created_at": "2024-07-02T00:00:00.000Z",
+        "updated_at": "2024-07-16T00:00:00.000Z"
+      },
+      "relationships": {
+        "project": {
+          "data": { "type": "projects", "id": "101" }
+        }
+      }
+    }
+  ],
+  "meta": {
+    "total_count": 2,
+    "current_page": 1,
+    "total_pages": 1,
+    "page_size": 30
+  }
+}
