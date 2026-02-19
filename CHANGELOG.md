@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-02-18
+
 ### Removed
 
 - **All**: Remove `budgets` resource — the Productive.io API has no `/budgets` endpoint, budgets are deals with `type=2` ([898587e], [b1abbed], [#40])
@@ -156,7 +158,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `vi.mock()` and dynamic `import()` paths after test file relocation ([#26])
 - Silence `console.error` in unknown subcommand tests to clean up test output ([#26])
 
-[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.9.2...HEAD
+[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.10.0...HEAD
+[0.10.0]: https://github.com/studiometa/productive-tools/compare/0.9.2...0.10.0
 [898587e]: https://github.com/studiometa/productive-tools/commit/898587e
 [b1abbed]: https://github.com/studiometa/productive-tools/commit/b1abbed
 [d6a2d5f]: https://github.com/studiometa/productive-tools/commit/d6a2d5f
