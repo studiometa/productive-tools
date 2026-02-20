@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **MCP**: Guide agents to use `action=help` before interacting with resources — `handleHelpOverview()` now returns a `_tip` field, unknown-resource errors include an `action=help` suggestion, and SKILL.md has a Quick Start section ([dfee2b4], [#91], [#87])
+- **MCP**: Add `action=schema` for compact machine-readable resource specs — returns actions, filters, create fields, and includes without prose or examples, optimized for LLM consumption ([ac43fd6], [#92], [#89])
+- **Core**: Add `schema` to `ACTIONS` constant ([ac43fd6], [#92], [#89])
+- **MCP**: Add `resource=batch action=run` to execute up to 10 operations in parallel in a single tool call — per-operation error isolation, returns `{ _batch: { total, succeeded, failed }, results: [...] }` ([d265fc6], [#93], [#88])
+- **Core**: Add `batch` to `RESOURCES` and `run` to `ACTIONS` constants ([d265fc6], [#93], [#88])
+- **MCP**: Improve tool description — restructured as newline-separated sections, clearer per-parameter docs clarifying which resource/action each field applies to ([5be9420], [#94], [#86])
+- **MCP**: Add `resource=search action=run` for cross-resource text search — fans out `query` across projects, companies, people, and tasks simultaneously, returning grouped results in one tool call ([61c0153], [#95], [#90])
+- **Core**: Add `search` to `RESOURCES` constant ([61c0153], [#95], [#90])
+
 ## [0.10.0] - 2026-02-18
 
 ### Removed
@@ -159,6 +170,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Silence `console.error` in unknown subcommand tests to clean up test output ([#26])
 
 [Unreleased]: https://github.com/studiometa/productive-tools/compare/0.10.0...HEAD
+[dfee2b4]: https://github.com/studiometa/productive-tools/commit/dfee2b4
+[ac43fd6]: https://github.com/studiometa/productive-tools/commit/ac43fd6
+[d265fc6]: https://github.com/studiometa/productive-tools/commit/d265fc6
+[5be9420]: https://github.com/studiometa/productive-tools/commit/5be9420
+[61c0153]: https://github.com/studiometa/productive-tools/commit/61c0153
+[#86]: https://github.com/studiometa/productive-tools/issues/86
+[#87]: https://github.com/studiometa/productive-tools/issues/87
+[#88]: https://github.com/studiometa/productive-tools/issues/88
+[#89]: https://github.com/studiometa/productive-tools/issues/89
+[#90]: https://github.com/studiometa/productive-tools/issues/90
+[#91]: https://github.com/studiometa/productive-tools/pull/91
+[#92]: https://github.com/studiometa/productive-tools/pull/92
+[#93]: https://github.com/studiometa/productive-tools/pull/93
+[#94]: https://github.com/studiometa/productive-tools/pull/94
+[#95]: https://github.com/studiometa/productive-tools/pull/95
 [0.10.0]: https://github.com/studiometa/productive-tools/compare/0.9.2...0.10.0
 [898587e]: https://github.com/studiometa/productive-tools/commit/898587e
 [b1abbed]: https://github.com/studiometa/productive-tools/commit/b1abbed
