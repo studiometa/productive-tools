@@ -7,18 +7,18 @@ import { RESOURCES, ACTIONS, REPORT_TYPES } from '@studiometa/productive-core';
  * Adding a resource or action to constants.ts automatically updates this description.
  */
 function generateDescription(): string {
-  return (
-    `Productive.io API. Resources: ${RESOURCES.join(', ')}. ` +
-    `Actions: ${ACTIONS.join(', ')} (varies by resource). ` +
-    'Use query for text search on list actions. ' +
-    'Reports: use resource=reports, action=get with report_type. ' +
-    'Filters: project_id, person_id, service_id, company_id, after/before (dates). ' +
-    'Use include to fetch related data. ' +
-    'Use compact=false for full details (default for get, true for list). ' +
-    'Use action=help with a resource for detailed documentation. ' +
-    'Use action=schema with a resource for compact machine-readable field/filter spec. ' +
-    'Batch: use resource=batch, action=run with operations array to execute multiple operations in parallel (max 10).'
-  );
+  return [
+    'Productive.io API.',
+    `Resources: ${RESOURCES.join(', ')}.`,
+    `Actions: ${ACTIONS.join(', ')} (varies by resource).`,
+    'Discovery: action=help with any resource for filters, fields, examples. action=schema for compact machine-readable spec.',
+    'Filters: filter:{key:value}. Common: project_id, person_id, after/before (YYYY-MM-DD).',
+    'Includes: include:[...] for related data (e.g. ["project","assignee"]).',
+    'Output: compact=false for full detail (default for get; list defaults true).',
+    'Search: query for text search on list actions.',
+    'Reports: resource=reports action=get with report_type, from, to.',
+    'Batch: resource=batch action=run with operations=[{resource,action,...}] executes up to 10 ops in parallel.',
+  ].join('\n');
 }
 
 /**
@@ -57,7 +57,7 @@ export const TOOLS: Tool[] = [
         action: {
           type: 'string',
           enum: [...ACTIONS],
-          description: 'Action to perform. Use "help" for detailed documentation on a resource.',
+          description: 'Use "help" for resource documentation',
         },
         id: { type: 'string' },
         filter: { type: 'object' },
@@ -70,12 +70,9 @@ export const TOOLS: Tool[] = [
         include: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Related resources to include (e.g., ["project", "assignee", "comments"])',
+          description: 'Related data to include (e.g. ["project","assignee"])',
         },
-        query: {
-          type: 'string',
-          description: 'Text search query for list actions (searches name/title fields)',
-        },
+        query: { type: 'string', description: 'Text search for list actions' },
         // Common fields
         person_id: { type: 'string' },
         service_id: { type: 'string' },
@@ -93,30 +90,28 @@ export const TOOLS: Tool[] = [
         // Company fields
         name: { type: 'string' },
         // Page fields
-        page_id: {
-          type: 'string',
-          description: 'Page ID. Find pages using resource="pages" action="list"',
-        },
-        parent_page_id: { type: 'string', description: 'Parent page ID for creating sub-pages' },
+        page_id: { type: 'string', description: 'Page ID (list pages to find)' },
+        parent_page_id: { type: 'string', description: 'Parent page ID for sub-pages' },
         // Comment fields
-        body: { type: 'string' },
+        body: { type: 'string', description: 'Comment/page body content' },
         deal_id: { type: 'string' },
         // Attachment fields
-        comment_id: { type: 'string', description: 'Comment ID for filtering attachments' },
+        comment_id: { type: 'string', description: 'Comment ID (for attachments)' },
         // Timer fields
         time_entry_id: { type: 'string' },
         // Booking fields
-        started_on: { type: 'string' },
-        ended_on: { type: 'string' },
+        started_on: { type: 'string', description: 'Booking date (YYYY-MM-DD)' },
+        ended_on: { type: 'string', description: 'Booking end date (YYYY-MM-DD)' },
         event_id: { type: 'string' },
         // Report fields
         report_type: {
           type: 'string',
           enum: [...REPORT_TYPES],
+          description: 'Required for resource=reports action=get',
         },
-        group: { type: 'string' },
-        from: { type: 'string' },
-        to: { type: 'string' },
+        group: { type: 'string', description: 'Report grouping: person, project, service' },
+        from: { type: 'string', description: 'Report start (YYYY-MM-DD); filter.after for time' },
+        to: { type: 'string', description: 'Report end (YYYY-MM-DD); filter.before for time' },
         status: { type: 'string' },
         // Batch fields
         operations: {
