@@ -29,6 +29,7 @@ import { handleProjects } from './projects.js';
 import { handleReports } from './reports.js';
 import { type ResolvableResourceType } from './resolve.js';
 import { handleSchema, handleSchemaOverview } from './schema.js';
+import { handleSearch } from './search.js';
 import { handleServices } from './services.js';
 import { handleTasks } from './tasks.js';
 import { handleTime } from './time.js';
@@ -57,6 +58,7 @@ interface ProductiveArgs {
   compact?: boolean;
   include?: string[];
   query?: string;
+  resources?: string[];
   // Common fields
   person_id?: string;
   service_id?: string;
@@ -117,16 +119,6 @@ export async function executeToolWithCredentials(
     return handleBatch(typedArgs.operations, credentials, executeToolWithCredentials);
   }
 
-  // Initialize API client with provided credentials
-  const api = new ProductiveApi({
-    config: {
-      apiToken: credentials.apiToken,
-      organizationId: credentials.organizationId,
-      userId: credentials.userId,
-      baseUrl: process.env.PRODUCTIVE_BASE_URL,
-    },
-  });
-
   const {
     resource,
     action,
@@ -136,10 +128,27 @@ export async function executeToolWithCredentials(
     compact,
     include,
     query,
+    resources,
     no_hints,
     type,
     ...restArgs
   } = typedArgs as ProductiveArgs & { no_hints?: boolean; type?: ResolvableResourceType };
+
+  // Handle cross-resource search BEFORE API client initialization
+  // (search delegates to executeToolWithCredentials for each resource)
+  if (resource === 'search') {
+    return await handleSearch(query, resources, credentials, executeToolWithCredentials);
+  }
+
+  // Initialize API client with provided credentials
+  const api = new ProductiveApi({
+    config: {
+      apiToken: credentials.apiToken,
+      organizationId: credentials.organizationId,
+      userId: credentials.userId,
+      baseUrl: process.env.PRODUCTIVE_BASE_URL,
+    },
+  });
 
   // Default compact to false for 'get' action (single resource), true for 'list'
   const isCompact = compact ?? action !== 'get';

@@ -163,6 +163,16 @@ export const ParamQuery = z
   );
 
 /**
+ * Resources parameter for cross-resource search
+ */
+export const ParamResources = z
+  .array(z.string())
+  .optional()
+  .describe(
+    'Resource types to search (for resource=search action=run). Defaults to [projects, companies, people, tasks]. Valid: projects, companies, people, tasks, deals.',
+  );
+
+/**
  * No hints parameter - disable contextual hints in responses
  */
 export const ParamNoHints = z
@@ -235,6 +245,7 @@ export const ProductiveToolInputSchema = z.object({
   compact: ParamCompact,
   include: ParamInclude.optional(),
   query: ParamQuery.optional(),
+  resources: ParamResources,
   no_hints: ParamNoHints,
 
   // ID references

@@ -15,7 +15,7 @@ function generateDescription(): string {
     'Filters: filter:{key:value}. Common: project_id, person_id, after/before (YYYY-MM-DD).',
     'Includes: include:[...] for related data (e.g. ["project","assignee"]).',
     'Output: compact=false for full detail (default for get; list defaults true).',
-    'Search: query for text search on list actions.',
+    'Search: query for text search on list actions. Cross-resource: resource=search action=run with query searches projects, companies, people, tasks simultaneously.',
     'Reports: resource=reports action=get with report_type, from, to.',
     'Batch: resource=batch action=run with operations=[{resource,action,...}] executes up to 10 ops in parallel.',
   ].join('\n');
@@ -73,6 +73,12 @@ export const TOOLS: Tool[] = [
           description: 'Related data to include (e.g. ["project","assignee"])',
         },
         query: { type: 'string', description: 'Text search for list actions' },
+        resources: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Resource types to search (for resource=search). Defaults to [projects, companies, people, tasks]. Valid values: projects, companies, people, tasks, deals.',
+        },
         // Common fields
         person_id: { type: 'string' },
         service_id: { type: 'string' },

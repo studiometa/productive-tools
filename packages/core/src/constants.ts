@@ -30,6 +30,7 @@ export const RESOURCES = [
   'discussions',
   'reports',
   'batch',
+  'search',
 ] as const;
 
 export type Resource = (typeof RESOURCES)[number];

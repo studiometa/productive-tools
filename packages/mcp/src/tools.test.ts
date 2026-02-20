@@ -119,7 +119,7 @@ describe('tools', () => {
       expect(totalSize).toBeLessThan(4500);
     });
 
-    it('should estimate under 900 tokens', () => {
+    it('should estimate under 1200 tokens', () => {
       const totalSize = JSON.stringify(TOOLS).length;
       const estimatedTokens = Math.ceil(totalSize / 4);
       expect(estimatedTokens).toBeLessThan(1200);
