@@ -163,6 +163,51 @@ describe('handlers', () => {
         expect(result.isError).toBe(true);
         expect(result.content[0].text).toContain('Invalid action');
       });
+
+      it('should handle context action', async () => {
+        mockApi.getProject.mockResolvedValue({
+          data: { id: '123', type: 'projects', attributes: { name: 'Test Project' } },
+        });
+        mockApi.getTasks.mockResolvedValue({
+          data: [{ id: 't1', type: 'tasks', attributes: { title: 'Task 1' } }],
+          meta: {},
+          included: [],
+        });
+        mockApi.getServices.mockResolvedValue({
+          data: [{ id: 's1', type: 'services', attributes: { name: 'Development' } }],
+          meta: {},
+        });
+        mockApi.getTimeEntries.mockResolvedValue({
+          data: [{ id: 'te1', type: 'time_entries', attributes: { time: 480 } }],
+          meta: {},
+        });
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'projects', action: 'context', id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        const content = JSON.parse(result.content[0].text as string);
+        expect(content).toHaveProperty('tasks');
+        expect(content).toHaveProperty('services');
+        expect(content).toHaveProperty('time_entries');
+        expect(content.tasks).toHaveLength(1);
+        expect(content.services).toHaveLength(1);
+        expect(content.time_entries).toHaveLength(1);
+      });
+
+      it('should return error for context without id', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'projects', action: 'context' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('id is required');
+      });
     });
 
     describe('time resource', () => {
@@ -334,6 +379,53 @@ describe('handlers', () => {
         expect(mockApi.getTask).toHaveBeenCalledWith('456', {
           include: ['project', 'project.company'],
         });
+      });
+
+      it('should handle context action', async () => {
+        mockApi.getTask.mockResolvedValue({
+          data: { id: '123', type: 'tasks', attributes: { title: 'Test Task' } },
+          included: [],
+        });
+        mockApi.getComments.mockResolvedValue({
+          data: [{ id: 'c1', type: 'comments', attributes: { body: 'A comment' } }],
+          meta: {},
+          included: [],
+        });
+        mockApi.getTimeEntries.mockResolvedValue({
+          data: [{ id: 't1', type: 'time_entries', attributes: { time: 60 } }],
+          meta: {},
+        });
+        mockApi.getTasks.mockResolvedValue({
+          data: [{ id: 's1', type: 'tasks', attributes: { title: 'Subtask 1' } }],
+          meta: {},
+          included: [],
+        });
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'tasks', action: 'context', id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        const content = JSON.parse(result.content[0].text as string);
+        expect(content).toHaveProperty('comments');
+        expect(content).toHaveProperty('time_entries');
+        expect(content).toHaveProperty('subtasks');
+        expect(content.comments).toHaveLength(1);
+        expect(content.time_entries).toHaveLength(1);
+        expect(content.subtasks).toHaveLength(1);
+      });
+
+      it('should return error for context without id', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'tasks', action: 'context' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('id is required');
       });
     });
 
@@ -1279,6 +1371,52 @@ describe('handlers', () => {
 
         expect(result.isError).toBe(true);
         expect(result.content[0].text).toContain('Invalid action');
+      });
+
+      it('should handle context action', async () => {
+        mockApi.getDeal.mockResolvedValue({
+          data: { id: '123', type: 'deals', attributes: { name: 'Test Deal' } },
+          included: [],
+        });
+        mockApi.getServices.mockResolvedValue({
+          data: [{ id: 's1', type: 'services', attributes: { name: 'Development' } }],
+          meta: {},
+        });
+        mockApi.getComments.mockResolvedValue({
+          data: [{ id: 'c1', type: 'comments', attributes: { body: 'A comment' } }],
+          meta: {},
+          included: [],
+        });
+        mockApi.getTimeEntries.mockResolvedValue({
+          data: [{ id: 'te1', type: 'time_entries', attributes: { time: 480 } }],
+          meta: {},
+        });
+
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'deals', action: 'context', id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        const content = JSON.parse(result.content[0].text as string);
+        expect(content).toHaveProperty('services');
+        expect(content).toHaveProperty('comments');
+        expect(content).toHaveProperty('time_entries');
+        expect(content.services).toHaveLength(1);
+        expect(content.comments).toHaveLength(1);
+        expect(content.time_entries).toHaveLength(1);
+      });
+
+      it('should return error for context without id', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'deals', action: 'context' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('id is required');
       });
     });
 
