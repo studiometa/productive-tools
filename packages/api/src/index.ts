@@ -9,6 +9,10 @@
 export { ProductiveApi } from './client.js';
 export type { ApiOptions } from './client.js';
 
+// Rate limiter
+export { RateLimiter, DEFAULT_RATE_LIMIT_CONFIG } from './rate-limiter.js';
+export type { RateLimitConfig } from './rate-limiter.js';
+
 // Error
 export { ProductiveApiError } from './error.js';
 

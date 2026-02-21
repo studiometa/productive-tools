@@ -1,4 +1,5 @@
 import type { ApiCache } from './cache.js';
+import type { RateLimitConfig } from './rate-limiter.js';
 import type {
   ProductiveApiResponse,
   ProductiveProject,
@@ -20,6 +21,7 @@ import type {
 
 import { noopCache } from './cache.js';
 import { ProductiveApiError } from './error.js';
+import { RateLimiter } from './rate-limiter.js';
 
 /**
  * Options for constructing a ProductiveApi instance.
@@ -30,6 +32,8 @@ export interface ApiOptions {
   cache?: ApiCache;
   useCache?: boolean;
   forceRefresh?: boolean;
+  /** Rate limiting configuration */
+  rateLimit?: RateLimitConfig;
 }
 
 export class ProductiveApi {
@@ -39,6 +43,7 @@ export class ProductiveApi {
   private cache: ApiCache;
   private useCache: boolean;
   private forceRefresh: boolean;
+  private rateLimiter: RateLimiter;
 
   constructor(options: ApiOptions) {
     const { config } = options;
@@ -63,6 +68,7 @@ export class ProductiveApi {
     this.forceRefresh = options.forceRefresh ?? false;
     this.cache = options.cache ?? noopCache;
     this.cache.setOrgId(this.organizationId);
+    this.rateLimiter = new RateLimiter(options.rateLimit);
   }
 
   private async request<T>(
@@ -96,39 +102,75 @@ export class ProductiveApi {
       'X-Organization-Id': this.organizationId,
     };
 
-    const response = await globalThis.fetch(url.toString(), {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    // Rate limiting with retry loop
+    const maxAttempts = this.rateLimiter.enabled ? 4 : 1; // 1 initial + 3 retries
+    let lastError: ProductiveApiError | null = null;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = `API request failed: ${response.status} ${response.statusText}`;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      // Proactive rate limiting - wait if needed before making request
+      await this.rateLimiter.acquire(endpoint);
 
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.errors?.[0]?.detail || errorMessage;
-      } catch {
-        // Use default error message if JSON parsing fails
+      const response = await globalThis.fetch(url.toString(), {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+
+      // Handle rate limit (429) responses
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After') ?? undefined;
+        this.rateLimiter.recordResponse(429, retryAfter);
+
+        if (this.rateLimiter.shouldRetry(attempt)) {
+          const delay = this.rateLimiter.getRetryDelay(attempt, retryAfter);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+
+        // Max retries exceeded
+        throw new ProductiveApiError(
+          'Rate limit exceeded: maximum retry attempts reached',
+          429,
+          await response.text(),
+        );
       }
 
-      throw new ProductiveApiError(errorMessage, response.status, errorText);
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = `API request failed: ${response.status} ${response.statusText}`;
+
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.errors?.[0]?.detail || errorMessage;
+        } catch {
+          // Use default error message if JSON parsing fails
+        }
+
+        lastError = new ProductiveApiError(errorMessage, response.status, errorText);
+        throw lastError;
+      }
+
+      // Success - record response and process data
+      this.rateLimiter.recordResponse(response.status);
+
+      const data = (await response.json()) as T;
+
+      // Cache GET responses
+      if (method === 'GET' && this.useCache) {
+        await this.cache.setAsync(endpoint, query || {}, this.organizationId, data);
+      }
+
+      // Invalidate cache on write operations
+      if (method !== 'GET') {
+        await this.cache.invalidateAsync(endpoint.split('/')[1]); // e.g., '/time_entries/123' -> 'time_entries'
+      }
+
+      return data;
     }
 
-    const data = (await response.json()) as T;
-
-    // Cache GET responses
-    if (method === 'GET' && this.useCache) {
-      await this.cache.setAsync(endpoint, query || {}, this.organizationId, data);
-    }
-
-    // Invalidate cache on write operations
-    if (method !== 'GET') {
-      await this.cache.invalidateAsync(endpoint.split('/')[1]); // e.g., '/time_entries/123' -> 'time_entries'
-    }
-
-    return data;
+    // This should never be reached due to the throw in the loop,
+    // but TypeScript needs a return path
+    throw lastError ?? new ProductiveApiError('Request failed after all retry attempts', 500);
   }
 
   // Projects

@@ -935,4 +935,216 @@ describe('ProductiveApi requests', () => {
       expect(result.data.attributes.status).toBe(1);
     });
   });
+
+  describe('rate limiting', () => {
+    it('retries on 429 with backoff', async () => {
+      const api = new ProductiveApi({
+        config: validConfig,
+        useCache: false,
+        rateLimit: { maxRetries: 3, initialBackoffMs: 100 },
+      });
+
+      // First call: 429, second call: 429, third call: success
+      fetchSpy
+        .mockResolvedValueOnce(
+          new Response('', {
+            status: 429,
+            headers: { 'Retry-After': '0' },
+          }),
+        )
+        .mockResolvedValueOnce(
+          new Response('', {
+            status: 429,
+            headers: { 'Retry-After': '0' },
+          }),
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ data: [{ id: '1' }] }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+
+      const result = await api.getProjects();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(3);
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('throws after maxRetries exceeded', async () => {
+      const api = new ProductiveApi({
+        config: validConfig,
+        useCache: false,
+        rateLimit: { maxRetries: 2, initialBackoffMs: 10 },
+      });
+
+      // All calls return 429
+      fetchSpy.mockImplementation(() =>
+        Promise.resolve(
+          new Response('Rate limited', {
+            status: 429,
+            headers: { 'Retry-After': '0' },
+          }),
+        ),
+      );
+
+      await expect(api.getProjects()).rejects.toThrow(ProductiveApiError);
+      await expect(
+        new ProductiveApi({
+          config: validConfig,
+          useCache: false,
+          rateLimit: { maxRetries: 2, initialBackoffMs: 10 },
+        })
+          .getProjects()
+          .catch((e) => {
+            expect(e.message).toContain('Rate limit exceeded');
+            expect(e.statusCode).toBe(429);
+            throw e;
+          }),
+      ).rejects.toThrow();
+
+      // 1 initial + 2 retries = 3 attempts
+      expect(fetchSpy).toHaveBeenCalledTimes(6); // 3 + 3 from second call
+    });
+
+    it('respects Retry-After header', async () => {
+      vi.useFakeTimers();
+
+      const api = new ProductiveApi({
+        config: validConfig,
+        useCache: false,
+        rateLimit: { maxRetries: 1 },
+      });
+
+      fetchSpy
+        .mockResolvedValueOnce(
+          new Response('', {
+            status: 429,
+            headers: { 'Retry-After': '2' }, // 2 seconds
+          }),
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ data: [] }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+
+      const promise = api.getProjects();
+
+      // Should not complete until after retry delay
+      await vi.advanceTimersByTimeAsync(1999);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+      // Advance past the 2 second delay
+      await vi.advanceTimersByTimeAsync(2);
+      await promise;
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+      vi.useRealTimers();
+    });
+
+    it('skips rate limiting when disabled', async () => {
+      const api = new ProductiveApi({
+        config: validConfig,
+        useCache: false,
+        rateLimit: { enabled: false },
+      });
+
+      // Single 429 should throw immediately (no retries)
+      fetchSpy.mockResolvedValueOnce(
+        new Response('Rate limited', {
+          status: 429,
+        }),
+      );
+
+      await expect(api.getProjects()).rejects.toThrow(ProductiveApiError);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('uses default rate limiting when not configured', async () => {
+      const api = new ProductiveApi({
+        config: validConfig,
+        useCache: false,
+      });
+
+      // First 429, then success
+      fetchSpy
+        .mockResolvedValueOnce(
+          new Response('', {
+            status: 429,
+            headers: { 'Retry-After': '0' },
+          }),
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ data: [] }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+
+      const result = await api.getProjects();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(result.data).toEqual([]);
+    });
+
+    it('handles 429 without Retry-After header', async () => {
+      vi.useFakeTimers();
+      vi.spyOn(Math, 'random').mockReturnValue(0.5);
+
+      const api = new ProductiveApi({
+        config: validConfig,
+        useCache: false,
+        rateLimit: { maxRetries: 1, initialBackoffMs: 1000 },
+      });
+
+      fetchSpy
+        .mockResolvedValueOnce(
+          new Response('', {
+            status: 429,
+            // No Retry-After header
+          }),
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ data: [] }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+
+      const promise = api.getProjects();
+
+      // Should use exponential backoff: 1000 * 2^0 * 0.75 = 750ms
+      await vi.advanceTimersByTimeAsync(749);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(2);
+      await promise;
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    it('preserves non-429 errors', async () => {
+      const api = new ProductiveApi({
+        config: validConfig,
+        useCache: false,
+        rateLimit: { maxRetries: 3 },
+      });
+
+      fetchSpy.mockResolvedValueOnce(
+        new Response('{"errors":[{"detail":"Unauthorized"}]}', {
+          status: 401,
+          statusText: 'Unauthorized',
+        }),
+      );
+
+      await expect(api.getProjects()).rejects.toThrow('Unauthorized');
+      expect(fetchSpy).toHaveBeenCalledTimes(1); // No retries for non-429
+    });
+  });
 });
