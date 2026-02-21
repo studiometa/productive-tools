@@ -35,3 +35,14 @@ export interface UpdateDealOptions {
   responsibleId?: string;
   dealStatusId?: string;
 }
+
+export interface GetDealContextOptions {
+  id: string;
+}
+
+export interface DealContextResult {
+  deal: import('@studiometa/productive-api').ProductiveDeal;
+  services: import('@studiometa/productive-api').ProductiveService[];
+  comments: import('@studiometa/productive-api').ProductiveComment[];
+  time_entries: import('@studiometa/productive-api').ProductiveTimeEntry[];
+}
