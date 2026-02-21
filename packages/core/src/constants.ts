@@ -31,6 +31,7 @@ export const RESOURCES = [
   'reports',
   'batch',
   'search',
+  'summaries',
 ] as const;
 
 export type Resource = (typeof RESOURCES)[number];
@@ -55,6 +56,9 @@ export const ACTIONS = [
   'schema',
   'run',
   'context',
+  'my_day',
+  'project_health',
+  'team_pulse',
 ] as const;
 
 export type Action = (typeof ACTIONS)[number];
