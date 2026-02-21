@@ -18,6 +18,7 @@ function generateDescription(): string {
     'Search: query for text search on list actions. Cross-resource: resource=search action=run with query searches projects, companies, people, tasks simultaneously.',
     'Reports: resource=reports action=get with report_type, from, to.',
     'Batch: resource=batch action=run with operations=[{resource,action,...}] executes up to 10 ops in parallel.',
+    'Rich context: action=context on tasks/projects/deals for full context in one call.',
   ].join('\n');
 }
 

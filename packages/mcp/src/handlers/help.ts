@@ -73,6 +73,8 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       list: 'List all projects with optional filters',
       get: 'Get a single project by ID (supports PRJ-123, P-123 format)',
       resolve: 'Resolve by project number (PRJ-123, P-123)',
+      context:
+        'Get full project context in one call: project details + open tasks + services + recent time entries',
     },
     filters: {
       query: 'Text search on project name',
@@ -102,6 +104,10 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
         description: 'Get project details',
         params: { resource: 'projects', action: 'get', id: '12345' },
       },
+      {
+        description: 'Get full project context',
+        params: { resource: 'projects', action: 'context', id: '12345' },
+      },
     ],
   },
 
@@ -113,6 +119,8 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       create: 'Create a new task (requires title, project_id, task_list_id)',
       update: 'Update an existing task',
       resolve: 'Resolve by text search',
+      context:
+        'Get full task context in one call: task details + comments + time entries + subtasks',
     },
     filters: {
       query: 'Text search on task title',
@@ -181,6 +189,10 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
           project_id: '12345',
           task_list_id: '111',
         },
+      },
+      {
+        description: 'Get full task context',
+        params: { resource: 'tasks', action: 'context', id: '67890' },
       },
     ],
   },
@@ -447,6 +459,8 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       create: 'Create a new deal (requires name, company_id)',
       update: 'Update an existing deal',
       resolve: 'Resolve by deal number (D-123, DEAL-123)',
+      context:
+        'Get full deal context in one call: deal details + services + comments + time entries',
     },
     filters: {
       query: 'Text search on deal name',
@@ -479,6 +493,10 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       {
         description: 'List only budgets',
         params: { resource: 'deals', action: 'list', filter: { type: '2' } },
+      },
+      {
+        description: 'Get full deal context',
+        params: { resource: 'deals', action: 'context', id: '12345' },
       },
     ],
   },
