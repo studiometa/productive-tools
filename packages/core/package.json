@@ -1,6 +1,6 @@
 {
   "name": "@studiometa/productive-core",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "Shared business logic for Productive.io tools - executors, resolvers, and context",
   "keywords": [
     "api",

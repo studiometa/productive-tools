@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-02-21
+
 ### Added
 
 - **MCP**: Guide agents to use `action=help` before interacting with resources — `handleHelpOverview()` now returns a `_tip` field, unknown-resource errors include an `action=help` suggestion, and SKILL.md has a Quick Start section ([dfee2b4], [#91], [#87])
@@ -169,7 +171,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `vi.mock()` and dynamic `import()` paths after test file relocation ([#26])
 - Silence `console.error` in unknown subcommand tests to clean up test output ([#26])
 
-[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.10.0...HEAD
+[Unreleased]: https://github.com/studiometa/productive-tools/compare/0.10.1...HEAD
+[0.10.1]: https://github.com/studiometa/productive-tools/compare/0.10.0...0.10.1
 [dfee2b4]: https://github.com/studiometa/productive-tools/commit/dfee2b4
 [ac43fd6]: https://github.com/studiometa/productive-tools/commit/ac43fd6
 [d265fc6]: https://github.com/studiometa/productive-tools/commit/d265fc6
