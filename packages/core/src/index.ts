@@ -252,3 +252,23 @@ export {
   resolveIncludes,
 } from './executors/reports/index.js';
 export type { GetReportOptions } from './executors/reports/index.js';
+
+// Summaries executors
+export {
+  getMyDaySummary,
+  getProjectHealthSummary,
+  getTeamPulseSummary,
+} from './executors/summaries/index.js';
+export type {
+  MyDaySummaryOptions,
+  MyDaySummaryResult,
+  PersonTimeSummary,
+  ProjectHealthSummaryOptions,
+  ProjectHealthSummaryResult,
+  SummaryBudgetService,
+  SummaryTask,
+  SummaryTimeEntry,
+  SummaryTimer,
+  TeamPulseSummaryOptions,
+  TeamPulseSummaryResult,
+} from './executors/summaries/index.js';

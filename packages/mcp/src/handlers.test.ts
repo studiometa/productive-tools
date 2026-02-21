@@ -3318,6 +3318,183 @@ describe('smart ID resolution', () => {
     });
   });
 
+  describe('summaries resource', () => {
+    it('should handle my_day action', async () => {
+      // Mock tasks (open and overdue calls)
+      mockApi.getTasks.mockResolvedValue({
+        data: [{ id: '1', type: 'tasks', attributes: { title: 'Task 1', due_date: '2024-01-20' } }],
+        meta: { total_count: 1 },
+        included: [],
+      });
+      // Mock time entries
+      mockApi.getTimeEntries.mockResolvedValue({
+        data: [{ id: '10', type: 'time_entries', attributes: { time: 120, date: '2024-01-15' } }],
+        meta: { total_count: 1 },
+        included: [],
+      });
+      // Mock timers
+      mockApi.getTimers.mockResolvedValue({
+        data: [
+          {
+            id: '20',
+            type: 'timers',
+            attributes: { started_at: '2024-01-15T10:00:00Z', total_time: 30, person_id: 1 },
+          },
+        ],
+        included: [],
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'summaries', action: 'my_day' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content.summary_type).toBe('my_day');
+      expect(content.user_id).toBe('500521');
+      expect(content.tasks).toBeDefined();
+      expect(content.time).toBeDefined();
+      expect(content.timers).toBeDefined();
+    });
+
+    it('should handle project_health action with project_id', async () => {
+      // Mock project
+      mockApi.getProject.mockResolvedValue({
+        data: {
+          id: '123',
+          type: 'projects',
+          attributes: { name: 'Test Project', project_number: 'PRJ-001' },
+        },
+      });
+      // Mock tasks (open and overdue)
+      mockApi.getTasks.mockResolvedValue({
+        data: [{ id: '1', type: 'tasks', attributes: { title: 'Task 1' } }],
+        meta: { total_count: 1 },
+        included: [],
+      });
+      // Mock services
+      mockApi.getServices.mockResolvedValue({
+        data: [
+          {
+            id: '300',
+            type: 'services',
+            attributes: { name: 'Development', budgeted_time: 1000, worked_time: 500 },
+          },
+        ],
+      });
+      // Mock time entries
+      mockApi.getTimeEntries.mockResolvedValue({
+        data: [{ id: '10', type: 'time_entries', attributes: { time: 60 } }],
+        meta: { total_count: 1 },
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'summaries', action: 'project_health', project_id: '123' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content.summary_type).toBe('project_health');
+      expect(content.project.id).toBe('123');
+      expect(content.project.name).toBe('Test Project');
+      expect(content.tasks).toBeDefined();
+      expect(content.budget).toBeDefined();
+      expect(content.recent_activity).toBeDefined();
+    });
+
+    it('should return error for project_health without project_id', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'summaries', action: 'project_health' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('project_id is required');
+    });
+
+    it('should handle team_pulse action', async () => {
+      // Mock people
+      mockApi.getPeople.mockResolvedValue({
+        data: [
+          {
+            id: '500521',
+            type: 'people',
+            attributes: { first_name: 'John', last_name: 'Doe', email: 'john@example.com' },
+          },
+        ],
+        meta: { total_count: 1 },
+      });
+      // Mock time entries
+      mockApi.getTimeEntries.mockResolvedValue({
+        data: [
+          {
+            id: '10',
+            type: 'time_entries',
+            attributes: { time: 120, date: '2024-01-15' },
+            relationships: { person: { data: { id: '500521' } } },
+          },
+        ],
+        meta: { total_count: 1 },
+      });
+      // Mock timers
+      mockApi.getTimers.mockResolvedValue({
+        data: [
+          {
+            id: '20',
+            type: 'timers',
+            attributes: { started_at: '2024-01-15T10:00:00Z', total_time: 30, person_id: 500521 },
+          },
+        ],
+        included: [],
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'summaries', action: 'team_pulse' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content.summary_type).toBe('team_pulse');
+      expect(content.team).toBeDefined();
+      expect(content.people).toBeDefined();
+    });
+
+    it('should handle help action', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'summaries', action: 'help' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content.resource).toBe('summaries');
+      expect(content.description).toBeDefined();
+      expect(content.actions).toBeDefined();
+      expect(content.actions.my_day).toBeDefined();
+      expect(content.actions.project_health).toBeDefined();
+      expect(content.actions.team_pulse).toBeDefined();
+    });
+
+    it('should return error for invalid action', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'summaries', action: 'invalid_action' },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Invalid action');
+    });
+  });
+
   describe('batch resource', () => {
     it('should execute multiple operations in parallel', async () => {
       const mockProjectResponse = {

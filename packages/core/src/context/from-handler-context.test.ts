@@ -33,4 +33,11 @@ describe('fromHandlerContext', () => {
 
     expect(ctx.resolver).toBeDefined();
   });
+
+  it('uses userId when provided', () => {
+    const ctx = fromHandlerContext({ api: mockApi }, { userId: 'user-123', orgId: 'org-1' });
+
+    expect(ctx.config.userId).toBe('user-123');
+    expect(ctx.config.organizationId).toBe('org-1');
+  });
 });

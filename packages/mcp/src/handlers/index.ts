@@ -31,6 +31,7 @@ import { type ResolvableResourceType } from './resolve.js';
 import { handleSchema, handleSchemaOverview } from './schema.js';
 import { handleSearch } from './search.js';
 import { handleServices } from './services.js';
+import { handleSummaries } from './summaries.js';
 import { handleTasks } from './tasks.js';
 import { handleTime } from './time.js';
 import { handleTimers } from './timers.js';
@@ -167,7 +168,7 @@ export async function executeToolWithCredentials(
 
   // Build handler context — api is not exposed directly.
   // Handlers access executors via ctx.executor() which creates an ExecutorContext.
-  const execCtx = fromHandlerContext({ api });
+  const execCtx = fromHandlerContext({ api }, { userId: credentials.userId });
   const ctx: HandlerContext = {
     formatOptions,
     filter: stringFilter,
@@ -180,7 +181,8 @@ export async function executeToolWithCredentials(
 
   try {
     // Handle help action first (doesn't need API)
-    if (action === 'help') {
+    // Exception: summaries has its own help handler
+    if (action === 'help' && resource !== 'summaries') {
       return resource ? handleHelp(resource) : handleHelpOverview();
     }
 
@@ -234,6 +236,9 @@ export async function executeToolWithCredentials(
 
       case 'reports':
         return await handleReports(action, restArgs, ctx);
+
+      case 'summaries':
+        return await handleSummaries(action, restArgs, ctx);
 
       case 'budgets':
         return inputErrorResult(

@@ -25,6 +25,8 @@ export interface FromHandlerContextOptions {
   cache?: ResolverCache;
   /** Organization ID for cache keys */
   orgId?: string;
+  /** User ID for executors that need it (e.g., my_day summary) */
+  userId?: string;
 }
 
 /**
@@ -58,6 +60,7 @@ export function fromHandlerContext(
     }),
     config: {
       organizationId: options.orgId ?? '',
+      userId: options.userId,
     },
   };
 }
