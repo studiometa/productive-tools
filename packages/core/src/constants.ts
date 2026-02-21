@@ -54,6 +54,7 @@ export const ACTIONS = [
   'help',
   'schema',
   'run',
+  'context',
 ] as const;
 
 export type Action = (typeof ACTIONS)[number];

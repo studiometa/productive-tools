@@ -73,8 +73,18 @@ export type {
 } from './executors/time/index.js';
 
 // Project executors
-export { buildProjectFilters, getProject, listProjects } from './executors/projects/index.js';
-export type { GetProjectOptions, ListProjectsOptions } from './executors/projects/index.js';
+export {
+  buildProjectFilters,
+  getProject,
+  getProjectContext,
+  listProjects,
+} from './executors/projects/index.js';
+export type {
+  GetProjectContextOptions,
+  GetProjectOptions,
+  ListProjectsOptions,
+  ProjectContextResult,
+} from './executors/projects/index.js';
 
 // People executors
 export { buildPeopleFilters, getPerson, listPeople } from './executors/people/index.js';
@@ -104,13 +114,16 @@ export {
   buildTaskFilters,
   createTask,
   getTask,
+  getTaskContext,
   listTasks,
   updateTask,
 } from './executors/tasks/index.js';
 export type {
   CreateTaskOptions,
+  GetTaskContextOptions,
   GetTaskOptions,
   ListTasksOptions,
+  TaskContextResult,
   UpdateTaskOptions,
 } from './executors/tasks/index.js';
 
@@ -119,11 +132,14 @@ export {
   buildDealFilters,
   createDeal,
   getDeal,
+  getDealContext,
   listDeals,
   updateDeal,
 } from './executors/deals/index.js';
 export type {
   CreateDealOptions,
+  DealContextResult,
+  GetDealContextOptions,
   GetDealOptions,
   ListDealsOptions,
   UpdateDealOptions,

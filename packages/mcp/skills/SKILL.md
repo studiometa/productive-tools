@@ -23,29 +23,16 @@ productive(resource, action, [parameters...])
 
 | Resource      | Actions                                                                  | Description                                              |
 | ------------- | ------------------------------------------------------------------------ | -------------------------------------------------------- |
-| `projects`    | `list`, `get`, `resolve`, `help`                                         | Project management                                       |
+| `projects`    | `list`, `get`, `resolve`, `context`, `help`                              | Project management                                       |
 | `time`        | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Time tracking                                            |
-| `tasks`       | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Task management                                          |
+| `tasks`       | `list`, `get`, `create`, `update`, `resolve`, `context`, `help`          | Task management                                          |
 | `services`    | `list`, `get`, `resolve`, `help`                                         | Budget line items                                        |
 | `people`      | `list`, `get`, `me`, `resolve`, `help`                                   | Team members                                             |
 | `companies`   | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Client companies                                         |
 | `comments`    | `list`, `get`, `create`, `update`, `help`                                | Comments on tasks/deals                                  |
 | `attachments` | `list`, `get`, `delete`, `help`                                          | File attachments                                         |
 | `timers`      | `list`, `get`, `start`, `stop`, `help`                                   | Active timers                                            |
-| `deals`       | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Sales deals & budgets (use `filter[type]=2` for budgets) |
-| `bookings`    | `list`, `get`, `create`, `update`, `help`                                | Resource scheduling                                      |
-| `reports`     | `get`, `help`                                                            | Generate reports                                         |
-| Resource      | Actions                                                                  | Description                                              |
-| ------------- | ------------------------------------------------------------------------ | -----------------------                                  |
-| `projects`    | `list`, `get`, `resolve`, `help`                                         | Project management                                       |
-| `time`        | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Time tracking                                            |
-| `tasks`       | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Task management                                          |
-| `services`    | `list`, `get`, `resolve`, `help`                                         | Budget line items                                        |
-| `people`      | `list`, `get`, `me`, `resolve`, `help`                                   | Team members                                             |
-| `companies`   | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Client companies                                         |
-| `comments`    | `list`, `get`, `create`, `update`, `help`                                | Comments on tasks/deals                                  |
-| `timers`      | `list`, `get`, `start`, `stop`, `help`                                   | Active timers                                            |
-| `deals`       | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Sales deals & budgets                                    |
+| `deals`       | `list`, `get`, `create`, `update`, `resolve`, `context`, `help`          | Sales deals & budgets (use `filter[type]=2` for budgets) |
 | `bookings`    | `list`, `get`, `create`, `update`, `help`                                | Resource scheduling                                      |
 | `pages`       | `list`, `get`, `create`, `update`, `delete`, `help`                      | Wiki/docs pages                                          |
 | `discussions` | `list`, `get`, `create`, `update`, `delete`, `resolve`, `reopen`, `help` | Discussions on pages                                     |
@@ -621,6 +608,38 @@ The response includes `_hints` showing how to fetch related resources.
 
 ❌ **Wrong:** Using `include: ["comments"]` on tasks (not supported)
 ✅ **Right:** Fetch comments separately with `resource: "comments", action: "list"`
+
+## Rich Context (Single Call)
+
+Use `action=context` to fetch a resource along with all its related data in a single call. This replaces the multi-step approach described above.
+
+**Available for:** `tasks`, `projects`, `deals`
+
+### Tasks
+
+```json
+{ "resource": "tasks", "action": "context", "id": "16097010" }
+```
+
+Returns: task details + comments + time entries + subtasks
+
+### Projects
+
+```json
+{ "resource": "projects", "action": "context", "id": "12345" }
+```
+
+Returns: project details + open tasks + services + recent time entries
+
+### Deals
+
+```json
+{ "resource": "deals", "action": "context", "id": "12345" }
+```
+
+Returns: deal details + services + comments + time entries
+
+> **Note:** Related data is limited to 20 items per type. For full listings, use separate `list` calls with appropriate filters.
 
 ## Time Values
 

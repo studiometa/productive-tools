@@ -47,3 +47,14 @@ export interface UpdateTaskOptions {
   assigneeId?: string;
   workflowStatusId?: string;
 }
+
+export interface GetTaskContextOptions {
+  id: string;
+}
+
+export interface TaskContextResult {
+  task: import('@studiometa/productive-api').ProductiveTask;
+  comments: import('@studiometa/productive-api').ProductiveComment[];
+  time_entries: import('@studiometa/productive-api').ProductiveTimeEntry[];
+  subtasks: import('@studiometa/productive-api').ProductiveTask[];
+}

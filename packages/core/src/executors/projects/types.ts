@@ -29,3 +29,21 @@ export interface GetProjectOptions {
   /** Project ID or human-friendly identifier (e.g., PRJ-123) */
   id: string;
 }
+
+/**
+ * Options for getting project context (project + related data)
+ */
+export interface GetProjectContextOptions {
+  /** Project ID or human-friendly identifier (e.g., PRJ-123) */
+  id: string;
+}
+
+/**
+ * Result from getProjectContext
+ */
+export interface ProjectContextResult {
+  project: import('@studiometa/productive-api').ProductiveProject;
+  tasks: import('@studiometa/productive-api').ProductiveTask[];
+  services: import('@studiometa/productive-api').ProductiveService[];
+  time_entries: import('@studiometa/productive-api').ProductiveTimeEntry[];
+}
