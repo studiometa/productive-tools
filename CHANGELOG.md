@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-02-21
+
 ### Added
 
 - **API**: Add `RateLimiter` class with sliding window throttling and exponential backoff with jitter for 429 retries ([9f0d991], [#107], [#104])
@@ -17,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Core**: Add `summaries` executors: `getMyDaySummary`, `getProjectHealthSummary`, `getTeamPulseSummary` ([9bc253c], [#106], [#100])
 - **Core**: Add `context`, `my_day`, `project_health`, `team_pulse` to `ACTIONS` and `summaries` to `RESOURCES` constants ([1b5ab62], [9bc253c], [#105], [#106])
 
+[0.10.2]: https://github.com/studiometa/productive-tools/compare/0.10.1...0.10.2
 [9f0d991]: https://github.com/studiometa/productive-tools/commit/9f0d991
 [1b5ab62]: https://github.com/studiometa/productive-tools/commit/1b5ab62
 [9bc253c]: https://github.com/studiometa/productive-tools/commit/9bc253c
