@@ -2021,14 +2021,14 @@ describe('include parameter', () => {
 
       await executeToolWithCredentials(
         'productive',
-        { resource: 'deals', action: 'get', id: '123', include: ['services'] },
+        { resource: 'deals', action: 'get', id: '123', include: ['project'] },
         credentials,
       );
 
       expect(mockApi.getDeal).toHaveBeenCalledWith(
         '123',
         expect.objectContaining({
-          include: expect.arrayContaining(['company', 'deal_status', 'responsible', 'services']),
+          include: expect.arrayContaining(['company', 'deal_status', 'responsible', 'project']),
         }),
       );
     });
@@ -2083,14 +2083,14 @@ describe('include parameter', () => {
 
       await executeToolWithCredentials(
         'productive',
-        { resource: 'bookings', action: 'get', id: '123', include: ['approver'] },
+        { resource: 'bookings', action: 'get', id: '123', include: ['event'] },
         credentials,
       );
 
       expect(mockApi.getBooking).toHaveBeenCalledWith(
         '123',
         expect.objectContaining({
-          include: expect.arrayContaining(['person', 'service', 'approver']),
+          include: expect.arrayContaining(['person', 'service', 'event']),
         }),
       );
     });
@@ -3753,6 +3753,146 @@ describe('smart ID resolution', () => {
       // Should get batch validation error, not API error
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('cannot be empty');
+    });
+  });
+
+  describe('include validation', () => {
+    it('should return error for invalid include on tasks', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'tasks', action: 'list', include: ['notes'] },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Invalid include value');
+      expect(result.content[0].text).toContain('notes');
+    });
+
+    it('should return error for invalid include on deals', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'deals', action: 'list', include: ['services'] },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Invalid include value');
+      expect(result.content[0].text).toContain('services');
+      // Should provide a helpful suggestion
+      expect(result.content[0].text).toContain('resource=services');
+    });
+
+    it('should list valid includes in the error hints', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'tasks', action: 'list', include: ['foobar'] },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('project');
+      expect(result.content[0].text).toContain('assignee');
+    });
+
+    it('should pass through valid includes without error for tasks', async () => {
+      mockApi.getTasks.mockResolvedValue({
+        data: [{ id: '1', type: 'tasks', attributes: { title: 'Task 1' } }],
+        meta: { current_page: 1, total_pages: 1 },
+        included: [],
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'tasks', action: 'list', include: ['project', 'assignee'] },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+    });
+
+    it('should skip validation for resources with no include map (projects)', async () => {
+      mockApi.getProjects.mockResolvedValue({
+        data: [{ id: '1', type: 'projects', attributes: { name: 'Project 1' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'projects', action: 'list', include: ['anything'] },
+        credentials,
+      );
+
+      // Projects has no include map — should not error
+      expect(result.isError).toBeUndefined();
+    });
+
+    it('should return error for multiple invalid includes', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'tasks', action: 'list', include: ['notes', 'services', 'time_entries'] },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('notes');
+      expect(result.content[0].text).toContain('services');
+      expect(result.content[0].text).toContain('time_entries');
+    });
+
+    it('should mention valid includes when some are valid and some are not', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'tasks', action: 'list', include: ['project', 'notes'] },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      // Should mention the valid includes that were found
+      expect(result.content[0].text).toContain('project');
+    });
+
+    it('should not validate empty include array', async () => {
+      mockApi.getTasks.mockResolvedValue({
+        data: [{ id: '1', type: 'tasks', attributes: { title: 'Task 1' } }],
+        meta: { current_page: 1, total_pages: 1 },
+        included: [],
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'tasks', action: 'list', include: [] },
+        credentials,
+      );
+
+      // Empty include array should not trigger validation error
+      expect(result.isError).toBeUndefined();
+    });
+
+    it('should validate includes for comments resource', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'comments', action: 'list', include: ['author'] },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('author');
+      // Known suggestion: use "creator" instead
+      expect(result.content[0].text).toContain('creator');
+    });
+
+    it('should validate includes for bookings resource', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'bookings', action: 'list', include: ['project'] },
+        credentials,
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('project');
+      // Valid includes: person, service, event
+      expect(result.content[0].text).toContain('person');
     });
   });
 });
