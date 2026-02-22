@@ -14,6 +14,11 @@ import type { CommonArgs, HandlerContext, ToolResult } from './types.js';
 
 import { ErrorMessages } from '../errors.js';
 import { formatListResponse } from '../formatters.js';
+import {
+  getTaskGetSuggestions,
+  getTaskListSuggestions,
+  getTimeListSuggestions,
+} from '../suggestions.js';
 import { handleResolve, type ResolvableResourceType } from './resolve.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
@@ -206,14 +211,26 @@ export function createResourceHandler<TArgs extends CommonArgs = CommonArgs>(
       const result = await executors.get({ id, include }, execCtx);
       const formatted = formatter(result.data, { ...formatOptions, included: result.included });
 
-      if (ctx.includeHints !== false && hints) {
-        return jsonResult({
-          ...formatted,
-          _hints: hints(result.data, id),
-        });
+      const getResponseData: Record<string, unknown> = { ...formatted };
+
+      if (ctx.includeHints) {
+        if (hints) {
+          getResponseData._hints = hints(result.data, id);
+        }
       }
 
-      return jsonResult(formatted);
+      // Add resource-specific suggestions (controlled separately from hints)
+      if (ctx.includeSuggestions !== false) {
+        let getSuggestions: string[] = [];
+        if (resource === 'tasks') {
+          getSuggestions = getTaskGetSuggestions(result.data, result.included);
+        }
+        if (getSuggestions.length > 0) {
+          getResponseData._suggestions = getSuggestions;
+        }
+      }
+
+      return jsonResult(getResponseData);
     }
 
     // Handle create action
@@ -288,12 +305,27 @@ export function createResourceHandler<TArgs extends CommonArgs = CommonArgs>(
         included: result.included,
       });
 
+      const listResponseData: Record<string, unknown> = { ...response };
+
       // Include resolution metadata if any resolutions occurred
       if (result.resolved && Object.keys(result.resolved).length > 0) {
-        return jsonResult({ ...response, _resolved: result.resolved });
+        listResponseData._resolved = result.resolved;
       }
 
-      return jsonResult(response);
+      // Add resource-specific suggestions
+      if (ctx.includeSuggestions !== false) {
+        let listSuggestions: string[] = [];
+        if (resource === 'tasks') {
+          listSuggestions = getTaskListSuggestions(result.data);
+        } else if (resource === 'time') {
+          listSuggestions = getTimeListSuggestions(result.data, additionalFilters);
+        }
+        if (listSuggestions.length > 0) {
+          listResponseData._suggestions = listSuggestions;
+        }
+      }
+
+      return jsonResult(listResponseData);
     }
 
     // Invalid action

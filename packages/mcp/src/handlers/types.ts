@@ -33,6 +33,7 @@ export interface HandlerContext {
   include?: string[];
   /** Whether to include contextual hints in responses (default: true) */
   includeHints?: boolean;
+  includeSuggestions?: boolean;
   /** Get an ExecutorContext for calling core executors */
   executor(): ExecutorContext;
 }

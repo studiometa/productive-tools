@@ -173,9 +173,10 @@ export async function executeToolWithCredentials(
     stringFilter = { ...stringFilter, query };
   }
 
-  // Hints are included by default for 'get' action, disabled for 'list' or when compact
-  // Can be explicitly disabled with no_hints: true
+  // Hints are included for 'get' actions (not compact), suggestions for any action.
+  // Both are disabled with no_hints: true.
   const includeHints = no_hints !== true && action === 'get' && !isCompact;
+  const includeSuggestions = no_hints !== true;
 
   // Validate include values against known-valid includes for this resource.
   // Do this before building the handler context so we can return early.
@@ -214,6 +215,7 @@ export async function executeToolWithCredentials(
     perPage,
     include,
     includeHints,
+    includeSuggestions,
     executor: () => execCtx,
   };
 

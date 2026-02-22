@@ -14,6 +14,7 @@ import {
 import type { HandlerContext, ToolResult } from './types.js';
 
 import { ErrorMessages, UserInputError } from '../errors.js';
+import { getMyDaySuggestions } from '../suggestions.js';
 import { inputErrorResult, jsonResult } from './utils.js';
 
 const VALID_ACTIONS = ['my_day', 'project_health', 'team_pulse', 'help'];
@@ -41,6 +42,12 @@ export async function handleSummaries(
   switch (action) {
     case 'my_day': {
       const result = await getMyDaySummary({}, execCtx);
+      if (ctx.includeSuggestions !== false) {
+        const suggestions = getMyDaySuggestions(result.data);
+        if (suggestions.length > 0) {
+          return jsonResult({ ...result.data, _suggestions: suggestions });
+        }
+      }
       return jsonResult(result.data);
     }
 
