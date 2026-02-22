@@ -46,6 +46,8 @@ export interface UpdateTaskOptions {
   isPrivate?: boolean;
   assigneeId?: string;
   workflowStatusId?: string;
+  /** Close or reopen the task */
+  closed?: boolean;
 }
 
 export interface GetTaskContextOptions {
