@@ -4005,4 +4005,152 @@ describe('smart ID resolution', () => {
       expect(result.content[0].text).toContain('person');
     });
   });
+
+  describe('_suggestions in responses', () => {
+    it('should include _suggestions for tasks list with overdue tasks', async () => {
+      // Use a clearly past date so this task is always overdue
+      mockApi.getTasks.mockResolvedValue({
+        data: [
+          {
+            id: '1',
+            type: 'tasks',
+            attributes: { title: 'Overdue Task', due_date: '2020-01-01', closed: false },
+            relationships: { assignee: { data: { id: '99', type: 'people' } } },
+          },
+        ],
+        meta: { current_page: 1, total_pages: 1 },
+        included: [],
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'tasks', action: 'list' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._suggestions).toBeDefined();
+      expect(content._suggestions).toContain('⚠️ 1 task(s) are overdue');
+    });
+
+    it('should include _suggestions for tasks list with unassigned tasks', async () => {
+      mockApi.getTasks.mockResolvedValue({
+        data: [
+          {
+            id: '1',
+            type: 'tasks',
+            attributes: { title: 'Unassigned Task', due_date: '2099-12-31', closed: false },
+            // no assignee relationship
+          },
+        ],
+        meta: { current_page: 1, total_pages: 1 },
+        included: [],
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'tasks', action: 'list' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._suggestions).toBeDefined();
+      expect(content._suggestions).toContain('ℹ️ 1 task(s) have no assignee');
+    });
+
+    it('should include _suggestions for tasks get when task is overdue', async () => {
+      mockApi.getTask.mockResolvedValue({
+        data: {
+          id: '42',
+          type: 'tasks',
+          attributes: { title: 'Overdue Task', due_date: '2020-06-01', closed: false },
+        },
+        included: [],
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'tasks', action: 'get', id: '42' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._suggestions).toBeDefined();
+      expect(content._suggestions[0]).toMatch(/⚠️ Task is \d+ day\(s\) overdue/);
+    });
+
+    it('should include total hours _suggestions for time list', async () => {
+      mockApi.getTimeEntries.mockResolvedValue({
+        data: [
+          { id: '1', type: 'time_entries', attributes: { date: '2024-01-15', time: 120 } },
+          { id: '2', type: 'time_entries', attributes: { date: '2024-01-15', time: 60 } },
+        ],
+        meta: { current_page: 1, total_pages: 1 },
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'time', action: 'list' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._suggestions).toBeDefined();
+      expect(content._suggestions).toContain('📊 Total: 3h logged');
+    });
+
+    it('should not include _suggestions when no_hints is true', async () => {
+      // Overdue task, but no_hints=true should suppress suggestions
+      mockApi.getTasks.mockResolvedValue({
+        data: [
+          {
+            id: '1',
+            type: 'tasks',
+            attributes: { title: 'Overdue Task', due_date: '2020-01-01', closed: false },
+          },
+        ],
+        meta: { current_page: 1, total_pages: 1 },
+        included: [],
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'tasks', action: 'list', no_hints: true },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._suggestions).toBeUndefined();
+    });
+
+    it('should not include _suggestions when tasks list has no issues', async () => {
+      mockApi.getTasks.mockResolvedValue({
+        data: [
+          {
+            id: '1',
+            type: 'tasks',
+            attributes: { title: 'Good Task', due_date: '2099-12-31', closed: false },
+            relationships: { assignee: { data: { id: '99', type: 'people' } } },
+          },
+        ],
+        meta: { current_page: 1, total_pages: 1 },
+        included: [],
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'tasks', action: 'list' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._suggestions).toBeUndefined();
+    });
+  });
 });

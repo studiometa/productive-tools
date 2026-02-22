@@ -37,6 +37,7 @@ import { handleTime } from './time.js';
 import { handleTimers } from './timers.js';
 import { errorResult, formatError, inputErrorResult, toStringFilter } from './utils.js';
 import { VALID_INCLUDES, validateIncludes } from './valid-includes.js';
+import { handleWorkflows } from './workflows.js';
 
 // Re-export types
 export type { ToolResult } from './types.js';
@@ -173,9 +174,9 @@ export async function executeToolWithCredentials(
     stringFilter = { ...stringFilter, query };
   }
 
-  // Hints are included by default for 'get' action, disabled for 'list' or when compact
-  // Can be explicitly disabled with no_hints: true
-  const includeHints = no_hints !== true && action === 'get' && !isCompact;
+  // Hints and suggestions are disabled with no_hints: true.
+  // Compact mode does not suppress hints/suggestions — it only affects formatting verbosity.
+  const includeHints = no_hints !== true;
 
   // Validate include values against known-valid includes for this resource.
   // Do this before building the handler context so we can return early.

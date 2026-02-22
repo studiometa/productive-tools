@@ -517,6 +517,28 @@ Force full details on list:
 
 When fetching a single resource with `action: "get"`, the response includes a `_hints` field with suggestions for related resources and common actions. This helps discover how to fetch additional context.
 
+## Proactive Suggestions
+
+Certain responses include a `_suggestions` field with data-aware warnings and recommendations. Unlike `_hints` (which point to related resources), `_suggestions` draw attention to things that need action based on the data returned.
+
+| Resource    | Action   | Suggestions generated                                |
+| ----------- | -------- | ---------------------------------------------------- |
+| `tasks`     | `list`   | ⚠️ overdue tasks count, ℹ️ unassigned tasks count    |
+| `tasks`     | `get`    | ⚠️ task is N days overdue, ℹ️ no time entries        |
+| `time`      | `list`   | 📊 total hours logged (or X/8h if filtered by today) |
+| `summaries` | `my_day` | ⚠️ no time logged today, ⏱️ timer running too long   |
+
+Example:
+
+```json
+{
+  "data": [{ "id": "1", "title": "Fix bug", "due_date": "2024-01-01" }],
+  "_suggestions": ["⚠️ 1 task(s) are overdue", "ℹ️ 1 task(s) have no assignee"]
+}
+```
+
+Suggestions are suppressed when `no_hints: true` is set.
+
 Example response for a task:
 
 ```json
@@ -695,3 +717,4 @@ Key points:
 4. **Use `query`** for text search - behavior varies by resource but may include related fields (e.g., tasks query may match project names)
 5. **Check `people.me`** first to get the current user's ID for filters
 6. **Follow `_hints`** - When getting a resource, check the `_hints` field for suggestions on fetching related context
+7. **Act on `_suggestions`** - When present, `_suggestions` highlight data issues (overdue tasks, no time logged, etc.) that may need attention or should be surfaced to the user
