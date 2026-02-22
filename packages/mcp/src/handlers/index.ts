@@ -35,6 +35,7 @@ import { handleSummaries } from './summaries.js';
 import { handleTasks } from './tasks.js';
 import { handleTime } from './time.js';
 import { handleTimers } from './timers.js';
+import { handleWorkflows } from './workflows.js';
 import { errorResult, formatError, inputErrorResult, toStringFilter } from './utils.js';
 import { VALID_INCLUDES, validateIncludes } from './valid-includes.js';
 
@@ -99,6 +100,11 @@ interface ProductiveArgs {
   status?: string;
   // Batch fields
   operations?: Array<Record<string, unknown>>;
+  // Workflow fields
+  entries?: Array<Record<string, unknown>>;
+  comment?: string;
+  stop_timer?: boolean;
+  week_start?: string;
 }
 
 /**
@@ -308,6 +314,9 @@ export async function executeToolWithCredentials(
 
       case 'summaries':
         return await handleSummaries(action, restArgs, ctx);
+
+      case 'workflows':
+        return await handleWorkflows(action, restArgs, ctx);
 
       case 'budgets':
         return inputErrorResult(
