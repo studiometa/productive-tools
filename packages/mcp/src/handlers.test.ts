@@ -1682,6 +1682,47 @@ describe('handlers', () => {
         expect(text).toContain('type=2');
       });
     });
+
+    describe('params wrapper detection', () => {
+      it('should return helpful error when params field is used instead of filter', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'tasks', action: 'list', params: { assignee_id: 'me' } },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        const text = result.content[0].text as string;
+        expect(text).toContain('"params"');
+        expect(text).toContain('"filter"');
+      });
+
+      it('should include hint about filter usage in params error', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'projects', action: 'list', params: { status: 'active' } },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        const text = result.content[0].text as string;
+        expect(text).toContain('filter');
+        expect(text).toContain('assignee_id');
+      });
+
+      it('should not trigger params error when filter is used correctly', async () => {
+        mockApi.getTasks.mockResolvedValueOnce({ data: [], meta: { total_count: 0 } });
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'tasks', action: 'list', filter: { assignee_id: 'me' } },
+          credentials,
+        );
+
+        // Should not be a "params" error — may succeed or fail for other reasons
+        const text = result.content[0].text as string;
+        expect(text).not.toContain('Unknown field "params"');
+      });
+    });
   });
 });
 

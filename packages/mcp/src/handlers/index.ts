@@ -120,6 +120,16 @@ export async function executeToolWithCredentials(
     return handleBatch(typedArgs.operations, credentials, executeToolWithCredentials);
   }
 
+  // Detect common mistake: passing "params" instead of "filter"
+  if ((args as Record<string, unknown>).params !== undefined) {
+    return inputErrorResult(
+      new UserInputError('Unknown field "params". Use "filter" instead.', [
+        'Example: { "filter": { "assignee_id": "me" } }',
+        'The MCP tool uses "filter" for query parameters, not "params"',
+      ]),
+    );
+  }
+
   const {
     resource,
     action,
