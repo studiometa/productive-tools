@@ -37,6 +37,7 @@ productive(resource, action, [parameters...])
 | `pages`       | `list`, `get`, `create`, `update`, `delete`, `help`                      | Wiki/docs pages                                          |
 | `discussions` | `list`, `get`, `create`, `update`, `delete`, `resolve`, `reopen`, `help` | Discussions on pages                                     |
 | `reports`     | `get`, `help`                                                            | Generate reports                                         |
+| `workflows`   | `complete_task`, `log_day`, `weekly_standup`, `help`                     | Compound workflows chaining multiple operations          |
 
 ### Getting Help
 
@@ -378,6 +379,78 @@ Response:
 // Reopen a resolved discussion
 { "resource": "discussions", "action": "reopen", "id": "67890" }
 ```
+
+### Workflows
+
+Compound workflows that chain multiple operations into a single tool call.
+
+```json
+// Complete a task (marks closed, posts comment, stops timers)
+{
+  "resource": "workflows",
+  "action": "complete_task",
+  "task_id": "12345",
+  "comment": "All done! Tests passing.",
+  "stop_timer": true
+}
+
+// Complete a task without stopping timers
+{
+  "resource": "workflows",
+  "action": "complete_task",
+  "task_id": "12345",
+  "stop_timer": false
+}
+
+// Log a full day across multiple services (time in minutes)
+{
+  "resource": "workflows",
+  "action": "log_day",
+  "date": "2024-01-16",
+  "entries": [
+    { "project_id": "100", "service_id": "111", "duration_minutes": 240, "note": "Frontend development" },
+    { "project_id": "100", "service_id": "222", "duration_minutes": 120, "note": "Code review" },
+    { "project_id": "200", "service_id": "333", "duration_minutes": 60, "note": "Client meeting" }
+  ]
+}
+
+// Get weekly standup (this week)
+{ "resource": "workflows", "action": "weekly_standup" }
+
+// Get standup for a specific week (provide the Monday date)
+{
+  "resource": "workflows",
+  "action": "weekly_standup",
+  "week_start": "2024-01-15"
+}
+
+// Get standup for a specific person
+{
+  "resource": "workflows",
+  "action": "weekly_standup",
+  "person_id": "12345"
+}
+```
+
+#### complete_task returns
+
+- `task` — Updated task info (id, title, closed status)
+- `comment_posted` — Whether the comment was successfully posted
+- `comment_id` — ID of the created comment (if posted)
+- `timers_stopped` — Number of timers that were stopped
+- `errors` — Array of sub-step errors (partial results still returned)
+
+#### log_day returns
+
+- `entries` — Per-entry results with `success`, `time_entry` (on success), or `error` (on failure)
+- `succeeded` / `failed` — Counts of successful and failed entries
+- `total_minutes_logged` — Sum of minutes for successful entries
+
+#### weekly_standup returns
+
+- `completed_tasks` — Tasks closed this week with project names
+- `time_logged` — Total minutes and breakdown by project (sorted by most time first)
+- `upcoming_deadlines` — Open tasks due in the next 7 days with `days_until_due`
 
 ## Filters Reference
 

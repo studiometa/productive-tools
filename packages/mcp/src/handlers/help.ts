@@ -650,6 +650,75 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
     ],
   },
 
+  workflows: {
+    description:
+      'Compound workflows that chain multiple resource operations into a single tool call. Use these for common multi-step patterns.',
+    actions: {
+      complete_task: 'Mark a task closed, optionally post a comment, and stop running timers',
+      log_day: 'Create multiple time entries in parallel from a structured list',
+      weekly_standup: 'Aggregate completed tasks, time logged, and upcoming deadlines for a week',
+    },
+    fields: {
+      task_id: '(complete_task) Required. Task ID to mark as complete',
+      comment: '(complete_task) Optional. Completion comment text to post',
+      stop_timer: '(complete_task) Optional. Whether to stop running timers (default: true)',
+      entries:
+        '(log_day) Required. Array of { project_id, service_id, duration_minutes, note?, date? }',
+      date: '(log_day) Optional. Default date for all entries (YYYY-MM-DD, defaults to today)',
+      person_id: '(log_day / weekly_standup) Optional. Person to act on (defaults to current user)',
+      week_start:
+        '(weekly_standup) Optional. Monday date of the target week (defaults to this Monday)',
+    },
+    examples: [
+      {
+        description: 'Complete a task with a comment',
+        params: {
+          resource: 'workflows',
+          action: 'complete_task',
+          task_id: '12345',
+          comment: 'Done! All tests passing.',
+        },
+      },
+      {
+        description: 'Complete a task without stopping timers',
+        params: {
+          resource: 'workflows',
+          action: 'complete_task',
+          task_id: '12345',
+          stop_timer: false,
+        },
+      },
+      {
+        description: 'Log a full day across multiple projects',
+        params: {
+          resource: 'workflows',
+          action: 'log_day',
+          date: '2024-01-16',
+          entries: [
+            { project_id: '100', service_id: '111', duration_minutes: 240, note: 'Frontend dev' },
+            { project_id: '200', service_id: '222', duration_minutes: 120, note: 'Code review' },
+            { project_id: '100', service_id: '333', duration_minutes: 60, note: 'Meetings' },
+          ],
+        },
+      },
+      {
+        description: 'Get this week standup',
+        params: {
+          resource: 'workflows',
+          action: 'weekly_standup',
+        },
+      },
+      {
+        description: 'Get standup for a specific past week',
+        params: {
+          resource: 'workflows',
+          action: 'weekly_standup',
+          week_start: '2024-01-15',
+        },
+      },
+    ],
+  },
+
   reports: {
     description: 'Generate various reports (time, budget, project, etc.)',
     actions: {

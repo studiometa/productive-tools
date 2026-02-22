@@ -272,3 +272,19 @@ export type {
   TeamPulseSummaryOptions,
   TeamPulseSummaryResult,
 } from './executors/summaries/index.js';
+
+// Workflows executors
+export { completeTask, logDay, weeklyStandup } from './executors/workflows/index.js';
+export type {
+  CompleteTaskOptions,
+  CompleteTaskResult,
+  LogDayEntry,
+  LogDayEntryResult,
+  LogDayOptions,
+  LogDayResult,
+  StandupTask,
+  StandupTimeByProject,
+  StandupUpcomingTask,
+  WeeklyStandupOptions,
+  WeeklyStandupResult,
+} from './executors/workflows/index.js';

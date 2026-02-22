@@ -22,6 +22,7 @@ export async function updateTask(
     data.assignee_id = await ctx.resolver.resolveValue(options.assigneeId, 'person');
   }
   if (options.workflowStatusId !== undefined) data.workflow_status_id = options.workflowStatusId;
+  if (options.closed !== undefined) data.closed = options.closed;
 
   if (Object.keys(data).length === 0) {
     throw new ExecutorValidationError(

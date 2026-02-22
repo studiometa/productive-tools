@@ -37,6 +37,7 @@ import { handleTime } from './time.js';
 import { handleTimers } from './timers.js';
 import { errorResult, formatError, inputErrorResult, toStringFilter } from './utils.js';
 import { VALID_INCLUDES, validateIncludes } from './valid-includes.js';
+import { handleWorkflows } from './workflows.js';
 
 // Re-export types
 export type { ToolResult } from './types.js';
@@ -99,6 +100,98 @@ interface ProductiveArgs {
   status?: string;
   // Batch fields
   operations?: Array<Record<string, unknown>>;
+  // Workflow fields
+  entries?: Array<Record<string, unknown>>;
+  comment?: string;
+  stop_timer?: boolean;
+  week_start?: string;
+}
+
+/**
+ * Route to the appropriate resource handler.
+ * Extracted from executeToolWithCredentials to keep cyclomatic complexity manageable.
+ */
+async function routeToHandler(
+  resource: string,
+  action: string,
+  restArgs: Record<string, unknown>,
+  resolveArgs: { query?: string; type?: ResolvableResourceType },
+  ctx: HandlerContext,
+  credentials: ProductiveCredentials,
+): Promise<ToolResult> {
+  switch (resource) {
+    case 'projects':
+      return await handleProjects(action, { ...restArgs, ...resolveArgs }, ctx);
+
+    case 'time':
+      return await handleTime(action, { ...restArgs, ...resolveArgs }, ctx);
+
+    case 'tasks':
+      return await handleTasks(action, { ...restArgs, ...resolveArgs }, ctx);
+
+    case 'services':
+      return await handleServices(action, restArgs, ctx);
+
+    case 'people':
+      return await handlePeople(action, { ...restArgs, ...resolveArgs }, ctx, credentials);
+
+    case 'companies':
+      return await handleCompanies(action, { ...restArgs, ...resolveArgs }, ctx);
+
+    case 'comments':
+      return await handleComments(action, restArgs, ctx);
+
+    case 'attachments':
+      return await handleAttachments(action, restArgs, ctx);
+
+    case 'timers':
+      return await handleTimers(action, restArgs, ctx);
+
+    case 'deals':
+      return await handleDeals(action, { ...restArgs, ...resolveArgs }, ctx);
+
+    case 'bookings':
+      return await handleBookings(action, restArgs, ctx);
+
+    case 'pages':
+      return await handlePages(action, restArgs, ctx);
+
+    case 'discussions':
+      return await handleDiscussions(action, restArgs, ctx);
+
+    case 'reports':
+      return await handleReports(action, restArgs, ctx);
+
+    case 'summaries':
+      return await handleSummaries(action, restArgs, ctx);
+
+    case 'workflows':
+      return await handleWorkflows(action, restArgs, ctx);
+
+    case 'budgets':
+      return inputErrorResult(
+        new UserInputError(
+          'The "budgets" resource has been removed. Budgets are deals with type=2.',
+          [
+            'Use resource="deals" with filter[type]="2" to list only budgets',
+            'To create a budget: resource="deals" action="create" with budget=true',
+            'Use action="help" resource="deals" for full documentation',
+          ],
+        ),
+      );
+
+    case 'docs':
+      return inputErrorResult(
+        new UserInputError('Unknown resource "docs". Did you mean "pages"?', [
+          'Use resource="pages" to access Productive pages/documents',
+          'Use action="list" to list all pages',
+          'Use action="help" resource="pages" for full documentation',
+        ]),
+      );
+
+    default:
+      return inputErrorResult(ErrorMessages.unknownResource(resource, VALID_RESOURCES));
+  }
 }
 
 /**
@@ -263,78 +356,8 @@ export async function executeToolWithCredentials(
     }
 
     // Route to appropriate resource handler
-    // Note: query and type are passed explicitly for resolve action support
     const resolveArgs = { query, type };
-    switch (resource) {
-      case 'projects':
-        return await handleProjects(action, { ...restArgs, ...resolveArgs }, ctx);
-
-      case 'time':
-        return await handleTime(action, { ...restArgs, ...resolveArgs }, ctx);
-
-      case 'tasks':
-        return await handleTasks(action, { ...restArgs, ...resolveArgs }, ctx);
-
-      case 'services':
-        return await handleServices(action, restArgs, ctx);
-
-      case 'people':
-        return await handlePeople(action, { ...restArgs, ...resolveArgs }, ctx, credentials);
-
-      case 'companies':
-        return await handleCompanies(action, { ...restArgs, ...resolveArgs }, ctx);
-
-      case 'comments':
-        return await handleComments(action, restArgs, ctx);
-
-      case 'attachments':
-        return await handleAttachments(action, restArgs, ctx);
-
-      case 'timers':
-        return await handleTimers(action, restArgs, ctx);
-
-      case 'deals':
-        return await handleDeals(action, { ...restArgs, ...resolveArgs }, ctx);
-
-      case 'bookings':
-        return await handleBookings(action, restArgs, ctx);
-
-      case 'pages':
-        return await handlePages(action, restArgs, ctx);
-
-      case 'discussions':
-        return await handleDiscussions(action, restArgs, ctx);
-
-      case 'reports':
-        return await handleReports(action, restArgs, ctx);
-
-      case 'summaries':
-        return await handleSummaries(action, restArgs, ctx);
-
-      case 'budgets':
-        return inputErrorResult(
-          new UserInputError(
-            'The "budgets" resource has been removed. Budgets are deals with type=2.',
-            [
-              'Use resource="deals" with filter[type]="2" to list only budgets',
-              'To create a budget: resource="deals" action="create" with budget=true',
-              'Use action="help" resource="deals" for full documentation',
-            ],
-          ),
-        );
-
-      case 'docs':
-        return inputErrorResult(
-          new UserInputError('Unknown resource "docs". Did you mean "pages"?', [
-            'Use resource="pages" to access Productive pages/documents',
-            'Use action="list" to list all pages',
-            'Use action="help" resource="pages" for full documentation',
-          ]),
-        );
-
-      default:
-        return inputErrorResult(ErrorMessages.unknownResource(resource, VALID_RESOURCES));
-    }
+    return await routeToHandler(resource, action, restArgs, resolveArgs, ctx, credentials);
   } catch (error) {
     // Handle UserInputError with formatted hints
     if (isUserInputError(error)) {

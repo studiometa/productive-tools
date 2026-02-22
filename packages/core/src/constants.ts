@@ -32,6 +32,7 @@ export const RESOURCES = [
   'batch',
   'search',
   'summaries',
+  'workflows',
 ] as const;
 
 export type Resource = (typeof RESOURCES)[number];
@@ -59,6 +60,9 @@ export const ACTIONS = [
   'my_day',
   'project_health',
   'team_pulse',
+  'complete_task',
+  'log_day',
+  'weekly_standup',
 ] as const;
 
 export type Action = (typeof ACTIONS)[number];

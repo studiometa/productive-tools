@@ -391,6 +391,8 @@ export class ProductiveApi {
       private?: boolean;
       assignee_id?: string;
       workflow_status_id?: string;
+      /** Close or reopen the task */
+      closed?: boolean;
     },
   ): Promise<ProductiveApiResponse<ProductiveTask>> {
     const relationships: Record<string, { data: { type: string; id: string } | null }> = {};
@@ -414,6 +416,7 @@ export class ProductiveApi {
     if (data.start_date !== undefined) attributes.start_date = data.start_date;
     if (data.initial_estimate !== undefined) attributes.initial_estimate = data.initial_estimate;
     if (data.private !== undefined) attributes.private = data.private;
+    if (data.closed !== undefined) attributes.closed = data.closed;
 
     const body: Record<string, unknown> = {
       data: {
