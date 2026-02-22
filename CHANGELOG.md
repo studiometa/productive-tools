@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **MCP**: Auto-resolve `person_id` to current user on `time.create` when omitted — eliminates the 2-step `people.me` then `time.create` pattern ([ec467b5], [#109], [#80])
+- **MCP**: Detect `params` wrapper and return helpful error suggesting `filter` instead ([f366a97], [#110], [#81])
+- **MCP**: Validate `include` values per resource and return helpful suggestions for invalid ones ([b13e4c8], [#113], [#82])
+- **MCP**: Add helpful redirects for known wrong actions and resources — `resource="docs"` → `pages`, `action="search"` on specific resources → `action="list"` with `query`, `get_*` function-style actions → proper pattern ([293af18], [#111], [#83])
+- **MCP**: Add `services.list` contextual hint showing `deal_id` filter pattern when not already filtering by deal ([a79e966], [#112], [#85])
+
+### Changed
+
+- **CLI**: Move `--field` vs URL params warning to top of `api` section in SKILL.md for better discoverability, add note promoting named commands over raw `api` calls ([f02ef76], [#108], [#84])
+
+[ec467b5]: https://github.com/studiometa/productive-tools/commit/ec467b5
+[f366a97]: https://github.com/studiometa/productive-tools/commit/f366a97
+[b13e4c8]: https://github.com/studiometa/productive-tools/commit/b13e4c8
+[293af18]: https://github.com/studiometa/productive-tools/commit/293af18
+[a79e966]: https://github.com/studiometa/productive-tools/commit/a79e966
+[f02ef76]: https://github.com/studiometa/productive-tools/commit/f02ef76
+[#80]: https://github.com/studiometa/productive-tools/issues/80
+[#81]: https://github.com/studiometa/productive-tools/issues/81
+[#82]: https://github.com/studiometa/productive-tools/issues/82
+[#83]: https://github.com/studiometa/productive-tools/issues/83
+[#84]: https://github.com/studiometa/productive-tools/issues/84
+[#85]: https://github.com/studiometa/productive-tools/issues/85
+[#108]: https://github.com/studiometa/productive-tools/pull/108
+[#109]: https://github.com/studiometa/productive-tools/pull/109
+[#110]: https://github.com/studiometa/productive-tools/pull/110
+[#111]: https://github.com/studiometa/productive-tools/pull/111
+[#112]: https://github.com/studiometa/productive-tools/pull/112
+[#113]: https://github.com/studiometa/productive-tools/pull/113
+
 ## [0.10.2] - 2026-02-21
 
 ### Added
