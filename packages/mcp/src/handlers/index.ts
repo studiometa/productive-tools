@@ -36,6 +36,7 @@ import { handleTasks } from './tasks.js';
 import { handleTime } from './time.js';
 import { handleTimers } from './timers.js';
 import { errorResult, formatError, inputErrorResult, toStringFilter } from './utils.js';
+import { VALID_INCLUDES, validateIncludes } from './valid-includes.js';
 
 // Re-export types
 export type { ToolResult } from './types.js';
@@ -165,6 +166,33 @@ export async function executeToolWithCredentials(
   // Hints are included by default for 'get' action, disabled for 'list' or when compact
   // Can be explicitly disabled with no_hints: true
   const includeHints = no_hints !== true && action === 'get' && !isCompact;
+
+  // Validate include values against known-valid includes for this resource.
+  // Do this before building the handler context so we can return early.
+  if (include && include.length > 0) {
+    const includeValidation = validateIncludes(resource, include);
+    if (includeValidation && includeValidation.invalid.length > 0) {
+      const { invalid, valid, suggestions } = includeValidation;
+      const hintLines: string[] = [
+        `Invalid include value${invalid.length > 1 ? 's' : ''}: ${invalid.join(', ')}`,
+        `Valid includes for ${resource}: ${(VALID_INCLUDES[resource] ?? []).join(', ')}`,
+      ];
+      for (const [value, suggestion] of Object.entries(suggestions)) {
+        hintLines.push(`"${value}": ${suggestion}`);
+      }
+      if (valid.length > 0) {
+        hintLines.push(
+          `The following includes are valid and will be used if you remove the invalid ones: ${valid.join(', ')}`,
+        );
+      }
+      return inputErrorResult(
+        new UserInputError(
+          `Invalid include value${invalid.length > 1 ? 's' : ''} for resource "${resource}": ${invalid.join(', ')}`,
+          hintLines,
+        ),
+      );
+    }
+  }
 
   // Build handler context — api is not exposed directly.
   // Handlers access executors via ctx.executor() which creates an ExecutorContext.
