@@ -291,6 +291,128 @@ describe('weeklyStandup', () => {
     expect(result.data.upcoming_deadlines.items).toHaveLength(0);
   });
 
+  it('uses custom weekStart when provided', async () => {
+    const getTasks = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+    const getTimeEntries = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+    const ctx = createTestExecutorContext({
+      api: { getTasks, getTimeEntries },
+      config: { userId: 'user-1', organizationId: 'org-1' },
+    });
+
+    const result = await weeklyStandup({ weekStart: '2026-01-06' }, ctx);
+
+    expect(result.data.week.start).toBe('2026-01-06');
+    expect(result.data.week.end).toBe('2026-01-12');
+  });
+
+  it('handles tasks with no project relationship', async () => {
+    const taskNoProject = {
+      data: [
+        {
+          id: 'task-noproj',
+          type: 'tasks',
+          attributes: {
+            title: 'Orphan task',
+            closed: true,
+            due_date: '2026-02-20',
+            closed_at: '2026-02-20T10:00:00Z',
+          },
+          relationships: {},
+        },
+      ],
+      meta: {},
+      included: [],
+    };
+
+    const getTasks = vi
+      .fn()
+      .mockResolvedValueOnce(taskNoProject)
+      .mockResolvedValueOnce({ data: [], meta: {}, included: [] });
+    const getTimeEntries = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+
+    const ctx = createTestExecutorContext({
+      api: { getTasks, getTimeEntries },
+      config: { userId: 'user-1', organizationId: 'org-1' },
+    });
+
+    const result = await weeklyStandup({}, ctx);
+    expect(result.data.completed_tasks.items[0].project_name).toBeUndefined();
+  });
+
+  it('handles time entries with no project relationship', async () => {
+    const getTasks = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+    const getTimeEntries = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: 'te-1',
+          type: 'time_entries',
+          attributes: { time: 120, date: '2026-02-22', note: 'Work' },
+          relationships: {},
+        },
+      ],
+      meta: {},
+      included: [],
+    });
+
+    const ctx = createTestExecutorContext({
+      api: { getTasks, getTimeEntries },
+      config: { userId: 'user-1', organizationId: 'org-1' },
+    });
+
+    const result = await weeklyStandup({}, ctx);
+    expect(result.data.time_logged.by_project[0].project_name).toBe('Unknown Project');
+    expect(result.data.time_logged.by_project[0].project_id).toBe('unknown');
+  });
+
+  it('aggregates time entries with same project', async () => {
+    const getTasks = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+    const getTimeEntries = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: 'te-1',
+          type: 'time_entries',
+          attributes: { time: 120, date: '2026-02-22', note: 'Morning' },
+          relationships: { project: { data: { type: 'projects', id: 'proj-1' } } },
+        },
+        {
+          id: 'te-2',
+          type: 'time_entries',
+          attributes: { time: 60, date: '2026-02-22', note: 'Afternoon' },
+          relationships: { project: { data: { type: 'projects', id: 'proj-1' } } },
+        },
+      ],
+      meta: {},
+      included: [],
+    });
+
+    const ctx = createTestExecutorContext({
+      api: { getTasks, getTimeEntries },
+      config: { userId: 'user-1', organizationId: 'org-1' },
+    });
+
+    const result = await weeklyStandup({}, ctx);
+    expect(result.data.time_logged.by_project).toHaveLength(1);
+    expect(result.data.time_logged.by_project[0].total_minutes).toBe(180);
+    expect(result.data.time_logged.by_project[0].entry_count).toBe(2);
+  });
+
+  it('handles responses with no included array', async () => {
+    const getTasks = vi
+      .fn()
+      .mockResolvedValueOnce({ data: [], meta: {} })
+      .mockResolvedValueOnce({ data: [], meta: {} });
+    const getTimeEntries = vi.fn().mockResolvedValue({ data: [], meta: {} });
+
+    const ctx = createTestExecutorContext({
+      api: { getTasks, getTimeEntries },
+      config: { userId: 'user-1', organizationId: 'org-1' },
+    });
+
+    const result = await weeklyStandup({}, ctx);
+    expect(result.data.completed_tasks.count).toBe(0);
+  });
+
   it('filters out upcoming tasks without due_date', async () => {
     const noDueDateTask = {
       data: [

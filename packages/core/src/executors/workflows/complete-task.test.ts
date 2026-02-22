@@ -190,6 +190,114 @@ describe('completeTask', () => {
     expect(result.data.errors[0]).toContain('Failed to stop timer');
   });
 
+  it('handles closed attribute being undefined (defaults to false)', async () => {
+    const taskWithoutClosed = {
+      data: {
+        id: '42',
+        type: 'tasks',
+        attributes: { title: 'Fix the bug', due_date: null },
+        relationships: {},
+      },
+    };
+    const getTask = vi.fn().mockResolvedValue(taskWithoutClosed);
+    const updateTask = vi.fn().mockResolvedValue(mockUpdatedTask);
+    const getTimers = vi.fn().mockResolvedValue({ data: [], meta: {} });
+
+    const ctx = createTestExecutorContext({ api: { getTask, updateTask, getTimers } });
+    const result = await completeTask({ taskId: '42' }, ctx);
+
+    expect(result.data.task.closed).toBe(true); // from updateTask response
+  });
+
+  it('handles updateTask returning undefined closed (defaults to true)', async () => {
+    const updatedNoClose = {
+      data: {
+        id: '42',
+        type: 'tasks',
+        attributes: { title: 'Fix the bug', due_date: null },
+        relationships: {},
+      },
+    };
+    const getTask = vi.fn().mockResolvedValue(mockTask);
+    const updateTask = vi.fn().mockResolvedValue(updatedNoClose);
+    const getTimers = vi.fn().mockResolvedValue({ data: [], meta: {} });
+
+    const ctx = createTestExecutorContext({ api: { getTask, updateTask, getTimers } });
+    const result = await completeTask({ taskId: '42' }, ctx);
+
+    expect(result.data.task.closed).toBe(true); // defaults to true via ??
+  });
+
+  it('handles non-Error thrown from updateTask', async () => {
+    const getTask = vi.fn().mockResolvedValue(mockTask);
+    const updateTask = vi.fn().mockRejectedValue('string error');
+    const getTimers = vi.fn().mockResolvedValue({ data: [], meta: {} });
+
+    const ctx = createTestExecutorContext({ api: { getTask, updateTask, getTimers } });
+    const result = await completeTask({ taskId: '42' }, ctx);
+
+    expect(result.data.errors[0]).toContain('string error');
+  });
+
+  it('handles non-Error thrown from createComment', async () => {
+    const getTask = vi.fn().mockResolvedValue(mockTask);
+    const updateTask = vi.fn().mockResolvedValue(mockUpdatedTask);
+    const createComment = vi.fn().mockRejectedValue('comment error string');
+    const getTimers = vi.fn().mockResolvedValue({ data: [], meta: {} });
+
+    const ctx = createTestExecutorContext({
+      api: { getTask, updateTask, createComment, getTimers },
+    });
+
+    const result = await completeTask({ taskId: '42', comment: 'Done!' }, ctx);
+    expect(result.data.errors[0]).toContain('comment error string');
+  });
+
+  it('handles non-Error thrown from getTask', async () => {
+    const getTask = vi.fn().mockRejectedValue('fetch error string');
+    const ctx = createTestExecutorContext({ api: { getTask } });
+
+    await expect(completeTask({ taskId: '42' }, ctx)).rejects.toThrow('fetch error string');
+  });
+
+  it('handles non-Error thrown from stopTimer', async () => {
+    const getTask = vi.fn().mockResolvedValue(mockTask);
+    const updateTask = vi.fn().mockResolvedValue(mockUpdatedTask);
+    const getTimers = vi.fn().mockResolvedValue(mockTimersResponse);
+    const stopTimer = vi.fn().mockRejectedValue('stop error string');
+
+    const ctx = createTestExecutorContext({ api: { getTask, updateTask, getTimers, stopTimer } });
+    const result = await completeTask({ taskId: '42' }, ctx);
+
+    expect(result.data.errors[0]).toContain('stop error string');
+  });
+
+  it('handles non-Error thrown from getTimers', async () => {
+    const getTask = vi.fn().mockResolvedValue(mockTask);
+    const updateTask = vi.fn().mockResolvedValue(mockUpdatedTask);
+    const getTimers = vi.fn().mockRejectedValue('timers error string');
+
+    const ctx = createTestExecutorContext({ api: { getTask, updateTask, getTimers } });
+    const result = await completeTask({ taskId: '42' }, ctx);
+
+    expect(result.data.errors[0]).toContain('timers error string');
+  });
+
+  it('fetches timers without person_id filter when userId is absent', async () => {
+    const getTask = vi.fn().mockResolvedValue(mockTask);
+    const updateTask = vi.fn().mockResolvedValue(mockUpdatedTask);
+    const getTimers = vi.fn().mockResolvedValue({ data: [], meta: {} });
+
+    const ctx = createTestExecutorContext({
+      api: { getTask, updateTask, getTimers },
+      config: { userId: '', organizationId: 'org-1' },
+    });
+
+    await completeTask({ taskId: '42' }, ctx);
+
+    expect(getTimers).toHaveBeenCalledWith(expect.objectContaining({ filter: {} }));
+  });
+
   it('completes all steps successfully in one call', async () => {
     const getTask = vi.fn().mockResolvedValue(mockTask);
     const updateTask = vi.fn().mockResolvedValue(mockUpdatedTask);

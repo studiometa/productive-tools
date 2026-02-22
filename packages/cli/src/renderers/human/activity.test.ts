@@ -67,4 +67,73 @@ describe('HumanActivityListRenderer', () => {
   it('renders empty list without errors', () => {
     expect(() => renderer.render({ data: [] }, ctx)).not.toThrow();
   });
+
+  it('renders activity without changeset', () => {
+    renderer.renderItem(
+      {
+        id: '3',
+        event: 'update',
+        changeset: '',
+        created_at: '2026-02-22T12:00:00Z',
+        creator_name: 'Jane',
+      },
+      ctx,
+    );
+
+    const output = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(output).toContain('update');
+    // Empty changeset should not render changeset line
+    expect(output).not.toContain('  ');
+  });
+
+  it('renders list with meta/pagination', () => {
+    renderer.render(
+      {
+        data: [
+          {
+            id: '1',
+            event: 'create',
+            changeset: 'test',
+            created_at: '2026-02-22T10:00:00Z',
+          },
+        ],
+        meta: { page: 1, total_pages: 3, total_count: 50 },
+      },
+      ctx,
+    );
+
+    const output = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(output).toContain('1/3');
+    expect(output).toContain('50');
+  });
+
+  it('handles unknown event type gracefully', () => {
+    renderer.renderItem(
+      {
+        id: '5',
+        event: 'unknown_event',
+        changeset: 'test change',
+        created_at: '2026-02-22T12:00:00Z',
+      },
+      ctx,
+    );
+
+    const output = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(output).toContain('unknown_event');
+  });
+
+  it('handles invalid timestamp gracefully', () => {
+    renderer.renderItem(
+      {
+        id: '4',
+        event: 'create',
+        changeset: 'field: a → b',
+        created_at: 'not-a-date',
+      },
+      ctx,
+    );
+    // Should not throw
+    const output = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(output).toContain('create');
+  });
 });

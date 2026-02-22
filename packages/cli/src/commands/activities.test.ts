@@ -217,6 +217,26 @@ describe('activities command', () => {
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
+    it('should pass generic filter option', async () => {
+      const getActivities = vi.fn().mockResolvedValue({
+        data: [],
+        meta: { total_count: 0 },
+      });
+
+      const ctx = createTestContext({
+        api: { getActivities } as unknown as ProductiveApi,
+        options: { filter: 'event=create,person_id=123', format: 'json' },
+      });
+
+      await activitiesList(ctx);
+
+      expect(getActivities).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ event: 'create', person_id: '123' }),
+        }),
+      );
+    });
+
     it('should handle empty results', async () => {
       const getActivities = vi.fn().mockResolvedValue({
         data: [],

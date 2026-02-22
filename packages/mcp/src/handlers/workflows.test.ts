@@ -295,4 +295,17 @@ describe('handleWorkflows — weekly_standup', () => {
     expect(completed.count).toBe(1);
     expect(time.total_minutes).toBe(240);
   });
+
+  it('returns help documentation for action=help', async () => {
+    const ctx = createCtx({});
+    const result = await handleWorkflows('help', {}, ctx);
+
+    const data = parseResult(result) as Record<string, unknown>;
+    expect(data.resource).toBe('workflows');
+    expect(data.actions).toBeDefined();
+    const actions = data.actions as Record<string, unknown>;
+    expect(actions.complete_task).toBeDefined();
+    expect(actions.log_day).toBeDefined();
+    expect(actions.weekly_standup).toBeDefined();
+  });
 });

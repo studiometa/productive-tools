@@ -118,4 +118,56 @@ describe('formatActivity', () => {
     const result = formatActivity(activity);
     expect(result.changeset).toBe('');
   });
+
+  it('handles missing attributes (event, changeset, created_at)', () => {
+    const activity = { id: '1', type: 'activities', attributes: {} };
+    const result = formatActivity(activity);
+    expect(result.event).toBe('');
+    expect(result.changeset).toBe('');
+    expect(result.created_at).toBe('');
+  });
+
+  it('formats changeset with object values containing id only', () => {
+    const result = formatChangeset([{ project: [null, { id: 42 }] }]);
+    expect(result).toContain('#42');
+  });
+
+  it('formats changeset with complex object fallback to short JSON', () => {
+    const result = formatChangeset([{ meta: [null, { foo: 'bar', baz: 123 }] }]);
+    expect(result).toContain('meta:');
+    expect(result).toContain('foo');
+  });
+
+  it('truncates long complex object JSON in changeset', () => {
+    const longObj = Object.fromEntries(
+      Array.from({ length: 20 }, (_, i) => [`key_${i}`, `value_that_is_somewhat_long_${i}`]),
+    );
+    const result = formatChangeset([{ data: [null, longObj] }]);
+    expect(result).toContain('…');
+  });
+
+  it('truncates long string values in changeset', () => {
+    const longString = 'x'.repeat(100);
+    const result = formatChangeset([{ field: [null, longString] }]);
+    expect(result).toContain('…');
+    expect(result.length).toBeLessThan(200);
+  });
+
+  it('formats changeset with raw string values wrapped in quotes', () => {
+    const result = formatChangeset([{ name: ['old name', 'new name'] }]);
+    expect(result).toContain("'old name'");
+    expect(result).toContain("'new name'");
+  });
+
+  it('includes creator_id with includeRelationshipIds but no included data', () => {
+    const activity = {
+      id: '1',
+      type: 'activities',
+      attributes: { event: 'create', changeset: [], created_at: '2026-01-01T00:00:00Z' },
+      relationships: { creator: { data: { type: 'people', id: '42' } } },
+    };
+    const result = formatActivity(activity, { includeRelationshipIds: true });
+    expect(result.creator_id).toBe('42');
+    expect(result.creator_name).toBeUndefined();
+  });
 });

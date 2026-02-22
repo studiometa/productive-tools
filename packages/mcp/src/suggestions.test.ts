@@ -11,6 +11,77 @@ import {
 } from './suggestions.js';
 
 // ------------------------------------------------------------------
+// Edge-case null/undefined guard tests
+// ------------------------------------------------------------------
+
+describe('null guard edge cases', () => {
+  it('getTaskGetSuggestions returns empty for null task', () => {
+    expect(getTaskGetSuggestions(null as unknown as JsonApiResource)).toEqual([]);
+  });
+
+  it('getTaskGetSuggestions returns empty when included is undefined', () => {
+    const task = {
+      id: '1',
+      type: 'tasks',
+      attributes: { title: 'Test', due_date: '2099-12-31', closed: false },
+      relationships: {},
+    } as unknown as JsonApiResource;
+    // No included param — should not crash, no time entry suggestion
+    const result = getTaskGetSuggestions(task, undefined);
+    expect(result).toEqual([]);
+  });
+
+  it('getTaskGetSuggestions skips time entry check with empty included array', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-06-15T12:00:00Z'));
+    const task = {
+      id: '1',
+      type: 'tasks',
+      attributes: { title: 'Test', due_date: '2099-12-31', closed: false },
+      relationships: {},
+    } as unknown as JsonApiResource;
+    const result = getTaskGetSuggestions(task, []);
+    // Should NOT contain time entry suggestion because included is empty
+    expect(result).not.toContain('ℹ️ No time entries on this task');
+    vi.useRealTimers();
+  });
+
+  it('getTaskGetSuggestions shows no time entries when included has non-matching entries', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-06-15T12:00:00Z'));
+    const task = {
+      id: '1',
+      type: 'tasks',
+      attributes: { title: 'Test', due_date: '2099-12-31', closed: false },
+      relationships: {},
+    } as unknown as JsonApiResource;
+    const included = [
+      {
+        id: 'te-1',
+        type: 'time_entries',
+        attributes: {},
+        relationships: { task: { data: { id: '999' } } },
+      },
+    ] as unknown as JsonApiResource[];
+    const result = getTaskGetSuggestions(task, included);
+    expect(result).toContain('ℹ️ No time entries on this task');
+    vi.useRealTimers();
+  });
+
+  it('getMyDaySuggestions returns empty for null data', () => {
+    expect(getMyDaySuggestions(null as unknown as MyDaySummaryResult)).toEqual([]);
+  });
+
+  it('getTimeListSuggestions returns empty for null entries', () => {
+    expect(getTimeListSuggestions(null as unknown as JsonApiResource[])).toEqual([]);
+  });
+
+  it('getTaskListSuggestions returns empty for null tasks', () => {
+    expect(getTaskListSuggestions(null as unknown as JsonApiResource[])).toEqual([]);
+  });
+});
+
+// ------------------------------------------------------------------
 // Helpers
 // ------------------------------------------------------------------
 

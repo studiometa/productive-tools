@@ -3596,6 +3596,27 @@ describe('smart ID resolution', () => {
       expect(content.timers).toBeDefined();
     });
 
+    it('should include _suggestions for my_day when no time logged', async () => {
+      mockApi.getTasks.mockResolvedValue({ data: [], meta: { total_count: 0 }, included: [] });
+      mockApi.getTimeEntries.mockResolvedValue({
+        data: [],
+        meta: { total_count: 0 },
+        included: [],
+      });
+      mockApi.getTimers.mockResolvedValue({ data: [], included: [] });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'summaries', action: 'my_day' },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+      const content = JSON.parse(result.content[0].text as string);
+      expect(content._suggestions).toBeDefined();
+      expect(content._suggestions).toContain('⚠️ No time logged today');
+    });
+
     it('should handle project_health action with project_id', async () => {
       // Mock project
       mockApi.getProject.mockResolvedValue({
