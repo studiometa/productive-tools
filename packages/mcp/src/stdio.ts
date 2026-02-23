@@ -10,6 +10,7 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { getConfig, setConfig } from '@studiometa/productive-api';
 
 import { executeToolWithCredentials } from './handlers.js';
+import { PROMPT_DEFINITIONS, getPromptMessages } from './prompts/index.js';
 import { TOOLS, STDIO_ONLY_TOOLS } from './tools.js';
 
 export type ToolResult = CallToolResult;
@@ -31,6 +32,7 @@ export function getAvailablePrompts() {
       description: 'Interactive setup for Productive.io credentials',
       arguments: [],
     },
+    ...PROMPT_DEFINITIONS,
   ];
 }
 
@@ -163,12 +165,15 @@ export async function handleToolCall(
 /**
  * Handle a prompt request
  */
-export async function handlePrompt(name: string): Promise<{
+export async function handlePrompt(
+  name: string,
+  args?: Record<string, string>,
+): Promise<{
   messages: Array<{ role: string; content: { type: string; text: string } }>;
 }> {
   if (name === 'setup_productive') {
     return handleSetupPrompt();
   }
 
-  throw new Error(`Unknown prompt: ${name}`);
+  return getPromptMessages(name, args);
 }

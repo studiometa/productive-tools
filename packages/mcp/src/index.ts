@@ -63,7 +63,7 @@ export function createStdioServer(): Server {
 
   // Get prompt
   server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-    return handlePrompt(request.params.name);
+    return handlePrompt(request.params.name, request.params.arguments as Record<string, string>);
   });
 
   // Handle tool calls

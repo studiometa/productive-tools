@@ -792,3 +792,32 @@ Key points:
 5. **Check `people.me`** first to get the current user's ID for filters
 6. **Follow `_hints`** - When getting a resource, check the `_hints` field for suggestions on fetching related context
 7. **Act on `_suggestions`** - When present, `_suggestions` highlight data issues (overdue tasks, no time logged, etc.) that may need attention or should be surfaced to the user
+
+## Prompt Templates
+
+The server provides prompt templates (MCP prompts) that serve as guided conversation starters. Each prompt instructs the LLM which `productive` tool calls to make and how to format the output.
+
+| Prompt           | Arguments                              | Description                           |
+| ---------------- | -------------------------------------- | ------------------------------------- |
+| `end-of-day`     | `format?` (slack/email/plain)          | Compose an end-of-day standup message |
+| `project-review` | `project` (required)                   | Analyze project health and status     |
+| `plan-sprint`    | `project` (required)                   | Prioritize tasks for next sprint      |
+| `weekly-report`  | `person?`, `format?`                   | Generate a weekly progress report     |
+| `invoice-prep`   | `project`, `from`, `to` (all required) | Prepare billing summary for a project |
+
+### Examples
+
+**End of day standup (Slack format)**:
+Use the `end-of-day` prompt with `format=slack`. The LLM will call `summaries.my_day` and compose a Slack-formatted standup with what you did, what's next, and any blockers.
+
+**Project health review**:
+Use the `project-review` prompt with `project=PRJ-123`. The LLM will call `projects.context` and `tasks.list` to produce a RAG-status health report with budget burn, open tasks, and recommendations.
+
+**Sprint planning**:
+Use the `plan-sprint` prompt with `project=PRJ-123`. The LLM will fetch open tasks and budget services, then suggest a prioritized sprint scope with risk flags.
+
+**Weekly report (email format)**:
+Use the `weekly-report` prompt with optional `person=user@example.com` and `format=email`. The LLM will call `workflows.weekly_standup` and format a polished report grouped by project.
+
+**Invoice preparation**:
+Use the `invoice-prep` prompt with `project=PRJ-123`, `from=2025-01-01`, `to=2025-01-31`. The LLM will fetch time entries, services, and deals for the period and produce invoice-ready line items.

@@ -62,13 +62,43 @@ describe('stdio handlers', () => {
   });
 
   describe('getAvailablePrompts', () => {
-    it('should return setup prompt', () => {
+    it('should return 6 prompts (1 setup + 5 workflow)', () => {
       const prompts = getAvailablePrompts();
 
       expect(Array.isArray(prompts)).toBe(true);
-      expect(prompts.length).toBe(1);
-      expect(prompts[0].name).toBe('setup_productive');
-      expect(prompts[0].description).toContain('setup');
+      expect(prompts.length).toBe(6);
+    });
+
+    it('should include setup_productive prompt', () => {
+      const prompts = getAvailablePrompts();
+      const setup = prompts.find((p) => p.name === 'setup_productive');
+      expect(setup).toBeDefined();
+      expect(setup?.description).toContain('setup');
+    });
+
+    it('should include end-of-day prompt', () => {
+      const prompts = getAvailablePrompts();
+      expect(prompts.find((p) => p.name === 'end-of-day')).toBeDefined();
+    });
+
+    it('should include project-review prompt', () => {
+      const prompts = getAvailablePrompts();
+      expect(prompts.find((p) => p.name === 'project-review')).toBeDefined();
+    });
+
+    it('should include plan-sprint prompt', () => {
+      const prompts = getAvailablePrompts();
+      expect(prompts.find((p) => p.name === 'plan-sprint')).toBeDefined();
+    });
+
+    it('should include weekly-report prompt', () => {
+      const prompts = getAvailablePrompts();
+      expect(prompts.find((p) => p.name === 'weekly-report')).toBeDefined();
+    });
+
+    it('should include invoice-prep prompt', () => {
+      const prompts = getAvailablePrompts();
+      expect(prompts.find((p) => p.name === 'invoice-prep')).toBeDefined();
     });
   });
 
@@ -234,6 +264,43 @@ describe('stdio handlers', () => {
 
       expect(result.messages).toBeDefined();
       expect(result.messages.length).toBeGreaterThan(0);
+    });
+
+    it('should handle end-of-day prompt', async () => {
+      const result = await handlePrompt('end-of-day', { format: 'slack' });
+      expect(result.messages).toBeDefined();
+      expect(result.messages.length).toBeGreaterThan(0);
+      expect(result.messages[0].content.text).toContain('Slack');
+    });
+
+    it('should handle project-review prompt with args', async () => {
+      const result = await handlePrompt('project-review', { project: 'PRJ-123' });
+      expect(result.messages).toBeDefined();
+      expect(result.messages.length).toBeGreaterThan(0);
+      expect(result.messages[0].content.text).toContain('PRJ-123');
+    });
+
+    it('should handle plan-sprint prompt with args', async () => {
+      const result = await handlePrompt('plan-sprint', { project: 'PRJ-456' });
+      expect(result.messages).toBeDefined();
+      expect(result.messages.length).toBeGreaterThan(0);
+    });
+
+    it('should handle weekly-report prompt without args', async () => {
+      const result = await handlePrompt('weekly-report');
+      expect(result.messages).toBeDefined();
+      expect(result.messages.length).toBeGreaterThan(0);
+    });
+
+    it('should handle invoice-prep prompt with args', async () => {
+      const result = await handlePrompt('invoice-prep', {
+        project: 'PRJ-789',
+        from: '2025-01-01',
+        to: '2025-01-31',
+      });
+      expect(result.messages).toBeDefined();
+      expect(result.messages.length).toBeGreaterThan(0);
+      expect(result.messages[0].content.text).toContain('2025-01-01');
     });
 
     it('should throw for unknown prompt', async () => {
