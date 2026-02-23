@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, '..');
 
-const PACKAGES = ['api', 'core', 'cli', 'mcp'];
+const PACKAGES = ['api', 'core', 'cli', 'mcp', 'sdk'];
 const SCOPE = '@studiometa/productive-';
 
 // Read root version as source of truth

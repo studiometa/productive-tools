@@ -29,15 +29,16 @@ Instructions for AI agents contributing to this codebase.
   - `npm run version:major` — bump major (e.g., 0.8.5 → 1.0.0)
 - These scripts update version in root and all workspace packages simultaneously
 - Version is injected at build time from package.json (no manual sync needed)
-- All 4 packages share the same version (synced by `scripts/sync-versions.js` at publish time)
+- All 5 packages share the same version (synced by `scripts/sync-versions.js` at publish time)
 
 ## Architecture
 
-4-package monorepo with clean dependency layering:
+5-package monorepo with clean dependency layering:
 
 ```
 productive-api   → (nothing)          # types, API client, formatters, rate limiter
 productive-core  → productive-api     # executors with dependency injection
+productive-sdk   → productive-api     # fluent TypeScript SDK, JSON:API resolver, pagination
 productive-cli   → productive-core    # CLI commands, renderers, config+cache
 productive-mcp   → productive-core    # MCP server handlers, OAuth
                  → productive-api
@@ -47,6 +48,7 @@ productive-mcp   → productive-core    # MCP server handlers, OAuth
 
 - **productive-api** (`packages/api`): `ProductiveApi` class (explicit config injection), resource types (`ProductiveProject`, `ProductiveTimeEntry`, etc.), response formatters, `ProductiveApiError`, `ApiCache` interface, `RateLimiter` (sliding window + exponential backoff). Zero dependencies.
 - **productive-core** (`packages/core`): Pure executor functions `(options, context) → ExecutorResult<T>`, `ExecutorContext` with DI, `createResourceResolver()` factory, bridge functions (`fromCommandContext`, `fromHandlerContext`), context executors (task/project/deal), summary executors (my_day, project_health, team_pulse), workflow executors (complete_task, log_day, weekly_standup), activity executor.
+- **productive-sdk** (`packages/sdk`): Fluent TypeScript SDK wrapping `ProductiveApi`. JSON:API include resolver (resolves `included` array into inlined relationships), `AsyncPaginatedIterator` for `for await` pagination, resource collections (projects, tasks, time, people, companies, deals). Zero side effects, testable via `globalThis.fetch` mocking.
 - **productive-cli** (`packages/cli`): CLI commands (one directory per resource under `src/commands/`), `createCommandRouter()` factory, human/table/CSV/JSON renderers, keychain config, SQLite cache, `CommandContext` for DI. Includes `activities` command for audit log.
 - **productive-mcp** (`packages/mcp`): Single unified `productive` MCP tool, `createResourceHandler()` factory, resource handlers, contextual hints (`hints.ts`), proactive suggestions (`suggestions.ts`), agent instructions (`instructions.ts` loads from `skills/SKILL.md`), batch/search/schema/context/summaries/workflows handlers, input validation (params detection, include validation, wrong-action redirects), OAuth (stateless), HTTP server, MCP-specific formatters.
 
@@ -65,7 +67,7 @@ productive-mcp   → productive-core    # MCP server handlers, OAuth
 
 - **Executors are pure functions with zero side effects** — all dependencies injected via `ExecutorContext`. Tests use `createTestExecutorContext()`.
 - **Resource resolution** (email → person ID, project number → project ID) is handled by `createResourceResolver()` in core. Bridge functions create a resolver automatically — CLI/MCP handlers just call `fromCommandContext(ctx)` or `fromHandlerContext(ctx)`.
-- **Build order matters**: `productive-api` → `productive-core` → `productive-cli` / `productive-mcp`. The root `npm run build` handles this automatically.
+- **Build order matters**: `productive-api` → `productive-core` / `productive-sdk` → `productive-cli` / `productive-mcp`. The root `npm run build` handles this automatically.
 
 ## Factory Patterns
 
