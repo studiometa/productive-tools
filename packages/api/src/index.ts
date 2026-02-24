@@ -100,6 +100,28 @@ export type { FormattedPage } from './formatters/page.js';
 export type { FormattedDiscussion } from './formatters/discussion.js';
 export type { FormattedActivity } from './formatters/activity.js';
 
+// Status/type constants (bidirectional lookup maps)
+export { createStatusMap } from './constants.js';
+export type { StatusMap } from './constants.js';
+export {
+  TASK_STATUS,
+  TASK_OVERDUE_STATUS,
+  PROJECT_STATUS,
+  PROJECT_TYPE,
+  DEAL_STATUS,
+  DEAL_TYPE,
+  DEAL_BUDGET_STATUS,
+  TIME_STATUS,
+  TIME_BILLING_TYPE,
+  TIME_INVOICING_STATUS,
+  PERSON_STATUS,
+  PERSON_TYPE,
+  COMPANY_STATUS,
+  DISCUSSION_STATUS,
+  SERVICE_BUDGET_STATUS,
+  SERVICE_BILLING_TYPE,
+} from './constants.js';
+
 // Config (env vars + JSON file, no keychain)
 export { getConfig, setConfig, deleteConfig, clearConfig } from './config.js';
 
