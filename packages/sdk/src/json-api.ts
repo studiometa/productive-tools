@@ -4,8 +4,11 @@ import type {
   RelationshipData,
 } from '@studiometa/productive-api';
 
+import type { ResourceRef } from './types.js';
+
 /**
  * A resolved resource where relationships are inlined as full objects.
+ * @deprecated Use typed resource interfaces (Task, Project, etc.) instead.
  */
 export type ResolvedResource = {
   id: string;
@@ -19,7 +22,7 @@ export type ResolvedResource = {
 function resolveRelationship(
   rel: RelationshipData,
   includedMap: Map<string, IncludedResource>,
-): ResolvedResource | null {
+): ResourceRef | null {
   if (!rel.data) return null;
   const key = `${rel.data.type}:${rel.data.id}`;
   const found = includedMap.get(key);
@@ -42,6 +45,7 @@ function buildIncludedMap(included?: IncludedResource[]): Map<string, IncludedRe
 
 /**
  * Resolve a JSON:API resource, inlining its relationships from the included array.
+ * The generic parameter R controls the return type (defaults to ResolvedResource for backwards compat).
  */
 export function resolveResource<
   T extends {
@@ -50,7 +54,8 @@ export function resolveResource<
     attributes: Record<string, unknown>;
     relationships?: Record<string, RelationshipData>;
   },
->(resource: T, includedMap: Map<string, IncludedResource>): ResolvedResource {
+  R = ResolvedResource,
+>(resource: T, includedMap: Map<string, IncludedResource>): R {
   const resolved: ResolvedResource = {
     id: resource.id,
     type: resource.type,
@@ -63,7 +68,7 @@ export function resolveResource<
     }
   }
 
-  return resolved;
+  return resolved as R;
 }
 
 /**
@@ -76,12 +81,11 @@ export function resolveListResponse<
     attributes: Record<string, unknown>;
     relationships?: Record<string, RelationshipData>;
   },
->(
-  response: ProductiveApiResponse<T[]>,
-): { data: ResolvedResource[]; meta: ProductiveApiResponse<T[]>['meta'] } {
+  R = ResolvedResource,
+>(response: ProductiveApiResponse<T[]>): { data: R[]; meta: ProductiveApiResponse<T[]>['meta'] } {
   const includedMap = buildIncludedMap(response.included);
   return {
-    data: response.data.map((item) => resolveResource(item, includedMap)),
+    data: response.data.map((item) => resolveResource<T, R>(item, includedMap)),
     meta: response.meta,
   };
 }
@@ -96,12 +100,11 @@ export function resolveSingleResponse<
     attributes: Record<string, unknown>;
     relationships?: Record<string, RelationshipData>;
   },
->(
-  response: ProductiveApiResponse<T>,
-): { data: ResolvedResource; meta: ProductiveApiResponse<T>['meta'] } {
+  R = ResolvedResource,
+>(response: ProductiveApiResponse<T>): { data: R; meta: ProductiveApiResponse<T>['meta'] } {
   const includedMap = buildIncludedMap(response.included);
   return {
-    data: resolveResource(response.data, includedMap),
+    data: resolveResource<T, R>(response.data, includedMap),
     meta: response.meta,
   };
 }

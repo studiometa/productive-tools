@@ -1,6 +1,6 @@
 import type { ProductiveDeal, ProductiveApiMeta } from '@studiometa/productive-api';
 
-import type { ResolvedResource } from '../json-api.js';
+import type { Deal } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
@@ -35,12 +35,12 @@ export interface DealUpdateData {
 }
 
 export interface DealListResult {
-  data: ResolvedResource[];
+  data: Deal[];
   meta: ProductiveApiMeta | undefined;
 }
 
 export interface DealGetResult {
-  data: ResolvedResource;
+  data: Deal;
   meta: ProductiveApiMeta | undefined;
 }
 
@@ -50,7 +50,7 @@ export class DealsCollection extends BaseCollection {
    */
   async list(options: DealListOptions = {}): Promise<DealListResult> {
     const response = await this.api.getDeals(options);
-    return resolveListResponse<ProductiveDeal>(response);
+    return resolveListResponse<ProductiveDeal, Deal>(response);
   }
 
   /**
@@ -58,7 +58,7 @@ export class DealsCollection extends BaseCollection {
    */
   async get(id: string, options: DealGetOptions = {}): Promise<DealGetResult> {
     const response = await this.api.getDeal(id, options);
-    return resolveSingleResponse<ProductiveDeal>(response);
+    return resolveSingleResponse<ProductiveDeal, Deal>(response);
   }
 
   /**
@@ -66,7 +66,7 @@ export class DealsCollection extends BaseCollection {
    */
   async create(data: DealCreateData): Promise<DealGetResult> {
     const response = await this.api.createDeal(data);
-    return resolveSingleResponse<ProductiveDeal>(response);
+    return resolveSingleResponse<ProductiveDeal, Deal>(response);
   }
 
   /**
@@ -74,15 +74,15 @@ export class DealsCollection extends BaseCollection {
    */
   async update(id: string, data: DealUpdateData): Promise<DealGetResult> {
     const response = await this.api.updateDeal(id, data);
-    return resolveSingleResponse<ProductiveDeal>(response);
+    return resolveSingleResponse<ProductiveDeal, Deal>(response);
   }
 
   /**
    * Iterate over all deals across all pages.
    */
-  all(options: Omit<DealListOptions, 'page'> = {}): AsyncPaginatedIterator<ResolvedResource> {
+  all(options: Omit<DealListOptions, 'page'> = {}): AsyncPaginatedIterator<Deal> {
     const perPage = options.perPage ?? 200;
-    return new AsyncPaginatedIterator<ResolvedResource>(async (page) => {
+    return new AsyncPaginatedIterator<Deal>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);
   }

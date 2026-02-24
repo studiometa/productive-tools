@@ -4,7 +4,7 @@ import type {
   ProductiveApiMeta,
 } from '@studiometa/productive-api';
 
-import type { ResolvedResource } from '../json-api.js';
+import type { Person } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
@@ -18,12 +18,12 @@ export interface PeopleListOptions {
 }
 
 export interface PeopleListResult {
-  data: ResolvedResource[];
+  data: Person[];
   meta: ProductiveApiMeta | undefined;
 }
 
 export interface PeopleGetResult {
-  data: ResolvedResource;
+  data: Person;
   meta: ProductiveApiMeta | undefined;
 }
 
@@ -40,7 +40,7 @@ export class PeopleCollection extends BaseCollection {
    */
   async list(options: PeopleListOptions = {}): Promise<PeopleListResult> {
     const response = await this.api.getPeople(options);
-    return resolveListResponse<ProductivePerson>(response);
+    return resolveListResponse<ProductivePerson, Person>(response);
   }
 
   /**
@@ -48,7 +48,7 @@ export class PeopleCollection extends BaseCollection {
    */
   async get(id: string): Promise<PeopleGetResult> {
     const response = await this.api.getPerson(id);
-    return resolveSingleResponse<ProductivePerson>(response);
+    return resolveSingleResponse<ProductivePerson, Person>(response);
   }
 
   /**
@@ -65,9 +65,9 @@ export class PeopleCollection extends BaseCollection {
   /**
    * Iterate over all people across all pages.
    */
-  all(options: Omit<PeopleListOptions, 'page'> = {}): AsyncPaginatedIterator<ResolvedResource> {
+  all(options: Omit<PeopleListOptions, 'page'> = {}): AsyncPaginatedIterator<Person> {
     const perPage = options.perPage ?? 200;
-    return new AsyncPaginatedIterator<ResolvedResource>(async (page) => {
+    return new AsyncPaginatedIterator<Person>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);
   }

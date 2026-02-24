@@ -1,6 +1,6 @@
 import type { ProductiveCompany, ProductiveApiMeta } from '@studiometa/productive-api';
 
-import type { ResolvedResource } from '../json-api.js';
+import type { Company } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
@@ -34,12 +34,12 @@ export interface CompanyUpdateData {
 }
 
 export interface CompanyListResult {
-  data: ResolvedResource[];
+  data: Company[];
   meta: ProductiveApiMeta | undefined;
 }
 
 export interface CompanyGetResult {
-  data: ResolvedResource;
+  data: Company;
   meta: ProductiveApiMeta | undefined;
 }
 
@@ -49,7 +49,7 @@ export class CompaniesCollection extends BaseCollection {
    */
   async list(options: CompanyListOptions = {}): Promise<CompanyListResult> {
     const response = await this.api.getCompanies(options);
-    return resolveListResponse<ProductiveCompany>(response);
+    return resolveListResponse<ProductiveCompany, Company>(response);
   }
 
   /**
@@ -57,7 +57,7 @@ export class CompaniesCollection extends BaseCollection {
    */
   async get(id: string): Promise<CompanyGetResult> {
     const response = await this.api.getCompany(id);
-    return resolveSingleResponse<ProductiveCompany>(response);
+    return resolveSingleResponse<ProductiveCompany, Company>(response);
   }
 
   /**
@@ -65,7 +65,7 @@ export class CompaniesCollection extends BaseCollection {
    */
   async create(data: CompanyCreateData): Promise<CompanyGetResult> {
     const response = await this.api.createCompany(data);
-    return resolveSingleResponse<ProductiveCompany>(response);
+    return resolveSingleResponse<ProductiveCompany, Company>(response);
   }
 
   /**
@@ -73,15 +73,15 @@ export class CompaniesCollection extends BaseCollection {
    */
   async update(id: string, data: CompanyUpdateData): Promise<CompanyGetResult> {
     const response = await this.api.updateCompany(id, data);
-    return resolveSingleResponse<ProductiveCompany>(response);
+    return resolveSingleResponse<ProductiveCompany, Company>(response);
   }
 
   /**
    * Iterate over all companies across all pages.
    */
-  all(options: Omit<CompanyListOptions, 'page'> = {}): AsyncPaginatedIterator<ResolvedResource> {
+  all(options: Omit<CompanyListOptions, 'page'> = {}): AsyncPaginatedIterator<Company> {
     const perPage = options.perPage ?? 200;
-    return new AsyncPaginatedIterator<ResolvedResource>(async (page) => {
+    return new AsyncPaginatedIterator<Company>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);
   }

@@ -1,6 +1,6 @@
 import type { ProductiveProject, ProductiveApiMeta } from '@studiometa/productive-api';
 
-import type { ResolvedResource } from '../json-api.js';
+import type { Project } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
@@ -14,12 +14,12 @@ export interface ProjectListOptions {
 }
 
 export interface ProjectListResult {
-  data: ResolvedResource[];
+  data: Project[];
   meta: ProductiveApiMeta | undefined;
 }
 
 export interface ProjectGetResult {
-  data: ResolvedResource;
+  data: Project;
   meta: ProductiveApiMeta | undefined;
 }
 
@@ -29,7 +29,7 @@ export class ProjectsCollection extends BaseCollection {
    */
   async list(options: ProjectListOptions = {}): Promise<ProjectListResult> {
     const response = await this.api.getProjects(options);
-    return resolveListResponse<ProductiveProject>(response);
+    return resolveListResponse<ProductiveProject, Project>(response);
   }
 
   /**
@@ -37,15 +37,15 @@ export class ProjectsCollection extends BaseCollection {
    */
   async get(id: string): Promise<ProjectGetResult> {
     const response = await this.api.getProject(id);
-    return resolveSingleResponse<ProductiveProject>(response);
+    return resolveSingleResponse<ProductiveProject, Project>(response);
   }
 
   /**
    * Iterate over all projects across all pages.
    */
-  all(options: Omit<ProjectListOptions, 'page'> = {}): AsyncPaginatedIterator<ResolvedResource> {
+  all(options: Omit<ProjectListOptions, 'page'> = {}): AsyncPaginatedIterator<Project> {
     const perPage = options.perPage ?? 200;
-    return new AsyncPaginatedIterator<ResolvedResource>(async (page) => {
+    return new AsyncPaginatedIterator<Project>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);
   }

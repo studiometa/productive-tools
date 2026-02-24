@@ -1,11 +1,8 @@
 import type { ProductiveApi } from '@studiometa/productive-api';
 
-import type { ResolvedResource } from '../json-api.js';
 import type { PageFetcher } from '../pagination.js';
 
 import { AsyncPaginatedIterator } from '../pagination.js';
-
-export type { ResolvedResource };
 
 /**
  * Abstract base class for resource collections.

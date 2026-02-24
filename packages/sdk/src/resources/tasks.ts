@@ -1,6 +1,6 @@
 import type { ProductiveTask, ProductiveApiMeta } from '@studiometa/productive-api';
 
-import type { ResolvedResource } from '../json-api.js';
+import type { Task } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
@@ -43,12 +43,12 @@ export interface TaskUpdateData {
 }
 
 export interface TaskListResult {
-  data: ResolvedResource[];
+  data: Task[];
   meta: ProductiveApiMeta | undefined;
 }
 
 export interface TaskGetResult {
-  data: ResolvedResource;
+  data: Task;
   meta: ProductiveApiMeta | undefined;
 }
 
@@ -58,7 +58,7 @@ export class TasksCollection extends BaseCollection {
    */
   async list(options: TaskListOptions = {}): Promise<TaskListResult> {
     const response = await this.api.getTasks(options);
-    return resolveListResponse<ProductiveTask>(response);
+    return resolveListResponse<ProductiveTask, Task>(response);
   }
 
   /**
@@ -66,7 +66,7 @@ export class TasksCollection extends BaseCollection {
    */
   async get(id: string, options: TaskGetOptions = {}): Promise<TaskGetResult> {
     const response = await this.api.getTask(id, options);
-    return resolveSingleResponse<ProductiveTask>(response);
+    return resolveSingleResponse<ProductiveTask, Task>(response);
   }
 
   /**
@@ -74,7 +74,7 @@ export class TasksCollection extends BaseCollection {
    */
   async create(data: TaskCreateData): Promise<TaskGetResult> {
     const response = await this.api.createTask(data);
-    return resolveSingleResponse<ProductiveTask>(response);
+    return resolveSingleResponse<ProductiveTask, Task>(response);
   }
 
   /**
@@ -82,15 +82,15 @@ export class TasksCollection extends BaseCollection {
    */
   async update(id: string, data: TaskUpdateData): Promise<TaskGetResult> {
     const response = await this.api.updateTask(id, data);
-    return resolveSingleResponse<ProductiveTask>(response);
+    return resolveSingleResponse<ProductiveTask, Task>(response);
   }
 
   /**
    * Iterate over all tasks across all pages.
    */
-  all(options: Omit<TaskListOptions, 'page'> = {}): AsyncPaginatedIterator<ResolvedResource> {
+  all(options: Omit<TaskListOptions, 'page'> = {}): AsyncPaginatedIterator<Task> {
     const perPage = options.perPage ?? 200;
-    return new AsyncPaginatedIterator<ResolvedResource>(async (page) => {
+    return new AsyncPaginatedIterator<Task>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);
   }
