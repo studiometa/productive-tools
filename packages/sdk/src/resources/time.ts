@@ -4,6 +4,7 @@ import type { TimeEntry } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
+import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
 export interface TimeListOptions {
@@ -77,6 +78,13 @@ export class TimeCollection extends BaseCollection {
    */
   async delete(id: string): Promise<void> {
     await this.wrapRequest(() => this.api.deleteTimeEntry(id));
+  }
+
+  /**
+   * Start a fluent query builder for time entries, optionally with initial filters.
+   */
+  where(filters: Record<string, string> = {}): QueryBuilder<TimeEntry, TimeListResult> {
+    return new QueryBuilder<TimeEntry, TimeListResult>(this).filter(filters);
   }
 
   /**

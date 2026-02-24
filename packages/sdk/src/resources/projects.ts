@@ -4,6 +4,7 @@ import type { Project } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
+import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
 export interface ProjectListOptions {
@@ -38,6 +39,13 @@ export class ProjectsCollection extends BaseCollection {
   async get(id: string): Promise<ProjectGetResult> {
     const response = await this.wrapRequest(() => this.api.getProject(id));
     return resolveSingleResponse<ProductiveProject, Project>(response);
+  }
+
+  /**
+   * Start a fluent query builder for projects, optionally with initial filters.
+   */
+  where(filters: Record<string, string> = {}): QueryBuilder<Project, ProjectListResult> {
+    return new QueryBuilder<Project, ProjectListResult>(this).filter(filters);
   }
 
   /**

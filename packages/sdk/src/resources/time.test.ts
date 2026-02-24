@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ResourceNotFoundError } from '../errors.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
+import { QueryBuilder } from '../query-builder.js';
 import { createMockFetch } from '../test-utils.js';
 import { TimeCollection } from './time.js';
 
@@ -148,6 +149,32 @@ describe('TimeCollection', () => {
 
       const col = new TimeCollection(createApi());
       await expect(col.get('9999')).rejects.toBeInstanceOf(ResourceNotFoundError);
+    });
+  });
+
+  describe('where()', () => {
+    it('returns a QueryBuilder', () => {
+      const col = new TimeCollection(createApi());
+      const builder = col.where({ person_id: '7' });
+      expect(builder).toBeInstanceOf(QueryBuilder);
+    });
+
+    it('returns a QueryBuilder with no arguments', () => {
+      const col = new TimeCollection(createApi());
+      expect(col.where()).toBeInstanceOf(QueryBuilder);
+    });
+
+    it('chains and executes list()', async () => {
+      vi.stubGlobal(
+        'fetch',
+        createMockFetch(() => ({
+          data: [makeEntry('1', 60)],
+          meta: { total: 1 },
+        })),
+      );
+      const col = new TimeCollection(createApi());
+      const result = await col.where({ person_id: '7' }).orderBy('-date').list();
+      expect(result.data).toHaveLength(1);
     });
   });
 });

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RateLimitError } from '../errors.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
+import { QueryBuilder } from '../query-builder.js';
 import { createMockFetch } from '../test-utils.js';
 import { DealsCollection } from './deals.js';
 
@@ -156,6 +157,32 @@ describe('DealsCollection', () => {
 
       const col = new DealsCollection(createApi());
       await expect(col.list()).rejects.toBeInstanceOf(RateLimitError);
+    });
+  });
+
+  describe('where()', () => {
+    it('returns a QueryBuilder', () => {
+      const col = new DealsCollection(createApi());
+      const builder = col.where({ company_id: '5' });
+      expect(builder).toBeInstanceOf(QueryBuilder);
+    });
+
+    it('returns a QueryBuilder with no arguments', () => {
+      const col = new DealsCollection(createApi());
+      expect(col.where()).toBeInstanceOf(QueryBuilder);
+    });
+
+    it('chains and executes list()', async () => {
+      vi.stubGlobal(
+        'fetch',
+        createMockFetch(() => ({
+          data: [makeDeal('1', 'Deal Alpha')],
+          meta: { total: 1 },
+        })),
+      );
+      const col = new DealsCollection(createApi());
+      const result = await col.where({ company_id: '5' }).orderBy('-date').list();
+      expect(result.data).toHaveLength(1);
     });
   });
 });

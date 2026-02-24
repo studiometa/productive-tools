@@ -35,6 +35,16 @@ describe('Productive constructor', () => {
     expect(p.api).toBeInstanceOf(ProductiveApi);
   });
 
+  it('collections have where method', () => {
+    const p = new Productive(validOptions);
+    expect(typeof p.projects.where).toBe('function');
+    expect(typeof p.tasks.where).toBe('function');
+    expect(typeof p.time.where).toBe('function');
+    expect(typeof p.people.where).toBe('function');
+    expect(typeof p.companies.where).toBe('function');
+    expect(typeof p.deals.where).toBe('function');
+  });
+
   it('collections have expected methods', () => {
     const p = new Productive(validOptions);
 

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthenticationError } from '../errors.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
+import { QueryBuilder } from '../query-builder.js';
 import { createMockFetch } from '../test-utils.js';
 import { PeopleCollection } from './people.js';
 
@@ -127,6 +128,32 @@ describe('PeopleCollection', () => {
 
       const col = new PeopleCollection(createApi());
       await expect(col.get('me')).rejects.toBeInstanceOf(AuthenticationError);
+    });
+  });
+
+  describe('where()', () => {
+    it('returns a QueryBuilder', () => {
+      const col = new PeopleCollection(createApi());
+      const builder = col.where({ email: 'alice@example.com' });
+      expect(builder).toBeInstanceOf(QueryBuilder);
+    });
+
+    it('returns a QueryBuilder with no arguments', () => {
+      const col = new PeopleCollection(createApi());
+      expect(col.where()).toBeInstanceOf(QueryBuilder);
+    });
+
+    it('chains and executes list()', async () => {
+      vi.stubGlobal(
+        'fetch',
+        createMockFetch(() => ({
+          data: [makePerson('1', 'Alice')],
+          meta: { total: 1 },
+        })),
+      );
+      const col = new PeopleCollection(createApi());
+      const result = await col.where({ email: 'alice@example.com' }).orderBy('name').list();
+      expect(result.data).toHaveLength(1);
     });
   });
 });

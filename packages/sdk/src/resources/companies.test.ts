@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ValidationError } from '../errors.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
+import { QueryBuilder } from '../query-builder.js';
 import { createMockFetch } from '../test-utils.js';
 import { CompaniesCollection } from './companies.js';
 
@@ -137,6 +138,32 @@ describe('CompaniesCollection', () => {
       expect((err as ValidationError).fieldErrors).toEqual([
         { field: 'name', message: 'is required' },
       ]);
+    });
+  });
+
+  describe('where()', () => {
+    it('returns a QueryBuilder', () => {
+      const col = new CompaniesCollection(createApi());
+      const builder = col.where({ name: 'Acme' });
+      expect(builder).toBeInstanceOf(QueryBuilder);
+    });
+
+    it('returns a QueryBuilder with no arguments', () => {
+      const col = new CompaniesCollection(createApi());
+      expect(col.where()).toBeInstanceOf(QueryBuilder);
+    });
+
+    it('chains and executes list()', async () => {
+      vi.stubGlobal(
+        'fetch',
+        createMockFetch(() => ({
+          data: [makeCompany('1', 'Acme')],
+          meta: { total: 1 },
+        })),
+      );
+      const col = new CompaniesCollection(createApi());
+      const result = await col.where({ name: 'Acme' }).orderBy('name').list();
+      expect(result.data).toHaveLength(1);
     });
   });
 });

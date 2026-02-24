@@ -4,6 +4,7 @@ import type { Company } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
+import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
 export interface CompanyListOptions {
@@ -74,6 +75,13 @@ export class CompaniesCollection extends BaseCollection {
   async update(id: string, data: CompanyUpdateData): Promise<CompanyGetResult> {
     const response = await this.wrapRequest(() => this.api.updateCompany(id, data));
     return resolveSingleResponse<ProductiveCompany, Company>(response);
+  }
+
+  /**
+   * Start a fluent query builder for companies, optionally with initial filters.
+   */
+  where(filters: Record<string, string> = {}): QueryBuilder<Company, CompanyListResult> {
+    return new QueryBuilder<Company, CompanyListResult>(this).filter(filters);
   }
 
   /**

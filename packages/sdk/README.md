@@ -64,6 +64,42 @@ for await (const task of p.tasks.all({ filter: { closed: 'false' }, sort: '-crea
 }
 ```
 
+## Query Builder
+
+Use `where()` on any collection to start a fluent query builder:
+
+```typescript
+// Chainable filtering, sorting, includes, and pagination
+const { data: tasks } = await p.tasks
+  .where({ project_id: '42' })
+  .orderBy('-due_date')
+  .include('project', 'assignee')
+  .perPage(50)
+  .list();
+
+// Combine with pagination
+for await (const task of p.tasks.where({ closed: 'false' }).orderBy('title').all()) {
+  console.log(task.title);
+}
+
+// Raw options still work — where() is fully backward-compatible
+const { data } = await p.tasks.list({ filter: { project_id: '42' }, sort: '-due_date' });
+```
+
+### Builder Methods
+
+| Method               | Description                                    |
+| -------------------- | ---------------------------------------------- |
+| `where(filters?)`    | Start builder with optional initial filters    |
+| `.filter(filters)`   | Merge additional filters                       |
+| `.orderBy(field)`    | Set sort field (`-field` for descending)       |
+| `.include(...paths)` | Add include paths (deduplicated)               |
+| `.page(n)`           | Set page number                                |
+| `.perPage(n)`        | Set items per page                             |
+| `.list()`            | Execute and return paginated result            |
+| `.all()`             | Execute and return `AsyncPaginatedIterator`    |
+| `.build()`           | Return the raw options object (for inspection) |
+
 ## Error Handling
 
 All collection methods wrap API errors into typed `ProductiveError` subclasses, enabling `instanceof` checks instead of string matching:

@@ -4,6 +4,7 @@ import type { Task } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
+import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
 export interface TaskListOptions {
@@ -83,6 +84,13 @@ export class TasksCollection extends BaseCollection {
   async update(id: string, data: TaskUpdateData): Promise<TaskGetResult> {
     const response = await this.wrapRequest(() => this.api.updateTask(id, data));
     return resolveSingleResponse<ProductiveTask, Task>(response);
+  }
+
+  /**
+   * Start a fluent query builder for tasks, optionally with initial filters.
+   */
+  where(filters: Record<string, string> = {}): QueryBuilder<Task, TaskListResult> {
+    return new QueryBuilder<Task, TaskListResult>(this).filter(filters);
   }
 
   /**

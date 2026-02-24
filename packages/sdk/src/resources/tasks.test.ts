@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ResourceNotFoundError } from '../errors.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
+import { QueryBuilder } from '../query-builder.js';
 import { createMockFetch } from '../test-utils.js';
 import { TasksCollection } from './tasks.js';
 
@@ -156,6 +157,32 @@ describe('TasksCollection', () => {
 
       const col = new TasksCollection(createApi());
       await expect(col.get('999')).rejects.toBeInstanceOf(ResourceNotFoundError);
+    });
+  });
+
+  describe('where()', () => {
+    it('returns a QueryBuilder', () => {
+      const col = new TasksCollection(createApi());
+      const builder = col.where({ project_id: '42' });
+      expect(builder).toBeInstanceOf(QueryBuilder);
+    });
+
+    it('returns a QueryBuilder with no arguments', () => {
+      const col = new TasksCollection(createApi());
+      expect(col.where()).toBeInstanceOf(QueryBuilder);
+    });
+
+    it('chains and executes list()', async () => {
+      vi.stubGlobal(
+        'fetch',
+        createMockFetch(() => ({
+          data: [makeTask('1', 'T1')],
+          meta: { total: 1 },
+        })),
+      );
+      const col = new TasksCollection(createApi());
+      const result = await col.where({ project_id: '42' }).orderBy('-due_date').list();
+      expect(result.data).toHaveLength(1);
     });
   });
 });

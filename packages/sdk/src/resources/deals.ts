@@ -4,6 +4,7 @@ import type { Deal } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
+import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
 export interface DealListOptions {
@@ -75,6 +76,13 @@ export class DealsCollection extends BaseCollection {
   async update(id: string, data: DealUpdateData): Promise<DealGetResult> {
     const response = await this.wrapRequest(() => this.api.updateDeal(id, data));
     return resolveSingleResponse<ProductiveDeal, Deal>(response);
+  }
+
+  /**
+   * Start a fluent query builder for deals, optionally with initial filters.
+   */
+  where(filters: Record<string, string> = {}): QueryBuilder<Deal, DealListResult> {
+    return new QueryBuilder<Deal, DealListResult>(this).filter(filters);
   }
 
   /**

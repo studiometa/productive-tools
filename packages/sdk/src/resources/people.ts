@@ -8,6 +8,7 @@ import type { Person } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
+import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
 export interface PeopleListOptions {
@@ -60,6 +61,13 @@ export class PeopleCollection extends BaseCollection {
       throw new Error('userId must be set in ProductiveOptions to call people.me()');
     }
     return this.get(this.userId);
+  }
+
+  /**
+   * Start a fluent query builder for people, optionally with initial filters.
+   */
+  where(filters: Record<string, string> = {}): QueryBuilder<Person, PeopleListResult> {
+    return new QueryBuilder<Person, PeopleListResult>(this).filter(filters);
   }
 
   /**
