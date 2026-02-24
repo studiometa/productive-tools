@@ -2,6 +2,7 @@ import type { ProductiveApi } from '@studiometa/productive-api';
 
 import type { PageFetcher } from '../pagination.js';
 
+import { wrapError } from '../errors.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
 
 /**
@@ -20,5 +21,16 @@ export abstract class BaseCollection {
    */
   protected createIterator<T>(fetcher: PageFetcher<T>, perPage = 200): AsyncPaginatedIterator<T> {
     return new AsyncPaginatedIterator<T>(fetcher, perPage);
+  }
+
+  /**
+   * Wrap an API call, converting any thrown error into a typed ProductiveError.
+   */
+  protected async wrapRequest<T>(fn: () => Promise<T>): Promise<T> {
+    try {
+      return await fn();
+    } catch (error) {
+      throw wrapError(error);
+    }
   }
 }

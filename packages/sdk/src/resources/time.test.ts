@@ -1,6 +1,7 @@
 import { ProductiveApi } from '@studiometa/productive-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ResourceNotFoundError } from '../errors.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
 import { createMockFetch } from '../test-utils.js';
 import { TimeCollection } from './time.js';
@@ -128,6 +129,25 @@ describe('TimeCollection', () => {
       const col = new TimeCollection(createApi());
       const results = await col.all({ perPage: 1 }).toArray();
       expect(results).toHaveLength(2);
+    });
+  });
+
+  describe('error wrapping', () => {
+    it('wraps 404 into ResourceNotFoundError', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          async () =>
+            new Response(JSON.stringify({ errors: [{ detail: 'Not found' }] }), {
+              status: 404,
+              statusText: 'Not Found',
+              headers: { 'Content-Type': 'application/vnd.api+json' },
+            }),
+        ),
+      );
+
+      const col = new TimeCollection(createApi());
+      await expect(col.get('9999')).rejects.toBeInstanceOf(ResourceNotFoundError);
     });
   });
 });
