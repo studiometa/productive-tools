@@ -57,7 +57,7 @@ export class TasksCollection extends BaseCollection {
    * List tasks with optional filtering, pagination, and includes.
    */
   async list(options: TaskListOptions = {}): Promise<TaskListResult> {
-    const response = await this.api.getTasks(options);
+    const response = await this.wrapRequest(() => this.api.getTasks(options));
     return resolveListResponse<ProductiveTask, Task>(response);
   }
 
@@ -65,7 +65,7 @@ export class TasksCollection extends BaseCollection {
    * Get a single task by ID, with optional includes.
    */
   async get(id: string, options: TaskGetOptions = {}): Promise<TaskGetResult> {
-    const response = await this.api.getTask(id, options);
+    const response = await this.wrapRequest(() => this.api.getTask(id, options));
     return resolveSingleResponse<ProductiveTask, Task>(response);
   }
 
@@ -73,7 +73,7 @@ export class TasksCollection extends BaseCollection {
    * Create a new task.
    */
   async create(data: TaskCreateData): Promise<TaskGetResult> {
-    const response = await this.api.createTask(data);
+    const response = await this.wrapRequest(() => this.api.createTask(data));
     return resolveSingleResponse<ProductiveTask, Task>(response);
   }
 
@@ -81,7 +81,7 @@ export class TasksCollection extends BaseCollection {
    * Update an existing task.
    */
   async update(id: string, data: TaskUpdateData): Promise<TaskGetResult> {
-    const response = await this.api.updateTask(id, data);
+    const response = await this.wrapRequest(() => this.api.updateTask(id, data));
     return resolveSingleResponse<ProductiveTask, Task>(response);
   }
 

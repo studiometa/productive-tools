@@ -1,6 +1,7 @@
 import { ProductiveApi } from '@studiometa/productive-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ResourceNotFoundError } from '../errors.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
 import { createMockFetch } from '../test-utils.js';
 import { ProjectsCollection } from './projects.js';
@@ -114,6 +115,25 @@ describe('ProjectsCollection', () => {
       expect(results).toHaveLength(3);
       expect(results[0]).toMatchObject({ id: '1', name: 'P1' });
       expect(results[2]).toMatchObject({ id: '3', name: 'P3' });
+    });
+  });
+
+  describe('error wrapping', () => {
+    it('wraps 404 into ResourceNotFoundError', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          async () =>
+            new Response(JSON.stringify({ errors: [{ detail: 'Not found' }] }), {
+              status: 404,
+              statusText: 'Not Found',
+              headers: { 'Content-Type': 'application/vnd.api+json' },
+            }),
+        ),
+      );
+
+      const col = new ProjectsCollection(createApi());
+      await expect(col.get('9999')).rejects.toBeInstanceOf(ResourceNotFoundError);
     });
   });
 });

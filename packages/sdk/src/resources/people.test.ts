@@ -1,6 +1,7 @@
 import { ProductiveApi } from '@studiometa/productive-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AuthenticationError } from '../errors.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
 import { createMockFetch } from '../test-utils.js';
 import { PeopleCollection } from './people.js';
@@ -107,6 +108,25 @@ describe('PeopleCollection', () => {
       const col = new PeopleCollection(createApi());
       const results = await col.all({ perPage: 1 }).toArray();
       expect(results).toHaveLength(2);
+    });
+  });
+
+  describe('error wrapping', () => {
+    it('wraps 401 into AuthenticationError', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          async () =>
+            new Response(JSON.stringify({ errors: [{ detail: 'Unauthorized' }] }), {
+              status: 401,
+              statusText: 'Unauthorized',
+              headers: { 'Content-Type': 'application/vnd.api+json' },
+            }),
+        ),
+      );
+
+      const col = new PeopleCollection(createApi());
+      await expect(col.get('me')).rejects.toBeInstanceOf(AuthenticationError);
     });
   });
 });

@@ -28,7 +28,7 @@ export class ProjectsCollection extends BaseCollection {
    * List projects with optional filtering and pagination.
    */
   async list(options: ProjectListOptions = {}): Promise<ProjectListResult> {
-    const response = await this.api.getProjects(options);
+    const response = await this.wrapRequest(() => this.api.getProjects(options));
     return resolveListResponse<ProductiveProject, Project>(response);
   }
 
@@ -36,7 +36,7 @@ export class ProjectsCollection extends BaseCollection {
    * Get a single project by ID.
    */
   async get(id: string): Promise<ProjectGetResult> {
-    const response = await this.api.getProject(id);
+    const response = await this.wrapRequest(() => this.api.getProject(id));
     return resolveSingleResponse<ProductiveProject, Project>(response);
   }
 

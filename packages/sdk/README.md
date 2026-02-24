@@ -64,6 +64,59 @@ for await (const task of p.tasks.all({ filter: { closed: 'false' }, sort: '-crea
 }
 ```
 
+## Error Handling
+
+All collection methods wrap API errors into typed `ProductiveError` subclasses, enabling `instanceof` checks instead of string matching:
+
+```typescript
+import {
+  ResourceNotFoundError,
+  RateLimitError,
+  ValidationError,
+  AuthenticationError,
+  NetworkError,
+  isProductiveError,
+} from '@studiometa/productive-sdk';
+
+try {
+  await p.tasks.get(taskId);
+} catch (e) {
+  if (e instanceof ResourceNotFoundError) {
+    console.log(`Task not found (${e.statusCode})`);
+  }
+  if (e instanceof RateLimitError) {
+    console.log(`Rate limited, retry in ${e.retryAfter}s`);
+  }
+  if (e instanceof ValidationError) {
+    for (const err of e.fieldErrors) {
+      console.log(`${err.field}: ${err.message}`); // e.g. "title: is required"
+    }
+  }
+  if (e instanceof AuthenticationError) {
+    console.log(`Auth failed (${e.statusCode})`); // 401 or 403
+  }
+  if (e instanceof NetworkError) {
+    console.log(`Network error: ${e.cause.message}`);
+  }
+}
+
+// Or use the type guard
+if (isProductiveError(e)) {
+  console.log(e.statusCode); // available on all ProductiveError subclasses
+}
+```
+
+### Error Classes
+
+| Class                   | Status Code | Properties                                 |
+| ----------------------- | ----------- | ------------------------------------------ |
+| `ProductiveError`       | any         | `statusCode?`                              |
+| `ResourceNotFoundError` | 404         | `resourceType?`, `resourceId?`             |
+| `RateLimitError`        | 429         | `retryAfter?`                              |
+| `ValidationError`       | 422         | `fieldErrors: { field, message, code? }[]` |
+| `AuthenticationError`   | 401 / 403   | —                                          |
+| `NetworkError`          | —           | `cause: Error`                             |
+
 ## API Reference
 
 ### `new Productive(options)`

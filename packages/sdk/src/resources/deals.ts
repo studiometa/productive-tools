@@ -49,7 +49,7 @@ export class DealsCollection extends BaseCollection {
    * List deals with optional filtering, pagination, and includes.
    */
   async list(options: DealListOptions = {}): Promise<DealListResult> {
-    const response = await this.api.getDeals(options);
+    const response = await this.wrapRequest(() => this.api.getDeals(options));
     return resolveListResponse<ProductiveDeal, Deal>(response);
   }
 
@@ -57,7 +57,7 @@ export class DealsCollection extends BaseCollection {
    * Get a single deal by ID, with optional includes.
    */
   async get(id: string, options: DealGetOptions = {}): Promise<DealGetResult> {
-    const response = await this.api.getDeal(id, options);
+    const response = await this.wrapRequest(() => this.api.getDeal(id, options));
     return resolveSingleResponse<ProductiveDeal, Deal>(response);
   }
 
@@ -65,7 +65,7 @@ export class DealsCollection extends BaseCollection {
    * Create a new deal.
    */
   async create(data: DealCreateData): Promise<DealGetResult> {
-    const response = await this.api.createDeal(data);
+    const response = await this.wrapRequest(() => this.api.createDeal(data));
     return resolveSingleResponse<ProductiveDeal, Deal>(response);
   }
 
@@ -73,7 +73,7 @@ export class DealsCollection extends BaseCollection {
    * Update an existing deal.
    */
   async update(id: string, data: DealUpdateData): Promise<DealGetResult> {
-    const response = await this.api.updateDeal(id, data);
+    const response = await this.wrapRequest(() => this.api.updateDeal(id, data));
     return resolveSingleResponse<ProductiveDeal, Deal>(response);
   }
 

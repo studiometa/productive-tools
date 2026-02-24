@@ -39,7 +39,7 @@ export class PeopleCollection extends BaseCollection {
    * List people with optional filtering and pagination.
    */
   async list(options: PeopleListOptions = {}): Promise<PeopleListResult> {
-    const response = await this.api.getPeople(options);
+    const response = await this.wrapRequest(() => this.api.getPeople(options));
     return resolveListResponse<ProductivePerson, Person>(response);
   }
 
@@ -47,7 +47,7 @@ export class PeopleCollection extends BaseCollection {
    * Get a single person by ID.
    */
   async get(id: string): Promise<PeopleGetResult> {
-    const response = await this.api.getPerson(id);
+    const response = await this.wrapRequest(() => this.api.getPerson(id));
     return resolveSingleResponse<ProductivePerson, Person>(response);
   }
 

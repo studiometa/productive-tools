@@ -44,7 +44,7 @@ export class TimeCollection extends BaseCollection {
    * List time entries with optional filtering, pagination, and includes.
    */
   async list(options: TimeListOptions = {}): Promise<TimeListResult> {
-    const response = await this.api.getTimeEntries(options);
+    const response = await this.wrapRequest(() => this.api.getTimeEntries(options));
     return resolveListResponse<ProductiveTimeEntry, TimeEntry>(response);
   }
 
@@ -52,7 +52,7 @@ export class TimeCollection extends BaseCollection {
    * Get a single time entry by ID.
    */
   async get(id: string): Promise<TimeGetResult> {
-    const response = await this.api.getTimeEntry(id);
+    const response = await this.wrapRequest(() => this.api.getTimeEntry(id));
     return resolveSingleResponse<ProductiveTimeEntry, TimeEntry>(response);
   }
 
@@ -60,7 +60,7 @@ export class TimeCollection extends BaseCollection {
    * Create a new time entry.
    */
   async create(data: TimeCreateData): Promise<TimeGetResult> {
-    const response = await this.api.createTimeEntry(data);
+    const response = await this.wrapRequest(() => this.api.createTimeEntry(data));
     return resolveSingleResponse<ProductiveTimeEntry, TimeEntry>(response);
   }
 
@@ -68,7 +68,7 @@ export class TimeCollection extends BaseCollection {
    * Update an existing time entry.
    */
   async update(id: string, data: TimeUpdateData): Promise<TimeGetResult> {
-    const response = await this.api.updateTimeEntry(id, data);
+    const response = await this.wrapRequest(() => this.api.updateTimeEntry(id, data));
     return resolveSingleResponse<ProductiveTimeEntry, TimeEntry>(response);
   }
 
@@ -76,7 +76,7 @@ export class TimeCollection extends BaseCollection {
    * Delete a time entry.
    */
   async delete(id: string): Promise<void> {
-    await this.api.deleteTimeEntry(id);
+    await this.wrapRequest(() => this.api.deleteTimeEntry(id));
   }
 
   /**

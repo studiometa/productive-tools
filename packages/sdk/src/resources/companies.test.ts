@@ -1,6 +1,7 @@
 import { ProductiveApi } from '@studiometa/productive-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ValidationError } from '../errors.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
 import { createMockFetch } from '../test-utils.js';
 import { CompaniesCollection } from './companies.js';
@@ -110,6 +111,32 @@ describe('CompaniesCollection', () => {
       const col = new CompaniesCollection(createApi());
       const results = await col.all({ perPage: 1 }).toArray();
       expect(results).toHaveLength(2);
+    });
+  });
+
+  describe('error wrapping', () => {
+    it('wraps 422 into ValidationError with parsed fieldErrors', async () => {
+      const body = JSON.stringify({
+        errors: [{ detail: 'is required', source: { pointer: '/data/attributes/name' } }],
+      });
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          async () =>
+            new Response(body, {
+              status: 422,
+              statusText: 'Unprocessable Entity',
+              headers: { 'Content-Type': 'application/vnd.api+json' },
+            }),
+        ),
+      );
+
+      const col = new CompaniesCollection(createApi());
+      const err = await col.create({ name: '' }).catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(ValidationError);
+      expect((err as ValidationError).fieldErrors).toEqual([
+        { field: 'name', message: 'is required' },
+      ]);
     });
   });
 });

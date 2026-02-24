@@ -48,7 +48,7 @@ export class CompaniesCollection extends BaseCollection {
    * List companies with optional filtering and pagination.
    */
   async list(options: CompanyListOptions = {}): Promise<CompanyListResult> {
-    const response = await this.api.getCompanies(options);
+    const response = await this.wrapRequest(() => this.api.getCompanies(options));
     return resolveListResponse<ProductiveCompany, Company>(response);
   }
 
@@ -56,7 +56,7 @@ export class CompaniesCollection extends BaseCollection {
    * Get a single company by ID.
    */
   async get(id: string): Promise<CompanyGetResult> {
-    const response = await this.api.getCompany(id);
+    const response = await this.wrapRequest(() => this.api.getCompany(id));
     return resolveSingleResponse<ProductiveCompany, Company>(response);
   }
 
@@ -64,7 +64,7 @@ export class CompaniesCollection extends BaseCollection {
    * Create a new company.
    */
   async create(data: CompanyCreateData): Promise<CompanyGetResult> {
-    const response = await this.api.createCompany(data);
+    const response = await this.wrapRequest(() => this.api.createCompany(data));
     return resolveSingleResponse<ProductiveCompany, Company>(response);
   }
 
@@ -72,7 +72,7 @@ export class CompaniesCollection extends BaseCollection {
    * Update an existing company.
    */
   async update(id: string, data: CompanyUpdateData): Promise<CompanyGetResult> {
-    const response = await this.api.updateCompany(id, data);
+    const response = await this.wrapRequest(() => this.api.updateCompany(id, data));
     return resolveSingleResponse<ProductiveCompany, Company>(response);
   }
 

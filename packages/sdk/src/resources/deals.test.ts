@@ -1,6 +1,7 @@
 import { ProductiveApi } from '@studiometa/productive-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { RateLimitError } from '../errors.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
 import { createMockFetch } from '../test-utils.js';
 import { DealsCollection } from './deals.js';
@@ -136,6 +137,25 @@ describe('DealsCollection', () => {
       const col = new DealsCollection(createApi());
       const results = await col.all({ perPage: 1 }).toArray();
       expect(results).toHaveLength(2);
+    });
+  });
+
+  describe('error wrapping', () => {
+    it('wraps 429 into RateLimitError', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          async () =>
+            new Response('Rate limit exceeded', {
+              status: 429,
+              statusText: 'Too Many Requests',
+              headers: { 'Content-Type': 'text/plain' },
+            }),
+        ),
+      );
+
+      const col = new DealsCollection(createApi());
+      await expect(col.list()).rejects.toBeInstanceOf(RateLimitError);
     });
   });
 });
