@@ -455,6 +455,189 @@ describe('api command', () => {
     });
   });
 
+  describe('--filter flag', () => {
+    it('should add single filter as query param', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [] }),
+      });
+
+      await handleApiCommand(['/tasks'], { filter: ['project_id=123'] });
+
+      const url = mockFetch.mock.calls[0][0];
+      expect(url).toContain('filter%5Bproject_id%5D=123');
+    });
+
+    it('should add multiple filters as query params', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [] }),
+      });
+
+      await handleApiCommand(['/tasks'], { filter: ['project_id=123', 'status=1'] });
+
+      const url = mockFetch.mock.calls[0][0];
+      expect(url).toContain('filter%5Bproject_id%5D=123');
+      expect(url).toContain('filter%5Bstatus%5D=1');
+    });
+
+    it('should handle single filter string (not array)', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [] }),
+      });
+
+      await handleApiCommand(['/tasks'], { filter: 'project_id=123' });
+
+      const url = mockFetch.mock.calls[0][0];
+      expect(url).toContain('filter%5Bproject_id%5D=123');
+    });
+
+    it('should combine --filter with URL query params', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [] }),
+      });
+
+      await handleApiCommand(['/tasks?sort=-created_at'], { filter: ['project_id=123'] });
+
+      const url = mockFetch.mock.calls[0][0];
+      expect(url).toContain('sort=-created_at');
+      expect(url).toContain('filter%5Bproject_id%5D=123');
+    });
+
+    it('should throw error for filter with invalid format', async () => {
+      await expect(handleApiCommand(['/tasks'], { filter: ['invalidformat'] })).rejects.toThrow();
+    });
+
+    it('should throw error for --filter with non-GET method', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: {} }),
+      });
+
+      await expect(
+        handleApiCommand(['/tasks'], { method: 'POST', filter: ['project_id=123'] }),
+      ).rejects.toThrow();
+    });
+
+    it('should combine --filter with --field on GET', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [] }),
+      });
+
+      await handleApiCommand(['/tasks'], {
+        method: 'GET',
+        field: ['page=2'],
+        filter: ['project_id=123'],
+      });
+
+      const url = mockFetch.mock.calls[0][0];
+      expect(url).toContain('page=2');
+      expect(url).toContain('filter%5Bproject_id%5D=123');
+    });
+
+    it('should handle filter values containing equals signs', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [] }),
+      });
+
+      await handleApiCommand(['/tasks'], { filter: ['custom_field=a=b'] });
+
+      const url = mockFetch.mock.calls[0][0];
+      expect(url).toContain('filter%5Bcustom_field%5D=a%3Db');
+    });
+  });
+
+  describe('--include flag', () => {
+    it('should add include query param', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [] }),
+      });
+
+      await handleApiCommand(['/tasks'], { include: 'project,assignee' });
+
+      const url = mockFetch.mock.calls[0][0];
+      expect(url).toContain('include=project%2Cassignee');
+    });
+
+    it('should combine --include with --filter', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [] }),
+      });
+
+      await handleApiCommand(['/tasks'], {
+        filter: ['project_id=123'],
+        include: 'project,assignee',
+      });
+
+      const url = mockFetch.mock.calls[0][0];
+      expect(url).toContain('filter%5Bproject_id%5D=123');
+      expect(url).toContain('include=project%2Cassignee');
+    });
+
+    it('should throw error for --include with non-GET method', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: {} }),
+      });
+
+      await expect(
+        handleApiCommand(['/tasks'], { method: 'POST', include: 'project' }),
+      ).rejects.toThrow();
+    });
+
+    it('should still show response headers when --include is boolean true', async () => {
+      const mockHeaders = new Map([['content-type', 'application/json']]);
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [] }),
+        headers: {
+          forEach: (callback: any) => {
+            mockHeaders.forEach((value, key) => callback(value, key));
+          },
+        },
+      });
+
+      await handleApiCommand(['/projects'], { include: true });
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should not show response headers when --include has a string value', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [] }),
+      });
+
+      await handleApiCommand(['/tasks'], { include: 'project' });
+
+      // Response headers should NOT be logged (include is a string, not boolean)
+      const headerCalls = consoleLogSpy.mock.calls.filter(
+        (call) => typeof call[0] === 'string' && call[0].includes('Response Headers'),
+      );
+      expect(headerCalls).toHaveLength(0);
+    });
+
+    it('should combine --include with URL query params', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [] }),
+      });
+
+      await handleApiCommand(['/tasks?sort=-due_date'], { include: 'project' });
+
+      const url = mockFetch.mock.calls[0][0];
+      expect(url).toContain('sort=-due_date');
+      expect(url).toContain('include=project');
+    });
+  });
+
   describe('custom headers', () => {
     it('should add custom headers', async () => {
       mockFetch.mockResolvedValue({

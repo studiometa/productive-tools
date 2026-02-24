@@ -83,6 +83,46 @@ function parseRawFields(fields: string[]): Record<string, string> {
   return result;
 }
 
+/**
+ * Collect values from a repeatable option (handles both string and string[]).
+ */
+function collectOption(
+  options: Record<string, string | boolean | string[]>,
+  ...keys: string[]
+): string[] {
+  const result: string[] = [];
+  for (const key of keys) {
+    const val = options[key];
+    if (val !== undefined && val !== true) {
+      if (Array.isArray(val)) {
+        result.push(...val);
+      } else {
+        result.push(String(val));
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Parse --filter flags into filter[key]=value query params.
+ */
+function parseFilterFlags(
+  options: Record<string, string | boolean | string[]>,
+): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const entry of collectOption(options, 'filter')) {
+    const eqIndex = entry.indexOf('=');
+    if (eqIndex === -1) {
+      throw ValidationError.invalid('filter', entry, 'expected key=value format');
+    }
+    const key = entry.slice(0, eqIndex);
+    const value = entry.slice(eqIndex + 1);
+    result[`filter[${key}]`] = value;
+  }
+  return result;
+}
+
 export function showApiHelp(): void {
   console.log(`
 ${colors.bold('productive api')} - Make authenticated API requests
@@ -105,11 +145,13 @@ ${colors.bold('OPTIONS:')}
   -F, --field <key=value>     Add parameter with type conversion (repeatable)
   -f, --raw-field <key=value> Add string parameter (repeatable)
   -H, --header <header>       Add custom header (repeatable)
+  --filter <key=value>        Add filter query param (repeatable, GET only)
+  --include <resources>       Add include query param (comma-separated, GET only)
+                              Without value: include response headers in output
   --input <file>              Read request body from file (use - for stdin)
   --paginate                  Fetch all pages of results
   --format <fmt>              Output format: json, human (default: json)
   --no-color                  Disable colored output
-  --include                   Include response headers in output
 
 ${colors.bold('FIELD FLAGS:')}
   --field performs magic type conversion:
@@ -132,11 +174,33 @@ ${colors.bold('PAGINATION:')}
   Use --paginate to automatically fetch all pages of results.
   The command will follow the pagination links until all data is retrieved.
 
+${colors.bold('FILTER & INCLUDE FLAGS:')}
+  --filter builds filter[key]=value query params automatically:
+    productive api /tasks --filter project_id=123 --filter status=1
+    → GET /tasks?filter[project_id]=123&filter[status]=1
+
+  --include adds the include query param:
+    productive api /tasks --include project,assignee
+    → GET /tasks?include=project,assignee
+
+  Combine both:
+    productive api /tasks --filter project_id=123 --include project,assignee
+    → GET /tasks?filter[project_id]=123&include=project,assignee
+
+  Mix with URL query params:
+    productive api '/tasks?sort=-created_at' --filter project_id=123
+    → GET /tasks?sort=-created_at&filter[project_id]=123
+
+  Note: --filter and --include only work with GET requests.
+
 ${colors.bold('EXAMPLES:')}
   # Simple GET request
   productive api /projects
 
-  # GET with query parameters
+  # GET with filters and includes (recommended)
+  productive api /tasks --filter project_id=123 --filter status=1 --include project,assignee
+
+  # GET with query parameters (legacy style)
   productive api /projects --field 'filter[archived]=false'
 
   # POST request with fields (auto-detected as POST)
@@ -188,7 +252,7 @@ ${colors.bold('AUTHENTICATION:')}
 
 export async function handleApiCommand(
   args: string[],
-  options: Record<string, string | boolean>,
+  options: Record<string, string | boolean | string[]>,
 ): Promise<void> {
   const [endpoint] = args;
 
@@ -217,48 +281,32 @@ export async function handleApiCommand(
     const baseUrl = config.baseUrl || 'https://api.productive.io/api/v2';
 
     // Parse fields
-    const fields: string[] = [];
-    const rawFields: string[] = [];
-
-    // Handle both singular and array forms
-    if (options.field) {
-      if (Array.isArray(options.field)) {
-        fields.push(...options.field);
-      } else {
-        fields.push(String(options.field));
-      }
-    }
-    if (options.F) {
-      if (Array.isArray(options.F)) {
-        fields.push(...options.F);
-      } else {
-        fields.push(String(options.F));
-      }
-    }
-
-    if (options['raw-field']) {
-      if (Array.isArray(options['raw-field'])) {
-        rawFields.push(...options['raw-field']);
-      } else {
-        rawFields.push(String(options['raw-field']));
-      }
-    }
-    if (options.f) {
-      if (Array.isArray(options.f)) {
-        rawFields.push(...options.f);
-      } else {
-        rawFields.push(String(options.f));
-      }
-    }
+    const fields = collectOption(options, 'field', 'F');
+    const rawFields = collectOption(options, 'raw-field', 'f');
 
     const parsedFields = parseFields(fields);
     const parsedRawFields = parseRawFields(rawFields);
     const allFields = { ...parsedFields, ...parsedRawFields };
 
+    // Parse --filter and --include flags
+    const filterParams = parseFilterFlags(options);
+    let includeParam: string | undefined;
+    if (typeof options.include === 'string') {
+      includeParam = options.include;
+    }
+
     // Determine method
     let method = (options.method || options.X || '').toString().toUpperCase();
     if (!method) {
       method = fields.length > 0 || rawFields.length > 0 || options.input ? 'POST' : 'GET';
+    }
+
+    // --filter and --include only work with GET
+    if (Object.keys(filterParams).length > 0 && method !== 'GET') {
+      throw ValidationError.invalid('filter', true, 'only supported for GET requests');
+    }
+    if (includeParam !== undefined && method !== 'GET') {
+      throw ValidationError.invalid('include', true, 'only supported for GET requests');
     }
 
     // Build request
@@ -286,6 +334,11 @@ export async function handleApiCommand(
     } else if (method === 'GET') {
       // For GET, fields become query parameters
       queryParams = Object.fromEntries(Object.entries(allFields).map(([k, v]) => [k, String(v)]));
+      // Merge --filter and --include into query params
+      Object.assign(queryParams, filterParams);
+      if (includeParam !== undefined) {
+        queryParams.include = includeParam;
+      }
     } else {
       // For POST/PATCH/PUT, fields become body
       body = allFields;
@@ -323,32 +376,12 @@ export async function handleApiCommand(
       };
 
       // Add custom headers from options
-      if (options.header) {
-        const customHeaders = Array.isArray(options.header)
-          ? options.header
-          : [String(options.header)];
-
-        for (const header of customHeaders) {
-          const colonIndex = header.indexOf(':');
-          if (colonIndex === -1) {
-            throw ValidationError.invalid('header', header, 'expected "Key: Value" format');
-          }
-          const key = header.slice(0, colonIndex).trim();
-          const value = header.slice(colonIndex + 1).trim();
-          headers[key] = value;
+      for (const raw of collectOption(options, 'header', 'H')) {
+        const colonIndex = raw.indexOf(':');
+        if (colonIndex === -1) {
+          throw ValidationError.invalid('header', raw, 'expected "Key: Value" format');
         }
-      }
-      if (options.H) {
-        const customHeaders = Array.isArray(options.H) ? options.H : [String(options.H)];
-        for (const header of customHeaders) {
-          const colonIndex = header.indexOf(':');
-          if (colonIndex === -1) {
-            throw ValidationError.invalid('header', header, 'expected "Key: Value" format');
-          }
-          const key = header.slice(0, colonIndex).trim();
-          const value = header.slice(colonIndex + 1).trim();
-          headers[key] = value;
-        }
+        headers[raw.slice(0, colonIndex).trim()] = raw.slice(colonIndex + 1).trim();
       }
 
       const response = await globalThis.fetch(url.toString(), {
@@ -396,8 +429,8 @@ export async function handleApiCommand(
       } else {
         spinner.succeed();
 
-        // Output response
-        if (options.include) {
+        // Output response headers (--include as boolean flag, not string)
+        if (options.include === true) {
           console.log(colors.dim('Response Headers:'));
           response.headers.forEach((value, key) => {
             console.log(colors.dim(`  ${key}: ${value}`));
