@@ -3,14 +3,34 @@
  * Parses process.argv into a structured format
  */
 
+export type OptionValue = string | boolean | string[];
+
 export interface ParsedArgs {
   command: string[];
-  options: Record<string, string | boolean>;
+  options: Record<string, OptionValue>;
   positional: string[];
 }
 
+// Options that accept repeated values (collected into arrays)
+// Note: -F/-f short aliases are NOT included to avoid conflicts with --format etc.
+const REPEATABLE_OPTIONS = new Set(['field', 'raw-field', 'header', 'filter']);
+
+function resolveOptionValue(
+  existing: OptionValue | undefined,
+  key: string,
+  value: string,
+): OptionValue {
+  if (!REPEATABLE_OPTIONS.has(key)) {
+    return value;
+  }
+  if (Array.isArray(existing)) {
+    return [...existing, value];
+  }
+  return [value];
+}
+
 export function parseArgs(argv: string[] = process.argv.slice(2)): ParsedArgs {
-  const options: Record<string, string | boolean> = {};
+  const options: Record<string, string | boolean | string[]> = {};
   const positional: string[] = [];
   const command: string[] = [];
 
@@ -23,13 +43,13 @@ export function parseArgs(argv: string[] = process.argv.slice(2)): ParsedArgs {
       if (equalIndex > -1) {
         const key = arg.slice(2, equalIndex);
         const value = arg.slice(equalIndex + 1);
-        options[key] = value;
+        options[key] = resolveOptionValue(options[key], key, value);
       } else {
         const key = arg.slice(2);
         const nextArg = argv[i + 1];
 
         if (nextArg && !nextArg.startsWith('-')) {
-          options[key] = nextArg;
+          options[key] = resolveOptionValue(options[key], key, nextArg);
           i++;
         } else {
           options[key] = true;
@@ -42,7 +62,7 @@ export function parseArgs(argv: string[] = process.argv.slice(2)): ParsedArgs {
         const nextArg = argv[i + 1];
 
         if (nextArg && !nextArg.startsWith('-')) {
-          options[key] = nextArg;
+          options[key] = resolveOptionValue(options[key], key, nextArg);
           i++;
         } else {
           options[key] = true;
@@ -68,7 +88,7 @@ export function parseArgs(argv: string[] = process.argv.slice(2)): ParsedArgs {
 }
 
 export function getOption(
-  options: Record<string, string | boolean>,
+  options: Record<string, OptionValue>,
   names: string[],
   defaultValue?: string,
 ): string | undefined {
@@ -81,6 +101,6 @@ export function getOption(
   return defaultValue;
 }
 
-export function hasFlag(options: Record<string, string | boolean>, names: string[]): boolean {
+export function hasFlag(options: Record<string, OptionValue>, names: string[]): boolean {
   return names.some((name) => options[name] === true);
 }

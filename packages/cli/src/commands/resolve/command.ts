@@ -16,7 +16,7 @@ import { resolveIdentifier, detectType } from './handlers.js';
 export async function handleResolveCommand(
   subcommand: string | undefined,
   args: string[],
-  options: Record<string, string | boolean>,
+  options: Record<string, string | boolean | string[]>,
 ): Promise<void> {
   const format = (options.format || options.f || 'human') as OutputFormat;
   const formatter = new OutputFormatter(format, options['no-color'] === true);

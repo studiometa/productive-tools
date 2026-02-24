@@ -66,7 +66,7 @@ export function createCommandRouter(config: CommandRouterConfig) {
   return async function (
     subcommand: string,
     args: string[],
-    options: Record<string, string | boolean>,
+    options: Record<string, string | boolean | string[]>,
   ): Promise<void> {
     const format = (options.format || options.f || 'human') as OutputFormat;
     const formatter = new OutputFormatter(format, options['no-color'] === true);

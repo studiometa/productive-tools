@@ -99,8 +99,11 @@ productive resolve "user@example.com"
 For endpoints not covered by built-in commands:
 
 ```bash
-# GET
-productive api /projects --field 'filter[archived]=false'
+# GET with filters and includes (recommended)
+productive api /tasks --filter project_id=123 --filter status=1 --include project,assignee
+
+# Mix with URL query params
+productive api '/tasks?sort=-created_at' --filter project_id=123
 
 # POST (auto-detected when fields are provided)
 productive api /time_entries \
@@ -113,7 +116,7 @@ productive api /time_entries \
 productive api /time_entries/123456 --method PATCH --field time=240
 
 # Paginate all results
-productive api /time_entries --paginate
+productive api /time_entries --paginate --filter person_id=12345
 ```
 
 ## Global Options

@@ -22,7 +22,7 @@ interface RefreshResult {
  * @returns Result summary
  */
 export async function processRefreshQueue(
-  options: Record<string, string | boolean> = {},
+  options: Record<string, string | boolean | string[]> = {},
   maxJobs = 10,
 ): Promise<RefreshResult> {
   const result: RefreshResult = {
@@ -119,7 +119,7 @@ export async function processRefreshQueue(
  * Get the number of pending refresh jobs.
  */
 export async function getRefreshQueueCount(
-  options: Record<string, string | boolean> = {},
+  options: Record<string, string | boolean | string[]> = {},
 ): Promise<number> {
   if (options['no-cache']) {
     return 0;

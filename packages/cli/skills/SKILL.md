@@ -283,31 +283,29 @@ For endpoints not covered by built-in commands:
 productive api /companies
 ```
 
-#### Important: Query Parameters vs Request Body
+#### Filtering and Includes (recommended)
 
-- **Query parameters** (for GET requests): Put them directly in the URL
-
-  ```bash
-  # ✅ Correct: filter in URL
-  productive api '/comments?filter[task_id]=12345'
-
-  # ❌ Wrong: --field adds to request body, not URL
-  productive api /comments --field 'filter[task_id]=12345'
-  ```
-
-- **Request body** (for POST/PATCH): Use `--field` or `--raw-field`
-  ```bash
-  # Create a comment (POST body)
-  productive api /comments \
-    --field task_id=12345 \
-    --raw-field body="My comment"
-  ```
+Use `--filter` and `--include` flags instead of hand-crafting query strings:
 
 ```bash
-# GET with query parameters (put them in the URL)
-productive api '/comments?filter[task_id]=12345'
-productive api '/tasks?filter[project_id]=12345&filter[status]=1'
+# ✅ Recommended: --filter builds filter[key]=value automatically
+productive api /tasks --filter project_id=123 --filter status=1
+productive api /comments --filter task_id=12345
 
+# ✅ --include adds the include query param
+productive api /tasks --filter project_id=123 --include project,assignee
+
+# ✅ Mix with URL params for sort/pagination
+productive api '/tasks?sort=-created_at' --filter project_id=123 --include project
+```
+
+`--filter` and `--include` only work with GET requests (the default).
+
+#### Request Body (POST/PATCH/DELETE)
+
+Use `--field` or `--raw-field` for request body parameters:
+
+```bash
 # POST (auto-detected when --field is used)
 productive api /comments \
   --field task_id=12345 \
@@ -322,7 +320,7 @@ productive api /tasks/12345 \
 productive api /time_entries/12345 --method DELETE
 
 # Fetch all pages
-productive api /time_entries --paginate
+productive api /time_entries --paginate --filter person_id=12345
 ```
 
 ### Cache

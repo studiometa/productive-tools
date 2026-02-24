@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SDK**: Add typed error hierarchy — `ProductiveError`, `ResourceNotFoundError`, `RateLimitError`, `ValidationError`, `AuthenticationError`, `NetworkError` with `wrapError()` utility and `isProductiveError()` type guard ([04b3fbe], [#130], [#128])
 - **SDK**: Add fluent query builder — `where()` method on all 6 collections for chainable `filter()`, `orderBy()`, `include()`, `page()`, `perPage()` with `list()` and `all()` execution ([0c23003], [#131], [#127])
 - **API+Core+CLI+MCP**: Support `hidden` boolean on comments — create and update comments as "hidden from client" matching the Productive.io web UI feature ([f89c28f], [#133], [#132])
+- **CLI**: Add `--filter key=value` (repeatable) and `--include resources` flags to `productive api` command — builds `filter[key]=value` and `include=` query params automatically, GET-only ([245ee43], [#134], [#125])
+- **CLI**: Add repeatable option support to argument parser — `--field`, `--raw-field`, `--header`, `--filter` are collected into arrays when specified multiple times ([1841f6f], [#134])
+
+### Fixed
+
+- **CLI**: Fix pagination duplicating query params on subsequent pages — `--field`, `--filter`, `--include` params were appended on every page instead of only the first ([2edfaaf], [#134])
 
 [373fbff]: https://github.com/studiometa/productive-tools/commit/373fbff
 [b1b4658]: https://github.com/studiometa/productive-tools/commit/b1b4658
@@ -32,8 +38,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#129]: https://github.com/studiometa/productive-tools/pull/129
 [#130]: https://github.com/studiometa/productive-tools/pull/130
 [#131]: https://github.com/studiometa/productive-tools/pull/131
+[#125]: https://github.com/studiometa/productive-tools/issues/125
 [#132]: https://github.com/studiometa/productive-tools/issues/132
 [#133]: https://github.com/studiometa/productive-tools/pull/133
+[#134]: https://github.com/studiometa/productive-tools/pull/134
+[1841f6f]: https://github.com/studiometa/productive-tools/commit/1841f6f
+[245ee43]: https://github.com/studiometa/productive-tools/commit/245ee43
+[2edfaaf]: https://github.com/studiometa/productive-tools/commit/2edfaaf
 
 ## [0.10.4] - 2026-02-22
 

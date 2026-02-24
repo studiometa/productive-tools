@@ -12,7 +12,7 @@ import { getConfig } from './config.js';
 import { getCache } from './utils/cache.js';
 
 export class ProductiveApi extends BaseProductiveApi {
-  constructor(options?: Record<string, string | boolean>) {
+  constructor(options?: Record<string, string | boolean | string[]>) {
     const config = getConfig(options);
     const useCache = options?.['no-cache'] !== true;
 

@@ -67,6 +67,43 @@ describe('parseArgs', () => {
     const result = parseArgs(['--no-color']);
     expect(result.options['no-color']).toBe(true);
   });
+
+  describe('repeatable options', () => {
+    it('should collect repeated --filter into array', () => {
+      const result = parseArgs(['--filter', 'project_id=123', '--filter', 'status=1']);
+      expect(result.options.filter).toEqual(['project_id=123', 'status=1']);
+    });
+
+    it('should collect single --filter as array', () => {
+      const result = parseArgs(['--filter', 'project_id=123']);
+      expect(result.options.filter).toEqual(['project_id=123']);
+    });
+
+    it('should collect repeated --field into array', () => {
+      const result = parseArgs(['--field', 'a=1', '--field', 'b=2']);
+      expect(result.options.field).toEqual(['a=1', 'b=2']);
+    });
+
+    it('should collect repeated --header into array', () => {
+      const result = parseArgs(['--header', 'X-A: 1', '--header', 'X-B: 2']);
+      expect(result.options.header).toEqual(['X-A: 1', 'X-B: 2']);
+    });
+
+    it('should collect repeated --raw-field into array', () => {
+      const result = parseArgs(['--raw-field', 'a=1', '--raw-field', 'b=2']);
+      expect(result.options['raw-field']).toEqual(['a=1', 'b=2']);
+    });
+
+    it('should not collect non-repeatable options into array', () => {
+      const result = parseArgs(['--format', 'json', '--format', 'human']);
+      expect(result.options.format).toBe('human');
+    });
+
+    it('should handle --filter=key=value syntax', () => {
+      const result = parseArgs(['--filter=project_id=123', '--filter=status=1']);
+      expect(result.options.filter).toEqual(['project_id=123', 'status=1']);
+    });
+  });
 });
 
 describe('getOption', () => {
@@ -97,6 +134,12 @@ describe('getOption', () => {
   it('should return undefined for boolean flags', () => {
     const options = { help: true };
     const result = getOption(options, ['help']);
+    expect(result).toBeUndefined();
+  });
+
+  it('should return undefined for array values', () => {
+    const options = { filter: ['a=1', 'b=2'] };
+    const result = getOption(options, ['filter']);
     expect(result).toBeUndefined();
   });
 });

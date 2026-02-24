@@ -42,7 +42,9 @@ function getConfigValue(key: keyof ProductiveConfig): string | undefined {
  * 3. Keychain (for secure keys)
  * 4. Config file (lowest priority)
  */
-export function getConfig(cliOptions?: Record<string, string | boolean>): ProductiveConfig {
+export function getConfig(
+  cliOptions?: Record<string, string | boolean | string[]>,
+): ProductiveConfig {
   return {
     apiToken:
       (cliOptions?.['api-token'] as string) ||

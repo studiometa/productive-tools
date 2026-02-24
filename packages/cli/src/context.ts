@@ -141,9 +141,9 @@ export function createContext(options: CommandOptions = {}): CommandContext {
   const format = (options.format || options.f || 'human') as OutputFormat;
   const noColor = options['no-color'] === true;
 
-  const config = getConfig(options as Record<string, string | boolean>);
+  const config = getConfig(options as Record<string, string | boolean | string[]>);
   const formatter = new OutputFormatter(format, noColor);
-  const api = new ProductiveApi(options as Record<string, string | boolean>);
+  const api = new ProductiveApi(options as Record<string, string | boolean | string[]>);
   const cache = getCache(options['no-cache'] !== true);
 
   const ctx: CommandContext = {

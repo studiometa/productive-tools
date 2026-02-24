@@ -129,7 +129,7 @@ Run ${colors.cyan('productive config <subcommand> --help')} for subcommand detai
 export function handleConfigCommand(
   subcommand: string,
   args: string[],
-  options: Record<string, string | boolean>,
+  options: Record<string, string | boolean | string[]>,
 ): void {
   const format = (options.format || options.f || 'human') as OutputFormat;
   const formatter = new OutputFormatter(format, options['no-color'] === true);
@@ -178,7 +178,7 @@ function configSet(args: string[], formatter: OutputFormatter): void {
 
 function configGet(
   args: string[],
-  options: Record<string, string | boolean>,
+  options: Record<string, string | boolean | string[]>,
   formatter: OutputFormatter,
 ): void {
   const [key] = args;

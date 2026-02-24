@@ -154,7 +154,7 @@ Run ${colors.cyan('productive cache <subcommand> --help')} for subcommand detail
 export async function handleCacheCommand(
   subcommand: string,
   args: string[],
-  options: Record<string, string | boolean>,
+  options: Record<string, string | boolean | string[]>,
 ): Promise<void> {
   const format = (options.format || options.f || 'human') as OutputFormat;
   const formatter = new OutputFormatter(format, options['no-color'] === true);
@@ -185,7 +185,7 @@ export async function handleCacheCommand(
 
 async function cacheStatus(
   formatter: OutputFormatter,
-  options: Record<string, string | boolean>,
+  options: Record<string, string | boolean | string[]>,
 ): Promise<void> {
   const orgId = (options['org-id'] as string) || process.env.PRODUCTIVE_ORG_ID;
 
@@ -258,7 +258,7 @@ async function cacheStatus(
 async function cacheClear(
   args: string[],
   formatter: OutputFormatter,
-  options: Record<string, string | boolean>,
+  options: Record<string, string | boolean | string[]>,
 ): Promise<void> {
   const orgId = (options['org-id'] as string) || process.env.PRODUCTIVE_ORG_ID;
 
@@ -284,7 +284,7 @@ async function cacheClear(
 
 async function cacheSync(
   formatter: OutputFormatter,
-  options: Record<string, string | boolean>,
+  options: Record<string, string | boolean | string[]>,
 ): Promise<void> {
   const spinner = new Spinner();
 
@@ -372,7 +372,7 @@ async function cacheSync(
 
 async function cacheQueue(
   formatter: OutputFormatter,
-  options: Record<string, string | boolean>,
+  options: Record<string, string | boolean | string[]>,
 ): Promise<void> {
   const orgId = (options['org-id'] as string) || process.env.PRODUCTIVE_ORG_ID;
 
