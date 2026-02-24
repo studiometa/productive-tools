@@ -1,5 +1,5 @@
 import { ProductiveApi } from '@studiometa/productive-api';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { Productive } from './productive.js';
 import { CompaniesCollection } from './resources/companies.js';
@@ -81,5 +81,42 @@ describe('Productive constructor', () => {
     expect(typeof p.deals.create).toBe('function');
     expect(typeof p.deals.update).toBe('function');
     expect(typeof p.deals.all).toBe('function');
+  });
+});
+
+describe('Productive.fromEnv', () => {
+  const savedEnv: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    savedEnv.PRODUCTIVE_API_TOKEN = process.env.PRODUCTIVE_API_TOKEN;
+    savedEnv.PRODUCTIVE_ORG_ID = process.env.PRODUCTIVE_ORG_ID;
+    savedEnv.PRODUCTIVE_USER_ID = process.env.PRODUCTIVE_USER_ID;
+  });
+
+  afterEach(() => {
+    for (const [key, value] of Object.entries(savedEnv)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  });
+
+  it('creates a Productive instance from environment variables', () => {
+    process.env.PRODUCTIVE_API_TOKEN = 'from-env-token';
+    process.env.PRODUCTIVE_ORG_ID = 'from-env-org';
+    process.env.PRODUCTIVE_USER_ID = 'from-env-user';
+
+    const p = Productive.fromEnv();
+
+    expect(p).toBeInstanceOf(Productive);
+    expect(p.api).toBeInstanceOf(ProductiveApi);
+    expect(p.projects).toBeDefined();
+    expect(p.tasks).toBeDefined();
+  });
+
+  it('is a static method', () => {
+    expect(typeof Productive.fromEnv).toBe('function');
   });
 });

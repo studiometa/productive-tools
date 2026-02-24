@@ -1,5 +1,6 @@
 import { ProductiveApi } from '@studiometa/productive-api';
 
+import { loadConfig } from './config.js';
 import { CompaniesCollection } from './resources/companies.js';
 import { DealsCollection } from './resources/deals.js';
 import { PeopleCollection } from './resources/people.js';
@@ -41,5 +42,23 @@ export class Productive {
     this.people = new PeopleCollection(this.api, options.userId);
     this.companies = new CompaniesCollection(this.api);
     this.deals = new DealsCollection(this.api);
+  }
+
+  /**
+   * Create a Productive instance using credentials from environment,
+   * keychain, and config file — zero configuration needed.
+   *
+   * @throws {ConfigurationError} When required credentials are missing
+   *
+   * @example
+   * ```ts
+   * import { Productive } from '@studiometa/productive-sdk';
+   *
+   * const p = Productive.fromEnv();
+   * const { data: projects } = await p.projects.list();
+   * ```
+   */
+  static fromEnv(): Productive {
+    return new Productive(loadConfig());
   }
 }
