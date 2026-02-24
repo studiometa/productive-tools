@@ -1,14 +1,10 @@
 import type { ProductiveTask } from '@studiometa/productive-api';
 
+import { TASK_OVERDUE_STATUS, TASK_STATUS } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListTasksOptions } from './types.js';
-
-const STATUS_MAP: Record<string, string> = {
-  open: '1',
-  completed: '2',
-  done: '2',
-};
 
 export function buildTaskFilters(options: ListTasksOptions): Record<string, string> {
   const filter: Record<string, string> = {};
@@ -25,10 +21,12 @@ export function buildTaskFilters(options: ListTasksOptions): Record<string, stri
   if (options.workflowStatusId) filter.workflow_status_id = options.workflowStatusId;
 
   const status = (options.status || 'open').toLowerCase();
-  const mapped = STATUS_MAP[status];
-  if (mapped) filter.status = mapped;
+  // Support both 'completed' and 'done' as aliases for CLOSED
+  const normalized = status === 'completed' || status === 'done' ? 'closed' : status;
+  const mapped = TASK_STATUS.toValue(normalized);
+  if (mapped !== normalized) filter.status = mapped;
 
-  if (options.overdue) filter.overdue_status = '2';
+  if (options.overdue) filter.overdue_status = TASK_OVERDUE_STATUS.OVERDUE;
   if (options.dueDate) filter.due_date_on = options.dueDate;
   if (options.dueBefore) filter.due_date_before = options.dueBefore;
   if (options.dueAfter) filter.due_date_after = options.dueAfter;

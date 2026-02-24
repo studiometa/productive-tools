@@ -10,6 +10,8 @@
 
 import type { IncludedResource, ProductiveService } from '@studiometa/productive-api';
 
+import { TASK_OVERDUE_STATUS, TASK_STATUS } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type {
@@ -93,7 +95,7 @@ export async function getProjectHealthSummary(
         perPage: MAX_ITEMS,
         filter: {
           project_id: projectId,
-          status: '1', // open
+          status: TASK_STATUS.OPEN,
         },
         include: ['workflow_status', 'assignee'],
         sort: 'due_date',
@@ -104,8 +106,8 @@ export async function getProjectHealthSummary(
         perPage: MAX_ITEMS,
         filter: {
           project_id: projectId,
-          status: '1', // open
-          overdue_status: '2', // overdue
+          status: TASK_STATUS.OPEN,
+          overdue_status: TASK_OVERDUE_STATUS.OVERDUE,
         },
         include: ['workflow_status', 'assignee'],
         sort: 'due_date',

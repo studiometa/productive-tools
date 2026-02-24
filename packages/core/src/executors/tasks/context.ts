@@ -8,6 +8,8 @@
  * - Subtasks (child tasks)
  */
 
+import { TASK_STATUS } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { GetTaskContextOptions, TaskContextResult } from './types.js';
@@ -38,7 +40,7 @@ export async function getTaskContext(
         sort: '-date',
       }),
       ctx.api.getTasks({
-        filter: { parent_task_id: id, status: '1' }, // status 1 = open
+        filter: { parent_task_id: id, status: TASK_STATUS.OPEN },
         perPage: MAX_RELATED_ITEMS,
         include: ['assignee', 'workflow_status'],
       }),

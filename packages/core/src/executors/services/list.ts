@@ -4,20 +4,11 @@
 
 import type { ProductiveService } from '@studiometa/productive-api';
 
+import { SERVICE_BILLING_TYPE, SERVICE_BUDGET_STATUS } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListServicesOptions } from './types.js';
-
-const BUDGET_STATUS_MAP: Record<string, string> = {
-  open: '1',
-  delivered: '2',
-};
-
-const BILLING_TYPE_MAP: Record<string, string> = {
-  fixed: '1',
-  actuals: '2',
-  none: '3',
-};
 
 export function buildServicesFilters(options: ListServicesOptions): Record<string, string> {
   const filter: Record<string, string> = {};
@@ -29,12 +20,12 @@ export function buildServicesFilters(options: ListServicesOptions): Record<strin
   if (options.personId) filter.person_id = options.personId;
 
   if (options.budgetStatus) {
-    const mapped = BUDGET_STATUS_MAP[options.budgetStatus.toLowerCase()];
-    if (mapped) filter.budget_status = mapped;
+    const mapped = SERVICE_BUDGET_STATUS.toValue(options.budgetStatus);
+    if (mapped !== options.budgetStatus.toLowerCase()) filter.budget_status = mapped;
   }
   if (options.billingType) {
-    const mapped = BILLING_TYPE_MAP[options.billingType.toLowerCase()];
-    if (mapped) filter.billing_type = mapped;
+    const mapped = SERVICE_BILLING_TYPE.toValue(options.billingType);
+    if (mapped !== options.billingType.toLowerCase()) filter.billing_type = mapped;
   }
   if (options.timeTracking !== undefined) {
     filter.time_tracking_enabled = options.timeTracking ? 'true' : 'false';

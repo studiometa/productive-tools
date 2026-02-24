@@ -15,6 +15,8 @@ import type {
   ProductiveTimer,
 } from '@studiometa/productive-api';
 
+import { PERSON_STATUS, PERSON_TYPE } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type {
@@ -53,8 +55,8 @@ export async function getTeamPulseSummary(
       page: 1,
       perPage: 200, // Get all active users
       filter: {
-        status: '1', // active
-        person_type: '1', // user (not contact or placeholder)
+        status: PERSON_STATUS.ACTIVE,
+        person_type: PERSON_TYPE.USER,
       },
     }),
     // All time entries today (we'll group by person)

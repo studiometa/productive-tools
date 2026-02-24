@@ -11,6 +11,8 @@
 
 import type { IncludedResource } from '@studiometa/productive-api';
 
+import { TASK_STATUS } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type {
@@ -101,7 +103,7 @@ export async function weeklyStandup(
       perPage: MAX_ITEMS,
       filter: {
         assignee_id: userId,
-        status: '2', // closed
+        status: TASK_STATUS.CLOSED,
         due_date_after: weekStart,
         due_date_before: addDays(weekEnd, 1), // exclusive upper bound
       },
@@ -127,7 +129,7 @@ export async function weeklyStandup(
       perPage: MAX_ITEMS,
       filter: {
         assignee_id: userId,
-        status: '1', // open
+        status: TASK_STATUS.OPEN,
         due_date_after: today,
         due_date_before: addDays(nextWeek, 1), // exclusive upper bound
       },

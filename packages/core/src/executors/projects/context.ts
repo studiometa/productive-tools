@@ -8,6 +8,8 @@
  * - Time entries from the last 7 days
  */
 
+import { TASK_STATUS } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { GetProjectContextOptions, ProjectContextResult } from './types.js';
@@ -40,7 +42,7 @@ export async function getProjectContext(
     [
       ctx.api.getProject(resolvedId),
       ctx.api.getTasks({
-        filter: { project_id: resolvedId, status: '1' }, // status 1 = open
+        filter: { project_id: resolvedId, status: TASK_STATUS.OPEN },
         perPage: MAX_TASKS,
         include: ['assignee', 'workflow_status'],
         sort: '-updated_at',

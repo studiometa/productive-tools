@@ -1,12 +1,10 @@
 import type { ProductiveDeal } from '@studiometa/productive-api';
 
+import { DEAL_BUDGET_STATUS, DEAL_STATUS, DEAL_TYPE } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListDealsOptions } from './types.js';
-
-const STATUS_MAP: Record<string, string> = { open: '1', won: '2', lost: '3' };
-const TYPE_MAP: Record<string, string> = { deal: '1', budget: '2' };
-const BUDGET_STATUS_MAP: Record<string, string> = { open: '1', closed: '2' };
 
 export function buildDealFilters(options: ListDealsOptions): Record<string, string> {
   const filter: Record<string, string> = {};
@@ -18,16 +16,16 @@ export function buildDealFilters(options: ListDealsOptions): Record<string, stri
   if (options.pipelineId) filter.pipeline_id = options.pipelineId;
 
   if (options.status) {
-    const mapped = STATUS_MAP[options.status.toLowerCase()];
-    if (mapped) filter.stage_status_id = mapped;
+    const mapped = DEAL_STATUS.toValue(options.status);
+    if (mapped !== options.status.toLowerCase()) filter.stage_status_id = mapped;
   }
   if (options.dealType) {
-    const mapped = TYPE_MAP[options.dealType.toLowerCase()];
-    if (mapped) filter.type = mapped;
+    const mapped = DEAL_TYPE.toValue(options.dealType);
+    if (mapped !== options.dealType.toLowerCase()) filter.type = mapped;
   }
   if (options.budgetStatus) {
-    const mapped = BUDGET_STATUS_MAP[options.budgetStatus.toLowerCase()];
-    if (mapped) filter.budget_status = mapped;
+    const mapped = DEAL_BUDGET_STATUS.toValue(options.budgetStatus);
+    if (mapped !== options.budgetStatus.toLowerCase()) filter.budget_status = mapped;
   }
 
   return filter;

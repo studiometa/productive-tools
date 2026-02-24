@@ -4,21 +4,11 @@
 
 import type { ProductivePerson } from '@studiometa/productive-api';
 
+import { PERSON_STATUS, PERSON_TYPE } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListPeopleOptions } from './types.js';
-
-const PERSON_TYPE_MAP: Record<string, string> = {
-  user: '1',
-  contact: '2',
-  placeholder: '3',
-};
-
-const STATUS_MAP: Record<string, string> = {
-  active: '1',
-  deactivated: '2',
-  inactive: '2',
-};
 
 export function buildPeopleFilters(options: ListPeopleOptions): Record<string, string> {
   const filter: Record<string, string> = {};
@@ -30,12 +20,14 @@ export function buildPeopleFilters(options: ListPeopleOptions): Record<string, s
   if (options.team) filter.team = options.team;
 
   if (options.personType) {
-    const mapped = PERSON_TYPE_MAP[options.personType.toLowerCase()];
-    if (mapped) filter.person_type = mapped;
+    const mapped = PERSON_TYPE.toValue(options.personType);
+    if (mapped !== options.personType.toLowerCase()) filter.person_type = mapped;
   }
   if (options.status) {
-    const mapped = STATUS_MAP[options.status.toLowerCase()];
-    if (mapped) filter.status = mapped;
+    // Support 'inactive' as alias for 'deactivated'
+    const normalized = options.status.toLowerCase() === 'inactive' ? 'deactivated' : options.status;
+    const mapped = PERSON_STATUS.toValue(normalized);
+    if (mapped !== normalized.toLowerCase()) filter.status = mapped;
   }
 
   return filter;

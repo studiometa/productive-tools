@@ -4,6 +4,8 @@
 
 import type { ProductiveCompany } from '@studiometa/productive-api';
 
+import { COMPANY_STATUS } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListCompaniesOptions } from './types.js';
@@ -14,9 +16,9 @@ export function buildCompanyFilters(options: ListCompaniesOptions): Record<strin
   if (options.additionalFilters) Object.assign(filter, options.additionalFilters);
 
   if (options.archived === true) {
-    filter.status = '2';
+    filter.status = COMPANY_STATUS.ARCHIVED;
   } else if (options.archived === false || options.archived === undefined) {
-    filter.status = '1';
+    filter.status = COMPANY_STATUS.ACTIVE;
   }
 
   return filter;

@@ -7,30 +7,11 @@
 
 import type { ProductiveTimeEntry } from '@studiometa/productive-api';
 
+import { TIME_BILLING_TYPE, TIME_INVOICING_STATUS, TIME_STATUS } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListTimeEntriesOptions } from './types.js';
-
-/** Status string → API value mapping */
-const STATUS_MAP: Record<string, string> = {
-  approved: '1',
-  unapproved: '2',
-  rejected: '3',
-};
-
-/** Billing type string → API value mapping */
-const BILLING_TYPE_MAP: Record<string, string> = {
-  fixed: '1',
-  actuals: '2',
-  non_billable: '3',
-};
-
-/** Invoicing status string → API value mapping */
-const INVOICING_STATUS_MAP: Record<string, string> = {
-  not_invoiced: '1',
-  drafted: '2',
-  finalized: '3',
-};
 
 /**
  * Build the filter object from typed options.
@@ -59,16 +40,16 @@ export function buildTimeEntryFilters(options: ListTimeEntriesOptions): Record<s
 
   // Enum-style filters
   if (options.status) {
-    const mapped = STATUS_MAP[options.status.toLowerCase()];
-    if (mapped) filter.status = mapped;
+    const mapped = TIME_STATUS.toValue(options.status);
+    if (mapped !== options.status.toLowerCase()) filter.status = mapped;
   }
   if (options.billingType) {
-    const mapped = BILLING_TYPE_MAP[options.billingType.toLowerCase()];
-    if (mapped) filter.billing_type_id = mapped;
+    const mapped = TIME_BILLING_TYPE.toValue(options.billingType);
+    if (mapped !== options.billingType.toLowerCase()) filter.billing_type_id = mapped;
   }
   if (options.invoicingStatus) {
-    const mapped = INVOICING_STATUS_MAP[options.invoicingStatus.toLowerCase()];
-    if (mapped) filter.invoicing_status = mapped;
+    const mapped = TIME_INVOICING_STATUS.toValue(options.invoicingStatus);
+    if (mapped !== options.invoicingStatus.toLowerCase()) filter.invoicing_status = mapped;
   }
 
   return filter;

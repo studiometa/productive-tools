@@ -10,6 +10,8 @@
 
 import type { IncludedResource } from '@studiometa/productive-api';
 
+import { TASK_STATUS } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { MyDaySummaryOptions, MyDaySummaryResult } from './types.js';
@@ -67,7 +69,7 @@ export async function getMyDaySummary(
       perPage: MAX_ITEMS,
       filter: {
         assignee_id: userId,
-        status: '1', // open
+        status: TASK_STATUS.OPEN,
       },
       include: ['project', 'workflow_status'],
       sort: 'due_date',
@@ -78,7 +80,7 @@ export async function getMyDaySummary(
       perPage: MAX_ITEMS,
       filter: {
         assignee_id: userId,
-        status: '1', // open
+        status: TASK_STATUS.OPEN,
         due_date_before: tomorrow,
       },
       include: ['project', 'workflow_status'],

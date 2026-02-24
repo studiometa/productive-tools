@@ -1,13 +1,10 @@
 import type { ProductiveDiscussion } from '@studiometa/productive-api';
 
+import { DISCUSSION_STATUS } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListDiscussionsOptions } from './types.js';
-
-const STATUS_MAP: Record<string, string> = {
-  active: '1',
-  resolved: '2',
-};
 
 export function buildDiscussionFilters(options: ListDiscussionsOptions): Record<string, string> {
   const filter: Record<string, string> = {};
@@ -17,8 +14,8 @@ export function buildDiscussionFilters(options: ListDiscussionsOptions): Record<
   if (options.pageId) filter.page_id = options.pageId;
 
   if (options.status) {
-    const mapped = STATUS_MAP[options.status.toLowerCase()];
-    if (mapped) filter.status = mapped;
+    const mapped = DISCUSSION_STATUS.toValue(options.status);
+    if (mapped !== options.status.toLowerCase()) filter.status = mapped;
   }
 
   return filter;

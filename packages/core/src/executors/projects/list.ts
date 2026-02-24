@@ -4,23 +4,11 @@
 
 import type { ProductiveProject } from '@studiometa/productive-api';
 
+import { PROJECT_STATUS, PROJECT_TYPE } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListProjectsOptions } from './types.js';
-
-/** Project type string → API value mapping */
-const PROJECT_TYPE_MAP: Record<string, string> = {
-  internal: '1',
-  client: '2',
-};
-
-/** Status string → API value mapping */
-const STATUS_MAP: Record<string, string> = {
-  active: '1',
-  archived: '2',
-};
-
-/** Type mapping for filter resolution */
 
 /**
  * Build the filter object from typed options.
@@ -37,12 +25,12 @@ export function buildProjectFilters(options: ListProjectsOptions): Record<string
   if (options.personId) filter.person_id = options.personId;
 
   if (options.projectType) {
-    const mapped = PROJECT_TYPE_MAP[options.projectType.toLowerCase()];
-    if (mapped) filter.project_type = mapped;
+    const mapped = PROJECT_TYPE.toValue(options.projectType);
+    if (mapped !== options.projectType.toLowerCase()) filter.project_type = mapped;
   }
   if (options.status) {
-    const mapped = STATUS_MAP[options.status.toLowerCase()];
-    if (mapped) filter.status = mapped;
+    const mapped = PROJECT_STATUS.toValue(options.status);
+    if (mapped !== options.status.toLowerCase()) filter.status = mapped;
   }
 
   return filter;
