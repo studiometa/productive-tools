@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **API**: Add `createStatusMap()` factory and 16 typed bidirectional lookup constants (`TASK_STATUS`, `PROJECT_STATUS`, `DEAL_STATUS`, `DEAL_TYPE`, `SERVICE_STATUS`, `PERSON_STATUS`, `DISCUSSION_STATUS`, `TIME_ENTRY_TYPE`, etc.) — forward lookup + `fromValue()` reverse lookup with TypeScript literal types ([e95085d], [#136])
+- **SDK**: Add `loadConfig()` for zero-config credential loading from env vars → system keychain → config file, with `_sources` provenance tracking ([93fc489], [#135])
+- **SDK**: Add `Productive.fromEnv()` static factory — one-liner to create a configured SDK instance ([93fc489], [#135])
+- **SDK**: Add `ConfigurationError` with actionable error messages listing checked sources ([93fc489], [#135])
+- **SDK**: Re-export all status/type constants from `@studiometa/productive-api` ([ecd49af], [#136])
+
+### Changed
+
+- **Core**: Replace all magic string `STATUS_MAP` objects and hardcoded `'1'`/`'2'`/`'3'` values across 14 executor files with typed constants from `productive-api` ([3e3ba73], [#136])
+
+[e95085d]: https://github.com/studiometa/productive-tools/commit/e95085d
+[3e3ba73]: https://github.com/studiometa/productive-tools/commit/3e3ba73
+[ecd49af]: https://github.com/studiometa/productive-tools/commit/ecd49af
+[93fc489]: https://github.com/studiometa/productive-tools/commit/93fc489
+[#135]: https://github.com/studiometa/productive-tools/issues/135
+[#136]: https://github.com/studiometa/productive-tools/issues/136
+
 ## [0.10.5] - 2026-02-24
 
 ### Added
