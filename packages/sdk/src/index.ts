@@ -13,4 +13,5 @@ export {
   AuthenticationError,
   NetworkError,
   wrapError,
+  isProductiveError,
 } from './errors.js';

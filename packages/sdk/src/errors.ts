@@ -34,8 +34,11 @@ export class RateLimitError extends ProductiveError {
 
 // 422
 export class ValidationError extends ProductiveError {
-  readonly fieldErrors: Array<{ field: string; message: string }>;
-  constructor(message: string, fieldErrors: Array<{ field: string; message: string }> = []) {
+  readonly fieldErrors: Array<{ field: string; message: string; code?: string }>;
+  constructor(
+    message: string,
+    fieldErrors: Array<{ field: string; message: string; code?: string }> = [],
+  ) {
     super(message, 422);
     this.name = 'ValidationError';
     this.fieldErrors = fieldErrors;
@@ -61,9 +64,18 @@ export class NetworkError extends ProductiveError {
 }
 
 /**
+ * Type guard for checking if a value is a ProductiveError.
+ */
+export function isProductiveError(error: unknown): error is ProductiveError {
+  return error instanceof ProductiveError;
+}
+
+/**
  * Parse JSON:API 422 validation errors from a response string.
  */
-function parseValidationErrors(response: unknown): Array<{ field: string; message: string }> {
+function parseValidationErrors(
+  response: unknown,
+): Array<{ field: string; message: string; code?: string }> {
   if (typeof response !== 'string' || !response) {
     return [];
   }
@@ -79,13 +91,15 @@ function parseValidationErrors(response: unknown): Array<{ field: string; messag
       return errors.map((entry: unknown) => {
         const e = entry as {
           detail?: string;
+          code?: string;
           source?: { pointer?: string };
         };
         const detail = e.detail ?? 'Validation failed';
         const pointer = e.source?.pointer ?? '';
+        const code = e.code;
         // Convert "/data/attributes/title" → "title"
         const field = pointer.split('/').pop() ?? pointer;
-        return { field, message: detail };
+        return { field, message: detail, ...(code !== undefined ? { code } : {}) };
       });
     }
   } catch {

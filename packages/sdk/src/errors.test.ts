@@ -8,6 +8,7 @@ import {
   RateLimitError,
   ResourceNotFoundError,
   ValidationError,
+  isProductiveError,
   wrapError,
 } from './errors.js';
 
@@ -83,6 +84,12 @@ describe('ValidationError', () => {
     expect(err.statusCode).toBe(422);
     expect(err.fieldErrors).toEqual(fieldErrors);
     expect(err.message).toBe('validation failed');
+  });
+
+  it('supports optional code in fieldErrors', () => {
+    const fieldErrors = [{ field: 'title', message: 'is required', code: 'blank' }];
+    const err = new ValidationError('validation failed', fieldErrors);
+    expect(err.fieldErrors[0].code).toBe('blank');
   });
 
   it('extends ProductiveError', () => {
@@ -276,5 +283,61 @@ describe('wrapError()', () => {
     expect(err).toBeInstanceOf(Error);
     expect(err).toBeInstanceOf(ProductiveError);
     expect(err).toBeInstanceOf(ResourceNotFoundError);
+  });
+
+  it('422 parses code from JSON:API error entries', () => {
+    const response = JSON.stringify({
+      errors: [
+        {
+          detail: 'is required',
+          code: 'blank',
+          source: { pointer: '/data/attributes/title' },
+        },
+      ],
+    });
+    const apiError = new ProductiveApiError('Unprocessable entity', 422, response);
+    const result = wrapError(apiError) as ValidationError;
+    expect(result).toBeInstanceOf(ValidationError);
+    expect(result.fieldErrors).toEqual([{ field: 'title', message: 'is required', code: 'blank' }]);
+  });
+
+  it('422 omits code when not present in JSON:API error entry', () => {
+    const response = JSON.stringify({
+      errors: [{ detail: 'is required', source: { pointer: '/data/attributes/name' } }],
+    });
+    const apiError = new ProductiveApiError('Unprocessable entity', 422, response);
+    const result = wrapError(apiError) as ValidationError;
+    expect(result.fieldErrors).toEqual([{ field: 'name', message: 'is required' }]);
+    expect(result.fieldErrors[0]).not.toHaveProperty('code');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// isProductiveError()
+// ─────────────────────────────────────────────────────────────
+
+describe('isProductiveError()', () => {
+  it('returns true for ProductiveError', () => {
+    expect(isProductiveError(new ProductiveError('err'))).toBe(true);
+  });
+
+  it('returns true for subclasses', () => {
+    expect(isProductiveError(new ResourceNotFoundError('err'))).toBe(true);
+    expect(isProductiveError(new RateLimitError('err'))).toBe(true);
+    expect(isProductiveError(new ValidationError('err'))).toBe(true);
+    expect(isProductiveError(new AuthenticationError('err'))).toBe(true);
+    expect(isProductiveError(new NetworkError('err', new TypeError('x')))).toBe(true);
+  });
+
+  it('returns false for plain Error', () => {
+    expect(isProductiveError(new Error('err'))).toBe(false);
+  });
+
+  it('returns false for non-Error values', () => {
+    expect(isProductiveError('string')).toBe(false);
+    expect(isProductiveError(null)).toBe(false);
+    expect(isProductiveError(undefined)).toBe(false);
+    expect(isProductiveError(42)).toBe(false);
+    expect(isProductiveError({})).toBe(false);
   });
 });
