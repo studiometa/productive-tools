@@ -2,12 +2,20 @@ import { ProductiveApi } from '@studiometa/productive-api';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { Productive } from './productive.js';
+import { ActivitiesCollection } from './resources/activities.js';
+import { AttachmentsCollection } from './resources/attachments.js';
+import { BookingsCollection } from './resources/bookings.js';
+import { CommentsCollection } from './resources/comments.js';
 import { CompaniesCollection } from './resources/companies.js';
 import { DealsCollection } from './resources/deals.js';
+import { DiscussionsCollection } from './resources/discussions.js';
+import { PagesCollection } from './resources/pages.js';
 import { PeopleCollection } from './resources/people.js';
 import { ProjectsCollection } from './resources/projects.js';
+import { ServicesCollection } from './resources/services.js';
 import { TasksCollection } from './resources/tasks.js';
 import { TimeCollection } from './resources/time.js';
+import { TimersCollection } from './resources/timers.js';
 
 const validOptions = {
   token: 'test-token',
@@ -28,6 +36,14 @@ describe('Productive constructor', () => {
     expect(p.people).toBeInstanceOf(PeopleCollection);
     expect(p.companies).toBeInstanceOf(CompaniesCollection);
     expect(p.deals).toBeInstanceOf(DealsCollection);
+    expect(p.services).toBeInstanceOf(ServicesCollection);
+    expect(p.comments).toBeInstanceOf(CommentsCollection);
+    expect(p.timers).toBeInstanceOf(TimersCollection);
+    expect(p.discussions).toBeInstanceOf(DiscussionsCollection);
+    expect(p.bookings).toBeInstanceOf(BookingsCollection);
+    expect(p.pages).toBeInstanceOf(PagesCollection);
+    expect(p.attachments).toBeInstanceOf(AttachmentsCollection);
+    expect(p.activities).toBeInstanceOf(ActivitiesCollection);
   });
 
   it('accepts optional userId', () => {
@@ -43,6 +59,14 @@ describe('Productive constructor', () => {
     expect(typeof p.people.where).toBe('function');
     expect(typeof p.companies.where).toBe('function');
     expect(typeof p.deals.where).toBe('function');
+    expect(typeof p.services.where).toBe('function');
+    expect(typeof p.comments.where).toBe('function');
+    expect(typeof p.timers.where).toBe('function');
+    expect(typeof p.discussions.where).toBe('function');
+    expect(typeof p.bookings.where).toBe('function');
+    expect(typeof p.pages.where).toBe('function');
+    expect(typeof p.attachments.where).toBe('function');
+    expect(typeof p.activities.where).toBe('function');
   });
 
   it('collections have expected methods', () => {

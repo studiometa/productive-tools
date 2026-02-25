@@ -8,7 +8,23 @@ export { QueryBuilder } from './query-builder.js';
 export type { BaseListOptions } from './query-builder.js';
 export { resolveResource, resolveListResponse, resolveSingleResponse } from './json-api.js';
 export type { ResolvedResource } from './json-api.js';
-export type { ResourceRef, Task, Project, TimeEntry, Person, Company, Deal } from './types.js';
+export type {
+  ResourceRef,
+  Task,
+  Project,
+  TimeEntry,
+  Person,
+  Company,
+  Deal,
+  Service,
+  Comment,
+  Timer,
+  Discussion,
+  Booking,
+  Page,
+  Attachment,
+  Activity,
+} from './types.js';
 export {
   ProductiveError,
   ResourceNotFoundError,
