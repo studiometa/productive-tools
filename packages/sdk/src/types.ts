@@ -5,6 +5,14 @@ import type {
   ProductivePerson,
   ProductiveCompany,
   ProductiveDeal,
+  ProductiveService,
+  ProductiveComment,
+  ProductiveTimer,
+  ProductiveDiscussion,
+  ProductiveBooking,
+  ProductivePage,
+  ProductiveAttachment,
+  ProductiveActivity,
   RelationshipData,
 } from '@studiometa/productive-api';
 
@@ -45,3 +53,11 @@ export type TimeEntry = FlattenResource<ProductiveTimeEntry>;
 export type Person = FlattenResource<ProductivePerson>;
 export type Company = FlattenResource<ProductiveCompany>;
 export type Deal = FlattenResource<ProductiveDeal>;
+export type Service = FlattenResource<ProductiveService>;
+export type Comment = FlattenResource<ProductiveComment>;
+export type Timer = FlattenResource<ProductiveTimer>;
+export type Discussion = FlattenResource<ProductiveDiscussion>;
+export type Booking = FlattenResource<ProductiveBooking>;
+export type Page = FlattenResource<ProductivePage>;
+export type Attachment = FlattenResource<ProductiveAttachment>;
+export type Activity = FlattenResource<ProductiveActivity>;
