@@ -267,6 +267,143 @@ describe('projects command', () => {
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
+
+    it('should output csv format', async () => {
+      const getProjects = vi.fn().mockResolvedValue({
+        data: [
+          {
+            id: '1',
+            type: 'projects',
+            attributes: {
+              name: 'Project 1',
+              project_number: 'PRJ-001',
+              archived: false,
+              budget: 10000,
+              created_at: '2024-01-01T00:00:00Z',
+              updated_at: '2024-01-02T00:00:00Z',
+            },
+          },
+        ],
+        meta: { total: 1 },
+      });
+
+      const ctx = createTestContext({
+        api: { getProjects } as unknown as ProductiveApi,
+        options: { format: 'csv' },
+      });
+
+      await projectsList(ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should use -f shorthand for format', async () => {
+      const getProjects = vi.fn().mockResolvedValue({
+        data: [
+          {
+            id: '1',
+            type: 'projects',
+            attributes: {
+              name: 'Project 1',
+              project_number: 'PRJ-001',
+              archived: false,
+              budget: null,
+              created_at: '2024-01-01T00:00:00Z',
+              updated_at: '2024-01-02T00:00:00Z',
+            },
+          },
+        ],
+        meta: { total: 1 },
+      });
+
+      const ctx = createTestContext({
+        api: { getProjects } as unknown as ProductiveApi,
+        options: { f: 'json' },
+      });
+
+      await projectsList(ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should default to human format when no format specified', async () => {
+      const getProjects = vi.fn().mockResolvedValue({
+        data: [
+          {
+            id: '1',
+            type: 'projects',
+            attributes: {
+              name: 'Project 1',
+              project_number: 'PRJ-001',
+              archived: false,
+              budget: null,
+              created_at: '2024-01-01T00:00:00Z',
+              updated_at: '2024-01-02T00:00:00Z',
+            },
+          },
+        ],
+        meta: { total: 1 },
+      });
+
+      // No format or f option - defaults to human
+      const ctx = createTestContext({
+        api: { getProjects } as unknown as ProductiveApi,
+        options: {},
+      });
+
+      await projectsList(ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should output table format', async () => {
+      const getProjects = vi.fn().mockResolvedValue({
+        data: [
+          {
+            id: '1',
+            type: 'projects',
+            attributes: {
+              name: 'Project 1',
+              project_number: null,
+              archived: true,
+              budget: null,
+              created_at: '2024-01-01T00:00:00Z',
+              updated_at: '2024-01-02T00:00:00Z',
+            },
+          },
+        ],
+        meta: { total: 1 },
+      });
+
+      const ctx = createTestContext({
+        api: { getProjects } as unknown as ProductiveApi,
+        options: { format: 'table' },
+      });
+
+      await projectsList(ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should pass additional filters from --filter option', async () => {
+      const getProjects = vi.fn().mockResolvedValue({
+        data: [],
+        meta: { total: 0 },
+      });
+
+      const ctx = createTestContext({
+        api: { getProjects } as unknown as ProductiveApi,
+        options: { filter: 'name=Test', format: 'json' },
+      });
+
+      await projectsList(ctx);
+
+      expect(getProjects).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ name: 'Test' }),
+        }),
+      );
+    });
   });
 
   describe('projectsGet', () => {
@@ -318,6 +455,88 @@ describe('projects command', () => {
       const ctx = createTestContext({
         api: { getProject } as unknown as ProductiveApi,
         options: { format: 'json' },
+      });
+
+      await projectsGet(['1'], ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should render project in human format', async () => {
+      const getProject = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'projects',
+          attributes: {
+            name: 'Project 1',
+            project_number: 'PRJ-001',
+            archived: false,
+            budget: 50000,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-02T00:00:00Z',
+          },
+          relationships: {},
+        },
+      });
+
+      const ctx = createTestContext({
+        api: { getProject } as unknown as ProductiveApi,
+        options: { format: 'human' },
+      });
+
+      await projectsGet(['1'], ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should use -f shorthand for format in get', async () => {
+      const getProject = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'projects',
+          attributes: {
+            name: 'Project 1',
+            project_number: 'PRJ-001',
+            archived: false,
+            budget: 50000,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-02T00:00:00Z',
+          },
+          relationships: {},
+        },
+      });
+
+      const ctx = createTestContext({
+        api: { getProject } as unknown as ProductiveApi,
+        options: { f: 'json' },
+      });
+
+      await projectsGet(['1'], ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should default to human format for get when no format specified', async () => {
+      const getProject = vi.fn().mockResolvedValue({
+        data: {
+          id: '1',
+          type: 'projects',
+          attributes: {
+            name: 'Project 1',
+            project_number: 'PRJ-001',
+            archived: false,
+            budget: 50000,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-02T00:00:00Z',
+          },
+          relationships: {},
+        },
+      });
+
+      // No format - defaults to human
+      const ctx = createTestContext({
+        api: { getProject } as unknown as ProductiveApi,
+        options: {},
       });
 
       await projectsGet(['1'], ctx);

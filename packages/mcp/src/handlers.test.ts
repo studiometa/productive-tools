@@ -60,6 +60,7 @@ vi.mock('@studiometa/productive-api', async (importOriginal) => {
     deleteDiscussion: vi.fn(),
     resolveDiscussion: vi.fn(),
     reopenDiscussion: vi.fn(),
+    getActivities: vi.fn(),
   };
 
   return {
@@ -80,6 +81,7 @@ vi.mock('@studiometa/productive-api', async (importOriginal) => {
 
     formatCompany: vi.fn((company) => ({ id: company.id, ...company.attributes })),
     formatAttachment: vi.fn((attachment) => ({ id: attachment.id, ...attachment.attributes })),
+    formatActivity: vi.fn((activity) => ({ id: activity.id, ...activity.attributes })),
     formatListResponse: vi.fn((data, formatter, meta) => ({
       data: data.map((item: Record<string, unknown>) => formatter(item)),
       meta,
@@ -4237,5 +4239,233 @@ describe('smart ID resolution', () => {
       const content = JSON.parse(result.content[0].text as string);
       expect(content._suggestions).toBeUndefined();
     });
+  });
+});
+
+describe('activities resource routing', () => {
+  const credentials: ProductiveCredentials = {
+    apiToken: 'test-token',
+    organizationId: 'test-org',
+    userId: '500521',
+  };
+
+  let mockApi: ReturnType<typeof ProductiveApi>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockApi = new ProductiveApi({}) as ReturnType<typeof ProductiveApi>;
+  });
+
+  it('should route activities list to handleActivities', async () => {
+    mockApi.getActivities.mockResolvedValue({
+      data: [
+        {
+          id: '1',
+          type: 'activities',
+          attributes: {
+            event: 'create',
+            changeset: [],
+            created_at: '2026-01-01T00:00:00Z',
+          },
+          relationships: {},
+        },
+      ],
+      meta: { current_page: 1, total_pages: 1, total_count: 1 },
+    });
+
+    const result = await executeToolWithCredentials(
+      'productive',
+      { resource: 'activities', action: 'list' },
+      credentials,
+    );
+
+    expect(result.isError).toBeUndefined();
+    expect(mockApi.getActivities).toHaveBeenCalled();
+    const content = JSON.parse(result.content[0].text as string);
+    expect(content.data).toHaveLength(1);
+  });
+
+  it('should route activities list with filter to handleActivities', async () => {
+    mockApi.getActivities.mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, total_pages: 1, total_count: 0 },
+    });
+
+    const result = await executeToolWithCredentials(
+      'productive',
+      { resource: 'activities', action: 'list', filter: { event: 'create' } },
+      credentials,
+    );
+
+    expect(result.isError).toBeUndefined();
+    expect(mockApi.getActivities).toHaveBeenCalled();
+  });
+
+  it('should return error for unsupported activities action', async () => {
+    const result = await executeToolWithCredentials(
+      'productive',
+      { resource: 'activities', action: 'get', id: '1' },
+      credentials,
+    );
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('Invalid action');
+  });
+});
+
+describe('workflows resource routing', () => {
+  const credentials: ProductiveCredentials = {
+    apiToken: 'test-token',
+    organizationId: 'test-org',
+    userId: '500521',
+  };
+
+  let mockApi: ReturnType<typeof ProductiveApi>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockApi = new ProductiveApi({}) as ReturnType<typeof ProductiveApi>;
+  });
+
+  it('should route workflows complete_task to handleWorkflows', async () => {
+    mockApi.getTask.mockResolvedValue({
+      data: { id: '123', type: 'tasks', attributes: { title: 'Test Task', closed: false } },
+      included: [],
+    });
+    mockApi.updateTask.mockResolvedValue({
+      data: { id: '123', type: 'tasks', attributes: { title: 'Test Task', closed: true } },
+    });
+    mockApi.getTimers.mockResolvedValue({ data: [], meta: {} });
+
+    const result = await executeToolWithCredentials(
+      'productive',
+      { resource: 'workflows', action: 'complete_task', task_id: '123' },
+      credentials,
+    );
+
+    expect(result.isError).toBeUndefined();
+    const content = JSON.parse(result.content[0].text as string);
+    expect(content.workflow).toBe('complete_task');
+    expect(content.task).toBeDefined();
+    expect(content.task.id).toBe('123');
+  });
+
+  it('should route workflows log_day to handleWorkflows', async () => {
+    mockApi.createTimeEntry.mockResolvedValue({
+      data: { id: '1', type: 'time_entries', attributes: { time: 480 } },
+    });
+
+    const result = await executeToolWithCredentials(
+      'productive',
+      {
+        resource: 'workflows',
+        action: 'log_day',
+        entries: [
+          { project_id: '123', service_id: '456', duration_minutes: 120, date: '2024-01-15' },
+        ],
+        person_id: '500521',
+      },
+      credentials,
+    );
+
+    expect(result.isError).toBeUndefined();
+    const content = JSON.parse(result.content[0].text as string);
+    expect(content.workflow).toBe('log_day');
+    expect(content.entries).toBeDefined();
+  });
+
+  it('should return error for unsupported workflows action', async () => {
+    const result = await executeToolWithCredentials(
+      'productive',
+      { resource: 'workflows', action: 'list' },
+      credentials,
+    );
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('Invalid action');
+  });
+});
+
+describe('resource=search routing via executeToolWithCredentials', () => {
+  const credentials: ProductiveCredentials = {
+    apiToken: 'test-token',
+    organizationId: 'test-org',
+    userId: '500521',
+  };
+
+  let mockApi: ReturnType<typeof ProductiveApi>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockApi = new ProductiveApi({}) as ReturnType<typeof ProductiveApi>;
+  });
+
+  it('should route resource=search action=run through handleSearch', async () => {
+    // handleSearch calls executeToolWithCredentials recursively for each resource
+    // We need to mock each resource's response
+    mockApi.getProjects.mockResolvedValue({
+      data: [{ id: '1', type: 'projects', attributes: { name: 'Test Project' } }],
+      meta: { current_page: 1, total_pages: 1 },
+    });
+    mockApi.getCompanies.mockResolvedValue({ data: [], meta: {} });
+    mockApi.getPeople.mockResolvedValue({ data: [], meta: {} });
+    mockApi.getTasks.mockResolvedValue({ data: [], meta: {}, included: [] });
+
+    const result = await executeToolWithCredentials(
+      'productive',
+      { resource: 'search', action: 'run', query: 'test' },
+      credentials,
+    );
+
+    expect(result.isError).toBeUndefined();
+    const content = JSON.parse(result.content[0].text as string);
+    expect(content.query).toBe('test');
+    expect(content.results).toBeDefined();
+  });
+
+  it('should return error for resource=search with empty query', async () => {
+    const result = await executeToolWithCredentials(
+      'productive',
+      { resource: 'search', action: 'run', query: '' },
+      credentials,
+    );
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('query');
+  });
+});
+
+describe('schema action overview (no resource)', () => {
+  const credentials: ProductiveCredentials = {
+    apiToken: 'test-token',
+    organizationId: 'test-org',
+    userId: '500521',
+  };
+
+  it('should return schema overview when no resource is specified', async () => {
+    const result = await executeToolWithCredentials(
+      'productive',
+      { resource: '', action: 'schema' },
+      credentials,
+    );
+
+    expect(result.isError).toBeUndefined();
+    const content = JSON.parse(result.content[0].text as string);
+    expect(content.resources).toBeDefined();
+    expect(Array.isArray(content.resources)).toBe(true);
+    expect(content.resources.length).toBeGreaterThan(0);
+  });
+
+  it('should return schema for a specific resource when resource is specified', async () => {
+    const result = await executeToolWithCredentials(
+      'productive',
+      { resource: 'tasks', action: 'schema' },
+      credentials,
+    );
+
+    expect(result.isError).toBeUndefined();
+    const content = JSON.parse(result.content[0].text as string);
+    expect(content.resource).toBe('tasks');
+    expect(content.actions).toBeDefined();
   });
 });

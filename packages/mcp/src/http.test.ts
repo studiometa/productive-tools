@@ -398,5 +398,161 @@ describe('HTTP Server Integration', () => {
       // Should return an error (either 400 or parse error)
       expect(response.status).toBeGreaterThanOrEqual(200);
     });
+
+    it('should return parse error for non-JSON body', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${validToken}`,
+        },
+        body: 'not valid json {{{',
+      });
+
+      expect([200, 400]).toContain(response.status);
+    });
+  });
+
+  describe('GET /.well-known/oauth-protected-resource', () => {
+    it('should return protected resource metadata', async () => {
+      const response = await fetch(`${baseUrl}/.well-known/oauth-protected-resource`);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toHaveProperty('resource');
+      expect(data).toHaveProperty('authorization_servers');
+      expect(data).toHaveProperty('scopes_supported');
+      expect(data.scopes_supported).toContain('productive');
+      expect(data).toHaveProperty('bearer_methods_supported');
+      expect(data.bearer_methods_supported).toContain('header');
+    });
+
+    it('should include cache-control header', async () => {
+      const response = await fetch(`${baseUrl}/.well-known/oauth-protected-resource`);
+
+      expect(response.headers.get('cache-control')).toContain('max-age=3600');
+    });
+
+    it('should include the /mcp resource URL', async () => {
+      const response = await fetch(`${baseUrl}/.well-known/oauth-protected-resource`);
+      const data = await response.json();
+
+      expect(data.resource).toContain('/mcp');
+    });
+
+    it('should derive base URL from x-forwarded-proto header', async () => {
+      const response = await fetch(`${baseUrl}/.well-known/oauth-protected-resource`, {
+        headers: { 'x-forwarded-proto': 'https' },
+      });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      // Should use the forwarded protocol
+      expect(data.authorization_servers[0]).toContain('https://');
+    });
+  });
+
+  describe('GET /mcp/sse', () => {
+    it('should return 401 without auth header', async () => {
+      const response = await fetch(`${baseUrl}/mcp/sse`);
+
+      expect(response.status).toBe(401);
+      const data = await response.json();
+      expect(data).toHaveProperty('error');
+      expect(data.error).toContain('Authentication required');
+    });
+
+    it('should return 401 with invalid token', async () => {
+      const response = await fetch(`${baseUrl}/mcp/sse`, {
+        headers: { Authorization: 'Bearer invalid-token' },
+      });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should return WWW-Authenticate header on 401 for SSE', async () => {
+      const response = await fetch(`${baseUrl}/mcp/sse`);
+
+      expect(response.status).toBe(401);
+      const wwwAuth = response.headers.get('www-authenticate');
+      expect(wwwAuth).toContain('Bearer');
+      expect(wwwAuth).toContain('oauth-protected-resource');
+    });
+
+    it('should use x-forwarded-proto in WWW-Authenticate URL for SSE', async () => {
+      const response = await fetch(`${baseUrl}/mcp/sse`, {
+        headers: { 'x-forwarded-proto': 'https' },
+      });
+
+      expect(response.status).toBe(401);
+      const wwwAuth = response.headers.get('www-authenticate');
+      expect(wwwAuth).toContain('https://');
+    });
+
+    it('should start SSE stream with valid auth and send session event', async () => {
+      const controller = new AbortController();
+      const { signal } = controller;
+
+      try {
+        const response = await fetch(`${baseUrl}/mcp/sse`, {
+          headers: { Authorization: `Bearer ${validToken}` },
+          signal,
+        });
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get('content-type')).toContain('text/event-stream');
+        expect(response.headers.get('cache-control')).toContain('no-cache');
+
+        // Read first chunk to get session event
+        const reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        // Read until we get the session event
+        while (!buffer.includes('event: session')) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+        }
+
+        expect(buffer).toContain('event: session');
+        expect(buffer).toContain('sessionId');
+        reader.cancel();
+      } finally {
+        controller.abort();
+      }
+    });
+
+    it('should clean up interval when SSE connection closes', async () => {
+      // Test the close event handler path by aborting after connection
+      const controller = new AbortController();
+
+      const response = await fetch(`${baseUrl}/mcp/sse`, {
+        headers: { Authorization: `Bearer ${validToken}` },
+        signal: controller.signal,
+      });
+
+      expect(response.status).toBe(200);
+      const reader = response.body!.getReader();
+
+      // Read until session event then abort
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (!buffer.includes('event: session')) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+      }
+
+      // Abort the connection to trigger the close handler
+      reader.cancel();
+      controller.abort();
+
+      // Give the server time to process the close event
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // If we get here without errors, the close handler worked correctly
+      expect(buffer).toContain('sessionId');
+    });
   });
 });

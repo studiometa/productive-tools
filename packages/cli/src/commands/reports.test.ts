@@ -897,6 +897,393 @@ describe('reports command', () => {
       );
     });
   });
+
+  describe('format shorthand and defaults', () => {
+    it('should use -f shorthand for format in time reports', async () => {
+      const { ctx } = createReportCtx(
+        [{ id: 'r1', type: 'time_reports', attributes: { total_worked_time: 120, group: 'x' } }],
+        { f: 'human' },
+      );
+
+      await reportsTime(ctx);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should default to json format when no format specified', async () => {
+      const { ctx, getReports } = createReportCtx([]);
+      // Remove the default format from options by overriding directly
+      ctx.options = { ...ctx.options, format: undefined, f: undefined } as typeof ctx.options;
+
+      await reportsTime(ctx);
+
+      expect(getReports).toHaveBeenCalled();
+    });
+  });
+
+  describe('human format renderers with id fallback', () => {
+    it('should use id when group is missing in time reports', async () => {
+      const { ctx } = createReportCtx(
+        [{ id: 'item-1', type: 'time_reports', attributes: { total_worked_time: 120 } }],
+        { format: 'human' },
+      );
+
+      await reportsTime(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('item-1');
+    });
+
+    it('should use id when group is missing in project reports', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'item-1',
+            type: 'project_reports',
+            attributes: { total_revenue_default: 1000, total_cost_default: 500 },
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsProject(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('item-1');
+    });
+
+    it('should use id when group is missing in budget reports', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'item-1',
+            type: 'budget_reports',
+            attributes: { total_budget_time: 480, total_worked_time: 240 },
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsBudget(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('item-1');
+    });
+
+    it('should handle missing times in budget reports (|| 0 fallback)', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'budget-empty',
+            type: 'budget_reports',
+            attributes: { group: 'Budget G' }, // no budget_time or worked_time
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsBudget(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('Budget G');
+    });
+
+    it('should use id when group is missing in person reports', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'item-1',
+            type: 'person_reports',
+            attributes: { total_worked_time: 480, total_billable_time: 360 },
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsPerson(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('item-1');
+    });
+
+    it('should handle missing times in person reports (|| 0 fallback)', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'person-empty',
+            type: 'person_reports',
+            attributes: { group: 'Person G' }, // no worked or billable time
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsPerson(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('Person G');
+    });
+
+    it('should use id when group is missing in invoice reports', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'inv-1',
+            type: 'invoice_reports',
+            attributes: {
+              total_amount: 1000,
+              total_paid_amount: 500,
+              total_outstanding_amount: 500,
+            },
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsInvoice(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('inv-1');
+    });
+
+    it('should handle missing amounts in invoice reports (|| 0 fallback)', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'inv-empty',
+            type: 'invoice_reports',
+            attributes: { group: 'Invoice G' }, // no amounts
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsInvoice(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('Invoice G');
+    });
+
+    it('should use id when group is missing in payment reports', async () => {
+      const { ctx } = createReportCtx(
+        [{ id: 'pay-1', type: 'payment_reports', attributes: { total_amount: 500 } }],
+        { format: 'human' },
+      );
+
+      await reportsPayment(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('pay-1');
+    });
+
+    it('should handle missing amount in payment reports (|| 0 fallback)', async () => {
+      const { ctx } = createReportCtx(
+        [{ id: 'pay-empty', type: 'payment_reports', attributes: { group: 'Pay G' } }],
+        { format: 'human' },
+      );
+
+      await reportsPayment(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('Pay G');
+    });
+
+    it('should use id when group is missing in service reports', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'svc-1',
+            type: 'service_reports',
+            attributes: {
+              total_budget_time: 480,
+              total_worked_time: 360,
+              total_revenue: 5000,
+            },
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsService(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('svc-1');
+    });
+
+    it('should handle missing values in service reports (|| 0 fallback)', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'svc-empty',
+            type: 'service_reports',
+            attributes: { group: 'Service G' }, // no time or revenue
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsService(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('Service G');
+    });
+
+    it('should use id when group is missing in task reports', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'task-1',
+            type: 'task_reports',
+            attributes: { total_tasks: 10, total_completed_tasks: 7, total_worked_time: 480 },
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsTask(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('task-1');
+    });
+
+    it('should handle missing values in task reports (|| 0 fallback)', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'task-empty',
+            type: 'task_reports',
+            attributes: { group: 'Task G' }, // no task counts or worked time
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsTask(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('Task G');
+    });
+
+    it('should use id when group is missing in company reports', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'co-1',
+            type: 'company_reports',
+            attributes: { total_revenue: 5000, total_cost: 2000, average_profit_margin: 60 },
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsCompany(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('co-1');
+    });
+
+    it('should handle missing values in company reports (|| 0 fallback)', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'co-empty',
+            type: 'company_reports',
+            attributes: { group: 'Company G' }, // no revenue, cost, margin
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsCompany(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('Company G');
+    });
+
+    it('should use id when group is missing in deal reports', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'deal-1',
+            type: 'deal_reports',
+            attributes: { total_value: 10000, total_won_value: 5000 },
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsDeal(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('deal-1');
+    });
+
+    it('should handle zero values in deal reports (|| 0 fallback)', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'deal-zero',
+            type: 'deal_reports',
+            attributes: { group: 'Deal Z' }, // no total_value or total_won_value
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsDeal(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('Deal Z');
+    });
+
+    it('should use id when group is missing in timesheet reports', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'ts-1',
+            type: 'timesheet_reports',
+            attributes: { status: 'approved', total_time: 480 },
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsTimesheet(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('ts-1');
+    });
+
+    it('should handle missing status in timesheet reports (|| unknown fallback)', async () => {
+      const { ctx } = createReportCtx(
+        [
+          {
+            id: 'ts-no-status',
+            type: 'timesheet_reports',
+            attributes: { group: 'Sheet A' }, // no status or total_time
+          },
+        ],
+        { format: 'human' },
+      );
+
+      await reportsTimesheet(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('unknown');
+    });
+
+    it('should handle undefined group in time reports (uses time group from options)', async () => {
+      const { ctx } = createReportCtx(
+        [{ id: 'r1', type: 'time_reports', attributes: { total_worked_time: 120, group: 'x' } }],
+        { format: 'human' }, // no group option - should fallback to reportType-based group
+      );
+
+      await reportsTime(ctx);
+
+      const output = consoleLogSpy.mock.calls.flat().join('');
+      expect(output).toContain('Time Report');
+    });
+  });
 });
 
 describe('reports help', () => {
