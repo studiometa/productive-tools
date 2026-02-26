@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.7] - 2026-02-26
+
 ### Added
 
 - **MCP**: Add pre-validation guard pipeline that catches common agent mistakes (e.g. `params` instead of `filter`) before Zod strips unknown fields ([7ce0503], [#144], [#141])
 - **MCP**: Expose resources via MCP `resources/` capability — static resources (schema, instructions), resource templates (projects, tasks, people, deals by ID), nested lists (project tasks/services), and dynamic summaries (my_day, team_pulse) ([bf3fd60], [#145], [#138])
 - **SDK**: Add 8 remaining resource collections — services, comments, timers, discussions, bookings, pages, attachments, activities ([79e8bc4], [#146], [#137])
+- Add git hooks for commit message validation and tag prefix rejection ([566bf65])
 
 ### Changed
 
@@ -26,12 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Improve test coverage for under-tested files — cache.ts, http.ts, config.ts, CLI command handlers, MCP handler branches ([af17210], [#148], [#139])
 
+[0.10.7]: https://github.com/studiometa/productive-tools/compare/0.10.6...0.10.7
 [7ce0503]: https://github.com/studiometa/productive-tools/commit/7ce0503
 [0367274]: https://github.com/studiometa/productive-tools/commit/0367274
 [79e8bc4]: https://github.com/studiometa/productive-tools/commit/79e8bc4
 [af17210]: https://github.com/studiometa/productive-tools/commit/af17210
 [bf3fd60]: https://github.com/studiometa/productive-tools/commit/bf3fd60
 [551f8be]: https://github.com/studiometa/productive-tools/commit/551f8be
+[566bf65]: https://github.com/studiometa/productive-tools/commit/566bf65
 [#137]: https://github.com/studiometa/productive-tools/issues/137
 [#138]: https://github.com/studiometa/productive-tools/issues/138
 [#139]: https://github.com/studiometa/productive-tools/issues/139
