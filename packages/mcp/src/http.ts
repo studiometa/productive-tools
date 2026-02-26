@@ -25,6 +25,7 @@ import {
   authorizePostHandler,
   tokenHandler,
 } from './oauth.js';
+import { listResources, listResourceTemplates, readResource } from './resources.js';
 import { TOOLS } from './tools.js';
 import { VERSION } from './version.js';
 
@@ -62,6 +63,7 @@ export function handleInitialize() {
     },
     capabilities: {
       tools: {},
+      resources: {},
     },
     instructions: INSTRUCTIONS,
   };
@@ -184,6 +186,23 @@ export function createHttpApp(): App {
             arguments?: Record<string, unknown>;
           };
           const result = await executeToolWithCredentials(name, args || {}, credentials);
+          return jsonRpcSuccess(result, id ?? null);
+        }
+
+        if (method === 'resources/list') {
+          return jsonRpcSuccess({ resources: listResources() }, id ?? null);
+        }
+
+        if (method === 'resources/templates/list') {
+          return jsonRpcSuccess({ resourceTemplates: listResourceTemplates() }, id ?? null);
+        }
+
+        if (method === 'resources/read') {
+          const { uri } = (params as { uri: string }) ?? {};
+          if (!uri) {
+            return jsonRpcError(-32602, 'Invalid params: uri is required', id ?? null);
+          }
+          const result = await readResource(uri, credentials);
           return jsonRpcSuccess(result, id ?? null);
         }
 

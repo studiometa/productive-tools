@@ -14,6 +14,42 @@ vi.mock('./handlers.js', () => ({
   }),
 }));
 
+// Mock resources module
+vi.mock('./resources.js', () => ({
+  listResources: vi.fn().mockReturnValue([
+    {
+      uri: 'productive://schema',
+      name: 'Schema',
+      description: 'Schema overview',
+      mimeType: 'application/json',
+    },
+    {
+      uri: 'productive://instructions',
+      name: 'Instructions',
+      description: 'Instructions',
+      mimeType: 'application/json',
+    },
+  ]),
+  listResourceTemplates: vi
+    .fn()
+    .mockReturnValue([
+      {
+        uriTemplate: 'productive://projects/{id}',
+        name: 'Project',
+        description: 'Project details',
+        mimeType: 'application/json',
+      },
+    ]),
+  readResource: vi.fn().mockImplementation((uri: string) => {
+    if (uri === 'productive://unknown') {
+      throw new Error('Unknown resource URI: productive://unknown');
+    }
+    return Promise.resolve({
+      contents: [{ uri, mimeType: 'application/json', text: JSON.stringify({ uri }) }],
+    });
+  }),
+}));
+
 import { executeToolWithCredentials } from './handlers.js';
 import {
   createHttpApp,
@@ -22,6 +58,7 @@ import {
   handleInitialize,
   handleToolsList,
 } from './http.js';
+import { listResources, listResourceTemplates, readResource } from './resources.js';
 import { VERSION } from './version.js';
 
 describe('http module', () => {
@@ -73,6 +110,7 @@ describe('http module', () => {
       expect(result.serverInfo.name).toBe('productive-mcp');
       expect(result.serverInfo.version).toBe(VERSION);
       expect(result.capabilities.tools).toEqual({});
+      expect(result.capabilities.resources).toEqual({});
     });
 
     it('should include instructions for Claude Desktop', () => {
@@ -553,6 +591,112 @@ describe('HTTP Server Integration', () => {
 
       // If we get here without errors, the close handler worked correctly
       expect(buffer).toContain('sessionId');
+    });
+  });
+
+  describe('POST /mcp - resources methods', () => {
+    it('should handle resources/list method', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${validToken}`,
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'resources/list', id: 10 }),
+      });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.result.resources).toBeDefined();
+      expect(Array.isArray(data.result.resources)).toBe(true);
+      expect(listResources).toHaveBeenCalled();
+    });
+
+    it('should handle resources/templates/list method', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${validToken}`,
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'resources/templates/list', id: 11 }),
+      });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.result.resourceTemplates).toBeDefined();
+      expect(Array.isArray(data.result.resourceTemplates)).toBe(true);
+      expect(listResourceTemplates).toHaveBeenCalled();
+    });
+
+    it('should handle resources/read method', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${validToken}`,
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'resources/read',
+          params: { uri: 'productive://schema' },
+          id: 12,
+        }),
+      });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.result.contents).toBeDefined();
+      expect(Array.isArray(data.result.contents)).toBe(true);
+      expect(readResource).toHaveBeenCalledWith('productive://schema', {
+        organizationId: 'test-org',
+        apiToken: 'test-token',
+        userId: 'test-user',
+      });
+    });
+
+    it('should return error for resources/read without uri', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${validToken}`,
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'resources/read',
+          params: {},
+          id: 13,
+        }),
+      });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.error).toBeDefined();
+      expect(data.error.code).toBe(-32602);
+      expect(data.error.message).toContain('uri is required');
+    });
+
+    it('should return error when readResource throws', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${validToken}`,
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'resources/read',
+          params: { uri: 'productive://unknown' },
+          id: 14,
+        }),
+      });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.error).toBeDefined();
+      expect(data.error.code).toBe(-32603);
+      expect(data.error.message).toContain('Unknown resource URI');
     });
   });
 });

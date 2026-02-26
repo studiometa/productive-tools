@@ -4,8 +4,7 @@
  * Displays activity feed entries with event type, timestamp, creator, and changeset.
  */
 
-import type { FormattedActivity } from '@studiometa/productive-api';
-import type { FormattedPagination } from '@studiometa/productive-api';
+import type { FormattedActivity, FormattedPagination } from '@studiometa/productive-api';
 
 import type { ListRenderer, RenderContext } from '../types.js';
 

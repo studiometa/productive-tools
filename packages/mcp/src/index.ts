@@ -27,9 +27,14 @@ import {
   ListToolsRequestSchema,
   ListPromptsRequestSchema,
   GetPromptRequestSchema,
+  ListResourcesRequestSchema,
+  ListResourceTemplatesRequestSchema,
+  ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import { getConfig } from '@studiometa/productive-api';
 
 import { INSTRUCTIONS } from './instructions.js';
+import { listResources, listResourceTemplates, readResource } from './resources.js';
 import { getAvailableTools, getAvailablePrompts, handleToolCall, handlePrompt } from './stdio.js';
 import { VERSION } from './version.js';
 
@@ -46,6 +51,7 @@ export function createStdioServer(): Server {
       capabilities: {
         tools: {},
         prompts: {},
+        resources: {},
       },
       instructions: INSTRUCTIONS,
     },
@@ -64,6 +70,35 @@ export function createStdioServer(): Server {
   // Get prompt
   server.setRequestHandler(GetPromptRequestSchema, async (request) => {
     return handlePrompt(request.params.name, request.params.arguments as Record<string, string>);
+  });
+
+  // List available resources (static + dynamic)
+  server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    return { resources: listResources() };
+  });
+
+  // List resource templates (parameterized URIs)
+  server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
+    return { resourceTemplates: listResourceTemplates() };
+  });
+
+  // Read a resource by URI
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    const { uri } = request.params;
+
+    // Get credentials from config (same as tool calls)
+    const config = await getConfig();
+    if (!config.organizationId || !config.apiToken) {
+      throw new Error(
+        'Productive.io credentials not configured. Use the "productive_configure" tool or set PRODUCTIVE_ORG_ID and PRODUCTIVE_API_TOKEN environment variables.',
+      );
+    }
+
+    return readResource(uri, {
+      organizationId: config.organizationId,
+      apiToken: config.apiToken,
+      userId: config.userId,
+    });
   });
 
   // Handle tool calls
