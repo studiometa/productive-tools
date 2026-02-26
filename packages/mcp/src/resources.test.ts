@@ -11,7 +11,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock ProductiveApi so we never make real HTTP calls.
 // Must use a regular function (not arrow) for `new` to work.
 vi.mock('@studiometa/productive-api', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  // eslint-disable-next-line @typescript-eslint/no-empty-function, unicorn/consistent-function-scoping
   ProductiveApi: function ProductiveApi() {},
 }));
 

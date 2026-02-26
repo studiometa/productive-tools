@@ -388,19 +388,19 @@ describe('getTimeListSuggestions', () => {
 // getMyDaySuggestions
 // ------------------------------------------------------------------
 
-describe('getMyDaySuggestions', () => {
-  function makeMyDayResult(overrides: Partial<MyDaySummaryResult> = {}): MyDaySummaryResult {
-    return {
-      summary_type: 'my_day',
-      generated_at: new Date().toISOString(),
-      user_id: '123',
-      tasks: { open: 0, overdue: 0, items: [] },
-      time: { logged_today_minutes: 0, entries_today: 0, items: [] },
-      timers: [],
-      ...overrides,
-    };
-  }
+function makeMyDayResult(overrides: Partial<MyDaySummaryResult> = {}): MyDaySummaryResult {
+  return {
+    summary_type: 'my_day',
+    generated_at: new Date().toISOString(),
+    user_id: '123',
+    tasks: { open: 0, overdue: 0, items: [] },
+    time: { logged_today_minutes: 0, entries_today: 0, items: [] },
+    timers: [],
+    ...overrides,
+  };
+}
 
+describe('getMyDaySuggestions', () => {
   it('returns empty array when all is fine', () => {
     const data = makeMyDayResult({
       time: { logged_today_minutes: 480, entries_today: 3, items: [] },
