@@ -4,9 +4,10 @@ Instructions for AI agents contributing to this codebase.
 
 ## Git & Commits
 
-- Commit messages: English, simple verb-first sentences (e.g., "Add...", "Fix...", "Update...")
-- Always add `Co-authored-by: Claude <claude@anthropic.com>` trailer
-- **Tags**: Do NOT use `v` prefix (use `0.4.0` not `v0.4.0`)
+<!-- Commit format, Co-authored-by trailer, and tag prefix rules are enforced by git hooks:
+     .husky/commit-msg → scripts/check-commit-msg.sh
+     .husky/pre-push   → rejects v-prefixed tags -->
+
 - **Releases**: Do NOT create GitHub releases manually — they are created automatically by GitHub Actions when a tag is pushed
 
 ## Changelog
@@ -230,11 +231,9 @@ These rules are **mandatory** for all code in this monorepo:
 
 3. **File system operations must be mocked.** Never read/write real user files in tests.
 
-4. **Test file conventions:** Tests are colocated with source files: `foo.ts` → `foo.test.ts` in the same directory. CLI command tests live in their respective `src/commands/<resource>/` directory.
+4. **Test file conventions:** Tests are colocated with source files: `foo.ts` → `foo.test.ts` in the same directory. CLI command tests live in their respective `src/commands/<resource>/` directory. Run `npm run check:tests` to find missing test files.
 
 5. **No real API calls in tests.** All HTTP requests must be mocked via DI (injected `fetch`) or mock API objects.
-
-6. **Vitest configuration:** Root `vitest.config.ts` uses `projects: ['packages/*']` for single-process test runs across all packages. Each package has its own `vitest.config.ts`.
 
 After changing `productive-core` source, rebuild before running CLI/MCP tests:
 
@@ -263,11 +262,19 @@ npm run lint               # oxlint
 npm run lint:fix           # oxlint --fix
 npm run format             # oxfmt --write
 npm run typecheck          # TypeScript check (all workspaces)
+npm run check              # All static checks: lint + format + typecheck + test colocation
+npm run check:tests        # Report source files missing colocated .test.ts
 npm run semgrep            # Security/quality scan
 npm run version:patch      # Bump patch version across all packages
 npm run version:minor      # Bump minor version
 npm run version:major      # Bump major version
 ```
+
+### Git Hooks (via Husky)
+
+- **pre-commit**: lint-staged (oxlint + oxfmt) + semgrep secrets scan
+- **commit-msg**: validates commit format (capitalized verb, no conventional commits, Co-authored-by trailer)
+- **pre-push**: rejects v-prefixed tags, then build + test
 
 ## Adding a New Resource (step-by-step)
 
