@@ -84,4 +84,5 @@ export type ResourceType =
   | 'attachment'
   | 'page'
   | 'discussion'
-  | 'activity';
+  | 'activity'
+  | 'custom-field';

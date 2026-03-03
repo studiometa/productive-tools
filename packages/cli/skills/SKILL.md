@@ -301,6 +301,16 @@ productive activities list --person <id>
 productive activities list --project <id>
 ```
 
+### Custom Fields
+
+```bash
+productive custom-fields list
+productive custom-fields list --type Task
+productive custom-fields list --type Deal --format json
+productive custom-fields get <id>
+productive custom-fields get <id> --include options
+```
+
 ### Reports
 
 ```bash

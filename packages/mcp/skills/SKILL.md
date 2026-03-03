@@ -21,24 +21,25 @@ productive(resource, action, [parameters...])
 
 ### Resources & Actions
 
-| Resource      | Actions                                                                  | Description                                              |
-| ------------- | ------------------------------------------------------------------------ | -------------------------------------------------------- |
-| `projects`    | `list`, `get`, `resolve`, `context`, `help`                              | Project management                                       |
-| `time`        | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Time tracking                                            |
-| `tasks`       | `list`, `get`, `create`, `update`, `resolve`, `context`, `help`          | Task management                                          |
-| `services`    | `list`, `get`, `resolve`, `help`                                         | Budget line items                                        |
-| `people`      | `list`, `get`, `me`, `resolve`, `help`                                   | Team members                                             |
-| `companies`   | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Client companies                                         |
-| `comments`    | `list`, `get`, `create`, `update`, `help`                                | Comments on tasks/deals                                  |
-| `attachments` | `list`, `get`, `delete`, `help`                                          | File attachments                                         |
-| `timers`      | `list`, `get`, `start`, `stop`, `help`                                   | Active timers                                            |
-| `deals`       | `list`, `get`, `create`, `update`, `resolve`, `context`, `help`          | Sales deals & budgets (use `filter[type]=2` for budgets) |
-| `bookings`    | `list`, `get`, `create`, `update`, `help`                                | Resource scheduling                                      |
-| `pages`       | `list`, `get`, `create`, `update`, `delete`, `help`                      | Wiki/docs pages                                          |
-| `discussions` | `list`, `get`, `create`, `update`, `delete`, `resolve`, `reopen`, `help` | Discussions on pages                                     |
-| `activities`  | `list`, `help`                                                           | Activity feed (audit log of create/update/delete events) |
-| `reports`     | `get`, `help`                                                            | Generate reports                                         |
-| `workflows`   | `complete_task`, `log_day`, `weekly_standup`, `help`                     | Compound workflows chaining multiple operations          |
+| Resource        | Actions                                                                  | Description                                              |
+| --------------- | ------------------------------------------------------------------------ | -------------------------------------------------------- |
+| `projects`      | `list`, `get`, `resolve`, `context`, `help`                              | Project management                                       |
+| `time`          | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Time tracking                                            |
+| `tasks`         | `list`, `get`, `create`, `update`, `resolve`, `context`, `help`          | Task management                                          |
+| `services`      | `list`, `get`, `resolve`, `help`                                         | Budget line items                                        |
+| `people`        | `list`, `get`, `me`, `resolve`, `help`                                   | Team members                                             |
+| `companies`     | `list`, `get`, `create`, `update`, `resolve`, `help`                     | Client companies                                         |
+| `comments`      | `list`, `get`, `create`, `update`, `help`                                | Comments on tasks/deals                                  |
+| `attachments`   | `list`, `get`, `delete`, `help`                                          | File attachments                                         |
+| `timers`        | `list`, `get`, `start`, `stop`, `help`                                   | Active timers                                            |
+| `deals`         | `list`, `get`, `create`, `update`, `resolve`, `context`, `help`          | Sales deals & budgets (use `filter[type]=2` for budgets) |
+| `bookings`      | `list`, `get`, `create`, `update`, `help`                                | Resource scheduling                                      |
+| `pages`         | `list`, `get`, `create`, `update`, `delete`, `help`                      | Wiki/docs pages                                          |
+| `discussions`   | `list`, `get`, `create`, `update`, `delete`, `resolve`, `reopen`, `help` | Discussions on pages                                     |
+| `activities`    | `list`, `help`                                                           | Activity feed (audit log of create/update/delete events) |
+| `custom_fields` | `list`, `get`, `help`                                                    | Custom field definitions and option values               |
+| `reports`       | `get`, `help`                                                            | Generate reports                                         |
+| `workflows`     | `complete_task`, `log_day`, `weekly_standup`, `help`                     | Compound workflows chaining multiple operations          |
 
 ### Getting Help
 
@@ -658,6 +659,23 @@ Resources that support `query`: **projects**, **tasks**, **people**, **companies
 - `item_type` - Resource type (e.g. Task, Page, Deal, Workspace)
 - `parent_type` / `root_type` - Parent/root resource type
 - `has_attachments` / `pinned` - Boolean filters
+
+### Custom Fields
+
+- `customizable_type` - Resource type: Task, Deal, Company, Project, Booking, Service, etc.
+- `archived` - Archived status: `true`/`false`
+- `name` - Filter by field name
+- `project_id` - Filter by project
+- `global` - Global custom fields: `true`/`false`
+
+**Workflow to resolve custom field values:**
+
+1. Fetch a task/deal with `custom_fields` attribute (raw `{field_id: value}` hash)
+2. List definitions: `resource=custom_fields, action=list, filter={customizable_type: "Task"}`
+3. For select/multi-select: get field with options: `resource=custom_fields, action=get, id=<field_id>, include=["options"]`
+4. Map field IDs to names, option IDs to values
+
+**Data types:** 1=Text, 2=Number, 3=Select, 4=Date, 5=Multi-select, 6=Person, 7=Attachment
 
 ### Timers
 
