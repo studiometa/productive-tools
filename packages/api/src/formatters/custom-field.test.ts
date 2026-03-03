@@ -72,7 +72,7 @@ describe('formatCustomField', () => {
 
   it('handles unknown data type', () => {
     const result = formatCustomField(makeField({ attributes: { data_type: 99 } }));
-    expect(result.data_type).toBe('unknown(99)');
+    expect(result.data_type).toBe('99');
   });
 
   it('omits description when not present', () => {
@@ -144,7 +144,7 @@ describe('formatCustomField', () => {
 
     const result = formatCustomField(field);
     expect(result.name).toBe('');
-    expect(result.data_type).toBe('unknown(0)');
+    expect(result.data_type).toBe('0');
     expect(result.customizable_type).toBe('');
     expect(result.archived).toBe(false);
     expect(result.required).toBe(false);

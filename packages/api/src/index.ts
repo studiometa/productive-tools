@@ -110,8 +110,8 @@ export type {
 } from './formatters/custom-field.js';
 
 // Status/type constants (bidirectional lookup maps)
-export { createStatusMap } from './constants.js';
-export type { StatusMap } from './constants.js';
+export { createStatusMap, createNumericStatusMap } from './constants.js';
+export type { StatusMap, NumericStatusMap } from './constants.js';
 export {
   TASK_STATUS,
   TASK_OVERDUE_STATUS,
@@ -129,6 +129,7 @@ export {
   DISCUSSION_STATUS,
   SERVICE_BUDGET_STATUS,
   SERVICE_BILLING_TYPE,
+  CUSTOM_FIELD_DATA_TYPE,
 } from './constants.js';
 
 // Config (env vars + JSON file, no keychain)

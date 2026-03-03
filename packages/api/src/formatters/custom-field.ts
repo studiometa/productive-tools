@@ -4,21 +4,8 @@
 
 import type { JsonApiResource, FormatOptions } from './types.js';
 
+import { CUSTOM_FIELD_DATA_TYPE } from '../constants.js';
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
-
-/**
- * Human-readable names for custom field data types.
- * 1=Text, 2=Number, 3=Select, 4=Date, 5=Multi-select, 6=Person, 7=Attachment
- */
-const DATA_TYPE_NAMES: Record<number, string> = {
-  1: 'text',
-  2: 'number',
-  3: 'select',
-  4: 'date',
-  5: 'multi-select',
-  6: 'person',
-  7: 'attachment',
-};
 
 export interface FormattedCustomField {
   [key: string]: unknown;
@@ -53,7 +40,7 @@ export function formatCustomField(
   const result: FormattedCustomField = {
     id: field.id,
     name: (attrs.name as string) || '',
-    data_type: DATA_TYPE_NAMES[dataTypeId] || `unknown(${dataTypeId})`,
+    data_type: CUSTOM_FIELD_DATA_TYPE.fromValue(dataTypeId),
     data_type_id: dataTypeId,
     customizable_type: (attrs.customizable_type as string) || '',
     archived: (attrs.archived as boolean) || false,

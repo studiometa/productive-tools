@@ -104,6 +104,8 @@ vi.mock('@studiometa/productive-api', async (importOriginal) => {
     DISCUSSION_STATUS: actual.DISCUSSION_STATUS,
     SERVICE_BUDGET_STATUS: actual.SERVICE_BUDGET_STATUS,
     SERVICE_BILLING_TYPE: actual.SERVICE_BILLING_TYPE,
+    createNumericStatusMap: actual.createNumericStatusMap,
+    CUSTOM_FIELD_DATA_TYPE: actual.CUSTOM_FIELD_DATA_TYPE,
   };
 });
 

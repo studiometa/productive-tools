@@ -12,10 +12,15 @@ import type {
   ProductiveCustomFieldOption,
 } from '@studiometa/productive-api';
 
+import { CUSTOM_FIELD_DATA_TYPE } from '@studiometa/productive-api';
+
 import type { ExecutorContext } from '../../context/types.js';
 
 /** Data types that require option resolution */
-const OPTION_DATA_TYPES = new Set([3, 5]); // 3=Select, 5=Multi-select
+const OPTION_DATA_TYPES: Set<number> = new Set([
+  CUSTOM_FIELD_DATA_TYPE.SELECT,
+  CUSTOM_FIELD_DATA_TYPE.MULTI_SELECT,
+]);
 
 export interface ResolvedCustomFields {
   /** Resolved fields: { "Field Name": "Resolved Value" } */

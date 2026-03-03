@@ -57,6 +57,57 @@ export function createStatusMap<T extends Record<string, string>>(map: T): Statu
   }) as StatusMap<T>;
 }
 
+/**
+ * A numeric status/type map with bidirectional lookup capabilities.
+ *
+ * Same pattern as StatusMap but for numeric API values (e.g. custom field data types).
+ */
+export type NumericStatusMap<T extends Record<string, number>> = T & {
+  /** Reverse lookup: API value → lowercase label (e.g. `3` → `'select'`) */
+  fromValue: (value: number) => string;
+  /** Label → API value (e.g. `'select'` → `3`). Case-insensitive. */
+  toValue: (label: string) => number | string;
+  /** All entries as `[label, value]` pairs (e.g. `[['text', 1], ['number', 2]]`) */
+  entries: () => [string, number][];
+};
+
+/**
+ * Create a bidirectional status/type map from a `{ LABEL: number }` object.
+ *
+ * Same API as `createStatusMap` but for numeric values.
+ *
+ * @example
+ * ```ts
+ * const DATA_TYPE = createNumericStatusMap({ TEXT: 1, NUMBER: 2, SELECT: 3 } as const);
+ *
+ * DATA_TYPE.TEXT              // 1 (typed as literal 1)
+ * DATA_TYPE.fromValue(1)     // 'text'
+ * DATA_TYPE.toValue('text')  // 1
+ * DATA_TYPE.entries()        // [['text', 1], ['number', 2], ['select', 3]]
+ * ```
+ */
+export function createNumericStatusMap<T extends Record<string, number>>(
+  map: T,
+): NumericStatusMap<T> {
+  const reverse: Record<number, string> = {};
+  const forward: Record<string, number> = {};
+  const entryPairs: [string, number][] = [];
+
+  for (const [key, value] of Object.entries(map)) {
+    const label = key.toLowerCase().replaceAll('_', '-');
+    reverse[value] = label;
+    forward[label] = value;
+    entryPairs.push([label, value]);
+  }
+
+  return Object.assign(Object.create(null), map, {
+    fromValue: (value: number): string => reverse[value] ?? String(value),
+    toValue: (label: string): number | string =>
+      forward[label.toLowerCase().replaceAll('_', '-')] ?? label,
+    entries: (): [string, number][] => [...entryPairs],
+  }) as NumericStatusMap<T>;
+}
+
 // ---------------------------------------------------------------------------
 // Task
 // ---------------------------------------------------------------------------
@@ -189,4 +240,19 @@ export const SERVICE_BILLING_TYPE = createStatusMap({
   FIXED: '1',
   ACTUALS: '2',
   NONE: '3',
+} as const);
+
+// ---------------------------------------------------------------------------
+// Custom Field
+// ---------------------------------------------------------------------------
+
+/** Custom field data type values */
+export const CUSTOM_FIELD_DATA_TYPE = createNumericStatusMap({
+  TEXT: 1,
+  NUMBER: 2,
+  SELECT: 3,
+  DATE: 4,
+  MULTI_SELECT: 5,
+  PERSON: 6,
+  ATTACHMENT: 7,
 } as const);

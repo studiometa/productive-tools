@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   createStatusMap,
+  createNumericStatusMap,
   COMPANY_STATUS,
+  CUSTOM_FIELD_DATA_TYPE,
   DEAL_BUDGET_STATUS,
   DEAL_STATUS,
   DEAL_TYPE,
@@ -71,6 +73,67 @@ describe('createStatusMap', () => {
   });
 });
 
+describe('createNumericStatusMap', () => {
+  const DATA_TYPE = createNumericStatusMap({
+    TEXT: 1,
+    NUMBER: 2,
+    SELECT: 3,
+    MULTI_SELECT: 5,
+  } as const);
+
+  it('provides forward lookup via property access', () => {
+    expect(DATA_TYPE.TEXT).toBe(1);
+    expect(DATA_TYPE.NUMBER).toBe(2);
+    expect(DATA_TYPE.SELECT).toBe(3);
+    expect(DATA_TYPE.MULTI_SELECT).toBe(5);
+  });
+
+  it('provides reverse lookup via fromValue()', () => {
+    expect(DATA_TYPE.fromValue(1)).toBe('text');
+    expect(DATA_TYPE.fromValue(2)).toBe('number');
+    expect(DATA_TYPE.fromValue(3)).toBe('select');
+    expect(DATA_TYPE.fromValue(5)).toBe('multi-select');
+  });
+
+  it('returns stringified value when fromValue() finds no match', () => {
+    expect(DATA_TYPE.fromValue(99)).toBe('99');
+  });
+
+  it('provides label-to-value via toValue()', () => {
+    expect(DATA_TYPE.toValue('text')).toBe(1);
+    expect(DATA_TYPE.toValue('number')).toBe(2);
+    expect(DATA_TYPE.toValue('select')).toBe(3);
+    expect(DATA_TYPE.toValue('multi-select')).toBe(5);
+  });
+
+  it('handles case-insensitive labels in toValue()', () => {
+    expect(DATA_TYPE.toValue('TEXT')).toBe(1);
+    expect(DATA_TYPE.toValue('Text')).toBe(1);
+    expect(DATA_TYPE.toValue('Select')).toBe(3);
+    expect(DATA_TYPE.toValue('MULTI_SELECT')).toBe(5);
+  });
+
+  it('returns the original label when toValue() finds no match', () => {
+    expect(DATA_TYPE.toValue('unknown')).toBe('unknown');
+  });
+
+  it('provides entries() as [label, value] pairs', () => {
+    expect(DATA_TYPE.entries()).toEqual([
+      ['text', 1],
+      ['number', 2],
+      ['select', 3],
+      ['multi-select', 5],
+    ]);
+  });
+
+  it('returns a copy from entries() (not a mutable reference)', () => {
+    const a = DATA_TYPE.entries();
+    const b = DATA_TYPE.entries();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+});
+
 describe('resource constants', () => {
   it.each([
     ['TASK_STATUS', TASK_STATUS, { OPEN: '1', CLOSED: '2' }],
@@ -120,5 +183,28 @@ describe('resource constants', () => {
     ['SERVICE_BILLING_TYPE', SERVICE_BILLING_TYPE, 3],
   ])('%s has correct entries() count', (_name, constant, count) => {
     expect(constant.entries()).toHaveLength(count);
+  });
+});
+
+describe('CUSTOM_FIELD_DATA_TYPE', () => {
+  it('has correct forward values', () => {
+    expect(CUSTOM_FIELD_DATA_TYPE.TEXT).toBe(1);
+    expect(CUSTOM_FIELD_DATA_TYPE.NUMBER).toBe(2);
+    expect(CUSTOM_FIELD_DATA_TYPE.SELECT).toBe(3);
+    expect(CUSTOM_FIELD_DATA_TYPE.DATE).toBe(4);
+    expect(CUSTOM_FIELD_DATA_TYPE.MULTI_SELECT).toBe(5);
+    expect(CUSTOM_FIELD_DATA_TYPE.PERSON).toBe(6);
+    expect(CUSTOM_FIELD_DATA_TYPE.ATTACHMENT).toBe(7);
+  });
+
+  it('has correct reverse values via fromValue()', () => {
+    expect(CUSTOM_FIELD_DATA_TYPE.fromValue(1)).toBe('text');
+    expect(CUSTOM_FIELD_DATA_TYPE.fromValue(3)).toBe('select');
+    expect(CUSTOM_FIELD_DATA_TYPE.fromValue(5)).toBe('multi-select');
+    expect(CUSTOM_FIELD_DATA_TYPE.fromValue(7)).toBe('attachment');
+  });
+
+  it('has correct entries() count', () => {
+    expect(CUSTOM_FIELD_DATA_TYPE.entries()).toHaveLength(7);
   });
 });

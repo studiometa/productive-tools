@@ -4,10 +4,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockGetConfig = vi.fn();
 const mockSetConfig = vi.fn();
 
-vi.mock('@studiometa/productive-api', () => ({
-  getConfig: () => mockGetConfig(),
-  setConfig: (key: string, value: string) => mockSetConfig(key, value),
-}));
+vi.mock('@studiometa/productive-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@studiometa/productive-api')>();
+  return {
+    ...actual,
+    getConfig: () => mockGetConfig(),
+    setConfig: (key: string, value: string) => mockSetConfig(key, value),
+  };
+});
 
 // Mock the handlers
 vi.mock('./handlers.js', () => ({
