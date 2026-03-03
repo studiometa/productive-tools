@@ -13,6 +13,7 @@ import type {
   ProductivePage,
   ProductiveAttachment,
   ProductiveActivity,
+  ProductiveCustomField,
   RelationshipData,
 } from '@studiometa/productive-api';
 
@@ -61,3 +62,4 @@ export type Booking = FlattenResource<ProductiveBooking>;
 export type Page = FlattenResource<ProductivePage>;
 export type Attachment = FlattenResource<ProductiveAttachment>;
 export type Activity = FlattenResource<ProductiveActivity>;
+export type CustomField = FlattenResource<ProductiveCustomField>;

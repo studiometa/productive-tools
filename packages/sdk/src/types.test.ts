@@ -2,7 +2,16 @@ import type { IncludedResource } from '@studiometa/productive-api';
 
 import { describe, expect, it } from 'vitest';
 
-import type { Task, Project, TimeEntry, Person, Company, Deal, ResourceRef } from './types.js';
+import type {
+  Task,
+  Project,
+  TimeEntry,
+  Person,
+  Company,
+  Deal,
+  CustomField,
+  ResourceRef,
+} from './types.js';
 
 import { resolveListResponse, resolveSingleResponse } from './json-api.js';
 
@@ -264,6 +273,100 @@ describe('Typed resource resolution', () => {
       expect(deal.responsible).toEqual({ id: '5', type: 'people', first_name: 'Jane' });
       expect(deal.deal_status).toBeNull();
       expect(deal.project).toEqual({ id: '1', type: 'projects', name: 'SDK v2' });
+    });
+  });
+
+  describe('CustomField', () => {
+    it('resolves a custom field with typed fields', () => {
+      const response = {
+        data: {
+          id: '42236',
+          type: 'custom_fields' as const,
+          attributes: {
+            name: 'Sprint',
+            data_type: 3 as const,
+            customizable_type: 'Task',
+            archived: false,
+            required: false,
+            description: 'Sprint number',
+            created_at: '2026-01-01',
+            updated_at: '2026-01-15',
+          },
+          relationships: {
+            options: { data: { type: 'custom_field_options', id: '100' } },
+          },
+        },
+        included: [
+          {
+            id: '100',
+            type: 'custom_field_options',
+            attributes: { value: '2026-09', archived: false },
+          },
+        ] as IncludedResource[],
+      };
+
+      const result = resolveSingleResponse<typeof response.data, CustomField>(response);
+      const field = result.data;
+
+      expect(field.id).toBe('42236');
+      expect(field.type).toBe('custom_fields');
+      expect(field.name).toBe('Sprint');
+      expect(field.data_type).toBe(3);
+      expect(field.customizable_type).toBe('Task');
+      expect(field.archived).toBe(false);
+      expect(field.required).toBe(false);
+      expect(field.description).toBe('Sprint number');
+      expect(field.options).toEqual({
+        id: '100',
+        type: 'custom_field_options',
+        value: '2026-09',
+        archived: false,
+      });
+    });
+
+    it('resolves a list of custom fields', () => {
+      const response = {
+        data: [
+          {
+            id: '1',
+            type: 'custom_fields' as const,
+            attributes: {
+              name: 'Priority',
+              data_type: 1 as const,
+              customizable_type: 'Task',
+              archived: false,
+              required: false,
+              created_at: '2026-01-01',
+              updated_at: '2026-01-01',
+            },
+            relationships: {},
+          },
+          {
+            id: '2',
+            type: 'custom_fields' as const,
+            attributes: {
+              name: 'Category',
+              data_type: 3 as const,
+              customizable_type: 'Deal',
+              archived: false,
+              required: true,
+              created_at: '2026-01-02',
+              updated_at: '2026-01-02',
+            },
+            relationships: {},
+          },
+        ],
+        meta: { total: 2, total_pages: 1 },
+      };
+
+      const result = resolveListResponse<(typeof response.data)[0], CustomField>(response);
+
+      expect(result.data).toHaveLength(2);
+      expect(result.data[0].name).toBe('Priority');
+      expect(result.data[0].customizable_type).toBe('Task');
+      expect(result.data[1].name).toBe('Category');
+      expect(result.data[1].customizable_type).toBe('Deal');
+      expect(result.meta?.total).toBe(2);
     });
   });
 

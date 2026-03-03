@@ -7,6 +7,7 @@ import { AttachmentsCollection } from './resources/attachments.js';
 import { BookingsCollection } from './resources/bookings.js';
 import { CommentsCollection } from './resources/comments.js';
 import { CompaniesCollection } from './resources/companies.js';
+import { CustomFieldsCollection } from './resources/custom-fields.js';
 import { DealsCollection } from './resources/deals.js';
 import { DiscussionsCollection } from './resources/discussions.js';
 import { PagesCollection } from './resources/pages.js';
@@ -35,6 +36,7 @@ describe('Productive constructor', () => {
     expect(p.time).toBeInstanceOf(TimeCollection);
     expect(p.people).toBeInstanceOf(PeopleCollection);
     expect(p.companies).toBeInstanceOf(CompaniesCollection);
+    expect(p.customFields).toBeInstanceOf(CustomFieldsCollection);
     expect(p.deals).toBeInstanceOf(DealsCollection);
     expect(p.services).toBeInstanceOf(ServicesCollection);
     expect(p.comments).toBeInstanceOf(CommentsCollection);
@@ -67,6 +69,7 @@ describe('Productive constructor', () => {
     expect(typeof p.pages.where).toBe('function');
     expect(typeof p.attachments.where).toBe('function');
     expect(typeof p.activities.where).toBe('function');
+    expect(typeof p.customFields.where).toBe('function');
   });
 
   it('collections have expected methods', () => {
@@ -105,6 +108,10 @@ describe('Productive constructor', () => {
     expect(typeof p.deals.create).toBe('function');
     expect(typeof p.deals.update).toBe('function');
     expect(typeof p.deals.all).toBe('function');
+
+    expect(typeof p.customFields.list).toBe('function');
+    expect(typeof p.customFields.get).toBe('function');
+    expect(typeof p.customFields.all).toBe('function');
   });
 });
 

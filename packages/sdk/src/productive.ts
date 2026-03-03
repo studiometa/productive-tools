@@ -6,6 +6,7 @@ import { AttachmentsCollection } from './resources/attachments.js';
 import { BookingsCollection } from './resources/bookings.js';
 import { CommentsCollection } from './resources/comments.js';
 import { CompaniesCollection } from './resources/companies.js';
+import { CustomFieldsCollection } from './resources/custom-fields.js';
 import { DealsCollection } from './resources/deals.js';
 import { DiscussionsCollection } from './resources/discussions.js';
 import { PagesCollection } from './resources/pages.js';
@@ -32,6 +33,7 @@ export class Productive {
   readonly time: TimeCollection;
   readonly people: PeopleCollection;
   readonly companies: CompaniesCollection;
+  readonly customFields: CustomFieldsCollection;
   readonly deals: DealsCollection;
   readonly services: ServicesCollection;
   readonly comments: CommentsCollection;
@@ -57,6 +59,7 @@ export class Productive {
     this.time = new TimeCollection(this.api);
     this.people = new PeopleCollection(this.api, options.userId);
     this.companies = new CompaniesCollection(this.api);
+    this.customFields = new CustomFieldsCollection(this.api);
     this.deals = new DealsCollection(this.api);
     this.services = new ServicesCollection(this.api);
     this.comments = new CommentsCollection(this.api);

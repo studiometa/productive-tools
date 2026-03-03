@@ -28,6 +28,12 @@ export type {
   CompanyListResult,
   CompanyGetResult,
 } from './companies.js';
+export { CustomFieldsCollection } from './custom-fields.js';
+export type {
+  CustomFieldListOptions,
+  CustomFieldListResult,
+  CustomFieldGetResult,
+} from './custom-fields.js';
 export { DealsCollection } from './deals.js';
 export type {
   DealListOptions,

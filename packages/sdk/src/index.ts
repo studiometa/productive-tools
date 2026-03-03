@@ -24,6 +24,7 @@ export type {
   Page,
   Attachment,
   Activity,
+  CustomField,
 } from './types.js';
 export {
   ProductiveError,
@@ -37,8 +38,8 @@ export {
 } from './errors.js';
 
 // Re-export status/type constants from productive-api
-export { createStatusMap } from '@studiometa/productive-api';
-export type { StatusMap } from '@studiometa/productive-api';
+export { createStatusMap, createNumericStatusMap } from '@studiometa/productive-api';
+export type { StatusMap, NumericStatusMap } from '@studiometa/productive-api';
 export {
   TASK_STATUS,
   TASK_OVERDUE_STATUS,
@@ -56,4 +57,5 @@ export {
   DISCUSSION_STATUS,
   SERVICE_BUDGET_STATUS,
   SERVICE_BILLING_TYPE,
+  CUSTOM_FIELD_DATA_TYPE,
 } from '@studiometa/productive-api';
