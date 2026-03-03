@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **API**: Add `ProductiveCustomField` and `ProductiveCustomFieldOption` types, `getCustomFields()`, `getCustomField()`, `getCustomFieldOptions()` client methods, and `formatCustomField()`/`formatCustomFieldOption()` formatters ([bec0243], [#152], [#151])
+- **API**: Add `createNumericStatusMap()` factory and `CUSTOM_FIELD_DATA_TYPE` constant for bidirectional data type lookup ([d1b2f44], [#152])
+- **API**: Expose `custom_fields` attribute on `formatTask()`, `formatDeal()`, `formatCompany()` when non-empty ([bec0243], [#152])
+- **Core**: Add `listCustomFields`, `getCustomField`, and `resolveCustomFieldValues` executors for custom field definitions and value resolution ([dd02395], [#152])
+- **MCP**: Add `custom_fields` resource with `list`, `get`, `help`, `schema` actions via `createResourceHandler()` factory ([81e8653], [#152])
+- **MCP**: Add custom fields contextual hints to task, deal, and company `get` actions ([03d5170], [#152])
+- **CLI**: Add `custom-fields` command with `list`/`ls`/`get` subcommands via `createCommandRouter()` ([8dbd1e2], [#152])
+- **SDK**: Add `CustomFieldsCollection` (list, get, where, all) and `CustomField` typed resource ([49499c7], [#152])
+
+[bec0243]: https://github.com/studiometa/productive-tools/commit/bec0243
+[dd02395]: https://github.com/studiometa/productive-tools/commit/dd02395
+[81e8653]: https://github.com/studiometa/productive-tools/commit/81e8653
+[8dbd1e2]: https://github.com/studiometa/productive-tools/commit/8dbd1e2
+[d1b2f44]: https://github.com/studiometa/productive-tools/commit/d1b2f44
+[03d5170]: https://github.com/studiometa/productive-tools/commit/03d5170
+[49499c7]: https://github.com/studiometa/productive-tools/commit/49499c7
+[#151]: https://github.com/studiometa/productive-tools/issues/151
+[#152]: https://github.com/studiometa/productive-tools/pull/152
+
 ## [0.10.7] - 2026-02-26
 
 ### Added
