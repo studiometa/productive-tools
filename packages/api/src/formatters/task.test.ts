@@ -110,4 +110,25 @@ describe('formatTask', () => {
     const r = formatTask({ id: '1', type: 'tasks', attributes: { description: null } });
     expect(r.description).toBeNull();
   });
+
+  it('includes custom_fields when present and non-empty', () => {
+    const r = formatTask({
+      ...task,
+      attributes: { ...task.attributes, custom_fields: { '42236': '417421' } },
+    });
+    expect(r.custom_fields).toEqual({ '42236': '417421' });
+  });
+
+  it('omits custom_fields when empty', () => {
+    const r = formatTask({
+      ...task,
+      attributes: { ...task.attributes, custom_fields: {} },
+    });
+    expect(r.custom_fields).toBeUndefined();
+  });
+
+  it('omits custom_fields when undefined', () => {
+    const r = formatTask(task);
+    expect(r.custom_fields).toBeUndefined();
+  });
 });

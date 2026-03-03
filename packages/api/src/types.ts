@@ -100,6 +100,7 @@ export interface ProductiveTask {
     open_todo_count?: number;
     subtask_count?: number;
     open_subtask_count?: number;
+    custom_fields?: Record<string, unknown>;
     // Legacy field for backwards compatibility
     completed?: boolean;
   };
@@ -156,6 +157,7 @@ export interface ProductiveCompany {
     due_days?: number;
     tag_list?: string[];
     archived_at?: string;
+    custom_fields?: Record<string, unknown>;
     created_at: string;
     updated_at: string;
   };
@@ -203,6 +205,7 @@ export interface ProductiveDeal {
     closed_at?: string;
     won_at?: string;
     lost_at?: string;
+    custom_fields?: Record<string, unknown>;
     created_at: string;
     updated_at: string;
   };
@@ -345,5 +348,45 @@ export interface ProductiveActivity {
     email?: RelationshipData;
     attachment?: RelationshipData;
     role?: RelationshipData;
+  };
+}
+
+/**
+ * Custom field data types in Productive.io.
+ * 1=Text, 2=Number, 3=Select, 4=Date, 5=Multi-select, 6=Person, 7=Attachment
+ */
+export type CustomFieldDataType = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+export interface ProductiveCustomField {
+  id: string;
+  type: 'custom_fields';
+  attributes: {
+    name: string;
+    data_type: CustomFieldDataType;
+    customizable_type: string;
+    archived: boolean;
+    required: boolean;
+    description?: string;
+    default_value?: unknown;
+    position?: number;
+    created_at: string;
+    updated_at: string;
+  };
+  relationships?: {
+    options?: RelationshipData;
+  };
+}
+
+export interface ProductiveCustomFieldOption {
+  id: string;
+  type: 'custom_field_options';
+  attributes: {
+    value: string;
+    position?: number;
+    archived: boolean;
+    color?: string;
+  };
+  relationships?: {
+    custom_field?: RelationshipData;
   };
 }

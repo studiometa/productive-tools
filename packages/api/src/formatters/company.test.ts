@@ -54,4 +54,20 @@ describe('formatCompany', () => {
     const r = formatCompany({ id: '3', type: 'companies', attributes: {} });
     expect(r.name).toBe('');
   });
+
+  it('includes custom_fields when present and non-empty', () => {
+    const r = formatCompany({
+      ...full,
+      attributes: { ...full.attributes, custom_fields: { '200': 'test' } },
+    });
+    expect(r.custom_fields).toEqual({ '200': 'test' });
+  });
+
+  it('omits custom_fields when empty', () => {
+    const r = formatCompany({
+      ...full,
+      attributes: { ...full.attributes, custom_fields: {} },
+    });
+    expect(r.custom_fields).toBeUndefined();
+  });
 });

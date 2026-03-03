@@ -40,6 +40,12 @@ export function formatCompany(company: JsonApiResource, options?: FormatOptions)
     archived: !!attrs.archived_at,
   };
 
+  // Include custom fields if present
+  const customFields = attrs.custom_fields as Record<string, unknown> | undefined;
+  if (customFields && Object.keys(customFields).length > 0) {
+    result.custom_fields = customFields;
+  }
+
   if (opts.includeTimestamps) {
     result.created_at = attrs.created_at ? String(attrs.created_at) : undefined;
     result.updated_at = attrs.updated_at ? String(attrs.updated_at) : undefined;

@@ -17,6 +17,8 @@ import type {
   ProductivePage,
   ProductiveDiscussion,
   ProductiveActivity,
+  ProductiveCustomField,
+  ProductiveCustomFieldOption,
   ProductiveConfig,
 } from './types.js';
 
@@ -1235,5 +1237,64 @@ export class ProductiveApi {
     }
 
     return this.request<ProductiveApiResponse<ProductiveActivity[]>>('/activities', { query });
+  }
+
+  // Custom Fields
+  async getCustomFields(params?: {
+    page?: number;
+    perPage?: number;
+    filter?: Record<string, string>;
+    include?: string[];
+  }): Promise<ProductiveApiResponse<ProductiveCustomField[]>> {
+    const query: Record<string, string> = {};
+
+    if (params?.page) query['page[number]'] = String(params.page);
+    if (params?.perPage) query['page[size]'] = String(params.perPage);
+    if (params?.filter) {
+      Object.entries(params.filter).forEach(([key, value]) => {
+        query[`filter[${key}]`] = value;
+      });
+    }
+    if (params?.include?.length) {
+      query['include'] = params.include.join(',');
+    }
+
+    return this.request<ProductiveApiResponse<ProductiveCustomField[]>>('/custom_fields', {
+      query,
+    });
+  }
+
+  async getCustomField(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductiveCustomField>> {
+    const query: Record<string, string> = {};
+    if (params?.include?.length) {
+      query['include'] = params.include.join(',');
+    }
+    return this.request<ProductiveApiResponse<ProductiveCustomField>>(`/custom_fields/${id}`, {
+      query,
+    });
+  }
+
+  async getCustomFieldOptions(params?: {
+    page?: number;
+    perPage?: number;
+    filter?: Record<string, string>;
+  }): Promise<ProductiveApiResponse<ProductiveCustomFieldOption[]>> {
+    const query: Record<string, string> = {};
+
+    if (params?.page) query['page[number]'] = String(params.page);
+    if (params?.perPage) query['page[size]'] = String(params.perPage);
+    if (params?.filter) {
+      Object.entries(params.filter).forEach(([key, value]) => {
+        query[`filter[${key}]`] = value;
+      });
+    }
+
+    return this.request<ProductiveApiResponse<ProductiveCustomFieldOption[]>>(
+      '/custom_field_options',
+      { query },
+    );
   }
 }

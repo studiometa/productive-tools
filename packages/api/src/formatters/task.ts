@@ -105,6 +105,12 @@ export function formatTask(task: JsonApiResource, options: FormatOptions = {}): 
     }
   }
 
+  // Include custom fields if present
+  const customFields = attrs.custom_fields as Record<string, unknown> | undefined;
+  if (customFields && Object.keys(customFields).length > 0) {
+    result.custom_fields = customFields;
+  }
+
   // Include timestamps if requested
   if (opts.includeTimestamps) {
     result.created_at = attrs.created_at as string | undefined;

@@ -30,6 +30,9 @@ export type {
   ProductiveComment,
   ProductiveCompany,
   ProductiveConfig,
+  ProductiveCustomField,
+  ProductiveCustomFieldOption,
+  CustomFieldDataType,
   ProductiveDeal,
   ProductiveDiscussion,
   ProductivePage,
@@ -63,6 +66,8 @@ export {
   formatDiscussion,
   formatActivity,
   formatChangeset,
+  formatCustomField,
+  formatCustomFieldOption,
   // List/single/auto formatting
   formatListResponse,
   formatSingleResponse,
@@ -99,6 +104,10 @@ export type { FormattedAttachment } from './formatters/attachment.js';
 export type { FormattedPage } from './formatters/page.js';
 export type { FormattedDiscussion } from './formatters/discussion.js';
 export type { FormattedActivity } from './formatters/activity.js';
+export type {
+  FormattedCustomField,
+  FormattedCustomFieldOption,
+} from './formatters/custom-field.js';
 
 // Status/type constants (bidirectional lookup maps)
 export { createStatusMap } from './constants.js';

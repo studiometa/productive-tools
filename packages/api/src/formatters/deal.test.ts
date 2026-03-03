@@ -82,4 +82,20 @@ describe('formatDeal', () => {
     expect(r.responsible_name).toBeUndefined();
     expect(r.status_name).toBeUndefined();
   });
+
+  it('includes custom_fields when present and non-empty', () => {
+    const r = formatDeal({
+      ...fullDeal,
+      attributes: { ...fullDeal.attributes, custom_fields: { '100': 'value' } },
+    });
+    expect(r.custom_fields).toEqual({ '100': 'value' });
+  });
+
+  it('omits custom_fields when empty', () => {
+    const r = formatDeal({
+      ...fullDeal,
+      attributes: { ...fullDeal.attributes, custom_fields: {} },
+    });
+    expect(r.custom_fields).toBeUndefined();
+  });
 });

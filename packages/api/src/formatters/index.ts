@@ -29,6 +29,7 @@ export type { FormattedAttachment } from './attachment.js';
 export type { FormattedPage } from './page.js';
 export type { FormattedDiscussion } from './discussion.js';
 export type { FormattedActivity } from './activity.js';
+export type { FormattedCustomField, FormattedCustomFieldOption } from './custom-field.js';
 
 export { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
@@ -47,6 +48,7 @@ export { formatAttachment } from './attachment.js';
 export { formatPage } from './page.js';
 export { formatDiscussion } from './discussion.js';
 export { formatActivity, formatChangeset } from './activity.js';
+export { formatCustomField, formatCustomFieldOption } from './custom-field.js';
 
 // Pagination
 export { formatPagination, hasMorePages } from './pagination.js';
