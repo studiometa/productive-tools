@@ -15,6 +15,7 @@ import type { CommandContext } from '../../context.js';
 import type { OutputFormat } from '../../types.js';
 
 import { runCommand } from '../../error-handler.js';
+import { humanCustomFieldListRenderer } from '../../renderers/human/custom-field.js';
 import { render, createRenderContext } from '../../renderers/index.js';
 import { parseFilters } from '../../utils/parse-filters.js';
 
@@ -96,6 +97,9 @@ export async function customFieldsGet(args: string[], ctx: CommandContext): Prom
 
     if (format === 'csv' || format === 'table') {
       ctx.formatter.output([formatted]);
+    } else if (format === 'human') {
+      const renderCtx = createRenderContext({ noColor: ctx.options['no-color'] === true });
+      humanCustomFieldListRenderer.renderItem(formatted, renderCtx);
     } else {
       const renderCtx = createRenderContext({ noColor: ctx.options['no-color'] === true });
       render('custom-field', format, formatted, renderCtx);

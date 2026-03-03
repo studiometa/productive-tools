@@ -63,6 +63,38 @@ describe('HumanCustomFieldListRenderer', () => {
     expect(output).not.toContain('S11');
   });
 
+  it('renders non-required, non-archived field without markers', () => {
+    renderer.renderItem(makeField({ required: false, archived: false }), ctx);
+
+    const output = spy.mock.calls.map((c) => c[0]).join('\n');
+    expect(output).toContain('Semaine');
+    expect(output).not.toContain('archived');
+    expect(output).not.toContain('*');
+  });
+
+  it('renders field without options', () => {
+    renderer.renderItem(makeField({ options: undefined }), ctx);
+
+    const output = spy.mock.calls.map((c) => c[0]).join('\n');
+    expect(output).toContain('Semaine');
+    expect(output).not.toContain('Options:');
+  });
+
+  it('renders field with empty options array', () => {
+    renderer.renderItem(makeField({ options: [] }), ctx);
+
+    const output = spy.mock.calls.map((c) => c[0]).join('\n');
+    expect(output).not.toContain('Options:');
+  });
+
+  it('renders list without pagination meta', () => {
+    renderer.render({ data: [makeField()] }, ctx);
+
+    const output = spy.mock.calls.map((c) => c[0]).join('\n');
+    expect(output).toContain('Semaine');
+    expect(output).not.toContain('Page');
+  });
+
   it('shows description when present', () => {
     renderer.renderItem(makeField({ description: 'Sprint week number' }), ctx);
 

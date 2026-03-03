@@ -983,6 +983,89 @@ describe('ProductiveApi requests', () => {
     });
   });
 
+  describe('custom fields', () => {
+    it('getCustomFields with no params', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getCustomFields();
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/custom_fields');
+    });
+
+    it('getCustomFields with all params', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getCustomFields({
+        page: 2,
+        perPage: 50,
+        filter: { customizable_type: 'Task' },
+        include: ['options'],
+      });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/custom_fields');
+      expect(url).toContain('page%5Bnumber%5D=2');
+      expect(url).toContain('page%5Bsize%5D=50');
+      expect(url).toContain('filter%5Bcustomizable_type%5D=Task');
+      expect(url).toContain('include=options');
+    });
+
+    it('getCustomField by ID', async () => {
+      const api = createApi();
+      mockFetchResponse({
+        data: { id: '42236', type: 'custom_fields', attributes: { name: 'Semaine' } },
+      });
+      const result = await api.getCustomField('42236');
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/custom_fields/42236');
+      expect(result.data.id).toBe('42236');
+    });
+
+    it('getCustomField with include', async () => {
+      const api = createApi();
+      mockFetchResponse({
+        data: { id: '42236', type: 'custom_fields', attributes: { name: 'Semaine' } },
+      });
+      await api.getCustomField('42236', { include: ['options'] });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/custom_fields/42236');
+      expect(url).toContain('include=options');
+    });
+
+    it('getCustomField without include', async () => {
+      const api = createApi();
+      mockFetchResponse({
+        data: { id: '42236', type: 'custom_fields', attributes: { name: 'Semaine' } },
+      });
+      await api.getCustomField('42236', { include: [] });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/custom_fields/42236');
+      expect(url).not.toContain('include');
+    });
+
+    it('getCustomFieldOptions with no params', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getCustomFieldOptions();
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/custom_field_options');
+    });
+
+    it('getCustomFieldOptions with all params', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getCustomFieldOptions({
+        page: 1,
+        perPage: 100,
+        filter: { id: '417421,417422' },
+      });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/custom_field_options');
+      expect(url).toContain('page%5Bnumber%5D=1');
+      expect(url).toContain('page%5Bsize%5D=100');
+      expect(url).toContain('filter%5Bid%5D=417421%2C417422');
+    });
+  });
+
   describe('rate limiting', () => {
     it('retries on 429 with backoff', async () => {
       const api = new ProductiveApi({

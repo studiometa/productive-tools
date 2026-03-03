@@ -140,6 +140,26 @@ describe('custom-fields handlers', () => {
       );
     });
 
+    it('should pass generic filter option', async () => {
+      const getCustomFields = vi.fn().mockResolvedValue({
+        data: [],
+        meta: {},
+      });
+
+      const ctx = createTestContext({
+        api: { getCustomFields } as unknown as ProductiveApi,
+        options: { filter: 'status=active,priority=high' },
+      });
+
+      await customFieldsList(ctx);
+
+      expect(getCustomFields).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ status: 'active', priority: 'high' }),
+        }),
+      );
+    });
+
     it('should pass include option', async () => {
       const getCustomFields = vi.fn().mockResolvedValue({
         data: [],
@@ -236,6 +256,34 @@ describe('custom-fields handlers', () => {
       const ctx = createTestContext({
         api: { getCustomField } as unknown as ProductiveApi,
         options: { format: 'csv' },
+      });
+
+      await customFieldsGet(['42236'], ctx);
+
+      expect(getCustomField).toHaveBeenCalled();
+    });
+
+    it('should get a custom field with custom include', async () => {
+      const getCustomField = vi.fn().mockResolvedValue(mockSingleField);
+
+      const ctx = createTestContext({
+        api: { getCustomField } as unknown as ProductiveApi,
+        options: { include: 'options,custom_field' },
+      });
+
+      await customFieldsGet(['42236'], ctx);
+
+      expect(getCustomField).toHaveBeenCalledWith('42236', {
+        include: ['options', 'custom_field'],
+      });
+    });
+
+    it('should get a custom field in table format', async () => {
+      const getCustomField = vi.fn().mockResolvedValue(mockSingleField);
+
+      const ctx = createTestContext({
+        api: { getCustomField } as unknown as ProductiveApi,
+        options: { format: 'table' },
       });
 
       await customFieldsGet(['42236'], ctx);
