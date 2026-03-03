@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.8] - 2026-02-26
+
 ### Added
 
 - **API**: Add `ProductiveCustomField` and `ProductiveCustomFieldOption` types, `getCustomFields()`, `getCustomField()`, `getCustomFieldOptions()` client methods, and `formatCustomField()`/`formatCustomFieldOption()` formatters ([bec0243], [#152], [#151])
@@ -18,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI**: Add `custom-fields` command with `list`/`ls`/`get` subcommands via `createCommandRouter()` ([8dbd1e2], [#152])
 - **SDK**: Add `CustomFieldsCollection` (list, get, where, all) and `CustomField` typed resource ([49499c7], [#152])
 
+[0.10.8]: https://github.com/studiometa/productive-tools/compare/0.10.7...0.10.8
 [bec0243]: https://github.com/studiometa/productive-tools/commit/bec0243
 [dd02395]: https://github.com/studiometa/productive-tools/commit/dd02395
 [81e8653]: https://github.com/studiometa/productive-tools/commit/81e8653
