@@ -165,6 +165,8 @@ if (isProductiveError(e)) {
 
 ### Collections
 
+Available on the `Productive` instance: `projects`, `tasks`, `time`, `people`, `companies`, `customFields`, `deals`, `services`, `comments`, `timers`, `discussions`, `bookings`, `pages`, `attachments`, `activities`.
+
 Each collection exposes a consistent API:
 
 | Method              | Description                                       |
