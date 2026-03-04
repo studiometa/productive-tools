@@ -15,14 +15,7 @@
  * 6. Server validates PKCE and returns access token
  */
 
-import {
-  defineEventHandler,
-  getQuery,
-  readBody,
-  sendRedirect,
-  setResponseHeader,
-  type H3Event,
-} from 'h3';
+import { defineHandler, getQuery, redirect, type H3Event } from 'h3';
 import { createHash } from 'node:crypto';
 
 import { createAuthToken } from './auth.js';
@@ -34,13 +27,13 @@ import { createAuthCode, decodeAuthCode } from './crypto.js';
  *
  * MCP clients MUST check this endpoint first for server capabilities.
  */
-export const oauthMetadataHandler = defineEventHandler((event: H3Event) => {
-  const host = event.node.req.headers.host || 'localhost:3000';
-  const protocol = event.node.req.headers['x-forwarded-proto'] || 'http';
+export const oauthMetadataHandler = defineHandler((event: H3Event) => {
+  const host = event.req.headers.get('host') || 'localhost:3000';
+  const protocol = event.req.headers.get('x-forwarded-proto') || 'http';
   const baseUrl = `${protocol}://${host}`;
 
-  setResponseHeader(event, 'Content-Type', 'application/json');
-  setResponseHeader(event, 'Cache-Control', 'public, max-age=3600');
+  event.res.headers.set('Content-Type', 'application/json');
+  event.res.headers.set('Cache-Control', 'public, max-age=3600');
 
   return {
     // Required fields per RFC 8414
@@ -69,14 +62,14 @@ export const oauthMetadataHandler = defineEventHandler((event: H3Event) => {
  * Since we use stateless tokens, we accept any registration and return
  * a generated client_id.
  */
-export const registerHandler = defineEventHandler(async (event: H3Event) => {
-  setResponseHeader(event, 'Content-Type', 'application/json');
+export const registerHandler = defineHandler(async (event: H3Event) => {
+  event.res.headers.set('Content-Type', 'application/json');
 
   let body: Record<string, unknown>;
   try {
-    body = await readBody(event);
+    body = (await event.req.json()) as Record<string, unknown>;
   } catch {
-    event.node.res.statusCode = 400;
+    event.res.status = 400;
     return {
       error: 'invalid_request',
       error_description: 'Invalid JSON body',
@@ -96,7 +89,7 @@ export const registerHandler = defineEventHandler(async (event: H3Event) => {
     }),
   ).toString('base64url');
 
-  event.node.res.statusCode = 201;
+  event.res.status = 201;
   return {
     client_id: clientId,
     client_name: clientName,
@@ -111,7 +104,7 @@ export const registerHandler = defineEventHandler(async (event: H3Event) => {
  * Authorization endpoint - shows login form
  * GET /authorize
  */
-export const authorizeGetHandler = defineEventHandler((event: H3Event) => {
+export const authorizeGetHandler = defineHandler((event: H3Event) => {
   const query = getQuery(event);
 
   // Extract OAuth parameters
@@ -124,8 +117,8 @@ export const authorizeGetHandler = defineEventHandler((event: H3Event) => {
 
   // Validate required parameters per OAuth 2.1
   if (!redirectUri) {
-    setResponseHeader(event, 'Content-Type', 'text/html; charset=utf-8');
-    event.node.res.statusCode = 400;
+    event.res.headers.set('Content-Type', 'text/html; charset=utf-8');
+    event.res.status = 400;
     return renderErrorPage('Missing required parameter: redirect_uri');
   }
 
@@ -136,7 +129,7 @@ export const authorizeGetHandler = defineEventHandler((event: H3Event) => {
     errorUrl.searchParams.set('error', 'invalid_request');
     errorUrl.searchParams.set('error_description', 'code_challenge is required');
     if (state) errorUrl.searchParams.set('state', state);
-    return sendRedirect(event, errorUrl.toString());
+    return redirect(errorUrl.toString());
   }
 
   if (codeChallengeMethod && codeChallengeMethod !== 'S256') {
@@ -144,10 +137,10 @@ export const authorizeGetHandler = defineEventHandler((event: H3Event) => {
     errorUrl.searchParams.set('error', 'invalid_request');
     errorUrl.searchParams.set('error_description', 'Only S256 code_challenge_method is supported');
     if (state) errorUrl.searchParams.set('state', state);
-    return sendRedirect(event, errorUrl.toString());
+    return redirect(errorUrl.toString());
   }
 
-  setResponseHeader(event, 'Content-Type', 'text/html; charset=utf-8');
+  event.res.headers.set('Content-Type', 'text/html; charset=utf-8');
 
   // Render login form
   return renderLoginForm({
@@ -164,15 +157,16 @@ export const authorizeGetHandler = defineEventHandler((event: H3Event) => {
  * Authorization endpoint - process login
  * POST /authorize
  */
-export const authorizePostHandler = defineEventHandler(async (event: H3Event) => {
-  const body = await readBody(event);
+export const authorizePostHandler = defineHandler(async (event: H3Event) => {
+  const formData = await event.req.formData();
+  const body = Object.fromEntries(formData.entries()) as Record<string, string>;
 
   const { orgId, apiToken, userId, redirectUri, state, codeChallenge, codeChallengeMethod } = body;
 
   // Validate redirect URI first (security requirement)
   if (!redirectUri) {
-    setResponseHeader(event, 'Content-Type', 'text/html; charset=utf-8');
-    event.node.res.statusCode = 400;
+    event.res.headers.set('Content-Type', 'text/html; charset=utf-8');
+    event.res.status = 400;
     return renderErrorPage('Missing redirect_uri parameter');
   }
 
@@ -182,17 +176,17 @@ export const authorizePostHandler = defineEventHandler(async (event: H3Event) =>
     const isLocalhost = uri.hostname === 'localhost' || uri.hostname === '127.0.0.1';
     const isHttps = uri.protocol === 'https:';
     if (!isLocalhost && !isHttps) {
-      event.node.res.statusCode = 400;
+      event.res.status = 400;
       return renderErrorPage('redirect_uri must be HTTPS or localhost');
     }
   } catch {
-    event.node.res.statusCode = 400;
+    event.res.status = 400;
     return renderErrorPage('Invalid redirect_uri format');
   }
 
   // Validate required credentials
   if (!orgId || !apiToken) {
-    setResponseHeader(event, 'Content-Type', 'text/html; charset=utf-8');
+    event.res.headers.set('Content-Type', 'text/html; charset=utf-8');
     return renderLoginForm({
       redirectUri,
       state,
@@ -219,7 +213,7 @@ export const authorizePostHandler = defineEventHandler(async (event: H3Event) =>
   }
 
   // Show success page with auto-redirect
-  setResponseHeader(event, 'Content-Type', 'text/html; charset=utf-8');
+  event.res.headers.set('Content-Type', 'text/html; charset=utf-8');
   return renderSuccessPage(redirectUrl.toString());
 });
 
@@ -231,21 +225,17 @@ export const authorizePostHandler = defineEventHandler(async (event: H3Event) =>
  * - authorization_code grant (with PKCE validation)
  * - refresh_token grant
  */
-export const tokenHandler = defineEventHandler(async (event: H3Event) => {
-  setResponseHeader(event, 'Content-Type', 'application/json');
+export const tokenHandler = defineHandler(async (event: H3Event) => {
+  event.res.headers.set('Content-Type', 'application/json');
 
   let body: Record<string, string>;
-  const contentType = event.node.req.headers['content-type'] || '';
+  const contentType = event.req.headers.get('content-type') || '';
 
   if (contentType.includes('application/x-www-form-urlencoded')) {
-    const rawBody = await readBody(event);
-    if (typeof rawBody === 'string') {
-      body = Object.fromEntries(new URLSearchParams(rawBody));
-    } else {
-      body = rawBody;
-    }
+    const rawText = await event.req.text();
+    body = Object.fromEntries(new URLSearchParams(rawText));
   } else {
-    body = await readBody(event);
+    body = (await event.req.json()) as Record<string, string>;
   }
 
   const { grant_type, code, code_verifier, refresh_token } = body;
@@ -257,7 +247,7 @@ export const tokenHandler = defineEventHandler(async (event: H3Event) => {
 
   // Validate authorization code grant
   if (grant_type !== 'authorization_code') {
-    event.node.res.statusCode = 400;
+    event.res.status = 400;
     return {
       error: 'unsupported_grant_type',
       error_description: 'Supported grant types: authorization_code, refresh_token',
@@ -265,7 +255,7 @@ export const tokenHandler = defineEventHandler(async (event: H3Event) => {
   }
 
   if (!code) {
-    event.node.res.statusCode = 400;
+    event.res.status = 400;
     return {
       error: 'invalid_request',
       error_description: 'Missing authorization code',
@@ -273,7 +263,7 @@ export const tokenHandler = defineEventHandler(async (event: H3Event) => {
   }
 
   if (!code_verifier) {
-    event.node.res.statusCode = 400;
+    event.res.status = 400;
     return {
       error: 'invalid_request',
       error_description: 'Missing code_verifier (PKCE required)',
@@ -288,7 +278,7 @@ export const tokenHandler = defineEventHandler(async (event: H3Event) => {
     if (payload.codeChallenge) {
       const expectedChallenge = createS256Challenge(code_verifier);
       if (expectedChallenge !== payload.codeChallenge) {
-        event.node.res.statusCode = 400;
+        event.res.status = 400;
         return {
           error: 'invalid_grant',
           error_description: 'Invalid code_verifier',
@@ -320,7 +310,7 @@ export const tokenHandler = defineEventHandler(async (event: H3Event) => {
       refresh_token: refreshToken,
     };
   } catch (error) {
-    event.node.res.statusCode = 400;
+    event.res.status = 400;
     return {
       error: 'invalid_grant',
       error_description: error instanceof Error ? error.message : 'Invalid authorization code',
@@ -333,7 +323,7 @@ export const tokenHandler = defineEventHandler(async (event: H3Event) => {
  */
 function handleRefreshToken(event: H3Event, refreshToken: string | undefined) {
   if (!refreshToken) {
-    event.node.res.statusCode = 400;
+    event.res.status = 400;
     return {
       error: 'invalid_request',
       error_description: 'Missing refresh_token',
@@ -368,7 +358,7 @@ function handleRefreshToken(event: H3Event, refreshToken: string | undefined) {
       refresh_token: newRefreshToken,
     };
   } catch (error) {
-    event.node.res.statusCode = 400;
+    event.res.status = 400;
     return {
       error: 'invalid_grant',
       error_description: error instanceof Error ? error.message : 'Invalid refresh token',

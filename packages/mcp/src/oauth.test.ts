@@ -1,4 +1,4 @@
-import { createApp, createRouter, toNodeListener } from 'h3';
+import { H3, toNodeHandler } from 'h3';
 import { createHash } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -51,17 +51,15 @@ describe('OAuth endpoints', () => {
     process.env.OAUTH_SECRET = 'test-oauth-secret';
 
     // Create test app
-    const app = createApp();
-    const router = createRouter();
-    router.get('/.well-known/oauth-authorization-server', oauthMetadataHandler);
-    router.post('/register', registerHandler);
-    router.get('/authorize', authorizeGetHandler);
-    router.post('/authorize', authorizePostHandler);
-    router.post('/token', tokenHandler);
-    app.use(router);
+    const app = new H3();
+    app.get('/.well-known/oauth-authorization-server', oauthMetadataHandler);
+    app.post('/register', registerHandler);
+    app.get('/authorize', authorizeGetHandler);
+    app.post('/authorize', authorizePostHandler);
+    app.post('/token', tokenHandler);
 
     // Start server
-    server = createServer(toNodeListener(app));
+    server = createServer(toNodeHandler(app));
     await new Promise<void>((resolve) => {
       server.listen(0, '127.0.0.1', () => {
         const addr = server.address();

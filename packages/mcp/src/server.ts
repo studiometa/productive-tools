@@ -21,7 +21,7 @@
  *   (No OAuth needed - uses Bearer token)
  */
 
-import { toNodeListener } from 'h3';
+import { toNodeHandler } from 'h3';
 import { createServer, type Server } from 'node:http';
 
 import { createHttpApp } from './http.js';
@@ -39,7 +39,7 @@ export function startHttpServer(
 ): Promise<Server> {
   return new Promise((resolve) => {
     const app = createHttpApp();
-    const server = createServer(toNodeListener(app));
+    const server = createServer(toNodeHandler(app));
 
     server.listen(port, host, () => {
       const displayHost = host === '0.0.0.0' ? 'localhost' : host;
