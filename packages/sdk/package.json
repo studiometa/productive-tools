@@ -32,7 +32,6 @@
     "access": "public"
   },
   "scripts": {
-    "dev": "vite build --watch",
     "build": "vite build && tsgo --emitDeclarationOnly",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -42,12 +41,11 @@
     "@studiometa/productive-api": "*"
   },
   "devDependencies": {
-    "@types/node": "^22.10.5",
     "@vitest/coverage-v8": "^4.1.0-beta.4",
     "vite": "^8.0.0-beta.14",
     "vitest": "^4.1.0-beta.4"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=24.0.0"
   }
 }
