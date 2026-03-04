@@ -5,15 +5,7 @@
  * The actual server startup is in server.ts.
  */
 
-import {
-  createApp,
-  createRouter,
-  defineEventHandler,
-  readBody,
-  getHeader,
-  setResponseHeader,
-  type App,
-} from 'h3';
+import { H3, defineHandler, type H3Event } from 'h3';
 
 import { parseAuthHeader } from './auth.js';
 import { executeToolWithCredentials } from './handlers.js';
@@ -77,30 +69,36 @@ export function handleToolsList() {
 }
 
 /**
- * Create the h3 application with all routes
+ * Get base URL from event headers
  */
-export function createHttpApp(): App {
-  const app = createApp();
-  const router = createRouter();
+function getBaseUrl(event: H3Event): string {
+  const host = event.req.headers.get('host') || 'localhost:3000';
+  const protocol = event.req.headers.get('x-forwarded-proto') || 'http';
+  return `${protocol}://${host}`;
+}
+
+/**
+ * Create the H3 application with all routes
+ */
+export function createHttpApp(): H3 {
+  const app = new H3();
 
   // OAuth 2.0 endpoints for Claude Desktop integration (MCP auth spec)
-  router.get('/.well-known/oauth-authorization-server', oauthMetadataHandler);
-  router.post('/register', registerHandler); // Dynamic Client Registration (RFC 7591)
-  router.get('/authorize', authorizeGetHandler);
-  router.post('/authorize', authorizePostHandler);
-  router.post('/token', tokenHandler);
+  app.get('/.well-known/oauth-authorization-server', oauthMetadataHandler);
+  app.post('/register', registerHandler); // Dynamic Client Registration (RFC 7591)
+  app.get('/authorize', authorizeGetHandler);
+  app.post('/authorize', authorizePostHandler);
+  app.post('/token', tokenHandler);
 
   // OAuth Protected Resource Metadata (RFC 9728 / MCP spec 2025-03-26)
   // This endpoint tells clients where to find the authorization server
-  router.get(
+  app.get(
     '/.well-known/oauth-protected-resource',
-    defineEventHandler((event) => {
-      const host = event.node.req.headers.host || 'localhost:3000';
-      const protocol = event.node.req.headers['x-forwarded-proto'] || 'http';
-      const baseUrl = `${protocol}://${host}`;
+    defineHandler((event) => {
+      const baseUrl = getBaseUrl(event);
 
-      setResponseHeader(event, 'Content-Type', 'application/json');
-      setResponseHeader(event, 'Cache-Control', 'public, max-age=3600');
+      event.res.headers.set('Content-Type', 'application/json');
+      event.res.headers.set('Cache-Control', 'public, max-age=3600');
 
       return {
         resource: `${baseUrl}/mcp`,
@@ -112,60 +110,57 @@ export function createHttpApp(): App {
   );
 
   // Health check endpoint
-  router.get(
+  app.get(
     '/',
-    defineEventHandler(() => {
+    defineHandler(() => {
       return { status: 'ok', service: 'productive-mcp', version: VERSION };
     }),
   );
 
-  router.get(
+  app.get(
     '/health',
-    defineEventHandler(() => {
+    defineHandler(() => {
       return { status: 'ok' };
     }),
   );
 
   // MCP endpoint - handles JSON-RPC over HTTP
-  router.post(
+  app.post(
     '/mcp',
-    defineEventHandler(async (event) => {
+    defineHandler(async (event) => {
       // Parse authorization header
-      const authHeader = getHeader(event, 'authorization');
+      const authHeader = event.req.headers.get('authorization');
       const credentials = parseAuthHeader(authHeader);
 
       if (!credentials) {
         // RFC 6750: Return WWW-Authenticate header to trigger OAuth flow
-        const host = event.node.req.headers.host || 'localhost:3000';
-        const protocol = event.node.req.headers['x-forwarded-proto'] || 'http';
-        const baseUrl = `${protocol}://${host}`;
+        const baseUrl = getBaseUrl(event);
 
-        setResponseHeader(event, 'Content-Type', 'application/json');
-        setResponseHeader(
-          event,
+        event.res.headers.set('Content-Type', 'application/json');
+        event.res.headers.set(
           'WWW-Authenticate',
           `Bearer resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`,
         );
-        event.node.res.statusCode = 401;
+        event.res.status = 401;
         return jsonRpcError(
           -32001,
           'Authentication required. Provide Bearer token with base64(organizationId:apiToken:userId)',
         );
       }
 
-      setResponseHeader(event, 'Content-Type', 'application/json');
+      event.res.headers.set('Content-Type', 'application/json');
 
       // Parse JSON-RPC request
-      let body: { method?: string; params?: unknown; id?: string | number };
+      let body: { method?: string; params?: unknown; id?: string | number } | undefined;
       try {
-        body = await readBody(event);
+        body = await event.req.json();
       } catch {
-        event.node.res.statusCode = 400;
+        event.res.status = 400;
         return jsonRpcError(-32700, 'Parse error: Invalid JSON');
       }
 
       if (!body || typeof body !== 'object') {
-        event.node.res.statusCode = 400;
+        event.res.status = 400;
         return jsonRpcError(-32700, 'Parse error: Invalid JSON');
       }
 
@@ -216,45 +211,52 @@ export function createHttpApp(): App {
   );
 
   // SSE endpoint for server-sent events (optional, for streaming responses)
-  router.get(
+  app.get(
     '/mcp/sse',
-    defineEventHandler(async (event) => {
-      const authHeader = getHeader(event, 'authorization');
+    defineHandler(async (event) => {
+      const authHeader = event.req.headers.get('authorization');
       const credentials = parseAuthHeader(authHeader);
 
       if (!credentials) {
         // RFC 6750: Return WWW-Authenticate header to trigger OAuth flow
-        const host = event.node.req.headers.host || 'localhost:3000';
-        const protocol = event.node.req.headers['x-forwarded-proto'] || 'http';
-        const baseUrl = `${protocol}://${host}`;
+        const baseUrl = getBaseUrl(event);
 
-        setResponseHeader(
-          event,
+        event.res.headers.set(
           'WWW-Authenticate',
           `Bearer resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`,
         );
-        event.node.res.statusCode = 401;
+        event.res.status = 401;
         return { error: 'Authentication required' };
       }
 
-      // Set SSE headers
-      setResponseHeader(event, 'Content-Type', 'text/event-stream');
-      setResponseHeader(event, 'Cache-Control', 'no-cache');
-      setResponseHeader(event, 'Connection', 'keep-alive');
+      // Node.js-specific SSE: access raw res for streaming
+      const nodeRuntime = event.runtime?.node;
+      const nodeRes = nodeRuntime?.res as import('node:http').ServerResponse | undefined;
+      if (!nodeRes) {
+        event.res.status = 501;
+        return { error: 'SSE requires Node.js runtime' };
+      }
+
+      // Write SSE headers directly to Node.js response (bypassing h3's pipeline)
+      nodeRes.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      });
 
       // Generate session ID and send it
       const sessionId = crypto.randomUUID();
 
       // Send initial session event
-      event.node.res.write(`event: session\ndata: ${JSON.stringify({ sessionId })}\n\n`);
+      nodeRes.write(`event: session\ndata: ${JSON.stringify({ sessionId })}\n\n`);
 
       // Keep connection alive
       const keepAlive = setInterval(() => {
-        event.node.res.write(': keepalive\n\n');
+        nodeRes.write(': keepalive\n\n');
       }, 30000);
 
       // Clean up on close
-      event.node.req.on('close', () => {
+      nodeRuntime?.req.on('close', () => {
         clearInterval(keepAlive);
       });
 
@@ -263,6 +265,5 @@ export function createHttpApp(): App {
     }),
   );
 
-  app.use(router);
   return app;
 }

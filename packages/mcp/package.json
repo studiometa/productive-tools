@@ -84,7 +84,7 @@
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@studiometa/productive-api": "*",
     "@studiometa/productive-core": "*",
-    "h3": "^1.15.5",
+    "h3": "^2.0.1-rc.14",
     "zod": "4.3.6"
   },
   "devDependencies": {

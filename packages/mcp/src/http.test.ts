@@ -1,4 +1,4 @@
-import { toNodeListener } from 'h3';
+import { toNodeHandler } from 'h3';
 import { createServer, type Server as HttpServer } from 'node:http';
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 
@@ -149,7 +149,7 @@ describe('HTTP Server Integration', () => {
 
   beforeAll(async () => {
     const app = createHttpApp();
-    server = createServer(toNodeListener(app));
+    server = createServer(toNodeHandler(app));
 
     await new Promise<void>((resolve) => {
       server.listen(0, '127.0.0.1', () => {
