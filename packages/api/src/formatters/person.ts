@@ -33,6 +33,12 @@ export function formatPerson(
     result.title = attrs.title as string;
   }
 
+  // Include custom_fields if present and non-empty
+  const customFields = attrs.custom_fields as Record<string, unknown> | null | undefined;
+  if (customFields && Object.keys(customFields).length > 0) {
+    result.custom_fields = customFields;
+  }
+
   // Include timestamps if requested
   if (opts.includeTimestamps) {
     result.created_at = attrs.created_at as string | undefined;

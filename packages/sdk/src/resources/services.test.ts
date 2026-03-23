@@ -33,6 +33,21 @@ describe('ServicesCollection', () => {
     vi.unstubAllGlobals();
   });
 
+  describe('get()', () => {
+    it('fetches a single service by ID', async () => {
+      vi.stubGlobal(
+        'fetch',
+        createMockFetch(() => ({
+          data: makeService('42', 'Design'),
+        })),
+      );
+
+      const col = new ServicesCollection(createApi());
+      const result = await col.get('42');
+      expect(result.data).toMatchObject({ id: '42', type: 'services', name: 'Design' });
+    });
+  });
+
   describe('list()', () => {
     it('calls getServices and resolves the response', async () => {
       vi.stubGlobal(

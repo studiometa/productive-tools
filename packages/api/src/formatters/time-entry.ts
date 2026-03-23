@@ -37,6 +37,12 @@ export function formatTimeEntry(
   if (attrs.approved !== undefined) {
     result.approved = attrs.approved as boolean;
   }
+  if (attrs.overhead !== undefined) {
+    result.overhead = attrs.overhead as boolean;
+  }
+  if (attrs.started_at !== undefined) {
+    result.started_at = attrs.started_at as string;
+  }
 
   // Include relationship IDs if requested
   if (opts.includeRelationshipIds) {

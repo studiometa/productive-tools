@@ -330,6 +330,15 @@ describe('ProductiveApi requests', () => {
       expect(fetchSpy.mock.calls[0][0] as string).toContain('/time_entries/99');
     });
 
+    it('getTimeEntry with include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '99' } });
+      await api.getTimeEntry('99', { include: ['person', 'service'] });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/time_entries/99');
+      expect(url).toContain('include=person%2Cservice');
+    });
+
     it('updateTimeEntry', async () => {
       const api = createApi();
       mockFetchResponse({ data: { id: '1' } });
@@ -340,6 +349,15 @@ describe('ProductiveApi requests', () => {
       const body = JSON.parse(opts!.body as string);
       expect(body.data.attributes.time).toBe(240);
       expect(body.data.attributes.note).toBe('updated');
+    });
+
+    it('updateTimeEntry with billable_time', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1' } });
+      await api.updateTimeEntry('1', { billable_time: 120 });
+      const [, opts] = fetchSpy.mock.calls[0];
+      const body = JSON.parse(opts!.body as string);
+      expect(body.data.attributes.billable_time).toBe(120);
     });
 
     it('createTimeEntry with task relationship', async () => {
@@ -461,6 +479,22 @@ describe('ProductiveApi requests', () => {
       await api.getServices({ page: 1, perPage: 50, filter: { project_id: '1' } });
       const url = fetchSpy.mock.calls[0][0] as string;
       expect(url).toContain('/services');
+    });
+
+    it('getService by id', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '42' } });
+      await api.getService('42');
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('/services/42');
+    });
+
+    it('getService with include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '42' } });
+      await api.getService('42', { include: ['deal'] });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/services/42');
+      expect(url).toContain('include=deal');
     });
   });
 

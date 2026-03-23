@@ -64,6 +64,8 @@ export interface ProductiveTimeEntry {
     note?: string;
     billable_time?: number;
     approved?: boolean;
+    overhead?: boolean;
+    started_at?: string;
     created_at: string;
     updated_at: string;
   };
@@ -124,6 +126,7 @@ export interface ProductivePerson {
     email: string;
     active: boolean;
     title?: string;
+    custom_fields?: Record<string, unknown> | null;
     created_at: string;
     updated_at: string;
   };
@@ -137,6 +140,7 @@ export interface ProductiveService {
     name: string;
     budgeted_time?: number;
     worked_time?: number;
+    billing_type_id?: number | null;
     created_at: string;
     updated_at: string;
   };
