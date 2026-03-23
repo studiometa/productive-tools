@@ -3,7 +3,9 @@
 /**
  * Productive MCP Server - HTTP Transport
  *
- * This is the remote HTTP server mode for Claude Desktop custom connectors.
+ * Uses StreamableHTTPServerTransport from the MCP SDK for spec-compliant
+ * JSON-RPC over HTTP with SSE streaming support.
+ *
  * Credentials are passed via Bearer token in the Authorization header.
  *
  * Token format: base64(organizationId:apiToken) or base64(organizationId:apiToken:userId)
@@ -14,17 +16,11 @@
  * Usage:
  *   productive-mcp-server
  *   PORT=3000 productive-mcp-server
- *
- * Claude Desktop custom connector config:
- *   Name: Productive
- *   URL: https://productive.mcp.ikko.dev
- *   (No OAuth needed - uses Bearer token)
  */
 
-import { toNodeHandler } from 'h3';
 import { createServer, type Server } from 'node:http';
 
-import { createHttpApp } from './http.js';
+import { createHttpHandler } from './http.js';
 import { VERSION } from './version.js';
 
 const DEFAULT_PORT = 3000;
@@ -38,8 +34,8 @@ export function startHttpServer(
   host: string = DEFAULT_HOST,
 ): Promise<Server> {
   return new Promise((resolve) => {
-    const app = createHttpApp();
-    const server = createServer(toNodeHandler(app));
+    const handler = createHttpHandler();
+    const server = createServer(handler);
 
     server.listen(port, host, () => {
       const displayHost = host === '0.0.0.0' ? 'localhost' : host;
@@ -49,8 +45,10 @@ export function startHttpServer(
       console.log(`Running at http://${displayHost}:${port}`);
       console.log('');
       console.log('Endpoints:');
-      console.log(`  POST http://${displayHost}:${port}/mcp - MCP JSON-RPC endpoint`);
-      console.log(`  GET  http://${displayHost}:${port}/health - Health check`);
+      console.log(`  POST   http://${displayHost}:${port}/mcp - MCP JSON-RPC (SSE streaming)`);
+      console.log(`  GET    http://${displayHost}:${port}/mcp - SSE stream (server notifications)`);
+      console.log(`  DELETE http://${displayHost}:${port}/mcp - Session termination`);
+      console.log(`  GET    http://${displayHost}:${port}/health - Health check`);
       console.log('');
       console.log('OAuth 2.0 (MCP auth spec compliant):');
       console.log(`  GET  http://${displayHost}:${port}/.well-known/oauth-authorization-server`);

@@ -1,4 +1,3 @@
-import { toNodeHandler } from 'h3';
 import { createServer, type Server as HttpServer } from 'node:http';
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 
@@ -23,12 +22,6 @@ vi.mock('./resources.js', () => ({
       description: 'Schema overview',
       mimeType: 'application/json',
     },
-    {
-      uri: 'productive://instructions',
-      name: 'Instructions',
-      description: 'Instructions',
-      mimeType: 'application/json',
-    },
   ]),
   listResourceTemplates: vi.fn().mockReturnValue([
     {
@@ -49,93 +42,43 @@ vi.mock('./resources.js', () => ({
 }));
 
 import { executeToolWithCredentials } from './handlers.js';
-import {
-  createHttpApp,
-  jsonRpcError,
-  jsonRpcSuccess,
-  handleInitialize,
-  handleToolsList,
-} from './http.js';
-import { listResources, listResourceTemplates, readResource } from './resources.js';
+import { createHttpApp, createHttpHandler, createMcpServer, extractCredentials } from './http.js';
 import { VERSION } from './version.js';
 
 describe('http module', () => {
-  describe('jsonRpcError', () => {
-    it('should create error response with id', () => {
-      const error = jsonRpcError(-32600, 'Invalid request', 123);
-
-      expect(error).toEqual({
-        jsonrpc: '2.0',
-        error: { code: -32600, message: 'Invalid request' },
-        id: 123,
+  describe('extractCredentials', () => {
+    it('returns credentials from authInfo extra', () => {
+      const creds = extractCredentials({
+        extra: { organizationId: 'org-1', apiToken: 'token-1', userId: 'user-1' },
+      });
+      expect(creds).toEqual({
+        organizationId: 'org-1',
+        apiToken: 'token-1',
+        userId: 'user-1',
       });
     });
 
-    it('should create error response without id', () => {
-      const error = jsonRpcError(-32700, 'Parse error');
+    it('returns undefined when authInfo is undefined', () => {
+      expect(extractCredentials(undefined)).toBeUndefined();
+    });
 
-      expect(error).toEqual({
-        jsonrpc: '2.0',
-        error: { code: -32700, message: 'Parse error' },
-        id: null,
-      });
+    it('returns undefined when extra is missing', () => {
+      expect(extractCredentials({})).toBeUndefined();
+    });
+
+    it('returns undefined when organizationId is missing', () => {
+      expect(extractCredentials({ extra: { apiToken: 'token' } })).toBeUndefined();
+    });
+
+    it('returns undefined when apiToken is missing', () => {
+      expect(extractCredentials({ extra: { organizationId: 'org' } })).toBeUndefined();
     });
   });
 
-  describe('jsonRpcSuccess', () => {
-    it('should create success response', () => {
-      const success = jsonRpcSuccess({ data: 'test' }, 456);
-
-      expect(success).toEqual({
-        jsonrpc: '2.0',
-        result: { data: 'test' },
-        id: 456,
-      });
-    });
-
-    it('should handle string id', () => {
-      const success = jsonRpcSuccess({ ok: true }, 'request-1');
-
-      expect(success.id).toBe('request-1');
-    });
-  });
-
-  describe('handleInitialize', () => {
-    it('should return server info and capabilities', () => {
-      const result = handleInitialize();
-
-      expect(result.protocolVersion).toBe('2024-11-05');
-      expect(result.serverInfo.name).toBe('productive-mcp');
-      expect(result.serverInfo.version).toBe(VERSION);
-      expect(result.capabilities.tools).toEqual({});
-      expect(result.capabilities.resources).toEqual({});
-    });
-
-    it('should include instructions for Claude Desktop', () => {
-      const result = handleInitialize();
-
-      expect(result.instructions).toBeDefined();
-      expect(typeof result.instructions).toBe('string');
-      expect(result.instructions).toContain('productive');
-      expect(result.instructions).toContain('Best Practices');
-    });
-  });
-
-  describe('handleToolsList', () => {
-    it('should return tools array', () => {
-      const result = handleToolsList();
-
-      expect(result.tools).toBeDefined();
-      expect(Array.isArray(result.tools)).toBe(true);
-      expect(result.tools.length).toBe(1); // Single consolidated tool
-
-      // Should NOT include stdio-only tools
-      const configure = result.tools.find((t) => t.name === 'productive_configure');
-      expect(configure).toBeUndefined();
-
-      // Should include single consolidated tool
-      const productive = result.tools.find((t) => t.name === 'productive');
-      expect(productive).toBeDefined();
+  describe('createMcpServer', () => {
+    it('creates a server with tools and resources capabilities', () => {
+      const server = createMcpServer();
+      expect(server).toBeDefined();
     });
   });
 });
@@ -147,9 +90,14 @@ describe('HTTP Server Integration', () => {
   // Valid auth token: base64("test-org:test-token:test-user")
   const validToken = Buffer.from('test-org:test-token:test-user').toString('base64');
 
+  const sseHeaders = {
+    'Content-Type': 'application/json',
+    Accept: 'text/event-stream, application/json',
+  };
+
   beforeAll(async () => {
-    const app = createHttpApp();
-    server = createServer(toNodeHandler(app));
+    const handler = createHttpHandler();
+    server = createServer(handler);
 
     await new Promise<void>((resolve) => {
       server.listen(0, '127.0.0.1', () => {
@@ -171,6 +119,81 @@ describe('HTTP Server Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
+
+  /**
+   * Parse SSE events from response text
+   */
+  function parseSseEvents(text: string): Array<{ event?: string; data: unknown }> {
+    const events: Array<{ event?: string; data: unknown }> = [];
+    const lines = text.split('\n');
+    let currentEvent: string | undefined;
+    let dataLines: string[] = [];
+
+    for (const line of lines) {
+      if (line.startsWith('event: ')) {
+        currentEvent = line.slice(7);
+      } else if (line.startsWith('data: ')) {
+        dataLines.push(line.slice(6));
+      } else if (line === '' && dataLines.length > 0) {
+        const dataStr = dataLines.join('\n');
+        try {
+          events.push({ event: currentEvent, data: JSON.parse(dataStr) });
+        } catch {
+          events.push({ event: currentEvent, data: dataStr });
+        }
+        currentEvent = undefined;
+        dataLines = [];
+      }
+    }
+
+    return events;
+  }
+
+  /**
+   * Extract the JSON-RPC result from SSE events
+   */
+  function getResult(events: Array<{ event?: string; data: unknown }>): unknown {
+    const message = events.find((e) => e.event === 'message');
+    const data = message?.data as { result?: unknown; error?: unknown } | undefined;
+    return data?.result ?? data;
+  }
+
+  /**
+   * Initialize a session and return the session ID.
+   */
+  async function initializeSession(): Promise<string> {
+    const response = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: { ...sseHeaders, Authorization: `Bearer ${validToken}` },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'initialize',
+        params: {
+          protocolVersion: '2024-11-05',
+          capabilities: {},
+          clientInfo: { name: 'test-client', version: '1.0.0' },
+        },
+        id: 1,
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const sessionId = response.headers.get('mcp-session-id');
+    expect(sessionId).toBeTruthy();
+
+    // Send initialized notification
+    await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        ...sseHeaders,
+        Authorization: `Bearer ${validToken}`,
+        'mcp-session-id': sessionId!,
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }),
+    });
+
+    return sessionId!;
+  }
 
   describe('health endpoints', () => {
     it('GET / should return service info', async () => {
@@ -204,8 +227,7 @@ describe('HTTP Server Integration', () => {
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.error.code).toBe(-32001);
-      expect(data.error.message).toContain('Authentication required');
+      expect(data.error).toContain('Authentication required');
     });
 
     it('should return 401 with invalid token format', async () => {
@@ -217,13 +239,11 @@ describe('HTTP Server Integration', () => {
         },
         body: JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1 }),
       });
-      await response.json();
 
       expect(response.status).toBe(401);
     });
 
     it('should return 401 with incomplete credentials', async () => {
-      // Token with only org (missing apiToken)
       const incompleteToken = Buffer.from('only-org-id').toString('base64');
 
       const response = await fetch(`${baseUrl}/mcp`, {
@@ -234,24 +254,59 @@ describe('HTTP Server Integration', () => {
         },
         body: JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1 }),
       });
-      await response.json();
 
       expect(response.status).toBe(401);
     });
 
-    it('should accept valid Bearer token', async () => {
+    it('should return WWW-Authenticate header on 401', async () => {
       const response = await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${validToken}`,
-        },
-        body: JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1 }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
       });
-      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      const wwwAuth = response.headers.get('www-authenticate');
+      expect(wwwAuth).toContain('Bearer');
+      expect(wwwAuth).toContain('oauth-protected-resource');
+    });
+  });
+
+  describe('POST /mcp - session lifecycle', () => {
+    it('should initialize a session and return session ID', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: { ...sseHeaders, Authorization: `Bearer ${validToken}` },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'initialize',
+          params: {
+            protocolVersion: '2024-11-05',
+            capabilities: {},
+            clientInfo: { name: 'test', version: '1.0.0' },
+          },
+          id: 1,
+        }),
+      });
 
       expect(response.status).toBe(200);
-      expect(data.result).toBeDefined();
+      const sessionId = response.headers.get('mcp-session-id');
+      expect(sessionId).toBeTruthy();
+
+      const events = parseSseEvents(await response.text());
+      const result = getResult(events) as Record<string, unknown>;
+      expect(result).toBeDefined();
+      expect((result.serverInfo as { name: string }).name).toBe('productive-mcp');
+    });
+
+    it('should reject non-initialize requests without session ID', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: { ...sseHeaders, Authorization: `Bearer ${validToken}` },
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'tools/list', id: 2 }),
+      });
+
+      expect(response.status).toBe(400);
     });
 
     it('should accept token without userId', async () => {
@@ -259,67 +314,57 @@ describe('HTTP Server Integration', () => {
 
       const response = await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${tokenWithoutUser}`,
-        },
-        body: JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1 }),
+        headers: { ...sseHeaders, Authorization: `Bearer ${tokenWithoutUser}` },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'initialize',
+          params: {
+            protocolVersion: '2024-11-05',
+            capabilities: {},
+            clientInfo: { name: 'test', version: '1.0.0' },
+          },
+          id: 1,
+        }),
       });
-      const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.result).toBeDefined();
     });
   });
 
-  describe('POST /mcp - JSON-RPC methods', () => {
-    it('should handle initialize method', async () => {
+  describe('POST /mcp - MCP protocol', () => {
+    it('should handle tools/list', async () => {
+      const sessionId = await initializeSession();
+
       const response = await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          ...sseHeaders,
           Authorization: `Bearer ${validToken}`,
-        },
-        body: JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1 }),
-      });
-      const data = await response.json();
-
-      expect(response.status).toBe(200);
-      expect(data.jsonrpc).toBe('2.0');
-      expect(data.id).toBe(1);
-      expect(data.result.protocolVersion).toBe('2024-11-05');
-      expect(data.result.serverInfo.name).toBe('productive-mcp');
-    });
-
-    it('should handle tools/list method', async () => {
-      const response = await fetch(`${baseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${validToken}`,
+          'mcp-session-id': sessionId,
         },
         body: JSON.stringify({ jsonrpc: '2.0', method: 'tools/list', id: 2 }),
       });
-      const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.result.tools).toBeDefined();
-      expect(Array.isArray(data.result.tools)).toBe(true);
+      const events = parseSseEvents(await response.text());
+      const result = getResult(events) as { tools: Array<{ name: string }> };
 
-      // Verify single consolidated tool
-      const productiveTool = data.result.tools.find(
-        (t: { name: string }) => t.name === 'productive',
-      );
+      expect(result.tools).toBeDefined();
+      expect(Array.isArray(result.tools)).toBe(true);
+
+      const productiveTool = result.tools.find((t) => t.name === 'productive');
       expect(productiveTool).toBeDefined();
-      expect(productiveTool.inputSchema).toBeDefined();
     });
 
-    it('should handle tools/call method', async () => {
+    it('should handle tools/call', async () => {
+      const sessionId = await initializeSession();
+
       const response = await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          ...sseHeaders,
           Authorization: `Bearer ${validToken}`,
+          'mcp-session-id': sessionId,
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -331,12 +376,13 @@ describe('HTTP Server Integration', () => {
           id: 3,
         }),
       });
-      const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.result.content).toBeDefined();
+      const events = parseSseEvents(await response.text());
+      const result = getResult(events) as { content: unknown[] };
 
-      // Verify handler was called with correct credentials
+      expect(result.content).toBeDefined();
+
       expect(executeToolWithCredentials).toHaveBeenCalledWith(
         'productive',
         { resource: 'projects', action: 'list', page: 1 },
@@ -348,104 +394,173 @@ describe('HTTP Server Integration', () => {
       );
     });
 
-    it('should return error for unknown method', async () => {
+    it('should handle resources/list', async () => {
+      const sessionId = await initializeSession();
+
       const response = await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          ...sseHeaders,
           Authorization: `Bearer ${validToken}`,
+          'mcp-session-id': sessionId,
         },
-        body: JSON.stringify({ jsonrpc: '2.0', method: 'unknown/method', id: 4 }),
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'resources/list', id: 10 }),
       });
-      const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.error).toBeDefined();
-      expect(data.error.code).toBe(-32601);
-      expect(data.error.message).toContain('Method not found');
+      const events = parseSseEvents(await response.text());
+      const result = getResult(events) as { resources: unknown[] };
+
+      expect(result.resources).toBeDefined();
+      expect(Array.isArray(result.resources)).toBe(true);
     });
 
-    it('should preserve request id in response', async () => {
+    it('should handle resources/templates/list', async () => {
+      const sessionId = await initializeSession();
+
       const response = await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          ...sseHeaders,
           Authorization: `Bearer ${validToken}`,
+          'mcp-session-id': sessionId,
         },
-        body: JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 'custom-id-123' }),
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'resources/templates/list', id: 11 }),
       });
-      const data = await response.json();
-
-      expect(data.id).toBe('custom-id-123');
-    });
-
-    it('should handle missing id gracefully', async () => {
-      const response = await fetch(`${baseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${validToken}`,
-        },
-        body: JSON.stringify({ jsonrpc: '2.0', method: 'initialize' }),
-      });
-      const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.id).toBeNull();
-    });
-  });
+      const events = parseSseEvents(await response.text());
+      const result = getResult(events) as { resourceTemplates: unknown[] };
 
-  describe('POST /mcp - error handling', () => {
-    it('should handle tool execution errors', async () => {
+      expect(result.resourceTemplates).toBeDefined();
+      expect(Array.isArray(result.resourceTemplates)).toBe(true);
+    });
+
+    it('should handle resources/read', async () => {
+      const sessionId = await initializeSession();
+
       const response = await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          ...sseHeaders,
           Authorization: `Bearer ${validToken}`,
+          'mcp-session-id': sessionId,
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
-          method: 'tools/call',
-          params: {
-            name: 'failing_tool',
-            arguments: {},
-          },
-          id: 5,
+          method: 'resources/read',
+          params: { uri: 'productive://schema' },
+          id: 12,
         }),
       });
-      const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.error).toBeDefined();
-      expect(data.error.code).toBe(-32603);
-      expect(data.error.message).toContain('Tool execution failed');
+      const events = parseSseEvents(await response.text());
+      const result = getResult(events) as { contents: unknown[] };
+
+      expect(result.contents).toBeDefined();
     });
 
-    it('should handle empty body', async () => {
+    it('should return error for invalid JSON body', async () => {
       const response = await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${validToken}`,
-        },
-        body: '',
-      });
-
-      // Should return an error (either 400 or parse error)
-      expect(response.status).toBeGreaterThanOrEqual(200);
-    });
-
-    it('should return parse error for non-JSON body', async () => {
-      const response = await fetch(`${baseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+          ...sseHeaders,
           Authorization: `Bearer ${validToken}`,
         },
         body: 'not valid json {{{',
       });
 
-      expect([200, 400]).toContain(response.status);
+      expect(response.status).toBe(400);
+    });
+
+    it('should return error for empty body', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          ...sseHeaders,
+          Authorization: `Bearer ${validToken}`,
+        },
+        body: '',
+      });
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('GET /mcp - SSE stream', () => {
+    it('should return 401 without auth header', async () => {
+      const response = await fetch(`${baseUrl}/mcp`);
+      expect(response.status).toBe(401);
+    });
+
+    it('should return 400 without session ID', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        headers: {
+          Authorization: `Bearer ${validToken}`,
+          Accept: 'text/event-stream',
+        },
+      });
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 with invalid session ID', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        headers: {
+          Authorization: `Bearer ${validToken}`,
+          Accept: 'text/event-stream',
+          'mcp-session-id': 'nonexistent-session',
+        },
+      });
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('DELETE /mcp - session termination', () => {
+    it('should return 401 without auth header', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, { method: 'DELETE' });
+      expect(response.status).toBe(401);
+    });
+
+    it('should return 400 without session ID', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${validToken}` },
+      });
+      expect(response.status).toBe(400);
+    });
+
+    it('should terminate an existing session', async () => {
+      const sessionId = await initializeSession();
+
+      const response = await fetch(`${baseUrl}/mcp`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${validToken}`,
+          'mcp-session-id': sessionId,
+        },
+      });
+
+      // Session should be terminated
+      expect([200, 204]).toContain(response.status);
+    });
+  });
+
+  describe('Method not allowed', () => {
+    it('should return 405 for PUT /mcp', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${validToken}` },
+      });
+      expect(response.status).toBe(405);
+    });
+
+    it('should return 405 for PATCH /mcp', async () => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${validToken}` },
+      });
+      expect(response.status).toBe(405);
     });
   });
 
@@ -457,22 +572,18 @@ describe('HTTP Server Integration', () => {
       expect(response.status).toBe(200);
       expect(data).toHaveProperty('resource');
       expect(data).toHaveProperty('authorization_servers');
-      expect(data).toHaveProperty('scopes_supported');
       expect(data.scopes_supported).toContain('productive');
-      expect(data).toHaveProperty('bearer_methods_supported');
       expect(data.bearer_methods_supported).toContain('header');
     });
 
     it('should include cache-control header', async () => {
       const response = await fetch(`${baseUrl}/.well-known/oauth-protected-resource`);
-
       expect(response.headers.get('cache-control')).toContain('max-age=3600');
     });
 
     it('should include the /mcp resource URL', async () => {
       const response = await fetch(`${baseUrl}/.well-known/oauth-protected-resource`);
       const data = await response.json();
-
       expect(data.resource).toContain('/mcp');
     });
 
@@ -481,220 +592,7 @@ describe('HTTP Server Integration', () => {
         headers: { 'x-forwarded-proto': 'https' },
       });
       const data = await response.json();
-
-      expect(response.status).toBe(200);
-      // Should use the forwarded protocol
       expect(data.authorization_servers[0]).toContain('https://');
-    });
-  });
-
-  describe('GET /mcp/sse', () => {
-    it('should return 401 without auth header', async () => {
-      const response = await fetch(`${baseUrl}/mcp/sse`);
-
-      expect(response.status).toBe(401);
-      const data = await response.json();
-      expect(data).toHaveProperty('error');
-      expect(data.error).toContain('Authentication required');
-    });
-
-    it('should return 401 with invalid token', async () => {
-      const response = await fetch(`${baseUrl}/mcp/sse`, {
-        headers: { Authorization: 'Bearer invalid-token' },
-      });
-
-      expect(response.status).toBe(401);
-    });
-
-    it('should return WWW-Authenticate header on 401 for SSE', async () => {
-      const response = await fetch(`${baseUrl}/mcp/sse`);
-
-      expect(response.status).toBe(401);
-      const wwwAuth = response.headers.get('www-authenticate');
-      expect(wwwAuth).toContain('Bearer');
-      expect(wwwAuth).toContain('oauth-protected-resource');
-    });
-
-    it('should use x-forwarded-proto in WWW-Authenticate URL for SSE', async () => {
-      const response = await fetch(`${baseUrl}/mcp/sse`, {
-        headers: { 'x-forwarded-proto': 'https' },
-      });
-
-      expect(response.status).toBe(401);
-      const wwwAuth = response.headers.get('www-authenticate');
-      expect(wwwAuth).toContain('https://');
-    });
-
-    it('should start SSE stream with valid auth and send session event', async () => {
-      const controller = new AbortController();
-      const { signal } = controller;
-
-      try {
-        const response = await fetch(`${baseUrl}/mcp/sse`, {
-          headers: { Authorization: `Bearer ${validToken}` },
-          signal,
-        });
-
-        expect(response.status).toBe(200);
-        expect(response.headers.get('content-type')).toContain('text/event-stream');
-        expect(response.headers.get('cache-control')).toContain('no-cache');
-
-        // Read first chunk to get session event
-        const reader = response.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        // Read until we get the session event
-        while (!buffer.includes('event: session')) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-        }
-
-        expect(buffer).toContain('event: session');
-        expect(buffer).toContain('sessionId');
-        reader.cancel();
-      } finally {
-        controller.abort();
-      }
-    });
-
-    it('should clean up interval when SSE connection closes', async () => {
-      // Test the close event handler path by aborting after connection
-      const controller = new AbortController();
-
-      const response = await fetch(`${baseUrl}/mcp/sse`, {
-        headers: { Authorization: `Bearer ${validToken}` },
-        signal: controller.signal,
-      });
-
-      expect(response.status).toBe(200);
-      const reader = response.body!.getReader();
-
-      // Read until session event then abort
-      const decoder = new TextDecoder();
-      let buffer = '';
-      while (!buffer.includes('event: session')) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-      }
-
-      // Abort the connection to trigger the close handler
-      reader.cancel();
-      controller.abort();
-
-      // Give the server time to process the close event
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      // If we get here without errors, the close handler worked correctly
-      expect(buffer).toContain('sessionId');
-    });
-  });
-
-  describe('POST /mcp - resources methods', () => {
-    it('should handle resources/list method', async () => {
-      const response = await fetch(`${baseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${validToken}`,
-        },
-        body: JSON.stringify({ jsonrpc: '2.0', method: 'resources/list', id: 10 }),
-      });
-      const data = await response.json();
-
-      expect(response.status).toBe(200);
-      expect(data.result.resources).toBeDefined();
-      expect(Array.isArray(data.result.resources)).toBe(true);
-      expect(listResources).toHaveBeenCalled();
-    });
-
-    it('should handle resources/templates/list method', async () => {
-      const response = await fetch(`${baseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${validToken}`,
-        },
-        body: JSON.stringify({ jsonrpc: '2.0', method: 'resources/templates/list', id: 11 }),
-      });
-      const data = await response.json();
-
-      expect(response.status).toBe(200);
-      expect(data.result.resourceTemplates).toBeDefined();
-      expect(Array.isArray(data.result.resourceTemplates)).toBe(true);
-      expect(listResourceTemplates).toHaveBeenCalled();
-    });
-
-    it('should handle resources/read method', async () => {
-      const response = await fetch(`${baseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${validToken}`,
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'resources/read',
-          params: { uri: 'productive://schema' },
-          id: 12,
-        }),
-      });
-      const data = await response.json();
-
-      expect(response.status).toBe(200);
-      expect(data.result.contents).toBeDefined();
-      expect(Array.isArray(data.result.contents)).toBe(true);
-      expect(readResource).toHaveBeenCalledWith('productive://schema', {
-        organizationId: 'test-org',
-        apiToken: 'test-token',
-        userId: 'test-user',
-      });
-    });
-
-    it('should return error for resources/read without uri', async () => {
-      const response = await fetch(`${baseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${validToken}`,
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'resources/read',
-          params: {},
-          id: 13,
-        }),
-      });
-      const data = await response.json();
-
-      expect(response.status).toBe(200);
-      expect(data.error).toBeDefined();
-      expect(data.error.code).toBe(-32602);
-      expect(data.error.message).toContain('uri is required');
-    });
-
-    it('should return error when readResource throws', async () => {
-      const response = await fetch(`${baseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${validToken}`,
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'resources/read',
-          params: { uri: 'productive://unknown' },
-          id: 14,
-        }),
-      });
-      const data = await response.json();
-
-      expect(response.status).toBe(200);
-      expect(data.error).toBeDefined();
-      expect(data.error.code).toBe(-32603);
-      expect(data.error.message).toContain('Unknown resource URI');
     });
   });
 });

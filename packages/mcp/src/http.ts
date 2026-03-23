@@ -1,11 +1,32 @@
 /**
  * HTTP transport handlers for Productive MCP Server
  *
- * This module contains the app/router creation logic for the HTTP transport.
- * The actual server startup is in server.ts.
+ * Uses StreamableHTTPServerTransport from the MCP SDK for spec-compliant
+ * JSON-RPC over HTTP with SSE streaming support.
+ *
+ * Architecture:
+ * - POST/GET/DELETE /mcp → delegated to StreamableHTTPServerTransport
+ * - OAuth, health, metadata endpoints → handled by h3
+ *
+ * Uses stateful mode: one MCP Server + Transport per session.
+ * The session is initialized on the first `initialize` request and reused
+ * for subsequent requests via the `mcp-session-id` header.
  */
 
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ListResourceTemplatesRequestSchema,
+  ReadResourceRequestSchema,
+  isInitializeRequest,
+} from '@modelcontextprotocol/sdk/types.js';
 import { H3, defineHandler, type H3Event } from 'h3';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+
+import type { ProductiveCredentials } from './auth.js';
 
 import { parseAuthHeader } from './auth.js';
 import { executeToolWithCredentials } from './handlers.js';
@@ -22,54 +43,158 @@ import { TOOLS } from './tools.js';
 import { VERSION } from './version.js';
 
 /**
- * JSON-RPC error response
+ * Extract credentials from AuthInfo extra data.
+ * Returns undefined if credentials are missing or invalid.
  */
-export function jsonRpcError(code: number, message: string, id: string | number | null = null) {
-  return {
-    jsonrpc: '2.0',
-    error: { code, message },
-    id,
-  };
+export function extractCredentials(
+  authInfo: { extra?: Record<string, unknown> } | undefined,
+): ProductiveCredentials | undefined {
+  const extra = authInfo?.extra;
+  if (!extra) return undefined;
+  const { organizationId, apiToken, userId } = extra as Record<string, string>;
+  if (!organizationId || !apiToken) return undefined;
+  return { organizationId, apiToken, userId };
 }
 
 /**
- * JSON-RPC success response
+ * Create and configure the MCP Server for HTTP transport.
+ * Unlike stdio, credentials come from the auth header per-request via authInfo.extra.
  */
-export function jsonRpcSuccess(result: unknown, id: string | number | null = null) {
-  return {
-    jsonrpc: '2.0',
-    result,
-    id,
-  };
-}
-
-/**
- * Handle the initialize JSON-RPC method
- */
-export function handleInitialize() {
-  return {
-    protocolVersion: '2024-11-05',
-    serverInfo: {
+export function createMcpServer(): Server {
+  const server = new Server(
+    {
       name: 'productive-mcp',
       version: VERSION,
     },
-    capabilities: {
-      tools: {},
-      resources: {},
+    {
+      capabilities: {
+        tools: {},
+        resources: {},
+      },
+      instructions: INSTRUCTIONS,
     },
-    instructions: INSTRUCTIONS,
+  );
+
+  // List available tools (HTTP-only, no stdio config tools)
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    return { tools: TOOLS };
+  });
+
+  // Handle tool calls — credentials come from authInfo.extra
+  server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+    const credentials = extractCredentials(extra.authInfo);
+    if (!credentials) {
+      return {
+        content: [{ type: 'text', text: 'Error: Authentication required' }],
+        isError: true,
+      };
+    }
+
+    const { name, arguments: args } = request.params;
+    try {
+      return await executeToolWithCredentials(
+        name,
+        (args as Record<string, unknown>) || {},
+        credentials,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: `Error: ${message}` }],
+        isError: true,
+      };
+    }
+  });
+
+  // List resources
+  server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    return { resources: listResources() };
+  });
+
+  // List resource templates
+  server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
+    return { resourceTemplates: listResourceTemplates() };
+  });
+
+  // Read a resource
+  server.setRequestHandler(ReadResourceRequestSchema, async (request, extra) => {
+    const credentials = extractCredentials(extra.authInfo);
+    if (!credentials) {
+      throw new Error('Authentication required');
+    }
+    return readResource(request.params.uri, credentials);
+  });
+
+  return server;
+}
+
+/**
+ * Get base URL from request headers (Node.js IncomingMessage)
+ */
+function getBaseUrlFromReq(req: IncomingMessage): string {
+  const host = req.headers['host'] || 'localhost:3000';
+  const protocol = (req.headers['x-forwarded-proto'] as string) || 'http';
+  return `${protocol}://${host}`;
+}
+
+/**
+ * Send a JSON response on a Node.js ServerResponse
+ */
+function sendJson(
+  res: ServerResponse,
+  status: number,
+  data: unknown,
+  headers?: Record<string, string>,
+): void {
+  const body = JSON.stringify(data);
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    ...headers,
+  });
+  res.end(body);
+}
+
+/**
+ * Authenticate an incoming request.
+ * Returns credentials on success, or sends a 401 response and returns undefined.
+ */
+function authenticateRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+): ProductiveCredentials | undefined {
+  const authHeader = req.headers['authorization'] || null;
+  const credentials = parseAuthHeader(authHeader);
+
+  if (!credentials) {
+    const baseUrl = getBaseUrlFromReq(req);
+    sendJson(res, 401, { error: 'Authentication required' }, {
+      'WWW-Authenticate': `Bearer resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`,
+    });
+    return undefined;
+  }
+
+  return credentials;
+}
+
+/**
+ * Inject auth credentials into a Node.js request object for the MCP transport.
+ * The SDK passes req.auth through to handler extra.authInfo.
+ */
+function injectAuth(req: IncomingMessage, credentials: ProductiveCredentials): void {
+  (req as IncomingMessage & { auth?: unknown }).auth = {
+    token: req.headers['authorization']?.replace('Bearer ', '') || '',
+    clientId: credentials.organizationId,
+    scopes: ['productive'],
+    extra: {
+      organizationId: credentials.organizationId,
+      apiToken: credentials.apiToken,
+      userId: credentials.userId,
+    },
   };
 }
 
 /**
- * Handle the tools/list JSON-RPC method
- */
-export function handleToolsList() {
-  return { tools: TOOLS };
-}
-
-/**
- * Get base URL from event headers
+ * Get base URL from h3 event headers
  */
 function getBaseUrl(event: H3Event): string {
   const host = event.req.headers.get('host') || 'localhost:3000';
@@ -78,7 +203,8 @@ function getBaseUrl(event: H3Event): string {
 }
 
 /**
- * Create the H3 application with all routes
+ * Create the H3 application with non-MCP routes (OAuth, health, metadata).
+ * MCP routes (POST/GET/DELETE /mcp) are handled separately at the Node.js HTTP level.
  */
 export function createHttpApp(): H3 {
   const app = new H3();
@@ -91,7 +217,6 @@ export function createHttpApp(): H3 {
   app.post('/token', tokenHandler);
 
   // OAuth Protected Resource Metadata (RFC 9728 / MCP spec 2025-03-26)
-  // This endpoint tells clients where to find the authorization server
   app.get(
     '/.well-known/oauth-protected-resource',
     defineHandler((event) => {
@@ -124,146 +249,196 @@ export function createHttpApp(): H3 {
     }),
   );
 
-  // MCP endpoint - handles JSON-RPC over HTTP
-  app.post(
-    '/mcp',
-    defineHandler(async (event) => {
-      // Parse authorization header
-      const authHeader = event.req.headers.get('authorization');
-      const credentials = parseAuthHeader(authHeader);
+  return app;
+}
 
-      if (!credentials) {
-        // RFC 6750: Return WWW-Authenticate header to trigger OAuth flow
-        const baseUrl = getBaseUrl(event);
+/** Map of session ID → transport for active sessions */
+type SessionMap = Map<string, StreamableHTTPServerTransport>;
 
-        event.res.headers.set('Content-Type', 'application/json');
-        event.res.headers.set(
-          'WWW-Authenticate',
-          `Bearer resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`,
-        );
-        event.res.status = 401;
-        return jsonRpcError(
-          -32001,
-          'Authentication required. Provide Bearer token with base64(organizationId:apiToken:userId)',
-        );
+/**
+ * Handle a POST /mcp request.
+ * Creates a new session on `initialize`, reuses existing sessions otherwise.
+ */
+async function handleMcpPost(
+  req: IncomingMessage,
+  res: ServerResponse,
+  credentials: ProductiveCredentials,
+  sessions: SessionMap,
+): Promise<void> {
+  // Parse the body to check if it's an initialize request
+  const body = await readBody(req);
+  if (!body) {
+    sendJson(res, 400, {
+      jsonrpc: '2.0',
+      error: { code: -32700, message: 'Parse error: Invalid JSON' },
+      id: null,
+    });
+    return;
+  }
+
+  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+
+  // Check for existing session
+  if (sessionId && sessions.has(sessionId)) {
+    const transport = sessions.get(sessionId)!;
+    injectAuth(req, credentials);
+    await transport.handleRequest(req, res, body);
+    return;
+  }
+
+  // New session: must be an initialize request
+  if (!isInitializeRequest(body)) {
+    sendJson(res, 400, {
+      jsonrpc: '2.0',
+      error: {
+        code: -32000,
+        message: 'Bad Request: No valid session ID provided, and this is not an initialization request',
+      },
+      id: null,
+    });
+    return;
+  }
+
+  // Create new transport and server for this session
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => crypto.randomUUID(),
+    onsessioninitialized: (sid: string) => {
+      sessions.set(sid, transport);
+    },
+  });
+
+  transport.onclose = () => {
+    const sid = transport.sessionId;
+    if (sid) sessions.delete(sid);
+  };
+
+  const server = createMcpServer();
+  await server.connect(transport);
+
+  injectAuth(req, credentials);
+  await transport.handleRequest(req, res, body);
+}
+
+/**
+ * Handle a GET /mcp request (SSE stream for server-initiated notifications).
+ */
+async function handleMcpGet(
+  req: IncomingMessage,
+  res: ServerResponse,
+  credentials: ProductiveCredentials,
+  sessions: SessionMap,
+): Promise<void> {
+  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+
+  if (!sessionId || !sessions.has(sessionId)) {
+    sendJson(res, 400, { error: 'Invalid or missing session ID' });
+    return;
+  }
+
+  const transport = sessions.get(sessionId)!;
+  injectAuth(req, credentials);
+  await transport.handleRequest(req, res);
+}
+
+/**
+ * Handle a DELETE /mcp request (session termination).
+ */
+async function handleMcpDelete(
+  req: IncomingMessage,
+  res: ServerResponse,
+  credentials: ProductiveCredentials,
+  sessions: SessionMap,
+): Promise<void> {
+  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+
+  if (!sessionId || !sessions.has(sessionId)) {
+    sendJson(res, 400, { error: 'Invalid or missing session ID' });
+    return;
+  }
+
+  const transport = sessions.get(sessionId)!;
+  injectAuth(req, credentials);
+  await transport.handleRequest(req, res);
+}
+
+/**
+ * Read and parse the request body as JSON.
+ */
+function readBody(req: IncomingMessage): Promise<unknown | null> {
+  return new Promise((resolve) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    req.on('end', () => {
+      const raw = Buffer.concat(chunks).toString('utf-8');
+      if (!raw) {
+        resolve(null);
+        return;
       }
-
-      event.res.headers.set('Content-Type', 'application/json');
-
-      // Parse JSON-RPC request
-      let body: { method?: string; params?: unknown; id?: string | number } | undefined;
       try {
-        body = await event.req.json();
+        resolve(JSON.parse(raw));
       } catch {
-        event.res.status = 400;
-        return jsonRpcError(-32700, 'Parse error: Invalid JSON');
+        resolve(null);
       }
+    });
+    req.on('error', () => resolve(null));
+  });
+}
 
-      if (!body || typeof body !== 'object') {
-        event.res.status = 400;
-        return jsonRpcError(-32700, 'Parse error: Invalid JSON');
-      }
+/**
+ * Create a Node.js HTTP request handler that routes between MCP transport and h3.
+ *
+ * - POST/GET/DELETE /mcp → StreamableHTTPServerTransport (MCP SDK)
+ * - Everything else → h3 (OAuth, health, metadata)
+ */
+export function createHttpHandler(): (req: IncomingMessage, res: ServerResponse) => void {
+  const app = createHttpApp();
+  const sessions: SessionMap = new Map();
 
-      const { method, params, id } = body;
+  // h3 handler for non-MCP routes
+  let h3Handler: ((req: IncomingMessage, res: ServerResponse) => void) | null = null;
+  const getH3Handler = async () => {
+    if (!h3Handler) {
+      const { toNodeHandler } = await import('h3');
+      h3Handler = toNodeHandler(app);
+    }
+    return h3Handler;
+  };
+
+  return async (req: IncomingMessage, res: ServerResponse) => {
+    const url = req.url || '/';
+    const method = req.method || 'GET';
+
+    // Route MCP requests to StreamableHTTPServerTransport
+    if (url === '/mcp' || url.startsWith('/mcp?')) {
+      // Authenticate first
+      const credentials = authenticateRequest(req, res);
+      if (!credentials) return;
 
       try {
-        if (method === 'initialize') {
-          return jsonRpcSuccess(handleInitialize(), id ?? null);
+        if (method === 'POST') {
+          await handleMcpPost(req, res, credentials, sessions);
+        } else if (method === 'GET') {
+          await handleMcpGet(req, res, credentials, sessions);
+        } else if (method === 'DELETE') {
+          await handleMcpDelete(req, res, credentials, sessions);
+        } else {
+          sendJson(res, 405, { error: 'Method not allowed' });
         }
-
-        if (method === 'tools/list') {
-          return jsonRpcSuccess(handleToolsList(), id ?? null);
-        }
-
-        if (method === 'tools/call') {
-          const { name, arguments: args } = params as {
-            name: string;
-            arguments?: Record<string, unknown>;
-          };
-          const result = await executeToolWithCredentials(name, args || {}, credentials);
-          return jsonRpcSuccess(result, id ?? null);
-        }
-
-        if (method === 'resources/list') {
-          return jsonRpcSuccess({ resources: listResources() }, id ?? null);
-        }
-
-        if (method === 'resources/templates/list') {
-          return jsonRpcSuccess({ resourceTemplates: listResourceTemplates() }, id ?? null);
-        }
-
-        if (method === 'resources/read') {
-          const { uri } = (params as { uri: string }) ?? {};
-          if (!uri) {
-            return jsonRpcError(-32602, 'Invalid params: uri is required', id ?? null);
-          }
-          const result = await readResource(uri, credentials);
-          return jsonRpcSuccess(result, id ?? null);
-        }
-
-        // Unknown method
-        return jsonRpcError(-32601, `Method not found: ${method}`, id ?? null);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        return jsonRpcError(-32603, `Internal error: ${message}`, id ?? null);
+        if (!res.headersSent) {
+          sendJson(res, 500, {
+            jsonrpc: '2.0',
+            error: { code: -32603, message: `Internal error: ${message}` },
+            id: null,
+          });
+        }
       }
-    }),
-  );
+      return;
+    }
 
-  // SSE endpoint for server-sent events (optional, for streaming responses)
-  app.get(
-    '/mcp/sse',
-    defineHandler(async (event) => {
-      const authHeader = event.req.headers.get('authorization');
-      const credentials = parseAuthHeader(authHeader);
-
-      if (!credentials) {
-        // RFC 6750: Return WWW-Authenticate header to trigger OAuth flow
-        const baseUrl = getBaseUrl(event);
-
-        event.res.headers.set(
-          'WWW-Authenticate',
-          `Bearer resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`,
-        );
-        event.res.status = 401;
-        return { error: 'Authentication required' };
-      }
-
-      // Node.js-specific SSE: access raw res for streaming
-      const nodeRuntime = event.runtime?.node;
-      const nodeRes = nodeRuntime?.res as import('node:http').ServerResponse | undefined;
-      if (!nodeRes) {
-        event.res.status = 501;
-        return { error: 'SSE requires Node.js runtime' };
-      }
-
-      // Write SSE headers directly to Node.js response (bypassing h3's pipeline)
-      nodeRes.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      });
-
-      // Generate session ID and send it
-      const sessionId = crypto.randomUUID();
-
-      // Send initial session event
-      nodeRes.write(`event: session\ndata: ${JSON.stringify({ sessionId })}\n\n`);
-
-      // Keep connection alive
-      const keepAlive = setInterval(() => {
-        nodeRes.write(': keepalive\n\n');
-      }, 30000);
-
-      // Clean up on close
-      nodeRuntime?.req.on('close', () => {
-        clearInterval(keepAlive);
-      });
-
-      // Don't end the response - keep it open for SSE
-      return new Promise(() => {});
-    }),
-  );
-
-  return app;
+    // Everything else goes to h3
+    const handler = await getH3Handler();
+    handler(req, res);
+  };
 }
