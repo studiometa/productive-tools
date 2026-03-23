@@ -4,7 +4,7 @@
  * Uses the createResourceHandler factory for the common list pattern.
  */
 
-import { listServices } from '@studiometa/productive-core';
+import { getService, listServices } from '@studiometa/productive-core';
 
 import type { CommonArgs } from './types.js';
 
@@ -20,10 +20,11 @@ import { jsonResult } from './utils.js';
  */
 export const handleServices = createResourceHandler<CommonArgs>({
   resource: 'services',
-  actions: ['list'],
+  actions: ['list', 'get'],
   formatter: formatService,
   executors: {
     list: listServices,
+    get: getService,
   },
   customActions: {
     list: async (args, ctx, execCtx) => {

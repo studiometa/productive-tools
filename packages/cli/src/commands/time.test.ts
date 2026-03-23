@@ -272,7 +272,7 @@ describe('time command', () => {
 
       await timeGet(['1'], ctx);
 
-      expect(getTimeEntry).toHaveBeenCalledWith('1');
+      expect(getTimeEntry).toHaveBeenCalledWith('1', { include: undefined });
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 

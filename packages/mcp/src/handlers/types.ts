@@ -68,6 +68,7 @@ export interface TaskArgs extends CommonArgs {
  */
 export interface TimeArgs extends CommonArgs {
   project_id?: string;
+  billable_time?: number;
 }
 
 /**

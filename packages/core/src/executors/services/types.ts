@@ -4,6 +4,13 @@
 
 import type { PaginationOptions } from '../types.js';
 
+export interface GetServiceOptions {
+  /** Service ID */
+  id: string;
+  /** Related resources to include */
+  include?: string[];
+}
+
 export interface ListServicesOptions extends PaginationOptions {
   projectId?: string;
   dealId?: string;

@@ -166,7 +166,7 @@ export interface FormattedPerson {
   email: string;
   active: boolean;
   title?: string;
-  custom_fields?: Record<string, unknown> | null;
+  custom_fields?: Record<string, unknown>;
   // Optional timestamps (when includeTimestamps: true)
   created_at?: string;
   updated_at?: string;

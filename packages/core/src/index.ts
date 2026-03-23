@@ -91,8 +91,8 @@ export { buildPeopleFilters, getPerson, listPeople } from './executors/people/in
 export type { GetPersonOptions, ListPeopleOptions } from './executors/people/index.js';
 
 // Services executors
-export { buildServicesFilters, listServices } from './executors/services/index.js';
-export type { ListServicesOptions } from './executors/services/index.js';
+export { getService, buildServicesFilters, listServices } from './executors/services/index.js';
+export type { GetServiceOptions, ListServicesOptions } from './executors/services/index.js';
 
 // Companies executors
 export {

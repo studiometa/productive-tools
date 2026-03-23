@@ -54,6 +54,15 @@ describe('updateTimeEntry', () => {
     expect(updateApi).toHaveBeenCalledWith('42', { time: 120, note: 'Changed' });
   });
 
+  it('updates billable_time', async () => {
+    const updateApi = vi.fn().mockResolvedValue({ data: mockEntry });
+    const ctx = createTestExecutorContext({ api: { updateTimeEntry: updateApi } });
+
+    await updateTimeEntry({ id: '42', billable_time: 120 }, ctx);
+
+    expect(updateApi).toHaveBeenCalledWith('42', { billable_time: 120 });
+  });
+
   it('throws ExecutorValidationError when no updates provided', async () => {
     const ctx = createTestExecutorContext();
 

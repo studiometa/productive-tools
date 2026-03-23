@@ -21,6 +21,7 @@ vi.mock('@studiometa/productive-api', async (importOriginal) => {
     createTask: vi.fn(),
     updateTask: vi.fn(),
     getServices: vi.fn(),
+    getService: vi.fn(),
     getPeople: vi.fn(),
     getPerson: vi.fn(),
     getReports: vi.fn(),
@@ -270,7 +271,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBeUndefined();
-        expect(mockApi.getTimeEntry).toHaveBeenCalledWith('456');
+        expect(mockApi.getTimeEntry).toHaveBeenCalledWith('456', { include: undefined });
       });
 
       it('should handle create action', async () => {
@@ -562,10 +563,26 @@ describe('handlers', () => {
         expect(content._hints).toBeUndefined();
       });
 
-      it('should return error for invalid action', async () => {
+      it('should handle get action', async () => {
+        const mockResponse = {
+          data: { id: '123', type: 'services', attributes: { name: 'Development' } },
+        };
+        mockApi.getService.mockResolvedValue(mockResponse);
+
         const result = await executeToolWithCredentials(
           'productive',
           { resource: 'services', action: 'get', id: '123' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getService).toHaveBeenCalledWith('123', { include: undefined });
+      });
+
+      it('should return error for invalid action', async () => {
+        const result = await executeToolWithCredentials(
+          'productive',
+          { resource: 'services', action: 'create' },
           credentials,
         );
 

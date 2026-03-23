@@ -44,6 +44,8 @@ export interface ListTimeEntriesOptions extends PaginationOptions {
 export interface GetTimeEntryOptions {
   /** Time entry ID */
   id: string;
+  /** Related resources to include (e.g., person, service) */
+  include?: string[];
 }
 
 /**
@@ -74,6 +76,8 @@ export interface UpdateTimeEntryOptions {
   id: string;
   /** New duration in minutes */
   time?: number;
+  /** New billable time in minutes */
+  billable_time?: number;
   /** New date (YYYY-MM-DD) */
   date?: string;
   /** New note */

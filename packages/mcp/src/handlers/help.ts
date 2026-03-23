@@ -292,6 +292,8 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       note: 'Description of work done',
       billable_time: 'Billable time in minutes',
       approved: 'Whether the entry is approved',
+      overhead: 'Whether the entry is overhead time',
+      started_at: 'Start time for timer-based entries (ISO 8601)',
     },
     examples: [
       {
@@ -343,6 +345,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       name: 'Service name',
       budgeted_time: 'Budgeted time in minutes',
       worked_time: 'Logged time in minutes',
+      billing_type_id: 'Billing type: 1=fixed, 2=actuals, 3=non_billable',
     },
     examples: [
       {
@@ -385,6 +388,7 @@ const RESOURCE_HELP: Record<string, ResourceHelp> = {
       email: 'Email address',
       title: 'Job title',
       active: 'Whether the person is active',
+      custom_fields: 'Employee custom fields (when Employee Fields are enabled)',
     },
     examples: [
       { description: 'Get current user', params: { resource: 'people', action: 'me' } },

@@ -74,6 +74,7 @@ export const handleTime = createResourceHandler<TimeArgs>({
   update: {
     mapOptions: (args) => ({
       time: args.time ?? undefined,
+      billable_time: args.billable_time ?? undefined,
       date: args.date ?? undefined,
       note: args.note ?? undefined,
     }),

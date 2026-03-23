@@ -15,9 +15,12 @@ export async function getTimeEntry(
   options: GetTimeEntryOptions,
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductiveTimeEntry>> {
-  const response = await ctx.api.getTimeEntry(options.id);
+  const response = await ctx.api.getTimeEntry(options.id, {
+    include: options.include,
+  });
 
   return {
     data: response.data,
+    included: response.included,
   };
 }

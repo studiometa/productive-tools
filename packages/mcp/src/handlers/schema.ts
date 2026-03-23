@@ -77,6 +77,7 @@ const RESOURCE_SCHEMAS: Record<string, ResourceSchemaData> = {
       note: { required: false, type: 'string' },
       task_id: { required: false, type: 'string' },
     },
+    update: ['time', 'billable_time', 'date', 'note'],
     includes: ['person', 'service', 'task'],
   },
 
