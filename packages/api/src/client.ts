@@ -226,8 +226,15 @@ export class ProductiveApi {
     return this.request<ProductiveApiResponse<ProductiveTimeEntry[]>>('/time_entries', { query });
   }
 
-  async getTimeEntry(id: string): Promise<ProductiveApiResponse<ProductiveTimeEntry>> {
-    return this.request<ProductiveApiResponse<ProductiveTimeEntry>>(`/time_entries/${id}`);
+  async getTimeEntry(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductiveTimeEntry>> {
+    const query: Record<string, string> = {};
+    if (params?.include?.length) query['include'] = params.include.join(',');
+    return this.request<ProductiveApiResponse<ProductiveTimeEntry>>(`/time_entries/${id}`, {
+      query,
+    });
   }
 
   async createTimeEntry(data: {
@@ -273,6 +280,7 @@ export class ProductiveApi {
     id: string,
     data: {
       time?: number;
+      billable_time?: number;
       note?: string;
       date?: string;
     },
@@ -487,6 +495,15 @@ export class ProductiveApi {
     }
 
     return this.request<ProductiveApiResponse<ProductiveService[]>>('/services', { query });
+  }
+
+  async getService(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductiveService>> {
+    const query: Record<string, string> = {};
+    if (params?.include?.length) query['include'] = params.include.join(',');
+    return this.request<ProductiveApiResponse<ProductiveService>>(`/services/${id}`, { query });
   }
 
   // Companies

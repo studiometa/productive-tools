@@ -2,7 +2,7 @@ import type { ProductiveService, ProductiveApiMeta } from '@studiometa/productiv
 
 import type { Service } from '../types.js';
 
-import { resolveListResponse } from '../json-api.js';
+import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator } from '../pagination.js';
 import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
@@ -18,7 +18,20 @@ export interface ServiceListResult {
   meta: ProductiveApiMeta | undefined;
 }
 
+export interface ServiceGetResult {
+  data: Service;
+  meta: ProductiveApiMeta | undefined;
+}
+
 export class ServicesCollection extends BaseCollection {
+  /**
+   * Get a single service by ID.
+   */
+  async get(id: string): Promise<ServiceGetResult> {
+    const response = await this.wrapRequest(() => this.api.getService(id));
+    return resolveSingleResponse<ProductiveService, Service>(response);
+  }
+
   /**
    * List services with optional filtering and pagination.
    */

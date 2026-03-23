@@ -100,6 +100,8 @@ export interface FormattedTimeEntry {
   note: string | null;
   billable_time?: number;
   approved?: boolean;
+  overhead?: boolean;
+  started_at?: string;
   // Optional relationship IDs (when includeRelationshipIds: true)
   person_id?: string;
   service_id?: string;
@@ -164,6 +166,7 @@ export interface FormattedPerson {
   email: string;
   active: boolean;
   title?: string;
+  custom_fields?: Record<string, unknown> | null;
   // Optional timestamps (when includeTimestamps: true)
   created_at?: string;
   updated_at?: string;
@@ -175,6 +178,7 @@ export interface FormattedService {
   name: string;
   budgeted_time?: number;
   worked_time?: number;
+  billing_type_id?: number | null;
   // Optional timestamps (when includeTimestamps: true)
   created_at?: string;
   updated_at?: string;

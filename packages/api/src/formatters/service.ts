@@ -28,6 +28,9 @@ export function formatService(
   if (attrs.worked_time !== undefined) {
     result.worked_time = attrs.worked_time as number;
   }
+  if (attrs.billing_type_id !== undefined) {
+    result.billing_type_id = attrs.billing_type_id as number | null;
+  }
 
   // Include timestamps if requested
   if (opts.includeTimestamps) {

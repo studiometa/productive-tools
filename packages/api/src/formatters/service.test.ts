@@ -45,4 +45,27 @@ describe('formatService', () => {
     const r = formatService({ id: '4', type: 'services', attributes: {} });
     expect(r.name).toBe('');
   });
+
+  it('includes billing_type_id when present', () => {
+    const r = formatService({
+      id: '5',
+      type: 'services',
+      attributes: { name: 'Dev', billing_type_id: 2 },
+    });
+    expect(r.billing_type_id).toBe(2);
+  });
+
+  it('includes billing_type_id when null', () => {
+    const r = formatService({
+      id: '6',
+      type: 'services',
+      attributes: { name: 'Dev', billing_type_id: null },
+    });
+    expect(r.billing_type_id).toBeNull();
+  });
+
+  it('omits billing_type_id when absent', () => {
+    const r = formatService({ id: '7', type: 'services', attributes: { name: 'Dev' } });
+    expect(r.billing_type_id).toBeUndefined();
+  });
 });

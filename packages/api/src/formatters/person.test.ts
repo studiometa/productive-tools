@@ -51,4 +51,31 @@ describe('formatPerson', () => {
     const r = formatPerson({ id: '4', type: 'people', attributes: { first_name: 'X' } });
     expect(r.title).toBeUndefined();
   });
+
+  it('includes custom_fields when present and non-empty', () => {
+    const r = formatPerson({
+      id: '5',
+      type: 'people',
+      attributes: { first_name: 'A', custom_fields: { '100': 'value' } },
+    });
+    expect(r.custom_fields).toEqual({ '100': 'value' });
+  });
+
+  it('omits custom_fields when empty', () => {
+    const r = formatPerson({
+      id: '6',
+      type: 'people',
+      attributes: { first_name: 'A', custom_fields: {} },
+    });
+    expect(r.custom_fields).toBeUndefined();
+  });
+
+  it('omits custom_fields when null', () => {
+    const r = formatPerson({
+      id: '7',
+      type: 'people',
+      attributes: { first_name: 'A', custom_fields: null },
+    });
+    expect(r.custom_fields).toBeUndefined();
+  });
 });

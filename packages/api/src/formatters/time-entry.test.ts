@@ -51,4 +51,29 @@ describe('formatTimeEntry', () => {
     expect(result.service_id).toBeUndefined();
     expect(result.project_id).toBeUndefined();
   });
+
+  it('includes overhead when present', () => {
+    const entry = { ...mockEntry, attributes: { ...mockEntry.attributes, overhead: true } };
+    const result = formatTimeEntry(entry);
+    expect(result.overhead).toBe(true);
+  });
+
+  it('omits overhead when not present', () => {
+    const result = formatTimeEntry(mockEntry);
+    expect(result.overhead).toBeUndefined();
+  });
+
+  it('includes started_at when present', () => {
+    const entry = {
+      ...mockEntry,
+      attributes: { ...mockEntry.attributes, started_at: '2026-01-15T10:00:00Z' },
+    };
+    const result = formatTimeEntry(entry);
+    expect(result.started_at).toBe('2026-01-15T10:00:00Z');
+  });
+
+  it('omits started_at when not present', () => {
+    const result = formatTimeEntry(mockEntry);
+    expect(result.started_at).toBeUndefined();
+  });
 });
