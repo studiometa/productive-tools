@@ -2,13 +2,15 @@
  * Attachments command entry point
  */
 
+import type { CommandRouterConfig } from '../../utils/command-router.js';
+
 import { createCommandRouter } from '../../utils/command-router.js';
 import { attachmentsList, attachmentsGet, attachmentsDelete } from './handlers.js';
 
 /**
- * Handle attachments command
+ * Router configuration — exported for testability
  */
-export const handleAttachmentsCommand = createCommandRouter({
+export const attachmentsCommandConfig: CommandRouterConfig = {
   resource: 'attachments',
   handlers: {
     list: attachmentsList,
@@ -17,4 +19,9 @@ export const handleAttachmentsCommand = createCommandRouter({
     delete: [attachmentsDelete, 'args'],
     rm: [attachmentsDelete, 'args'],
   },
-});
+};
+
+/**
+ * Handle attachments command
+ */
+export const handleAttachmentsCommand = createCommandRouter(attachmentsCommandConfig);

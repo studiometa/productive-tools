@@ -1,110 +1,144 @@
-/**
- * Tests for discussions command routing
- *
- * Note: These tests mock the handlers to test the switch case routing.
- * Handler-level tests are in discussions.test.ts which tests handlers directly with mock API.
- */
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { createTestContext } from '../../context.js';
+import { createCommandRouter } from '../../utils/command-router.js';
+import { discussionsCommandConfig } from './command.js';
+import {
+  discussionsList, discussionsGet, discussionsAdd, discussionsUpdate, discussionsDelete, discussionsResolve, discussionsReopen } from './handlers.js';
 
-import { handleDiscussionsCommand } from './command.js';
-
-// Mock the handlers module for command routing tests
-vi.mock('./handlers.js', () => ({
-  discussionsList: vi.fn().mockResolvedValue(undefined),
-  discussionsGet: vi.fn().mockResolvedValue(undefined),
-  discussionsAdd: vi.fn().mockResolvedValue(undefined),
-  discussionsUpdate: vi.fn().mockResolvedValue(undefined),
-  discussionsDelete: vi.fn().mockResolvedValue(undefined),
-  discussionsResolve: vi.fn().mockResolvedValue(undefined),
-  discussionsReopen: vi.fn().mockResolvedValue(undefined),
-}));
-
-describe('handleDiscussionsCommand routing', () => {
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
-
-  const mockOptions = {
-    token: 'test-token',
-    'org-id': 'test-org',
-    format: 'json',
-  };
-
-  beforeEach(() => {
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-    vi.clearAllMocks();
+describe('discussions command wiring', () => {
+  it('uses "discussions" as resource name', () => {
+    expect(discussionsCommandConfig.resource).toBe('discussions');
   });
 
-  afterEach(() => vi.restoreAllMocks());
-
-  it('routes list subcommand', async () => {
-    await handleDiscussionsCommand('list', [], mockOptions);
-    const { discussionsList } = await import('./handlers.js');
-    expect(discussionsList).toHaveBeenCalled();
+  it('wires list and ls to discussionsList', () => {
+    expect(discussionsCommandConfig.handlers.list).toBe(discussionsList);
+    expect(discussionsCommandConfig.handlers.ls).toBe(discussionsList);
   });
 
-  it('routes ls alias to list handler', async () => {
-    await handleDiscussionsCommand('ls', [], mockOptions);
-    const { discussionsList } = await import('./handlers.js');
-    expect(discussionsList).toHaveBeenCalled();
+  it('wires get to discussionsGet as args handler', () => {
+    expect(discussionsCommandConfig.handlers.get).toEqual([discussionsGet, 'args']);
   });
 
-  it('routes get subcommand', async () => {
-    await handleDiscussionsCommand('get', ['123'], mockOptions);
-    const { discussionsGet } = await import('./handlers.js');
-    expect(discussionsGet).toHaveBeenCalled();
+  it('wires add and create to discussionsAdd', () => {
+    expect(discussionsCommandConfig.handlers.add).toBe(discussionsAdd);
+    expect(discussionsCommandConfig.handlers.create).toBe(discussionsAdd);
   });
 
-  it('routes add subcommand', async () => {
-    await handleDiscussionsCommand('add', [], mockOptions);
-    const { discussionsAdd } = await import('./handlers.js');
-    expect(discussionsAdd).toHaveBeenCalled();
+  it('wires update to discussionsUpdate as args handler', () => {
+    expect(discussionsCommandConfig.handlers.update).toEqual([discussionsUpdate, 'args']);
   });
 
-  it('routes create alias to add handler', async () => {
-    await handleDiscussionsCommand('create', [], mockOptions);
-    const { discussionsAdd } = await import('./handlers.js');
-    expect(discussionsAdd).toHaveBeenCalled();
+  it('wires delete and rm to discussionsDelete as args handler', () => {
+    expect(discussionsCommandConfig.handlers.delete).toEqual([discussionsDelete, 'args']);
+    expect(discussionsCommandConfig.handlers.rm).toEqual([discussionsDelete, 'args']);
   });
 
-  it('routes update subcommand', async () => {
-    await handleDiscussionsCommand('update', ['123'], mockOptions);
-    const { discussionsUpdate } = await import('./handlers.js');
-    expect(discussionsUpdate).toHaveBeenCalled();
+  it('wires resolve to discussionsResolve as args handler', () => {
+    expect(discussionsCommandConfig.handlers.resolve).toEqual([discussionsResolve, 'args']);
   });
 
-  it('routes delete subcommand', async () => {
-    await handleDiscussionsCommand('delete', ['123'], mockOptions);
-    const { discussionsDelete } = await import('./handlers.js');
-    expect(discussionsDelete).toHaveBeenCalled();
+  it('wires reopen to discussionsReopen as args handler', () => {
+    expect(discussionsCommandConfig.handlers.reopen).toEqual([discussionsReopen, 'args']);
+  });
+});
+
+describe('discussions command routing', () => {
+  const mockDiscussionsList = vi.fn().mockResolvedValue(undefined);
+  const mockDiscussionsGet = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
+  const mockDiscussionsAdd = vi.fn().mockResolvedValue(undefined);
+  const mockDiscussionsUpdate = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
+  const mockDiscussionsDelete = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
+  const mockDiscussionsResolve = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
+  const mockDiscussionsReopen = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
+
+  const router = createCommandRouter({
+    resource: 'discussions',
+    handlers: {
+      list: mockDiscussionsList,
+      ls: mockDiscussionsList,
+      get: [mockDiscussionsGet, 'args'],
+      add: mockDiscussionsAdd,
+      create: mockDiscussionsAdd,
+      update: [mockDiscussionsUpdate, 'args'],
+      delete: [mockDiscussionsDelete, 'args'],
+      rm: [mockDiscussionsDelete, 'args'],
+      resolve: [mockDiscussionsResolve, 'args'],
+      reopen: [mockDiscussionsReopen, 'args'],
+    },
+    contextFactory: (options) => createTestContext({ options }),
   });
 
-  it('routes rm alias to delete handler', async () => {
-    await handleDiscussionsCommand('rm', ['123'], mockOptions);
-    const { discussionsDelete } = await import('./handlers.js');
-    expect(discussionsDelete).toHaveBeenCalled();
+  afterEach(() => {
+    vi.restoreAllMocks();
+    mockDiscussionsList.mockClear();
+    mockDiscussionsGet.mockClear();
+    mockDiscussionsAdd.mockClear();
+    mockDiscussionsUpdate.mockClear();
+    mockDiscussionsDelete.mockClear();
+    mockDiscussionsResolve.mockClear();
+    mockDiscussionsReopen.mockClear();
   });
 
-  it('routes resolve subcommand', async () => {
-    await handleDiscussionsCommand('resolve', ['123'], mockOptions);
-    const { discussionsResolve } = await import('./handlers.js');
-    expect(discussionsResolve).toHaveBeenCalled();
+  it('routes "list" subcommand to discussionsList handler', async () => {
+    await router('list', [], { format: 'json' });
+    expect(mockDiscussionsList).toHaveBeenCalled();
   });
 
-  it('routes reopen subcommand', async () => {
-    await handleDiscussionsCommand('reopen', ['123'], mockOptions);
-    const { discussionsReopen } = await import('./handlers.js');
-    expect(discussionsReopen).toHaveBeenCalled();
+  it('routes "ls" alias to discussionsList handler', async () => {
+    await router('ls', [], { format: 'json' });
+    expect(mockDiscussionsList).toHaveBeenCalled();
+  });
+
+  it('routes "get" subcommand to discussionsGet handler', async () => {
+    await router('get', ['123'], { format: 'json' });
+    expect(mockDiscussionsGet).toHaveBeenCalledWith(['123'], expect.anything());
+  });
+
+  it('routes "add" subcommand to discussionsAdd handler', async () => {
+    await router('add', [], { format: 'json' });
+    expect(mockDiscussionsAdd).toHaveBeenCalled();
+  });
+
+  it('routes "create" alias to discussionsAdd handler', async () => {
+    await router('create', [], { format: 'json' });
+    expect(mockDiscussionsAdd).toHaveBeenCalled();
+  });
+
+  it('routes "update" subcommand to discussionsUpdate handler', async () => {
+    await router('update', ['123'], { format: 'json' });
+    expect(mockDiscussionsUpdate).toHaveBeenCalledWith(['123'], expect.anything());
+  });
+
+  it('routes "delete" subcommand to discussionsDelete handler', async () => {
+    await router('delete', ['123'], { format: 'json' });
+    expect(mockDiscussionsDelete).toHaveBeenCalledWith(['123'], expect.anything());
+  });
+
+  it('routes "rm" alias to discussionsDelete handler', async () => {
+    await router('rm', ['123'], { format: 'json' });
+    expect(mockDiscussionsDelete).toHaveBeenCalledWith(['123'], expect.anything());
+  });
+
+  it('routes "resolve" subcommand to discussionsResolve handler', async () => {
+    await router('resolve', ['123'], { format: 'json' });
+    expect(mockDiscussionsResolve).toHaveBeenCalledWith(['123'], expect.anything());
+  });
+
+  it('routes "reopen" subcommand to discussionsReopen handler', async () => {
+    await router('reopen', ['123'], { format: 'json' });
+    expect(mockDiscussionsReopen).toHaveBeenCalledWith(['123'], expect.anything());
   });
 
   it('exits with error for unknown subcommand', async () => {
-    await handleDiscussionsCommand('unknown', [], mockOptions);
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-  });
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-  it('exits with error for another invalid subcommand', async () => {
-    await handleDiscussionsCommand('invalid', [], mockOptions);
-    expect(processExitSpy).toHaveBeenCalledWith(1);
+    await router('unknown', [], { format: 'json' });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Unknown discussions subcommand: unknown'),
+    );
   });
 });

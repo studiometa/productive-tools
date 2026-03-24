@@ -2,13 +2,15 @@
  * Companies command entry point
  */
 
+import type { CommandRouterConfig } from '../../utils/command-router.js';
+
 import { createCommandRouter } from '../../utils/command-router.js';
 import { companiesList, companiesGet, companiesAdd, companiesUpdate } from './handlers.js';
 
 /**
- * Handle companies command
+ * Router configuration — exported for testability
  */
-export const handleCompaniesCommand = createCommandRouter({
+export const companiesCommandConfig: CommandRouterConfig = {
   resource: 'companies',
   handlers: {
     list: companiesList,
@@ -18,4 +20,9 @@ export const handleCompaniesCommand = createCommandRouter({
     create: companiesAdd,
     update: [companiesUpdate, 'args'],
   },
-});
+};
+
+/**
+ * Handle companies command
+ */
+export const handleCompaniesCommand = createCommandRouter(companiesCommandConfig);

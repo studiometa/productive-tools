@@ -1,28 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+import { createTestContext } from '../context.js';
 import { createCommandRouter, type ListHandler, type ArgsHandler } from './command-router.js';
-
-// Mock the context module to avoid API token requirement
-vi.mock('../context.js', () => ({
-  createContext: vi.fn((options) => ({
-    api: {},
-    formatter: { output: vi.fn(), error: vi.fn() },
-    config: { apiToken: 'test-token', organizationId: '12345' },
-    cache: {},
-    options,
-    createSpinner: vi.fn(() => ({ start: vi.fn(), succeed: vi.fn(), fail: vi.fn() })),
-    getPagination: () => ({ page: 1, perPage: 100 }),
-    getSort: () => '',
-    resolveFilters: vi.fn(),
-    tryResolveValue: vi.fn(),
-  })),
-}));
 
 // Mock process.exit to prevent test from actually exiting
 const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
 
 // Mock console.error to capture error output
 const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+/** Helper: create a router with a test context factory */
+function createTestRouter(handlers: Record<string, ListHandler | [ArgsHandler, 'args']>) {
+  return createCommandRouter({
+    resource: 'tasks',
+    handlers,
+    contextFactory: (options) => createTestContext({ options }),
+  });
+}
 
 describe('createCommandRouter', () => {
   beforeEach(() => {
@@ -36,12 +30,7 @@ describe('createCommandRouter', () => {
   it('routes to correct handler for list-style commands', async () => {
     const listHandler = vi.fn<ListHandler>().mockResolvedValue(undefined);
 
-    const router = createCommandRouter({
-      resource: 'tasks',
-      handlers: {
-        list: listHandler,
-      },
-    });
+    const router = createTestRouter({ list: listHandler });
 
     await router('list', [], { format: 'json' });
 
@@ -56,12 +45,9 @@ describe('createCommandRouter', () => {
   it('handles aliases correctly', async () => {
     const listHandler = vi.fn<ListHandler>().mockResolvedValue(undefined);
 
-    const router = createCommandRouter({
-      resource: 'tasks',
-      handlers: {
-        list: listHandler,
-        ls: listHandler, // alias
-      },
+    const router = createTestRouter({
+      list: listHandler,
+      ls: listHandler, // alias
     });
 
     await router('ls', [], { format: 'json' });
@@ -72,12 +58,7 @@ describe('createCommandRouter', () => {
   it('passes args to args-style handlers', async () => {
     const getHandler = vi.fn<ArgsHandler>().mockResolvedValue(undefined);
 
-    const router = createCommandRouter({
-      resource: 'tasks',
-      handlers: {
-        get: [getHandler, 'args'],
-      },
-    });
+    const router = createTestRouter({ get: [getHandler, 'args'] });
 
     await router('get', ['123', '456'], { format: 'json' });
 
@@ -91,11 +72,8 @@ describe('createCommandRouter', () => {
   });
 
   it('exits with error for unknown subcommand', async () => {
-    const router = createCommandRouter({
-      resource: 'tasks',
-      handlers: {
-        list: vi.fn().mockResolvedValue(undefined),
-      },
+    const router = createTestRouter({
+      list: vi.fn().mockResolvedValue(undefined),
     });
 
     await router('unknown', [], { format: 'human' });
@@ -110,6 +88,7 @@ describe('createCommandRouter', () => {
     const router = createCommandRouter({
       resource: 'projects',
       handlers: {},
+      contextFactory: (options) => createTestContext({ options }),
     });
 
     await router('invalid', [], { format: 'human' });
@@ -122,12 +101,7 @@ describe('createCommandRouter', () => {
   it('passes format option to context', async () => {
     const listHandler = vi.fn<ListHandler>().mockResolvedValue(undefined);
 
-    const router = createCommandRouter({
-      resource: 'tasks',
-      handlers: {
-        list: listHandler,
-      },
-    });
+    const router = createTestRouter({ list: listHandler });
 
     await router('list', [], { format: 'table', 'no-color': true });
 
@@ -144,12 +118,7 @@ describe('createCommandRouter', () => {
   it('supports short format option (f)', async () => {
     const listHandler = vi.fn<ListHandler>().mockResolvedValue(undefined);
 
-    const router = createCommandRouter({
-      resource: 'tasks',
-      handlers: {
-        list: listHandler,
-      },
-    });
+    const router = createTestRouter({ list: listHandler });
 
     await router('list', [], { f: 'csv' });
 
@@ -166,16 +135,13 @@ describe('createCommandRouter', () => {
     const addHandler = vi.fn<ListHandler>().mockResolvedValue(undefined);
     const updateHandler = vi.fn<ArgsHandler>().mockResolvedValue(undefined);
 
-    const router = createCommandRouter({
-      resource: 'tasks',
-      handlers: {
-        list: listHandler,
-        ls: listHandler,
-        get: [getHandler, 'args'],
-        add: addHandler,
-        create: addHandler,
-        update: [updateHandler, 'args'],
-      },
+    const router = createTestRouter({
+      list: listHandler,
+      ls: listHandler,
+      get: [getHandler, 'args'],
+      add: addHandler,
+      create: addHandler,
+      update: [updateHandler, 'args'],
     });
 
     // Test each handler type

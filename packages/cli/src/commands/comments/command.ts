@@ -2,13 +2,15 @@
  * Comments command entry point
  */
 
+import type { CommandRouterConfig } from '../../utils/command-router.js';
+
 import { createCommandRouter } from '../../utils/command-router.js';
 import { commentsList, commentsGet, commentsAdd, commentsUpdate } from './handlers.js';
 
 /**
- * Handle comments command
+ * Router configuration — exported for testability
  */
-export const handleCommentsCommand = createCommandRouter({
+export const commentsCommandConfig: CommandRouterConfig = {
   resource: 'comments',
   handlers: {
     list: commentsList,
@@ -18,4 +20,9 @@ export const handleCommentsCommand = createCommandRouter({
     create: commentsAdd,
     update: [commentsUpdate, 'args'],
   },
-});
+};
+
+/**
+ * Handle comments command
+ */
+export const handleCommentsCommand = createCommandRouter(commentsCommandConfig);

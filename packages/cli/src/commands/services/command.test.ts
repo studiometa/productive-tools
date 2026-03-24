@@ -1,93 +1,68 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import { handleServicesCommand } from './command.js';
+import { createTestContext } from '../../context.js';
+import { createCommandRouter } from '../../utils/command-router.js';
+import { servicesCommandConfig } from './command.js';
+import { servicesGet, servicesList } from './handlers.js';
 
-// Mock the handlers to avoid needing real API
-vi.mock('./handlers.js', () => ({
-  servicesList: vi.fn().mockResolvedValue(undefined),
-  servicesGet: vi.fn().mockResolvedValue(undefined),
-}));
+describe('services command wiring', () => {
+  it('uses "services" as resource name', () => {
+    expect(servicesCommandConfig.resource).toBe('services');
+  });
 
-// Mock config to avoid file system access
-vi.mock('../../config.js', () => ({
-  getConfig: vi.fn().mockReturnValue({
-    apiToken: 'test-token',
-    organizationId: 'test-org',
-    baseUrl: 'https://api.productive.io/api/v2',
-  }),
-}));
+  it('wires list and ls to servicesList', () => {
+    expect(servicesCommandConfig.handlers.list).toBe(servicesList);
+    expect(servicesCommandConfig.handlers.ls).toBe(servicesList);
+  });
 
-// Mock cache with full interface - factory must be inline
-vi.mock('../../utils/cache.js', () => {
-  const mockCacheObj = {
-    get: vi.fn(),
-    set: vi.fn(),
-    delete: vi.fn(),
-    setOrgId: vi.fn(),
-    getCachedPeople: vi.fn(),
-    getCachedProjects: vi.fn(),
-    getCachedTaskLists: vi.fn(),
-    findCachedPersonByEmail: vi.fn(),
-    findCachedProjectByNumber: vi.fn(),
-    findCachedTaskListByName: vi.fn(),
-  };
-  return {
-    getCache: vi.fn().mockReturnValue(mockCacheObj),
-    CacheStore: vi.fn().mockImplementation(() => mockCacheObj),
-  };
+  it('wires get to servicesGet as args handler', () => {
+    expect(servicesCommandConfig.handlers.get).toEqual([servicesGet, 'args']);
+  });
 });
 
 describe('services command routing', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
+  const mockServicesList = vi.fn().mockResolvedValue(undefined);
+  const mockServicesGet = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
 
-  beforeEach(async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-
-    // Reset mocks before each test
-    const handlers = await import('./handlers.js');
-    vi.mocked(handlers.servicesList).mockClear();
+  const router = createCommandRouter({
+    resource: 'services',
+    handlers: {
+      list: mockServicesList,
+      ls: mockServicesList,
+      get: [mockServicesGet, 'args'],
+    },
+    contextFactory: (options) => createTestContext({ options }),
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    mockServicesList.mockClear();
+    mockServicesGet.mockClear();
   });
 
-  it('should route "list" subcommand to servicesList', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleServicesCommand('list', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.servicesList).toHaveBeenCalled();
+  it('routes "list" subcommand to servicesList handler', async () => {
+    await router('list', [], { format: 'json' });
+    expect(mockServicesList).toHaveBeenCalled();
   });
 
-  it('should route "ls" alias to servicesList', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleServicesCommand('ls', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.servicesList).toHaveBeenCalled();
+  it('routes "ls" alias to servicesList handler', async () => {
+    await router('ls', [], { format: 'json' });
+    expect(mockServicesList).toHaveBeenCalled();
   });
 
-  it('should exit with error for unknown subcommand', async () => {
-    await handleServicesCommand('unknown', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
+  it('routes "get" subcommand to servicesGet handler', async () => {
+    await router('get', ['123'], { format: 'json' });
+    expect(mockServicesGet).toHaveBeenCalledWith(['123'], expect.anything());
+  });
 
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+  it('exits with error for unknown subcommand', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await router('unknown', [], { format: 'json' });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Unknown services subcommand: unknown'),
     );
   });

@@ -1,169 +1,88 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import { handleAttachmentsCommand } from './command.js';
+import { createTestContext } from '../../context.js';
+import { createCommandRouter } from '../../utils/command-router.js';
+import { attachmentsCommandConfig } from './command.js';
+import { attachmentsList, attachmentsGet, attachmentsDelete } from './handlers.js';
 
-// Mock the handlers to avoid needing real API
-vi.mock('./handlers.js', () => ({
-  attachmentsList: vi.fn().mockResolvedValue(undefined),
-  attachmentsGet: vi.fn().mockResolvedValue(undefined),
-  attachmentsDelete: vi.fn().mockResolvedValue(undefined),
-}));
+describe('attachments command wiring', () => {
+  it('uses "attachments" as resource name', () => {
+    expect(attachmentsCommandConfig.resource).toBe('attachments');
+  });
 
-// Mock config to avoid file system access
-vi.mock('../../config.js', () => ({
-  getConfig: vi.fn().mockReturnValue({
-    apiToken: 'test-token',
-    organizationId: 'test-org',
-    baseUrl: 'https://api.productive.io/api/v2',
-  }),
-}));
+  it('wires list and ls to attachmentsList', () => {
+    expect(attachmentsCommandConfig.handlers.list).toBe(attachmentsList);
+    expect(attachmentsCommandConfig.handlers.ls).toBe(attachmentsList);
+  });
 
-// Mock cache with full interface - factory must be inline
-vi.mock('../../utils/cache.js', () => {
-  const mockCacheObj = {
-    get: vi.fn(),
-    set: vi.fn(),
-    delete: vi.fn(),
-    setOrgId: vi.fn(),
-    getCachedPeople: vi.fn(),
-    getCachedProjects: vi.fn(),
-    getCachedTaskLists: vi.fn(),
-    findCachedPersonByEmail: vi.fn(),
-    findCachedProjectByNumber: vi.fn(),
-    findCachedTaskListByName: vi.fn(),
-  };
-  return {
-    getCache: vi.fn().mockReturnValue(mockCacheObj),
-    CacheStore: vi.fn().mockImplementation(() => mockCacheObj),
-  };
+  it('wires get to attachmentsGet as args handler', () => {
+    expect(attachmentsCommandConfig.handlers.get).toEqual([attachmentsGet, 'args']);
+  });
+
+  it('wires delete and rm to attachmentsDelete as args handler', () => {
+    expect(attachmentsCommandConfig.handlers.delete).toEqual([attachmentsDelete, 'args']);
+    expect(attachmentsCommandConfig.handlers.rm).toEqual([attachmentsDelete, 'args']);
+  });
 });
 
 describe('attachments command routing', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
+  const mockAttachmentsList = vi.fn().mockResolvedValue(undefined);
+  const mockAttachmentsGet = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
+  const mockAttachmentsDelete = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
 
-  beforeEach(async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-
-    // Reset mocks before each test
-    const handlers = await import('./handlers.js');
-    vi.mocked(handlers.attachmentsList).mockClear();
-    vi.mocked(handlers.attachmentsGet).mockClear();
-    vi.mocked(handlers.attachmentsDelete).mockClear();
+  const router = createCommandRouter({
+    resource: 'attachments',
+    handlers: {
+      list: mockAttachmentsList,
+      ls: mockAttachmentsList,
+      get: [mockAttachmentsGet, 'args'],
+      delete: [mockAttachmentsDelete, 'args'],
+      rm: [mockAttachmentsDelete, 'args'],
+    },
+    contextFactory: (options) => createTestContext({ options }),
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    mockAttachmentsList.mockClear();
+    mockAttachmentsGet.mockClear();
+    mockAttachmentsDelete.mockClear();
   });
 
-  it('should route "list" subcommand to attachmentsList', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleAttachmentsCommand('list', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.attachmentsList).toHaveBeenCalled();
+  it('routes "list" subcommand to attachmentsList handler', async () => {
+    await router('list', [], { format: 'json' });
+    expect(mockAttachmentsList).toHaveBeenCalled();
   });
 
-  it('should route "ls" alias to attachmentsList', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleAttachmentsCommand('ls', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.attachmentsList).toHaveBeenCalled();
+  it('routes "ls" alias to attachmentsList handler', async () => {
+    await router('ls', [], { format: 'json' });
+    expect(mockAttachmentsList).toHaveBeenCalled();
   });
 
-  it('should route "get" subcommand to attachmentsGet', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleAttachmentsCommand('get', ['123'], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.attachmentsGet).toHaveBeenCalledWith(['123'], expect.anything());
+  it('routes "get" subcommand to attachmentsGet handler', async () => {
+    await router('get', ['123'], { format: 'json' });
+    expect(mockAttachmentsGet).toHaveBeenCalledWith(['123'], expect.anything());
   });
 
-  it('should route "delete" subcommand to attachmentsDelete', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleAttachmentsCommand('delete', ['456'], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.attachmentsDelete).toHaveBeenCalledWith(['456'], expect.anything());
+  it('routes "delete" subcommand to attachmentsDelete handler', async () => {
+    await router('delete', ['123'], { format: 'json' });
+    expect(mockAttachmentsDelete).toHaveBeenCalledWith(['123'], expect.anything());
   });
 
-  it('should route "rm" alias to attachmentsDelete', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleAttachmentsCommand('rm', ['789'], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.attachmentsDelete).toHaveBeenCalledWith(['789'], expect.anything());
+  it('routes "rm" alias to attachmentsDelete handler', async () => {
+    await router('rm', ['123'], { format: 'json' });
+    expect(mockAttachmentsDelete).toHaveBeenCalledWith(['123'], expect.anything());
   });
 
-  it('should exit with error for unknown subcommand', async () => {
-    await handleAttachmentsCommand('unknown', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
+  it('exits with error for unknown subcommand', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+    await router('unknown', [], { format: 'json' });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Unknown attachments subcommand: unknown'),
     );
-  });
-
-  it('should use format option from -f shorthand', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleAttachmentsCommand('list', [], {
-      f: 'table',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.attachmentsList).toHaveBeenCalled();
-  });
-
-  it('should use default human format when no format specified', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleAttachmentsCommand('list', [], {
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.attachmentsList).toHaveBeenCalled();
-  });
-
-  it('should handle no-color option', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleAttachmentsCommand('list', [], {
-      format: 'json',
-      'no-color': true,
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.attachmentsList).toHaveBeenCalled();
   });
 });

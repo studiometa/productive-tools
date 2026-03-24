@@ -1,340 +1,240 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import { handleReportsCommand } from './command.js';
+import { createTestContext } from '../../context.js';
+import { createCommandRouter } from '../../utils/command-router.js';
+import { reportsCommandConfig } from './command.js';
+import {
+  reportsTime, reportsProject, reportsBudget, reportsPerson, reportsInvoice, reportsPayment, reportsService, reportsTask, reportsCompany, reportsDeal, reportsTimesheet } from './handlers.js';
 
-// Mock the handlers to avoid needing real API
-vi.mock('./handlers.js', () => ({
-  reportsTime: vi.fn().mockResolvedValue(undefined),
-  reportsProject: vi.fn().mockResolvedValue(undefined),
-  reportsBudget: vi.fn().mockResolvedValue(undefined),
-  reportsPerson: vi.fn().mockResolvedValue(undefined),
-  reportsInvoice: vi.fn().mockResolvedValue(undefined),
-  reportsPayment: vi.fn().mockResolvedValue(undefined),
-  reportsService: vi.fn().mockResolvedValue(undefined),
-  reportsTask: vi.fn().mockResolvedValue(undefined),
-  reportsCompany: vi.fn().mockResolvedValue(undefined),
-  reportsDeal: vi.fn().mockResolvedValue(undefined),
-  reportsTimesheet: vi.fn().mockResolvedValue(undefined),
-}));
+describe('reports command wiring', () => {
+  it('uses "reports" as resource name', () => {
+    expect(reportsCommandConfig.resource).toBe('reports');
+  });
 
-// Mock config to avoid file system access
-vi.mock('../../config.js', () => ({
-  getConfig: vi.fn().mockReturnValue({
-    apiToken: 'test-token',
-    organizationId: 'test-org',
-    baseUrl: 'https://api.productive.io/api/v2',
-  }),
-}));
+  it('wires time to reportsTime', () => {
+    expect(reportsCommandConfig.handlers.time).toBe(reportsTime);
+  });
 
-// Mock cache with full interface - factory must be inline
-vi.mock('../../utils/cache.js', () => {
-  const mockCacheObj = {
-    get: vi.fn(),
-    set: vi.fn(),
-    delete: vi.fn(),
-    setOrgId: vi.fn(),
-    getCachedPeople: vi.fn(),
-    getCachedProjects: vi.fn(),
-    getCachedTaskLists: vi.fn(),
-    findCachedPersonByEmail: vi.fn(),
-    findCachedProjectByNumber: vi.fn(),
-    findCachedTaskListByName: vi.fn(),
-  };
-  return {
-    getCache: vi.fn().mockReturnValue(mockCacheObj),
-    CacheStore: vi.fn().mockImplementation(() => mockCacheObj),
-  };
+  it('wires project and projects to reportsProject', () => {
+    expect(reportsCommandConfig.handlers.project).toBe(reportsProject);
+    expect(reportsCommandConfig.handlers.projects).toBe(reportsProject);
+  });
+
+  it('wires budget and budgets to reportsBudget', () => {
+    expect(reportsCommandConfig.handlers.budget).toBe(reportsBudget);
+    expect(reportsCommandConfig.handlers.budgets).toBe(reportsBudget);
+  });
+
+  it('wires person and people to reportsPerson', () => {
+    expect(reportsCommandConfig.handlers.person).toBe(reportsPerson);
+    expect(reportsCommandConfig.handlers.people).toBe(reportsPerson);
+  });
+
+  it('wires invoice and invoices to reportsInvoice', () => {
+    expect(reportsCommandConfig.handlers.invoice).toBe(reportsInvoice);
+    expect(reportsCommandConfig.handlers.invoices).toBe(reportsInvoice);
+  });
+
+  it('wires payment and payments to reportsPayment', () => {
+    expect(reportsCommandConfig.handlers.payment).toBe(reportsPayment);
+    expect(reportsCommandConfig.handlers.payments).toBe(reportsPayment);
+  });
+
+  it('wires service and services to reportsService', () => {
+    expect(reportsCommandConfig.handlers.service).toBe(reportsService);
+    expect(reportsCommandConfig.handlers.services).toBe(reportsService);
+  });
+
+  it('wires task and tasks to reportsTask', () => {
+    expect(reportsCommandConfig.handlers.task).toBe(reportsTask);
+    expect(reportsCommandConfig.handlers.tasks).toBe(reportsTask);
+  });
+
+  it('wires company and companies to reportsCompany', () => {
+    expect(reportsCommandConfig.handlers.company).toBe(reportsCompany);
+    expect(reportsCommandConfig.handlers.companies).toBe(reportsCompany);
+  });
+
+  it('wires deal and deals to reportsDeal', () => {
+    expect(reportsCommandConfig.handlers.deal).toBe(reportsDeal);
+    expect(reportsCommandConfig.handlers.deals).toBe(reportsDeal);
+  });
+
+  it('wires timesheet and timesheets to reportsTimesheet', () => {
+    expect(reportsCommandConfig.handlers.timesheet).toBe(reportsTimesheet);
+    expect(reportsCommandConfig.handlers.timesheets).toBe(reportsTimesheet);
+  });
 });
 
 describe('reports command routing', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
+  const mockReportsTime = vi.fn().mockResolvedValue(undefined);
+  const mockReportsProject = vi.fn().mockResolvedValue(undefined);
+  const mockReportsBudget = vi.fn().mockResolvedValue(undefined);
+  const mockReportsPerson = vi.fn().mockResolvedValue(undefined);
+  const mockReportsInvoice = vi.fn().mockResolvedValue(undefined);
+  const mockReportsPayment = vi.fn().mockResolvedValue(undefined);
+  const mockReportsService = vi.fn().mockResolvedValue(undefined);
+  const mockReportsTask = vi.fn().mockResolvedValue(undefined);
+  const mockReportsCompany = vi.fn().mockResolvedValue(undefined);
+  const mockReportsDeal = vi.fn().mockResolvedValue(undefined);
+  const mockReportsTimesheet = vi.fn().mockResolvedValue(undefined);
 
-  beforeEach(async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-
-    // Reset mocks before each test
-    const handlers = await import('./handlers.js');
-    vi.mocked(handlers.reportsTime).mockClear();
-    vi.mocked(handlers.reportsProject).mockClear();
-    vi.mocked(handlers.reportsBudget).mockClear();
-    vi.mocked(handlers.reportsPerson).mockClear();
-    vi.mocked(handlers.reportsInvoice).mockClear();
-    vi.mocked(handlers.reportsPayment).mockClear();
-    vi.mocked(handlers.reportsService).mockClear();
-    vi.mocked(handlers.reportsTask).mockClear();
-    vi.mocked(handlers.reportsCompany).mockClear();
-    vi.mocked(handlers.reportsDeal).mockClear();
-    vi.mocked(handlers.reportsTimesheet).mockClear();
+  const router = createCommandRouter({
+    resource: 'reports',
+    handlers: {
+      time: mockReportsTime,
+      project: mockReportsProject,
+      projects: mockReportsProject,
+      budget: mockReportsBudget,
+      budgets: mockReportsBudget,
+      person: mockReportsPerson,
+      people: mockReportsPerson,
+      invoice: mockReportsInvoice,
+      invoices: mockReportsInvoice,
+      payment: mockReportsPayment,
+      payments: mockReportsPayment,
+      service: mockReportsService,
+      services: mockReportsService,
+      task: mockReportsTask,
+      tasks: mockReportsTask,
+      company: mockReportsCompany,
+      companies: mockReportsCompany,
+      deal: mockReportsDeal,
+      deals: mockReportsDeal,
+      timesheet: mockReportsTimesheet,
+      timesheets: mockReportsTimesheet,
+    },
+    contextFactory: (options) => createTestContext({ options }),
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    mockReportsTime.mockClear();
+    mockReportsProject.mockClear();
+    mockReportsBudget.mockClear();
+    mockReportsPerson.mockClear();
+    mockReportsInvoice.mockClear();
+    mockReportsPayment.mockClear();
+    mockReportsService.mockClear();
+    mockReportsTask.mockClear();
+    mockReportsCompany.mockClear();
+    mockReportsDeal.mockClear();
+    mockReportsTimesheet.mockClear();
   });
 
-  it('should route "time" subcommand to reportsTime', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('time', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsTime).toHaveBeenCalled();
+  it('routes "time" subcommand to reportsTime handler', async () => {
+    await router('time', [], { format: 'json' });
+    expect(mockReportsTime).toHaveBeenCalled();
   });
 
-  it('should route "project" subcommand to reportsProject', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('project', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsProject).toHaveBeenCalled();
+  it('routes "project" subcommand to reportsProject handler', async () => {
+    await router('project', [], { format: 'json' });
+    expect(mockReportsProject).toHaveBeenCalled();
   });
 
-  it('should route "projects" alias to reportsProject', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('projects', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsProject).toHaveBeenCalled();
+  it('routes "projects" alias to reportsProject handler', async () => {
+    await router('projects', [], { format: 'json' });
+    expect(mockReportsProject).toHaveBeenCalled();
   });
 
-  it('should route "budget" subcommand to reportsBudget', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('budget', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsBudget).toHaveBeenCalled();
+  it('routes "budget" subcommand to reportsBudget handler', async () => {
+    await router('budget', [], { format: 'json' });
+    expect(mockReportsBudget).toHaveBeenCalled();
   });
 
-  it('should route "budgets" alias to reportsBudget', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('budgets', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsBudget).toHaveBeenCalled();
+  it('routes "budgets" alias to reportsBudget handler', async () => {
+    await router('budgets', [], { format: 'json' });
+    expect(mockReportsBudget).toHaveBeenCalled();
   });
 
-  it('should route "person" subcommand to reportsPerson', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('person', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsPerson).toHaveBeenCalled();
+  it('routes "person" subcommand to reportsPerson handler', async () => {
+    await router('person', [], { format: 'json' });
+    expect(mockReportsPerson).toHaveBeenCalled();
   });
 
-  it('should route "people" alias to reportsPerson', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('people', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsPerson).toHaveBeenCalled();
+  it('routes "people" alias to reportsPerson handler', async () => {
+    await router('people', [], { format: 'json' });
+    expect(mockReportsPerson).toHaveBeenCalled();
   });
 
-  it('should route "invoice" subcommand to reportsInvoice', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('invoice', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsInvoice).toHaveBeenCalled();
+  it('routes "invoice" subcommand to reportsInvoice handler', async () => {
+    await router('invoice', [], { format: 'json' });
+    expect(mockReportsInvoice).toHaveBeenCalled();
   });
 
-  it('should route "invoices" alias to reportsInvoice', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('invoices', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsInvoice).toHaveBeenCalled();
+  it('routes "invoices" alias to reportsInvoice handler', async () => {
+    await router('invoices', [], { format: 'json' });
+    expect(mockReportsInvoice).toHaveBeenCalled();
   });
 
-  it('should route "payment" subcommand to reportsPayment', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('payment', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsPayment).toHaveBeenCalled();
+  it('routes "payment" subcommand to reportsPayment handler', async () => {
+    await router('payment', [], { format: 'json' });
+    expect(mockReportsPayment).toHaveBeenCalled();
   });
 
-  it('should route "payments" alias to reportsPayment', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('payments', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsPayment).toHaveBeenCalled();
+  it('routes "payments" alias to reportsPayment handler', async () => {
+    await router('payments', [], { format: 'json' });
+    expect(mockReportsPayment).toHaveBeenCalled();
   });
 
-  it('should route "service" subcommand to reportsService', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('service', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsService).toHaveBeenCalled();
+  it('routes "service" subcommand to reportsService handler', async () => {
+    await router('service', [], { format: 'json' });
+    expect(mockReportsService).toHaveBeenCalled();
   });
 
-  it('should route "services" alias to reportsService', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('services', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsService).toHaveBeenCalled();
+  it('routes "services" alias to reportsService handler', async () => {
+    await router('services', [], { format: 'json' });
+    expect(mockReportsService).toHaveBeenCalled();
   });
 
-  it('should route "task" subcommand to reportsTask', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('task', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsTask).toHaveBeenCalled();
+  it('routes "task" subcommand to reportsTask handler', async () => {
+    await router('task', [], { format: 'json' });
+    expect(mockReportsTask).toHaveBeenCalled();
   });
 
-  it('should route "tasks" alias to reportsTask', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('tasks', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsTask).toHaveBeenCalled();
+  it('routes "tasks" alias to reportsTask handler', async () => {
+    await router('tasks', [], { format: 'json' });
+    expect(mockReportsTask).toHaveBeenCalled();
   });
 
-  it('should route "company" subcommand to reportsCompany', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('company', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsCompany).toHaveBeenCalled();
+  it('routes "company" subcommand to reportsCompany handler', async () => {
+    await router('company', [], { format: 'json' });
+    expect(mockReportsCompany).toHaveBeenCalled();
   });
 
-  it('should route "companies" alias to reportsCompany', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('companies', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsCompany).toHaveBeenCalled();
+  it('routes "companies" alias to reportsCompany handler', async () => {
+    await router('companies', [], { format: 'json' });
+    expect(mockReportsCompany).toHaveBeenCalled();
   });
 
-  it('should route "deal" subcommand to reportsDeal', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('deal', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsDeal).toHaveBeenCalled();
+  it('routes "deal" subcommand to reportsDeal handler', async () => {
+    await router('deal', [], { format: 'json' });
+    expect(mockReportsDeal).toHaveBeenCalled();
   });
 
-  it('should route "deals" alias to reportsDeal', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('deals', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsDeal).toHaveBeenCalled();
+  it('routes "deals" alias to reportsDeal handler', async () => {
+    await router('deals', [], { format: 'json' });
+    expect(mockReportsDeal).toHaveBeenCalled();
   });
 
-  it('should route "timesheet" subcommand to reportsTimesheet', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('timesheet', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsTimesheet).toHaveBeenCalled();
+  it('routes "timesheet" subcommand to reportsTimesheet handler', async () => {
+    await router('timesheet', [], { format: 'json' });
+    expect(mockReportsTimesheet).toHaveBeenCalled();
   });
 
-  it('should route "timesheets" alias to reportsTimesheet', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleReportsCommand('timesheets', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.reportsTimesheet).toHaveBeenCalled();
+  it('routes "timesheets" alias to reportsTimesheet handler', async () => {
+    await router('timesheets', [], { format: 'json' });
+    expect(mockReportsTimesheet).toHaveBeenCalled();
   });
 
-  it('should exit with error for unknown subcommand', async () => {
-    await handleReportsCommand('unknown', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
+  it('exits with error for unknown subcommand', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+    await router('unknown', [], { format: 'json' });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Unknown reports subcommand: unknown'),
     );
   });

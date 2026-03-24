@@ -2,13 +2,15 @@
  * Tasks command entry point
  */
 
+import type { CommandRouterConfig } from '../../utils/command-router.js';
+
 import { createCommandRouter } from '../../utils/command-router.js';
 import { tasksList, tasksGet, tasksAdd, tasksUpdate } from './handlers.js';
 
 /**
- * Handle tasks command
+ * Router configuration — exported for testability
  */
-export const handleTasksCommand = createCommandRouter({
+export const tasksCommandConfig: CommandRouterConfig = {
   resource: 'tasks',
   handlers: {
     list: tasksList,
@@ -18,4 +20,9 @@ export const handleTasksCommand = createCommandRouter({
     create: tasksAdd,
     update: [tasksUpdate, 'args'],
   },
-});
+};
+
+/**
+ * Handle tasks command
+ */
+export const handleTasksCommand = createCommandRouter(tasksCommandConfig);

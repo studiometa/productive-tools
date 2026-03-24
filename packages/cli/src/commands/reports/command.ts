@@ -2,6 +2,8 @@
  * Reports command entry point
  */
 
+import type { CommandRouterConfig } from '../../utils/command-router.js';
+
 import { createCommandRouter } from '../../utils/command-router.js';
 import {
   reportsTime,
@@ -18,9 +20,9 @@ import {
 } from './handlers.js';
 
 /**
- * Handle reports command
+ * Router configuration — exported for testability
  */
-export const handleReportsCommand = createCommandRouter({
+export const reportsCommandConfig: CommandRouterConfig = {
   resource: 'reports',
   handlers: {
     time: reportsTime,
@@ -45,4 +47,9 @@ export const handleReportsCommand = createCommandRouter({
     timesheet: reportsTimesheet,
     timesheets: reportsTimesheet,
   },
-});
+};
+
+/**
+ * Handle reports command
+ */
+export const handleReportsCommand = createCommandRouter(reportsCommandConfig);
