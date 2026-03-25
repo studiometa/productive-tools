@@ -30,6 +30,19 @@ productive time list --from 2025-01-01
 productive reports time --from 2025-01-01
 ```
 
+#### Exit Codes
+
+The CLI uses standardized exit codes for different error conditions:
+
+| Exit Code | Description                                         |
+| --------- | --------------------------------------------------- |
+| 0         | Success                                             |
+| 1         | General error (unexpected failure)                  |
+| 2         | Authentication error (invalid/expired token)        |
+| 3         | Validation error (missing or invalid arguments)     |
+| 4         | Configuration error (missing apiToken, orgId, etc.) |
+| 5         | Resource not found                                  |
+
 ### MCP Server (Claude Desktop)
 
 ```bash
