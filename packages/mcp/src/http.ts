@@ -5,10 +5,26 @@
  * The actual server startup is in server.ts.
  */
 
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import {
+  CallToolRequestSchema,
+  ErrorCode,
+  GetPromptRequestSchema,
+  ListPromptsRequestSchema,
+  ListResourceTemplatesRequestSchema,
+  ListResourcesRequestSchema,
+  ListToolsRequestSchema,
+  McpError,
+  ReadResourceRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 import { H3, defineHandler, type H3Event } from 'h3';
+import type { IncomingMessage } from 'node:http';
+import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 
-import { parseAuthHeader } from './auth.js';
-import { executeToolWithCredentials } from './handlers.js';
+const OAUTH_PROTECTED_RESOURCE_PATH = '/.well-known/oauth-protected-resource/mcp';
+
+import { parseAuthHeader, type ProductiveCredentials } from './auth.js';
 import { INSTRUCTIONS } from './instructions.js';
 import {
   oauthMetadataHandler,
@@ -18,6 +34,8 @@ import {
   tokenHandler,
 } from './oauth.js';
 import { listResources, listResourceTemplates, readResource } from './resources.js';
+import { getAvailablePrompts, handlePrompt } from './stdio.js';
+import { executeToolWithCredentials } from './handlers.js';
 import { TOOLS } from './tools.js';
 import { VERSION } from './version.js';
 
@@ -55,6 +73,7 @@ export function handleInitialize() {
     },
     capabilities: {
       tools: {},
+      prompts: {},
       resources: {},
     },
     instructions: INSTRUCTIONS,
@@ -77,6 +96,144 @@ function getBaseUrl(event: H3Event): string {
   return `${protocol}://${host}`;
 }
 
+function buildProtectedResourceMetadata(event: H3Event) {
+  const baseUrl = getBaseUrl(event);
+
+  return {
+    resource: `${baseUrl}/mcp`,
+    authorization_servers: [baseUrl],
+    scopes_supported: ['productive'],
+    bearer_methods_supported: ['header'],
+  };
+}
+
+function createAuthInfo(token: string, credentials: ProductiveCredentials): AuthInfo {
+  return {
+    token,
+    clientId: credentials.userId || credentials.organizationId,
+    scopes: ['productive'],
+    extra: {
+      credentials,
+    },
+  };
+}
+
+function getCredentialsFromAuthInfo(authInfo: AuthInfo | undefined | null): ProductiveCredentials {
+  const credentials = authInfo?.extra?.credentials;
+
+  if (
+    !credentials ||
+    typeof credentials !== 'object' ||
+    !('organizationId' in credentials) ||
+    !('apiToken' in credentials) ||
+    typeof credentials.organizationId !== 'string' ||
+    typeof credentials.apiToken !== 'string'
+  ) {
+    throw new Error('Authentication required. Provide Bearer token with base64(organizationId:apiToken:userId)');
+  }
+
+  const userId = 'userId' in credentials && typeof credentials.userId === 'string'
+    ? credentials.userId
+    : undefined;
+
+  return {
+    organizationId: credentials.organizationId,
+    apiToken: credentials.apiToken,
+    userId,
+  };
+}
+
+export function createHttpMcpServer(): Server {
+  const server = new Server(
+    {
+      name: 'productive-mcp',
+      version: VERSION,
+    },
+    {
+      capabilities: {
+        tools: {},
+        prompts: {},
+        resources: {},
+      },
+      instructions: INSTRUCTIONS,
+    },
+  );
+
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    return { tools: TOOLS };
+  });
+
+  server.setRequestHandler(ListPromptsRequestSchema, async () => {
+    return { prompts: getAvailablePrompts() };
+  });
+
+  server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    return handlePrompt(request.params.name, request.params.arguments as Record<string, string>);
+  });
+
+  server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    return { resources: listResources() };
+  });
+
+  server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
+    return { resourceTemplates: listResourceTemplates() };
+  });
+
+  server.setRequestHandler(ReadResourceRequestSchema, async (request, extra) => {
+    const credentials = getCredentialsFromAuthInfo(extra.authInfo);
+
+    if (!request.params.uri) {
+      throw new McpError(ErrorCode.InvalidParams, 'Invalid params: uri is required');
+    }
+
+    return readResource(request.params.uri, credentials);
+  });
+
+  server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+    const credentials = getCredentialsFromAuthInfo(extra.authInfo);
+    return executeToolWithCredentials(
+      request.params.name,
+      (request.params.arguments as Record<string, unknown>) || {},
+      credentials,
+    );
+  });
+
+  return server;
+}
+
+export async function createHttpMcpTransport(): Promise<StreamableHTTPServerTransport> {
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+    enableJsonResponse: true,
+  });
+
+  const server = createHttpMcpServer();
+  await server.connect(transport);
+
+  return transport;
+}
+
+function setUnauthorizedResponseHeaders(event: H3Event) {
+  const baseUrl = getBaseUrl(event);
+  event.res.headers.delete('Set-Cookie');
+  event.res.headers.set(
+    'WWW-Authenticate',
+    `Bearer resource_metadata="${baseUrl}${OAUTH_PROTECTED_RESOURCE_PATH}"`,
+  );
+}
+
+function authenticateRequest(event: H3Event): AuthInfo | null {
+  const authHeader = event.req.headers.get('authorization');
+  const tokenMatch = authHeader?.match(/^Bearer\s+(.+)$/i);
+  const credentials = parseAuthHeader(authHeader);
+
+  if (!credentials || !tokenMatch?.[1]) {
+    return null;
+  }
+
+  return createAuthInfo(tokenMatch[1], credentials);
+}
+
 /**
  * Create the H3 application with all routes
  */
@@ -91,23 +248,14 @@ export function createHttpApp(): H3 {
   app.post('/token', tokenHandler);
 
   // OAuth Protected Resource Metadata (RFC 9728 / MCP spec 2025-03-26)
-  // This endpoint tells clients where to find the authorization server
-  app.get(
-    '/.well-known/oauth-protected-resource',
-    defineHandler((event) => {
-      const baseUrl = getBaseUrl(event);
+  const protectedResourceMetadataHandler = defineHandler((event) => {
+    event.res.headers.set('Content-Type', 'application/json');
+    event.res.headers.set('Cache-Control', 'public, max-age=3600');
 
-      event.res.headers.set('Content-Type', 'application/json');
-      event.res.headers.set('Cache-Control', 'public, max-age=3600');
+    return buildProtectedResourceMetadata(event);
+  });
 
-      return {
-        resource: `${baseUrl}/mcp`,
-        authorization_servers: [baseUrl],
-        scopes_supported: ['productive'],
-        bearer_methods_supported: ['header'],
-      };
-    }),
-  );
+  app.get(OAUTH_PROTECTED_RESOURCE_PATH, protectedResourceMetadataHandler);
 
   // Health check endpoint
   app.get(
@@ -124,146 +272,53 @@ export function createHttpApp(): H3 {
     }),
   );
 
-  // MCP endpoint - handles JSON-RPC over HTTP
-  app.post(
-    '/mcp',
-    defineHandler(async (event) => {
-      // Parse authorization header
-      const authHeader = event.req.headers.get('authorization');
-      const credentials = parseAuthHeader(authHeader);
+  const mcpHandler = defineHandler(async (event) => {
+    const authInfo = authenticateRequest(event);
 
-      if (!credentials) {
-        // RFC 6750: Return WWW-Authenticate header to trigger OAuth flow
-        const baseUrl = getBaseUrl(event);
-
-        event.res.headers.set('Content-Type', 'application/json');
-        event.res.headers.set(
-          'WWW-Authenticate',
-          `Bearer resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`,
-        );
-        event.res.status = 401;
-        return jsonRpcError(
-          -32001,
-          'Authentication required. Provide Bearer token with base64(organizationId:apiToken:userId)',
-        );
-      }
-
+    if (!authInfo) {
+      setUnauthorizedResponseHeaders(event);
+      event.res.status = 401;
       event.res.headers.set('Content-Type', 'application/json');
+      return event.req.method === 'POST'
+        ? jsonRpcError(
+            -32001,
+            'Authentication required. Provide Bearer token with base64(organizationId:apiToken:userId)',
+          )
+        : { error: 'Authentication required' };
+    }
 
-      // Parse JSON-RPC request
-      let body: { method?: string; params?: unknown; id?: string | number } | undefined;
+    const nodeReq = event.runtime?.node?.req as (IncomingMessage & { auth?: AuthInfo }) | undefined;
+    const nodeRes = event.runtime?.node?.res as import('node:http').ServerResponse | undefined;
+
+    if (!nodeReq || !nodeRes) {
+      event.res.status = 501;
+      return { error: 'MCP HTTP transport requires Node.js runtime' };
+    }
+
+    nodeReq.auth = authInfo;
+
+    let parsedBody: unknown;
+    if (event.req.method === 'POST') {
       try {
-        body = await event.req.json();
+        parsedBody = await event.req.json();
       } catch {
         event.res.status = 400;
+        event.res.headers.set('Content-Type', 'application/json');
         return jsonRpcError(-32700, 'Parse error: Invalid JSON');
       }
+    }
 
-      if (!body || typeof body !== 'object') {
-        event.res.status = 400;
-        return jsonRpcError(-32700, 'Parse error: Invalid JSON');
-      }
+    const transport = await createHttpMcpTransport();
+    await transport.handleRequest(nodeReq, nodeRes, parsedBody);
 
-      const { method, params, id } = body;
+    // h3 should not try to write its own response after the SDK transport has
+    // already written directly to the underlying Node response.
+    return new Promise(() => {});
+  });
 
-      try {
-        if (method === 'initialize') {
-          return jsonRpcSuccess(handleInitialize(), id ?? null);
-        }
-
-        if (method === 'tools/list') {
-          return jsonRpcSuccess(handleToolsList(), id ?? null);
-        }
-
-        if (method === 'tools/call') {
-          const { name, arguments: args } = params as {
-            name: string;
-            arguments?: Record<string, unknown>;
-          };
-          const result = await executeToolWithCredentials(name, args || {}, credentials);
-          return jsonRpcSuccess(result, id ?? null);
-        }
-
-        if (method === 'resources/list') {
-          return jsonRpcSuccess({ resources: listResources() }, id ?? null);
-        }
-
-        if (method === 'resources/templates/list') {
-          return jsonRpcSuccess({ resourceTemplates: listResourceTemplates() }, id ?? null);
-        }
-
-        if (method === 'resources/read') {
-          const { uri } = (params as { uri: string }) ?? {};
-          if (!uri) {
-            return jsonRpcError(-32602, 'Invalid params: uri is required', id ?? null);
-          }
-          const result = await readResource(uri, credentials);
-          return jsonRpcSuccess(result, id ?? null);
-        }
-
-        // Unknown method
-        return jsonRpcError(-32601, `Method not found: ${method}`, id ?? null);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return jsonRpcError(-32603, `Internal error: ${message}`, id ?? null);
-      }
-    }),
-  );
-
-  // SSE endpoint for server-sent events (optional, for streaming responses)
-  app.get(
-    '/mcp/sse',
-    defineHandler(async (event) => {
-      const authHeader = event.req.headers.get('authorization');
-      const credentials = parseAuthHeader(authHeader);
-
-      if (!credentials) {
-        // RFC 6750: Return WWW-Authenticate header to trigger OAuth flow
-        const baseUrl = getBaseUrl(event);
-
-        event.res.headers.set(
-          'WWW-Authenticate',
-          `Bearer resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`,
-        );
-        event.res.status = 401;
-        return { error: 'Authentication required' };
-      }
-
-      // Node.js-specific SSE: access raw res for streaming
-      const nodeRuntime = event.runtime?.node;
-      const nodeRes = nodeRuntime?.res as import('node:http').ServerResponse | undefined;
-      if (!nodeRes) {
-        event.res.status = 501;
-        return { error: 'SSE requires Node.js runtime' };
-      }
-
-      // Write SSE headers directly to Node.js response (bypassing h3's pipeline)
-      nodeRes.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      });
-
-      // Generate session ID and send it
-      const sessionId = crypto.randomUUID();
-
-      // Send initial session event
-      nodeRes.write(`event: session\ndata: ${JSON.stringify({ sessionId })}\n\n`);
-
-      // Keep connection alive
-      const keepAlive = setInterval(() => {
-        nodeRes.write(': keepalive\n\n');
-      }, 30000);
-
-      // Clean up on close
-      nodeRuntime?.req.on('close', () => {
-        clearInterval(keepAlive);
-      });
-
-      // Don't end the response - keep it open for SSE
-      return new Promise(() => {});
-    }),
-  );
+  app.get('/mcp', mcpHandler);
+  app.post('/mcp', mcpHandler);
+  app.delete('/mcp', mcpHandler);
 
   return app;
 }

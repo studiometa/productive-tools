@@ -86,16 +86,24 @@ describe('MCP: HTTP transport', () => {
     await mockProductiveApi.close();
   });
 
-  async function mcpCall(method: string, params?: unknown, id = 1): Promise<unknown> {
+  async function mcpCall(method: string, params?: unknown, id = 1): Promise<{
+    status: number;
+    body: unknown;
+  }> {
     const res = await fetch(`${mcpServerUrl}/mcp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+        'MCP-Protocol-Version': '2025-11-25',
         Authorization: `Bearer ${VALID_BEARER}`,
       },
       body: JSON.stringify({ jsonrpc: '2.0', method, params, id }),
     });
-    return res.json();
+    return {
+      status: res.status,
+      body: await res.json(),
+    };
   }
 
   it('should respond to health check', async () => {
@@ -106,67 +114,101 @@ describe('MCP: HTTP transport', () => {
   });
 
   it('should handle initialize method', async () => {
-    const response = await mcpCall('initialize', {
-      protocolVersion: '2024-11-05',
+    const { status, body } = await mcpCall('initialize', {
+      protocolVersion: '2025-11-25',
       clientInfo: { name: 'test', version: '1.0.0' },
       capabilities: {},
     });
 
-    expect(response).toMatchObject({
+    expect(status).toBe(200);
+    expect(body).toMatchObject({
       jsonrpc: '2.0',
       result: {
-        protocolVersion: expect.any(String),
+        protocolVersion: '2025-11-25',
         serverInfo: { name: 'productive-mcp', version: expect.any(String) },
       },
     });
   });
 
   it('should list tools via tools/list', async () => {
-    const response = (await mcpCall('tools/list')) as {
-      result?: { tools: Array<{ name: string }> };
+    const { status, body } = (await mcpCall('tools/list')) as {
+      status: number;
+      body: { result?: { tools: Array<{ name: string }> } };
     };
 
-    expect(response).toMatchObject({
+    expect(status).toBe(200);
+    expect(body).toMatchObject({
       jsonrpc: '2.0',
       result: { tools: expect.any(Array) },
     });
 
-    const tools = response.result?.tools ?? [];
+    const tools = body.result?.tools ?? [];
     const productiveTool = tools.find((t) => t.name === 'productive');
     expect(productiveTool).toBeDefined();
   });
 
   it('should call productive tool for projects list', async () => {
-    const response = (await mcpCall('tools/call', {
+    const { status, body } = (await mcpCall('tools/call', {
       name: 'productive',
       arguments: { resource: 'projects', action: 'list' },
-    })) as { result?: { content: Array<{ type: string; text: string }> } };
+    })) as {
+      status: number;
+      body: { result?: { content: Array<{ type: string; text: string }> } };
+    };
 
-    expect(response).toMatchObject({
+    expect(status).toBe(200);
+    expect(body).toMatchObject({
       jsonrpc: '2.0',
       result: {
         content: expect.any(Array),
       },
     });
 
-    const text = response.result?.content[0]?.text ?? '';
+    const text = body.result?.content[0]?.text ?? '';
     expect(text).toContain('Alpha Website');
   });
 
-  it('should return 401 without auth header', async () => {
+  it('should return 401 without auth header and advertise the protected resource metadata', async () => {
     const res = await fetch(`${mcpServerUrl}/mcp`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+        'MCP-Protocol-Version': '2025-11-25',
+      },
       body: JSON.stringify({ jsonrpc: '2.0', method: 'tools/list', id: 1 }),
     });
 
     expect(res.status).toBe(401);
+    expect(res.headers.get('www-authenticate')).toContain(
+      '/.well-known/oauth-protected-resource/mcp',
+    );
+  });
+
+  it('should reject malformed bearer tokens without creating server-side session state', async () => {
+    const res = await fetch(`${mcpServerUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+        'MCP-Protocol-Version': '2025-11-25',
+        Authorization: 'Bearer not-base64',
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', method: 'tools/list', id: 1 }),
+    });
+
+    expect(res.status).toBe(401);
+    expect(res.headers.get('set-cookie')).toBeNull();
   });
 
   it('should return error for unknown JSON-RPC method', async () => {
-    const response = (await mcpCall('unknown/method')) as { error?: { code: number } };
+    const { status, body } = (await mcpCall('unknown/method')) as {
+      status: number;
+      body: { error?: { code: number } };
+    };
 
-    expect(response).toMatchObject({
+    expect(status).toBe(200);
+    expect(body).toMatchObject({
       jsonrpc: '2.0',
       error: { code: -32601 },
     });

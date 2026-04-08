@@ -80,13 +80,14 @@ The OAuth implementation is **stateless** — credentials are encrypted directly
 
 ### Server Endpoints
 
-| Endpoint                                  | Method   | Description                      |
-| ----------------------------------------- | -------- | -------------------------------- |
-| `/mcp`                                    | POST     | MCP JSON-RPC endpoint            |
-| `/health`                                 | GET      | Health check                     |
-| `/authorize`                              | GET/POST | OAuth authorization (login form) |
-| `/token`                                  | POST     | OAuth token exchange             |
-| `/.well-known/oauth-authorization-server` | GET      | OAuth metadata                   |
+| Endpoint                                | Method   | Description                   |
+| --------------------------------------- | -------- | ----------------------------- |
+| `/mcp`                                  | GET/POST/DELETE | MCP Streamable HTTP endpoint |
+| `/health`                               | GET      | Health check                  |
+| `/authorize`                            | GET/POST | OAuth authorization form      |
+| `/token`                                | POST     | OAuth token exchange          |
+| `/.well-known/oauth-authorization-server` | GET    | OAuth metadata                |
+| `/.well-known/oauth-protected-resource/mcp` | GET   | Protected resource metadata   |
 
 ### Environment Variables
 
