@@ -23,9 +23,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MCP**: Add `billable_time` to time entry update mapping ([a9c0245], [#156])
 - **MCP**: Document new fields in help and schema (`overhead`, `started_at`, `custom_fields`, `billing_type_id`) ([a9c0245], [#156])
 
+### Changed
+
+- **MCP**: Align remote HTTP transport with SDK Streamable HTTP on `/mcp`, keep stateless bearer auth with encoded Productive credentials, and drop legacy metadata/SSE compatibility routes ([288f841], [#171])
+- **MCP**: Use immediate OAuth redirects for authorization success instead of HTML success pages for strict clients ([9322002], [#171])
+- Update dependencies to fix audit findings (`@modelcontextprotocol/sdk` 1.29.0, `vite` 8.0.7) ([4a7bfc0], [#171])
+
+### Fixed
+
+- Fix lint issues in OAuth and integration helpers after the HTTP transport migration ([cb72e55], [#171])
+- **MCP**: Format SDK-aligned HTTP transport docs and tests after the transport migration ([1bfd081], [#171])
+
 [baddee1]: https://github.com/studiometa/productive-tools/commit/baddee1
 [a9c0245]: https://github.com/studiometa/productive-tools/commit/a9c0245
+[288f841]: https://github.com/studiometa/productive-tools/commit/288f841
+[9322002]: https://github.com/studiometa/productive-tools/commit/9322002
+[4a7bfc0]: https://github.com/studiometa/productive-tools/commit/4a7bfc0
+[cb72e55]: https://github.com/studiometa/productive-tools/commit/cb72e55
+[1bfd081]: https://github.com/studiometa/productive-tools/commit/1bfd081
 [#156]: https://github.com/studiometa/productive-tools/pull/156
+[#171]: https://github.com/studiometa/productive-tools/pull/171
 
 ## [0.10.9] - 2026.03.04
 
