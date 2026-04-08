@@ -212,9 +212,9 @@ export const authorizePostHandler = defineHandler(async (event: H3Event) => {
     redirectUrl.searchParams.set('state', state);
   }
 
-  // Show success page with auto-redirect
-  event.res.headers.set('Content-Type', 'text/html; charset=utf-8');
-  return renderSuccessPage(redirectUrl.toString());
+  // Redirect back to the OAuth client with the authorization code.
+  // Strict OAuth clients may not follow HTML/meta-refresh or JavaScript redirects.
+  return redirect(redirectUrl.toString());
 });
 
 /**

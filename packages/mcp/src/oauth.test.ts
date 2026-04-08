@@ -25,23 +25,6 @@ function generatePKCE() {
   return { codeVerifier, codeChallenge };
 }
 
-/**
- * Extract redirect URL from success page HTML
- */
-function extractRedirectUrl(html: string): string {
-  const metaMatch = html.match(/content="2;url=([^"]+)"/);
-  if (!metaMatch) {
-    throw new Error('Could not extract redirect URL from success page');
-  }
-  // Unescape HTML entities
-  return metaMatch[1]
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'");
-}
-
 describe('OAuth endpoints', () => {
   let server: Server;
   let baseUrl: string;
@@ -199,7 +182,7 @@ describe('OAuth endpoints', () => {
   });
 
   describe('POST /authorize', () => {
-    it('shows success page with redirect URL on valid credentials', async () => {
+    it('redirects immediately with 302 and a valid authorization code', async () => {
       const { codeChallenge } = generatePKCE();
       const response = await fetch(`${baseUrl}/authorize`, {
         method: 'POST',
@@ -213,21 +196,15 @@ describe('OAuth endpoints', () => {
           codeChallenge,
           codeChallengeMethod: 'S256',
         }).toString(),
+        redirect: 'manual',
       });
 
-      expect(response.status).toBe(200);
-      expect(response.headers.get('content-type')).toContain('text/html');
+      expect(response.status).toBe(302);
 
-      const html = await response.text();
-      expect(html).toContain('Successfully Connected');
-      expect(html).toContain('Redirecting to Claude Desktop');
+      const location = response.headers.get('location');
+      expect(location).toBeTruthy();
 
-      // Extract redirect URL from meta refresh tag
-      const metaMatch = html.match(/content="2;url=([^"]+)"/);
-      expect(metaMatch).toBeTruthy();
-      const extractedUrl = extractRedirectUrl(html);
-      const redirectUrl = new URL(extractedUrl);
-
+      const redirectUrl = new URL(location!);
       expect(redirectUrl.origin).toBe('https://example.com');
       expect(redirectUrl.pathname).toBe('/callback');
       expect(redirectUrl.searchParams.get('state')).toBe('test-state');
@@ -240,6 +217,35 @@ describe('OAuth endpoints', () => {
       expect(decoded.apiToken).toBe('pk_test123');
       expect(decoded.userId).toBe('67890');
       expect(decoded.codeChallenge).toBe(codeChallenge);
+    });
+
+    it('redirects immediately with 302 for strict OAuth clients', async () => {
+      const { codeChallenge } = generatePKCE();
+      const response = await fetch(`${baseUrl}/authorize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          orgId: '12345',
+          apiToken: 'pk_test123',
+          userId: '67890',
+          redirectUri: 'https://example.com/callback',
+          state: 'strict-state',
+          codeChallenge,
+          codeChallengeMethod: 'S256',
+        }).toString(),
+        redirect: 'manual',
+      });
+
+      expect(response.status).toBe(302);
+
+      const location = response.headers.get('location');
+      expect(location).toBeTruthy();
+
+      const redirectUrl = new URL(location!);
+      expect(redirectUrl.origin).toBe('https://example.com');
+      expect(redirectUrl.pathname).toBe('/callback');
+      expect(redirectUrl.searchParams.get('state')).toBe('strict-state');
+      expect(redirectUrl.searchParams.get('code')).toBeTruthy();
     });
 
     it('shows error when credentials are missing', async () => {
@@ -312,12 +318,13 @@ describe('OAuth endpoints', () => {
           apiToken: 'pk_test',
           redirectUri: 'http://localhost:3000/callback',
         }).toString(),
+        redirect: 'manual',
       });
 
-      expect(response.status).toBe(200);
-      const html = await response.text();
-      expect(html).toContain('Successfully Connected');
-      expect(html).toContain('http://localhost:3000/callback');
+      expect(response.status).toBe(302);
+      const location = response.headers.get('location');
+      expect(location).toBeTruthy();
+      expect(location).toContain('http://localhost:3000/callback');
     });
   });
 
@@ -337,10 +344,10 @@ describe('OAuth endpoints', () => {
           codeChallenge,
           codeChallengeMethod: 'S256',
         }).toString(),
+        redirect: 'manual',
       });
 
-      const html = await authResponse.text();
-      const redirectUrl = extractRedirectUrl(html);
+      const redirectUrl = authResponse.headers.get('location')!;
       const code = new URL(redirectUrl).searchParams.get('code')!;
 
       // Exchange code for token with PKCE verifier
@@ -383,10 +390,10 @@ describe('OAuth endpoints', () => {
           codeChallenge,
           codeChallengeMethod: 'S256',
         }).toString(),
+        redirect: 'manual',
       });
 
-      const html = await authResponse.text();
-      const code = new URL(extractRedirectUrl(html)).searchParams.get('code')!;
+      const code = new URL(authResponse.headers.get('location')!).searchParams.get('code')!;
 
       // Try to exchange with wrong verifier
       const tokenResponse = await fetch(`${baseUrl}/token`, {
@@ -417,10 +424,10 @@ describe('OAuth endpoints', () => {
           redirectUri: 'https://example.com/callback',
           codeChallenge,
         }).toString(),
+        redirect: 'manual',
       });
 
-      const html = await authResponse.text();
-      const code = new URL(extractRedirectUrl(html)).searchParams.get('code')!;
+      const code = new URL(authResponse.headers.get('location')!).searchParams.get('code')!;
 
       const tokenResponse = await fetch(`${baseUrl}/token`, {
         method: 'POST',
@@ -450,10 +457,10 @@ describe('OAuth endpoints', () => {
           redirectUri: 'https://example.com/callback',
           codeChallenge,
         }).toString(),
+        redirect: 'manual',
       });
 
-      const html = await authResponse.text();
-      const code = new URL(extractRedirectUrl(html)).searchParams.get('code')!;
+      const code = new URL(authResponse.headers.get('location')!).searchParams.get('code')!;
 
       const tokenResponse = await fetch(`${baseUrl}/token`, {
         method: 'POST',
