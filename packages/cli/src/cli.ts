@@ -166,6 +166,14 @@ ${colors.bold('AUTHENTICATION OPTIONS:')}
   --user-id <id>      User ID (overrides config and env)
   --base-url <url>    API base URL (optional)
 
+${colors.bold('EXIT CODES:')}
+  0    Success
+  1    General error (unexpected failure)
+  2    Authentication error (invalid/expired token)
+  3    Validation error (missing or invalid arguments)
+  4    Configuration error (missing apiToken, orgId, etc.)
+  5    Resource not found
+
 ${colors.bold('EXAMPLES:')}
   # Configure via CLI
   productive config set apiToken YOUR_TOKEN
