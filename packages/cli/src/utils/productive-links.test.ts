@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 import { setColorEnabled } from './colors.js';
 import {
@@ -12,16 +12,17 @@ import {
   linkedTask,
   linkedPerson,
   linkedService,
+  setOrgIdResolver,
 } from './productive-links.js';
-
-// Mock the config module
-vi.mock('../config.js', () => ({
-  getConfig: vi.fn(() => ({ organizationId: 'test-org-123' })),
-}));
 
 describe('productive-links', () => {
   beforeEach(() => {
     setColorEnabled(true);
+    setOrgIdResolver(() => 'test-org-123');
+  });
+
+  afterEach(() => {
+    setOrgIdResolver();
   });
 
   describe('projectUrl', () => {
@@ -74,7 +75,7 @@ describe('productive-links', () => {
       const result = linkedId('456', 'project');
       expect(result).toContain('#456');
       expect(result).toContain('https://app.productive.io/test-org-123/projects/456');
-      expect(result).toContain('\x1b]8;;'); // OSC 8 sequence
+      expect(result).toContain('\x1b]8;;');
     });
 
     it('should create clickable link for task', () => {
@@ -155,15 +156,13 @@ describe('productive-links', () => {
 });
 
 describe('productive-links without org ID', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     setColorEnabled(true);
-    const configModule = await import('../config.js');
-    vi.mocked(configModule.getConfig).mockReturnValue({ organizationId: undefined } as any);
+    setOrgIdResolver(() => undefined);
   });
 
-  afterEach(async () => {
-    const configModule = await import('../config.js');
-    vi.mocked(configModule.getConfig).mockReturnValue({ organizationId: 'test-org-123' } as any);
+  afterEach(() => {
+    setOrgIdResolver();
   });
 
   it('should return empty string for projectUrl without org ID', () => {
@@ -194,7 +193,6 @@ describe('productive-links without org ID', () => {
   it('should return plain ID text for linkedId without org ID', () => {
     const result = linkedId('456', 'project');
     expect(result).toContain('#456');
-    // Should not contain OSC 8 link since URL is empty
     expect(result).not.toContain('\x1b]8;;https');
   });
 

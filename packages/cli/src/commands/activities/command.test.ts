@@ -1,92 +1,56 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import { handleActivitiesCommand } from './command.js';
+import { createTestContext } from '../../context.js';
+import { createCommandRouter } from '../../utils/command-router.js';
+import { activitiesCommandConfig } from './command.js';
+import { activitiesList } from './handlers.js';
 
-// Mock the handlers to avoid needing real API
-vi.mock('./handlers.js', () => ({
-  activitiesList: vi.fn().mockResolvedValue(undefined),
-}));
+describe('activities command wiring', () => {
+  it('uses "activities" as resource name', () => {
+    expect(activitiesCommandConfig.resource).toBe('activities');
+  });
 
-// Mock config to avoid file system access
-vi.mock('../../config.js', () => ({
-  getConfig: vi.fn().mockReturnValue({
-    apiToken: 'test-token',
-    organizationId: 'test-org',
-    baseUrl: 'https://api.productive.io/api/v2',
-  }),
-}));
-
-// Mock cache with full interface - factory must be inline
-vi.mock('../../utils/cache.js', () => {
-  const mockCacheObj = {
-    get: vi.fn(),
-    set: vi.fn(),
-    delete: vi.fn(),
-    setOrgId: vi.fn(),
-    getCachedPeople: vi.fn(),
-    getCachedProjects: vi.fn(),
-    getCachedTaskLists: vi.fn(),
-    findCachedPersonByEmail: vi.fn(),
-    findCachedProjectByNumber: vi.fn(),
-    findCachedTaskListByName: vi.fn(),
-  };
-  return {
-    getCache: vi.fn().mockReturnValue(mockCacheObj),
-    CacheStore: vi.fn().mockImplementation(() => mockCacheObj),
-  };
+  it('wires list and ls to activitiesList', () => {
+    expect(activitiesCommandConfig.handlers.list).toBe(activitiesList);
+    expect(activitiesCommandConfig.handlers.ls).toBe(activitiesList);
+  });
 });
 
 describe('activities command routing', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
+  const mockActivitiesList = vi.fn().mockResolvedValue(undefined);
 
-  beforeEach(async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-
-    // Reset mocks before each test
-    const handlers = await import('./handlers.js');
-    vi.mocked(handlers.activitiesList).mockClear();
+  const router = createCommandRouter({
+    resource: 'activities',
+    handlers: {
+      list: mockActivitiesList,
+      ls: mockActivitiesList,
+    },
+    contextFactory: (options) => createTestContext({ options }),
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    mockActivitiesList.mockClear();
   });
 
-  it('should route "list" subcommand to activitiesList', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleActivitiesCommand('list', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.activitiesList).toHaveBeenCalled();
+  it('routes "list" subcommand to activitiesList handler', async () => {
+    await router('list', [], { format: 'json' });
+    expect(mockActivitiesList).toHaveBeenCalled();
   });
 
-  it('should route "ls" alias to activitiesList', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleActivitiesCommand('ls', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.activitiesList).toHaveBeenCalled();
+  it('routes "ls" alias to activitiesList handler', async () => {
+    await router('ls', [], { format: 'json' });
+    expect(mockActivitiesList).toHaveBeenCalled();
   });
 
-  it('should exit with error for unknown subcommand', async () => {
-    await handleActivitiesCommand('unknown', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
+  it('exits with error for unknown subcommand', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+    await router('unknown', [], { format: 'json' });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Unknown activities subcommand: unknown'),
     );
   });

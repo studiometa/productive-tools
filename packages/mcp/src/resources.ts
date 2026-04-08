@@ -27,16 +27,35 @@ import { ProductiveApi } from '@studiometa/productive-api';
 import { fromHandlerContext } from '@studiometa/productive-core';
 
 import type { ProductiveCredentials } from './auth.js';
-import type { HandlerContext } from './handlers/types.js';
+import type { HandlerContext, ToolResult } from './handlers/types.js';
 
-import { handleDeals } from './handlers/deals.js';
-import { handlePeople } from './handlers/people.js';
-import { handleProjects } from './handlers/projects.js';
-import { handleSchemaOverview } from './handlers/schema.js';
-import { handleServices } from './handlers/services.js';
-import { handleSummaries } from './handlers/summaries.js';
-import { handleTasks } from './handlers/tasks.js';
-import { INSTRUCTIONS } from './instructions.js';
+import { handleDeals as defaultHandleDeals } from './handlers/deals.js';
+import { handlePeople as defaultHandlePeople } from './handlers/people.js';
+import { handleProjects as defaultHandleProjects } from './handlers/projects.js';
+import { handleSchemaOverview as defaultHandleSchemaOverview } from './handlers/schema.js';
+import { handleServices as defaultHandleServices } from './handlers/services.js';
+import { handleSummaries as defaultHandleSummaries } from './handlers/summaries.js';
+import { handleTasks as defaultHandleTasks } from './handlers/tasks.js';
+import { INSTRUCTIONS as DEFAULT_INSTRUCTIONS } from './instructions.js';
+
+/**
+ * Optional dependency overrides for readResource.
+ * Enables testing without vi.mock().
+ */
+export interface ResourceDeps {
+  buildHandlerContext?: (
+    credentials: ProductiveCredentials,
+    overrides?: { filter?: Record<string, string> },
+  ) => HandlerContext;
+  handleSchemaOverview?: () => ToolResult;
+  handleSummaries?: (action: string, args: Record<string, unknown>, ctx: HandlerContext) => Promise<ToolResult>;
+  handleProjects?: (action: string, args: Record<string, unknown>, ctx: HandlerContext) => Promise<ToolResult>;
+  handleTasks?: (action: string, args: Record<string, unknown>, ctx: HandlerContext) => Promise<ToolResult>;
+  handlePeople?: (action: string, args: Record<string, unknown>, ctx: HandlerContext, credentials: ProductiveCredentials) => Promise<ToolResult>;
+  handleDeals?: (action: string, args: Record<string, unknown>, ctx: HandlerContext) => Promise<ToolResult>;
+  handleServices?: (action: string, args: Record<string, unknown>, ctx: HandlerContext) => Promise<ToolResult>;
+  instructions?: string;
+}
 
 /** MIME type used for all resource content */
 const MIME_TYPE = 'application/json';
@@ -169,96 +188,121 @@ export const RESOURCE_TEMPLATES: ResourceTemplate[] = [
 // URI pattern matching
 // ---------------------------------------------------------------------------
 
-/** Route patterns and their handler factories */
-const URI_PATTERNS: Array<{
-  pattern: RegExp;
-  handler: (match: RegExpMatchArray, credentials: ProductiveCredentials) => Promise<unknown>;
-}> = [
-  // Static resources (no credentials needed)
-  {
-    pattern: /^productive:\/\/schema$/,
-    handler: async () => {
-      const result = handleSchemaOverview();
-      const text = result.content[0] as { text: string };
-      return JSON.parse(text.text);
+/** Build URI patterns with the given handler functions */
+function buildUriPatterns(deps: ResolvedDeps) {
+  return [
+    // Static resources (no credentials needed)
+    {
+      pattern: /^productive:\/\/schema$/,
+      handler: async () => {
+        const result = deps.handleSchemaOverview();
+        const text = result.content[0] as { text: string };
+        return JSON.parse(text.text);
+      },
     },
-  },
-  {
-    pattern: /^productive:\/\/instructions$/,
-    handler: async () => ({ instructions: INSTRUCTIONS }),
-  },
+    {
+      pattern: /^productive:\/\/instructions$/,
+      handler: async () => ({ instructions: deps.instructions }),
+    },
 
-  // Dynamic summaries
-  {
-    pattern: /^productive:\/\/summaries\/my_day$/,
-    handler: async (_, credentials) => {
-      const ctx = buildHandlerContext(credentials);
-      const result = await handleSummaries('my_day', {}, ctx);
-      return extractJsonFromResult(result);
+    // Dynamic summaries
+    {
+      pattern: /^productive:\/\/summaries\/my_day$/,
+      handler: async (_: RegExpMatchArray, credentials: ProductiveCredentials) => {
+        const ctx = deps.buildHandlerContext(credentials);
+        const result = await deps.handleSummaries('my_day', {}, ctx);
+        return extractJsonFromResult(result);
+      },
     },
-  },
-  {
-    pattern: /^productive:\/\/summaries\/team_pulse$/,
-    handler: async (_, credentials) => {
-      const ctx = buildHandlerContext(credentials);
-      const result = await handleSummaries('team_pulse', {}, ctx);
-      return extractJsonFromResult(result);
+    {
+      pattern: /^productive:\/\/summaries\/team_pulse$/,
+      handler: async (_: RegExpMatchArray, credentials: ProductiveCredentials) => {
+        const ctx = deps.buildHandlerContext(credentials);
+        const result = await deps.handleSummaries('team_pulse', {}, ctx);
+        return extractJsonFromResult(result);
+      },
     },
-  },
 
-  // Project nested resources (before single project to avoid conflict)
-  {
-    pattern: /^productive:\/\/projects\/([^/]+)\/tasks$/,
-    handler: async ([, id], credentials) => {
-      const ctx = buildHandlerContext(credentials, { filter: { project_id: id } });
-      const result = await handleTasks('list', { project_id: id }, ctx);
-      return extractJsonFromResult(result);
+    // Project nested resources (before single project to avoid conflict)
+    {
+      pattern: /^productive:\/\/projects\/([^/]+)\/tasks$/,
+      handler: async ([, id]: RegExpMatchArray, credentials: ProductiveCredentials) => {
+        const ctx = deps.buildHandlerContext(credentials, { filter: { project_id: id } });
+        const result = await deps.handleTasks('list', { project_id: id }, ctx);
+        return extractJsonFromResult(result);
+      },
     },
-  },
-  {
-    pattern: /^productive:\/\/projects\/([^/]+)\/services$/,
-    handler: async ([, id], credentials) => {
-      const ctx = buildHandlerContext(credentials, { filter: { project_id: id } });
-      // handleServices uses CommonArgs; project_id is passed via ctx.filter
-      const result = await handleServices('list', {}, ctx);
-      return extractJsonFromResult(result);
+    {
+      pattern: /^productive:\/\/projects\/([^/]+)\/services$/,
+      handler: async ([, id]: RegExpMatchArray, credentials: ProductiveCredentials) => {
+        const ctx = deps.buildHandlerContext(credentials, { filter: { project_id: id } });
+        const result = await deps.handleServices('list', {}, ctx);
+        return extractJsonFromResult(result);
+      },
     },
-  },
 
-  // Single entity resources
-  {
-    pattern: /^productive:\/\/projects\/([^/]+)$/,
-    handler: async ([, id], credentials) => {
-      const ctx = buildHandlerContext(credentials);
-      const result = await handleProjects('get', { id }, ctx);
-      return extractJsonFromResult(result);
+    // Single entity resources
+    {
+      pattern: /^productive:\/\/projects\/([^/]+)$/,
+      handler: async ([, id]: RegExpMatchArray, credentials: ProductiveCredentials) => {
+        const ctx = deps.buildHandlerContext(credentials);
+        const result = await deps.handleProjects('get', { id }, ctx);
+        return extractJsonFromResult(result);
+      },
     },
-  },
-  {
-    pattern: /^productive:\/\/tasks\/([^/]+)$/,
-    handler: async ([, id], credentials) => {
-      const ctx = buildHandlerContext(credentials);
-      const result = await handleTasks('get', { id }, ctx);
-      return extractJsonFromResult(result);
+    {
+      pattern: /^productive:\/\/tasks\/([^/]+)$/,
+      handler: async ([, id]: RegExpMatchArray, credentials: ProductiveCredentials) => {
+        const ctx = deps.buildHandlerContext(credentials);
+        const result = await deps.handleTasks('get', { id }, ctx);
+        return extractJsonFromResult(result);
+      },
     },
-  },
-  {
-    pattern: /^productive:\/\/people\/([^/]+)$/,
-    handler: async ([, id], credentials) => {
-      const ctx = buildHandlerContext(credentials);
-      const result = await handlePeople('get', { id }, ctx, credentials);
-      return extractJsonFromResult(result);
+    {
+      pattern: /^productive:\/\/people\/([^/]+)$/,
+      handler: async ([, id]: RegExpMatchArray, credentials: ProductiveCredentials) => {
+        const ctx = deps.buildHandlerContext(credentials);
+        const result = await deps.handlePeople('get', { id }, ctx, credentials);
+        return extractJsonFromResult(result);
+      },
     },
-  },
-  {
-    pattern: /^productive:\/\/deals\/([^/]+)$/,
-    handler: async ([, id], credentials) => {
-      const ctx = buildHandlerContext(credentials);
-      const result = await handleDeals('get', { id }, ctx);
-      return extractJsonFromResult(result);
+    {
+      pattern: /^productive:\/\/deals\/([^/]+)$/,
+      handler: async ([, id]: RegExpMatchArray, credentials: ProductiveCredentials) => {
+        const ctx = deps.buildHandlerContext(credentials);
+        const result = await deps.handleDeals('get', { id }, ctx);
+        return extractJsonFromResult(result);
+      },
     },
-  },
-];
+  ];
+}
+
+/** Resolved deps — all fields required (defaults filled in) */
+interface ResolvedDeps {
+  buildHandlerContext: NonNullable<ResourceDeps['buildHandlerContext']>;
+  handleSchemaOverview: NonNullable<ResourceDeps['handleSchemaOverview']>;
+  handleSummaries: NonNullable<ResourceDeps['handleSummaries']>;
+  handleProjects: NonNullable<ResourceDeps['handleProjects']>;
+  handleTasks: NonNullable<ResourceDeps['handleTasks']>;
+  handlePeople: NonNullable<ResourceDeps['handlePeople']>;
+  handleDeals: NonNullable<ResourceDeps['handleDeals']>;
+  handleServices: NonNullable<ResourceDeps['handleServices']>;
+  instructions: string;
+}
+
+function resolveDeps(deps?: ResourceDeps): ResolvedDeps {
+  return {
+    buildHandlerContext: deps?.buildHandlerContext ?? buildHandlerContext,
+    handleSchemaOverview: deps?.handleSchemaOverview ?? defaultHandleSchemaOverview,
+    handleSummaries: deps?.handleSummaries ?? defaultHandleSummaries,
+    handleProjects: deps?.handleProjects ?? defaultHandleProjects,
+    handleTasks: deps?.handleTasks ?? defaultHandleTasks,
+    handlePeople: deps?.handlePeople ?? defaultHandlePeople,
+    handleDeals: deps?.handleDeals ?? defaultHandleDeals,
+    handleServices: deps?.handleServices ?? defaultHandleServices,
+    instructions: deps?.instructions ?? DEFAULT_INSTRUCTIONS,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -335,8 +379,11 @@ export function listResourceTemplates(): ResourceTemplate[] {
 export async function readResource(
   uri: string,
   credentials: ProductiveCredentials,
+  deps?: ResourceDeps,
 ): Promise<ReadResourceResult> {
-  for (const { pattern, handler } of URI_PATTERNS) {
+  const resolved = resolveDeps(deps);
+  const uriPatterns = buildUriPatterns(resolved);
+  for (const { pattern, handler } of uriPatterns) {
     const match = uri.match(pattern);
     if (match) {
       const data = await handler(match, credentials);

@@ -2,6 +2,8 @@
  * Discussions command entry point
  */
 
+import type { CommandRouterConfig } from '../../utils/command-router.js';
+
 import { createCommandRouter } from '../../utils/command-router.js';
 import {
   discussionsList,
@@ -14,9 +16,9 @@ import {
 } from './handlers.js';
 
 /**
- * Handle discussions command
+ * Router configuration — exported for testability
  */
-export const handleDiscussionsCommand = createCommandRouter({
+export const discussionsCommandConfig: CommandRouterConfig = {
   resource: 'discussions',
   handlers: {
     list: discussionsList,
@@ -30,4 +32,9 @@ export const handleDiscussionsCommand = createCommandRouter({
     resolve: [discussionsResolve, 'args'],
     reopen: [discussionsReopen, 'args'],
   },
-});
+};
+
+/**
+ * Handle discussions command
+ */
+export const handleDiscussionsCommand = createCommandRouter(discussionsCommandConfig);
