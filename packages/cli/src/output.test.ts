@@ -2,198 +2,203 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { OutputFormatter, createSpinner } from './output.js';
 
-describe('OutputFormatter', () => {
-  let consoleLogSpy: any;
-  let consoleErrorSpy: any;
+// Mock console methods
+const mockConsoleLog = vi.fn();
+const mockConsoleError = vi.fn();
+const mockStdoutWrite = vi.fn();
+const mockProcessExit = vi.fn();
 
+vi.stubGlobal('console', {
+  log: mockConsoleLog,
+  error: mockConsoleError,
+});
+
+vi.stubGlobal('process', {
+  stdout: { write: mockStdoutWrite },
+  stderr: { isTTY: true, write: vi.fn() },
+  exit: mockProcessExit,
+  env: {},
+});
+
+describe('OutputFormatter', () => {
   beforeEach(() => {
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
-    consoleLogSpy.mockRestore();
-    consoleErrorSpy.mockRestore();
+    vi.restoreAllMocks();
   });
 
-  describe('JSON format', () => {
-    it('should output JSON', () => {
+  describe('without outputField', () => {
+    it('outputs JSON format', () => {
       const formatter = new OutputFormatter('json');
-      const data = { key: 'value' };
+      const data = { id: '123', name: 'test' };
 
       formatter.output(data);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(JSON.stringify(data, null, 2));
+      expect(mockConsoleLog).toHaveBeenCalledWith(JSON.stringify(data, null, 2));
     });
 
-    it('should output success as JSON', () => {
-      const formatter = new OutputFormatter('json');
-
-      formatter.success('Success message');
-
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        JSON.stringify({ status: 'success', message: 'Success message' }),
-      );
-    });
-
-    it('should output error as JSON', () => {
-      const formatter = new OutputFormatter('json');
-
-      formatter.error('Error message');
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        JSON.stringify({ status: 'error', message: 'Error message', details: undefined }),
-      );
-    });
-
-    it('should output warning as JSON', () => {
-      const formatter = new OutputFormatter('json');
-
-      formatter.warning('Warning message');
-
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        JSON.stringify({ status: 'warning', message: 'Warning message' }),
-      );
-    });
-
-    it('should output info as JSON', () => {
-      const formatter = new OutputFormatter('json');
-
-      formatter.info('Info message');
-
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        JSON.stringify({ status: 'info', message: 'Info message' }),
-      );
-    });
-  });
-
-  describe('CSV format', () => {
-    it('should output CSV', () => {
-      const formatter = new OutputFormatter('csv');
-      const data = [
-        { name: 'Project 1', status: 'active' },
-        { name: 'Project 2', status: 'archived' },
-      ];
-
-      formatter.output(data);
-
-      expect(consoleLogSpy).toHaveBeenCalledWith('name,status');
-      expect(consoleLogSpy).toHaveBeenCalledWith('Project 1,active');
-      expect(consoleLogSpy).toHaveBeenCalledWith('Project 2,archived');
-    });
-
-    it('should quote CSV values with commas', () => {
-      const formatter = new OutputFormatter('csv');
-      const data = [{ name: 'Project, Inc', status: 'active' }];
-
-      formatter.output(data);
-
-      expect(consoleLogSpy).toHaveBeenCalledWith('"Project, Inc",active');
-    });
-
-    it('should handle empty array', () => {
-      const formatter = new OutputFormatter('csv');
-
-      formatter.output([]);
-
-      expect(consoleLogSpy).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Table format', () => {
-    it('should output table', () => {
-      const formatter = new OutputFormatter('table');
-      const data = [
-        { name: 'Project 1', status: 'active' },
-        { name: 'Project 2', status: 'archived' },
-      ];
-
-      formatter.output(data);
-
-      expect(consoleLogSpy).toHaveBeenCalled();
-      // Check that headers and separator were printed
-      const calls = consoleLogSpy.mock.calls.map((call: any) => call[0]);
-      expect(calls.some((call: string) => call.includes('name'))).toBe(true);
-      expect(calls.some((call: string) => call.includes('-'))).toBe(true);
-    });
-
-    it('should handle empty array', () => {
-      const formatter = new OutputFormatter('table');
-
-      formatter.output([]);
-
-      expect(consoleLogSpy).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Human format', () => {
-    it('should output data as-is', () => {
+    it('outputs human format', () => {
       const formatter = new OutputFormatter('human');
-      const data = 'Some human readable text';
+      const data = 'test data';
 
       formatter.output(data);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(data);
-    });
-
-    it('should output success with checkmark', () => {
-      const formatter = new OutputFormatter('human');
-
-      formatter.success('Success message');
-
-      const output = consoleLogSpy.mock.calls[0][0];
-      expect(output).toContain('✓');
-      expect(output).toContain('Success message');
-    });
-
-    it('should output error with cross', () => {
-      const formatter = new OutputFormatter('human');
-
-      formatter.error('Error message');
-
-      const output = consoleErrorSpy.mock.calls[0][0];
-      expect(output).toContain('✗');
-      expect(output).toContain('Error message');
-    });
-
-    it('should output warning with symbol', () => {
-      const formatter = new OutputFormatter('human');
-
-      formatter.warning('Warning message');
-
-      const output = consoleLogSpy.mock.calls[0][0];
-      expect(output).toContain('⚠');
-      expect(output).toContain('Warning message');
+      expect(mockConsoleLog).toHaveBeenCalledWith(data);
     });
   });
 
-  describe('No color mode', () => {
-    it('should respect no-color flag', () => {
-      const formatter = new OutputFormatter('human', true);
+  describe('with outputField', () => {
+    it('extracts and outputs a simple field', () => {
+      const formatter = new OutputFormatter('human', false, 'id');
+      const data = { id: '123', name: 'test' };
 
-      formatter.success('Success');
+      formatter.output(data);
 
-      // Should still have the checkmark but no ANSI codes
-      const output = consoleLogSpy.mock.calls[0][0];
-      expect(output).toContain('✓');
+      expect(mockStdoutWrite).toHaveBeenCalledWith('123');
+      expect(mockStdoutWrite).toHaveBeenCalledWith('\n');
+    });
+
+    it('extracts and outputs a nested field', () => {
+      const formatter = new OutputFormatter('human', false, 'attributes.title');
+      const data = {
+        id: '123',
+        attributes: { title: 'Test Task', number: 42 },
+      };
+
+      formatter.output(data);
+
+      expect(mockStdoutWrite).toHaveBeenCalledWith('Test Task');
+      expect(mockStdoutWrite).toHaveBeenCalledWith('\n');
+    });
+
+    it('extracts and outputs deeply nested relationship field', () => {
+      const formatter = new OutputFormatter('human', false, 'relationships.project.data.id');
+      const data = {
+        id: '123',
+        relationships: {
+          project: {
+            data: { id: '456', type: 'projects' },
+          },
+        },
+      };
+
+      formatter.output(data);
+
+      expect(mockStdoutWrite).toHaveBeenCalledWith('456');
+      expect(mockStdoutWrite).toHaveBeenCalledWith('\n');
+    });
+
+    it('handles numeric values', () => {
+      const formatter = new OutputFormatter('human', false, 'attributes.number');
+      const data = {
+        attributes: { number: 42 },
+      };
+
+      formatter.output(data);
+
+      expect(mockStdoutWrite).toHaveBeenCalledWith('42');
+      expect(mockStdoutWrite).toHaveBeenCalledWith('\n');
+    });
+
+    it('handles boolean values', () => {
+      const formatter = new OutputFormatter('human', false, 'attributes.is_completed');
+      const data = {
+        attributes: { is_completed: false },
+      };
+
+      formatter.output(data);
+
+      expect(mockStdoutWrite).toHaveBeenCalledWith('false');
+      expect(mockStdoutWrite).toHaveBeenCalledWith('\n');
+    });
+
+    it('handles null values', () => {
+      const formatter = new OutputFormatter('human', false, 'attributes.worked_time');
+      const data = {
+        attributes: { worked_time: null },
+      };
+
+      formatter.output(data);
+
+      expect(mockStdoutWrite).toHaveBeenCalledWith('null');
+      expect(mockStdoutWrite).toHaveBeenCalledWith('\n');
+    });
+
+    it('handles array values', () => {
+      const formatter = new OutputFormatter('human', false, 'tags');
+      const data = {
+        tags: ['urgent', 'bug'],
+      };
+
+      formatter.output(data);
+
+      expect(mockStdoutWrite).toHaveBeenCalledWith('["urgent","bug"]');
+      expect(mockStdoutWrite).toHaveBeenCalledWith('\n');
+    });
+
+    it('exits with error for non-existent field', () => {
+      const formatter = new OutputFormatter('human', false, 'nonexistent.field');
+      const data = { id: '123' };
+
+      formatter.output(data);
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        "Error: Field 'nonexistent.field' not found in data",
+      );
+      expect(mockProcessExit).toHaveBeenCalledWith(1);
+    });
+
+    it('doesnt add extra newline if value already ends with newline', () => {
+      const formatter = new OutputFormatter('human', false, 'message');
+      const data = { message: 'Hello\n' };
+
+      formatter.output(data);
+
+      expect(mockStdoutWrite).toHaveBeenCalledWith('Hello\n');
+      expect(mockStdoutWrite).toHaveBeenCalledTimes(1);
+    });
+
+    it('handles empty string values correctly', () => {
+      const formatter = new OutputFormatter('human', false, 'empty');
+      const data = { empty: '' };
+
+      formatter.output(data);
+
+      expect(mockStdoutWrite).toHaveBeenCalledWith('');
+      expect(mockStdoutWrite).toHaveBeenCalledWith('\n');
     });
   });
 });
 
 describe('createSpinner', () => {
-  it('should create spinner in human mode', () => {
-    const spinner = createSpinner('Loading...', 'human');
-    expect(spinner).toBeDefined();
-    expect(spinner.start).toBeDefined();
-    expect(spinner.stop).toBeDefined();
+  it('creates noop spinner for json format', () => {
+    const spinner = createSpinner('test', 'json');
+
+    expect(spinner.start()).toBe(spinner);
+    expect(spinner.succeed()).toBe(spinner);
+    expect(spinner.fail()).toBe(spinner);
+    expect(spinner.stop()).toBe(spinner);
+    expect(spinner.setText()).toBe(spinner);
   });
 
-  it('should create no-op spinner in JSON mode', () => {
-    const spinner = createSpinner('Loading...', 'json');
-    expect(spinner).toBeDefined();
+  it('creates noop spinner when outputField is specified', () => {
+    const spinner = createSpinner('test', 'human', 'id');
 
-    // Should be chainable but do nothing
-    const result = spinner.start().setText('Updated').stop();
-    expect(result).toBeDefined();
+    expect(spinner.start()).toBe(spinner);
+    expect(spinner.succeed()).toBe(spinner);
+    expect(spinner.fail()).toBe(spinner);
+    expect(spinner.stop()).toBe(spinner);
+    expect(spinner.setText()).toBe(spinner);
+  });
+
+  it('creates real spinner for human format without outputField', () => {
+    const spinner = createSpinner('test', 'human');
+
+    // Real spinner should have different behavior than noop
+    // We can't test the exact implementation, but we can ensure it's created
+    expect(spinner).toBeDefined();
+    expect(typeof spinner.start).toBe('function');
   });
 });

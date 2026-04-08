@@ -149,6 +149,8 @@ ${colors.bold('COMMANDS:')}
 
 ${colors.bold('OPTIONS:')}
   -f, --format <fmt>  Output format: json, human, csv, table (default: human)
+  --output-field <field>  Extract single field value for piping (e.g., 'id', 'attributes.title')
+  --of <field>        Short alias for --output-field
   --no-color          Disable colored output
   --no-cache          Bypass cache for this request
   --refresh           Force refresh cached data
@@ -192,6 +194,12 @@ ${colors.bold('EXAMPLES:')}
 
   # List time entries for date range
   productive time list --from 2024-01-01 --to 2024-01-31
+
+  # Extract just the project ID from a task for piping
+  productive tasks get 123 --output-field "relationships.project.data.id"
+
+  # Get task title for shell scripts
+  TASK_TITLE=$(productive tasks get 123 --of "attributes.title")
 
 ${colors.bold('CREDENTIAL PRIORITY:')}
   Credentials are loaded in this order (highest to lowest priority):
