@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.11] - 2026.05.19
+
+### Added
+
+- **API**: Add `requestRaw()` public method on `ProductiveApi` for passthrough requests reusing existing auth and rate limiting ([876da24], [#172])
+- **Core**: Add `apiRead` executor with auto-pagination support (up to 50 pages, configurable via `max_pages`) ([876da24], [#172])
+- **Core**: Add `apiWrite` executor for raw POST/PATCH/PUT/DELETE requests ([876da24], [#172])
+- **MCP**: Add `api_read` tool — read-only passthrough to any documented Productive API GET endpoint, validated against the official OpenAPI reference ([1ea8a23], [#172])
+- **MCP**: Add `api_write` tool — gated write access to documented endpoints, requires `PRODUCTIVE_MCP_ENABLE_API_WRITE=true` and `confirm: true` per call, supports `dry_run` preview ([1ea8a23], [#172])
+- **MCP**: Add OpenAPI reference generator script (`npm run api-reference:update`) producing a typed TypeScript reference for 362 endpoints with filters, sort fields, path params, and HTTP methods ([80fc190], [#172])
+- **MCP**: Add `describe: true` mode on `api_read` to return endpoint documentation (filters, sort values, supported methods) without fetching data ([c57f884], [#172])
+- **MCP**: Document `api_read` / `api_write` filter syntax, pagination, and workflow examples in SKILL.md ([1ea8a23], [#172])
+
+[0.10.11]: https://github.com/studiometa/productive-tools/compare/0.10.10...0.10.11
+[876da24]: https://github.com/studiometa/productive-tools/commit/876da24
+[80fc190]: https://github.com/studiometa/productive-tools/commit/80fc190
+[1ea8a23]: https://github.com/studiometa/productive-tools/commit/1ea8a23
+[c57f884]: https://github.com/studiometa/productive-tools/commit/c57f884
+[#172]: https://github.com/studiometa/productive-tools/pull/172
+
 ## [0.10.10] - 2026.04.08
 
 ### Added
