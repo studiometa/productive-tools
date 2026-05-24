@@ -19,6 +19,7 @@ import { handleError, exitWithValidationError, runCommand } from '../../error-ha
 import { ValidationError } from '../../errors.js';
 import { render, createRenderContext, humanBookingDetailRenderer } from '../../renderers/index.js';
 import { colors } from '../../utils/colors.js';
+import { isDryRun, handleDryRunOutput } from '../../utils/dry-run.js';
 import { parseFilters } from '../../utils/parse-filters.js';
 
 function formatDuration(minutes: number): string {
@@ -161,23 +162,43 @@ export async function bookingsAdd(ctx: CommandContext): Promise<void> {
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await createBooking(
-      {
-        personId,
-        serviceId: ctx.options.service ? String(ctx.options.service) : undefined,
-        eventId: ctx.options.event ? String(ctx.options.event) : undefined,
-        startedOn: String(ctx.options.from),
-        endedOn: String(ctx.options.to),
-        time: ctx.options.time ? parseInt(String(ctx.options.time)) : undefined,
-        totalTime: ctx.options['total-time']
-          ? parseInt(String(ctx.options['total-time']))
-          : undefined,
-        percentage: ctx.options.percentage ? parseInt(String(ctx.options.percentage)) : undefined,
-        draft: ctx.options.tentative === true,
-        note: ctx.options.note ? String(ctx.options.note) : undefined,
-      },
-      execCtx,
-    );
+    const payload = {
+      personId,
+      serviceId: ctx.options.service ? String(ctx.options.service) : undefined,
+      eventId: ctx.options.event ? String(ctx.options.event) : undefined,
+      startedOn: String(ctx.options.from),
+      endedOn: String(ctx.options.to),
+      time: ctx.options.time ? parseInt(String(ctx.options.time)) : undefined,
+      totalTime: ctx.options['total-time']
+        ? parseInt(String(ctx.options['total-time']))
+        : undefined,
+      percentage: ctx.options.percentage ? parseInt(String(ctx.options.percentage)) : undefined,
+      draft: ctx.options.tentative === true,
+      note: ctx.options.note ? String(ctx.options.note) : undefined,
+    };
+
+    if (isDryRun(ctx)) {
+      const target = ctx.options.service
+        ? `service ${payload.serviceId}`
+        : ctx.options.event
+          ? `event ${payload.eventId}`
+          : 'unknown';
+      const period = `${payload.startedOn} → ${payload.endedOn}`;
+
+      handleDryRunOutput(
+        {
+          action: 'create',
+          resource: 'booking',
+          payload,
+          description: `Booking for ${target} (${period})`,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
+    const result = await createBooking(payload, execCtx);
 
     spinner.succeed();
 
@@ -214,25 +235,36 @@ export async function bookingsUpdate(args: string[], ctx: CommandContext): Promi
     if (ctx.options.confirm !== undefined) draft = false;
     else if (ctx.options.tentative !== undefined) draft = ctx.options.tentative === true;
 
-    const result = await updateBooking(
-      {
-        id,
-        startedOn: ctx.options.from !== undefined ? String(ctx.options.from) : undefined,
-        endedOn: ctx.options.to !== undefined ? String(ctx.options.to) : undefined,
-        time: ctx.options.time !== undefined ? parseInt(String(ctx.options.time)) : undefined,
-        totalTime:
-          ctx.options['total-time'] !== undefined
-            ? parseInt(String(ctx.options['total-time']))
-            : undefined,
-        percentage:
-          ctx.options.percentage !== undefined
-            ? parseInt(String(ctx.options.percentage))
-            : undefined,
-        draft,
-        note: ctx.options.note !== undefined ? String(ctx.options.note) : undefined,
-      },
-      execCtx,
-    );
+    const payload = {
+      id,
+      startedOn: ctx.options.from !== undefined ? String(ctx.options.from) : undefined,
+      endedOn: ctx.options.to !== undefined ? String(ctx.options.to) : undefined,
+      time: ctx.options.time !== undefined ? parseInt(String(ctx.options.time)) : undefined,
+      totalTime:
+        ctx.options['total-time'] !== undefined
+          ? parseInt(String(ctx.options['total-time']))
+          : undefined,
+      percentage:
+        ctx.options.percentage !== undefined ? parseInt(String(ctx.options.percentage)) : undefined,
+      draft,
+      note: ctx.options.note !== undefined ? String(ctx.options.note) : undefined,
+    };
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'update',
+          resource: 'booking',
+          resourceId: id,
+          payload,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
+    const result = await updateBooking(payload, execCtx);
 
     spinner.succeed();
 

@@ -19,6 +19,7 @@ import { handleError, exitWithValidationError, runCommand } from '../../error-ha
 import { ValidationError } from '../../errors.js';
 import { render, createRenderContext, humanTimerDetailRenderer } from '../../renderers/index.js';
 import { colors } from '../../utils/colors.js';
+import { isDryRun, handleDryRunOutput } from '../../utils/dry-run.js';
 import { parseFilters } from '../../utils/parse-filters.js';
 
 function parseListOptions(ctx: CommandContext): ListTimersOptions {
@@ -122,13 +123,32 @@ export async function timersStart(ctx: CommandContext): Promise<void> {
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await startTimer(
-      {
-        serviceId: ctx.options.service ? String(ctx.options.service) : undefined,
-        timeEntryId: ctx.options['time-entry'] ? String(ctx.options['time-entry']) : undefined,
-      },
-      execCtx,
-    );
+    const payload = {
+      serviceId: ctx.options.service ? String(ctx.options.service) : undefined,
+      timeEntryId: ctx.options['time-entry'] ? String(ctx.options['time-entry']) : undefined,
+    };
+
+    if (isDryRun(ctx)) {
+      const target = ctx.options.service
+        ? `service ${payload.serviceId}`
+        : ctx.options['time-entry']
+          ? `time entry ${payload.timeEntryId}`
+          : 'unknown';
+
+      handleDryRunOutput(
+        {
+          action: 'start',
+          resource: 'timer',
+          payload,
+          description: `Start timer for ${target}`,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
+    const result = await startTimer(payload, execCtx);
 
     spinner.succeed();
 
@@ -154,6 +174,20 @@ export async function timersStop(args: string[], ctx: CommandContext): Promise<v
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'stop',
+          resource: 'timer',
+          resourceId: id,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
     const result = await stopTimer({ id }, execCtx);
 
     spinner.succeed();

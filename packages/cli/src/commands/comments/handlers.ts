@@ -19,6 +19,7 @@ import { handleError, exitWithValidationError, runCommand } from '../../error-ha
 import { ValidationError } from '../../errors.js';
 import { render, createRenderContext, humanCommentDetailRenderer } from '../../renderers/index.js';
 import { colors } from '../../utils/colors.js';
+import { isDryRun, handleDryRunOutput } from '../../utils/dry-run.js';
 import { parseFilters } from '../../utils/parse-filters.js';
 
 function parseListOptions(ctx: CommandContext): ListCommentsOptions {
@@ -153,19 +154,53 @@ export async function commentsAdd(ctx: CommandContext): Promise<void> {
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await createComment(
-      {
-        body: String(ctx.options.body),
-        hidden: ctx.options.hidden === true ? true : undefined,
-        taskId: ctx.options.task ? String(ctx.options.task) : undefined,
-        dealId: ctx.options.deal ? String(ctx.options.deal) : undefined,
-        companyId: ctx.options.company ? String(ctx.options.company) : undefined,
-        invoiceId: ctx.options.invoice ? String(ctx.options.invoice) : undefined,
-        personId: ctx.options.person ? String(ctx.options.person) : undefined,
-        discussionId: ctx.options.discussion ? String(ctx.options.discussion) : undefined,
-      },
-      execCtx,
-    );
+    const payload = {
+      body: String(ctx.options.body),
+      hidden: ctx.options.hidden === true ? true : undefined,
+      taskId: ctx.options.task ? String(ctx.options.task) : undefined,
+      dealId: ctx.options.deal ? String(ctx.options.deal) : undefined,
+      companyId: ctx.options.company ? String(ctx.options.company) : undefined,
+      invoiceId: ctx.options.invoice ? String(ctx.options.invoice) : undefined,
+      personId: ctx.options.person ? String(ctx.options.person) : undefined,
+      discussionId: ctx.options.discussion ? String(ctx.options.discussion) : undefined,
+    };
+
+    if (isDryRun(ctx)) {
+      const parentType = ctx.options.task
+        ? 'task'
+        : ctx.options.deal
+          ? 'deal'
+          : ctx.options.company
+            ? 'company'
+            : ctx.options.invoice
+              ? 'invoice'
+              : ctx.options.person
+                ? 'person'
+                : ctx.options.discussion
+                  ? 'discussion'
+                  : 'unknown';
+      const parentId =
+        ctx.options.task ||
+        ctx.options.deal ||
+        ctx.options.company ||
+        ctx.options.invoice ||
+        ctx.options.person ||
+        ctx.options.discussion;
+
+      handleDryRunOutput(
+        {
+          action: 'create',
+          resource: 'comment',
+          payload,
+          description: `Comment on ${parentType} ${parentId}`,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
+    const result = await createComment(payload, execCtx);
 
     spinner.succeed();
 
@@ -213,14 +248,27 @@ export async function commentsUpdate(args: string[], ctx: CommandContext): Promi
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await updateComment(
-      {
-        id,
-        body: hasBody ? String(ctx.options.body) : undefined,
-        hidden,
-      },
-      execCtx,
-    );
+    const payload = {
+      id,
+      body: hasBody ? String(ctx.options.body) : undefined,
+      hidden,
+    };
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'update',
+          resource: 'comment',
+          resourceId: id,
+          payload,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
+    const result = await updateComment(payload, execCtx);
 
     spinner.succeed();
 

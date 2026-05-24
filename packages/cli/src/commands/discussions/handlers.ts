@@ -27,6 +27,7 @@ import {
   humanDiscussionDetailRenderer,
 } from '../../renderers/index.js';
 import { colors } from '../../utils/colors.js';
+import { isDryRun, handleDryRunOutput } from '../../utils/dry-run.js';
 import { parseFilters } from '../../utils/parse-filters.js';
 
 function parseListOptions(ctx: CommandContext): ListDiscussionsOptions {
@@ -111,14 +112,27 @@ export async function discussionsAdd(ctx: CommandContext): Promise<void> {
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await createDiscussion(
-      {
-        body: String(ctx.options.body),
-        pageId: String(ctx.options['page-id']),
-        title: ctx.options.title ? String(ctx.options.title) : undefined,
-      },
-      execCtx,
-    );
+    const payload = {
+      body: String(ctx.options.body),
+      pageId: String(ctx.options['page-id']),
+      title: ctx.options.title ? String(ctx.options.title) : undefined,
+    };
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'create',
+          resource: 'discussion',
+          payload,
+          description: `Discussion on page ${payload.pageId}${payload.title ? ` ("${payload.title}")` : ''}`,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
+    const result = await createDiscussion(payload, execCtx);
 
     spinner.succeed();
 
@@ -147,16 +161,35 @@ export async function discussionsUpdate(args: string[], ctx: CommandContext): Pr
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
+    const payload = {
+      id,
+      title: ctx.options.title !== undefined ? String(ctx.options.title) : undefined,
+      body: ctx.options.body !== undefined ? String(ctx.options.body) : undefined,
+    };
+
+    // Check for validation before dry-run to ensure consistent behavior
+    const hasUpdates = payload.title !== undefined || payload.body !== undefined;
+    if (!hasUpdates) {
+      spinner.fail();
+      throw ValidationError.invalid('options', {}, 'No updates specified. Use --title or --body.');
+    }
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'update',
+          resource: 'discussion',
+          resourceId: id,
+          payload,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
 
     try {
-      const result = await updateDiscussion(
-        {
-          id,
-          title: ctx.options.title !== undefined ? String(ctx.options.title) : undefined,
-          body: ctx.options.body !== undefined ? String(ctx.options.body) : undefined,
-        },
-        execCtx,
-      );
+      const result = await updateDiscussion(payload, execCtx);
 
       spinner.succeed();
 
@@ -192,6 +225,20 @@ export async function discussionsDelete(args: string[], ctx: CommandContext): Pr
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'delete',
+          resource: 'discussion',
+          resourceId: id,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
     await deleteDiscussion({ id }, execCtx);
 
     spinner.succeed();
@@ -214,6 +261,20 @@ export async function discussionsResolve(args: string[], ctx: CommandContext): P
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'resolve',
+          resource: 'discussion',
+          resourceId: id,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
     const result = await resolveDiscussion({ id }, execCtx);
 
     spinner.succeed();
@@ -236,6 +297,20 @@ export async function discussionsReopen(args: string[], ctx: CommandContext): Pr
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'reopen',
+          resource: 'discussion',
+          resourceId: id,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
     const result = await reopenDiscussion({ id }, execCtx);
 
     spinner.succeed();

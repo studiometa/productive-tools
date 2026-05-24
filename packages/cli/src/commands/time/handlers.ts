@@ -34,6 +34,7 @@ import {
 } from '../../renderers/index.js';
 import { colors } from '../../utils/colors.js';
 import { parseDate, parseDateRange } from '../../utils/date.js';
+import { isDryRun, handleDryRunOutput } from '../../utils/dry-run.js';
 import { parseFilters } from '../../utils/parse-filters.js';
 
 /**
@@ -202,16 +203,32 @@ export async function timeAdd(ctx: CommandContext): Promise<void> {
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await createTimeEntry(
-      {
-        personId,
-        serviceId: String(ctx.options.service),
-        time: parseInt(String(ctx.options.time)),
-        date: ctx.options.date ? String(ctx.options.date) : undefined,
-        note: ctx.options.note ? String(ctx.options.note) : undefined,
-      },
-      execCtx,
-    );
+    const timeValue = parseInt(String(ctx.options.time));
+    const payload = {
+      personId,
+      serviceId: String(ctx.options.service),
+      time: timeValue,
+      date: ctx.options.date ? String(ctx.options.date) : undefined,
+      note: ctx.options.note ? String(ctx.options.note) : undefined,
+    };
+
+    if (isDryRun(ctx)) {
+      const hours = Math.floor(timeValue / 60);
+      const minutes = timeValue % 60;
+      handleDryRunOutput(
+        {
+          action: 'create',
+          resource: 'time entry',
+          payload,
+          description: `${hours}h ${minutes}m for service ${payload.serviceId}${payload.note ? ` (${payload.note})` : ''}`,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
+    const result = await createTimeEntry(payload, execCtx);
 
     spinner.succeed();
 
@@ -252,17 +269,41 @@ export async function timeUpdate(args: string[], ctx: CommandContext): Promise<v
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
+    const payload = {
+      id,
+      time: ctx.options.time ? parseInt(String(ctx.options.time)) : undefined,
+      note: ctx.options.note ? String(ctx.options.note) : undefined,
+      date: ctx.options.date ? String(ctx.options.date) : undefined,
+    };
+
+    // Check for validation before dry-run to ensure consistent behavior
+    const hasUpdates =
+      payload.time !== undefined || payload.note !== undefined || payload.date !== undefined;
+    if (!hasUpdates) {
+      spinner.fail();
+      throw ValidationError.invalid(
+        'options',
+        {},
+        'No updates specified. Use --time, --note, or --date',
+      );
+    }
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'update',
+          resource: 'time entry',
+          resourceId: id,
+          payload,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
 
     try {
-      const result = await updateTimeEntry(
-        {
-          id,
-          time: ctx.options.time ? parseInt(String(ctx.options.time)) : undefined,
-          note: ctx.options.note ? String(ctx.options.note) : undefined,
-          date: ctx.options.date ? String(ctx.options.date) : undefined,
-        },
-        execCtx,
-      );
+      const result = await updateTimeEntry(payload, execCtx);
 
       spinner.succeed();
 
@@ -301,6 +342,20 @@ export async function timeDelete(args: string[], ctx: CommandContext): Promise<v
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'delete',
+          resource: 'time entry',
+          resourceId: id,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
     await deleteTimeEntry({ id }, execCtx);
 
     spinner.succeed();

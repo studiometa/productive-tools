@@ -19,6 +19,7 @@ import { handleError, exitWithValidationError, runCommand } from '../../error-ha
 import { ValidationError } from '../../errors.js';
 import { render, createRenderContext, humanCompanyDetailRenderer } from '../../renderers/index.js';
 import { colors } from '../../utils/colors.js';
+import { isDryRun, handleDryRunOutput } from '../../utils/dry-run.js';
 import { parseFilters } from '../../utils/parse-filters.js';
 
 export async function companiesList(ctx: CommandContext): Promise<void> {
@@ -103,18 +104,31 @@ export async function companiesAdd(ctx: CommandContext): Promise<void> {
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await createCompany(
-      {
-        name: String(ctx.options.name),
-        billingName: ctx.options['billing-name'] ? String(ctx.options['billing-name']) : undefined,
-        vat: ctx.options.vat ? String(ctx.options.vat) : undefined,
-        defaultCurrency: ctx.options.currency ? String(ctx.options.currency) : undefined,
-        companyCode: ctx.options.code ? String(ctx.options.code) : undefined,
-        domain: ctx.options.domain ? String(ctx.options.domain) : undefined,
-        dueDays: ctx.options['due-days'] ? parseInt(String(ctx.options['due-days'])) : undefined,
-      },
-      execCtx,
-    );
+    const payload = {
+      name: String(ctx.options.name),
+      billingName: ctx.options['billing-name'] ? String(ctx.options['billing-name']) : undefined,
+      vat: ctx.options.vat ? String(ctx.options.vat) : undefined,
+      defaultCurrency: ctx.options.currency ? String(ctx.options.currency) : undefined,
+      companyCode: ctx.options.code ? String(ctx.options.code) : undefined,
+      domain: ctx.options.domain ? String(ctx.options.domain) : undefined,
+      dueDays: ctx.options['due-days'] ? parseInt(String(ctx.options['due-days'])) : undefined,
+    };
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'create',
+          resource: 'company',
+          payload,
+          description: `Company "${payload.name}"`,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
+    const result = await createCompany(payload, execCtx);
 
     spinner.succeed();
 
@@ -144,28 +158,51 @@ export async function companiesUpdate(args: string[], ctx: CommandContext): Prom
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
+    const payload = {
+      id,
+      name: ctx.options.name !== undefined ? String(ctx.options.name) : undefined,
+      billingName:
+        ctx.options['billing-name'] !== undefined ? String(ctx.options['billing-name']) : undefined,
+      vat: ctx.options.vat !== undefined ? String(ctx.options.vat) : undefined,
+      defaultCurrency:
+        ctx.options.currency !== undefined ? String(ctx.options.currency) : undefined,
+      companyCode: ctx.options.code !== undefined ? String(ctx.options.code) : undefined,
+      domain: ctx.options.domain !== undefined ? String(ctx.options.domain) : undefined,
+      dueDays:
+        ctx.options['due-days'] !== undefined
+          ? parseInt(String(ctx.options['due-days']))
+          : undefined,
+    };
+
+    // Check for validation before dry-run to ensure consistent behavior
+    const hasUpdates = Object.entries(payload).some(
+      ([key, value]) => key !== 'id' && value !== undefined,
+    );
+    if (!hasUpdates) {
+      spinner.fail();
+      throw ValidationError.invalid(
+        'options',
+        {},
+        'No updates specified. Use --name, --billing-name, --vat, --currency, etc.',
+      );
+    }
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'update',
+          resource: 'company',
+          resourceId: id,
+          payload,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
 
     try {
-      const result = await updateCompany(
-        {
-          id,
-          name: ctx.options.name !== undefined ? String(ctx.options.name) : undefined,
-          billingName:
-            ctx.options['billing-name'] !== undefined
-              ? String(ctx.options['billing-name'])
-              : undefined,
-          vat: ctx.options.vat !== undefined ? String(ctx.options.vat) : undefined,
-          defaultCurrency:
-            ctx.options.currency !== undefined ? String(ctx.options.currency) : undefined,
-          companyCode: ctx.options.code !== undefined ? String(ctx.options.code) : undefined,
-          domain: ctx.options.domain !== undefined ? String(ctx.options.domain) : undefined,
-          dueDays:
-            ctx.options['due-days'] !== undefined
-              ? parseInt(String(ctx.options['due-days']))
-              : undefined,
-        },
-        execCtx,
-      );
+      const result = await updateCompany(payload, execCtx);
 
       spinner.succeed();
 

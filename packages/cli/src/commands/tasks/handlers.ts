@@ -25,6 +25,7 @@ import {
   formatTime,
 } from '../../renderers/index.js';
 import { colors } from '../../utils/colors.js';
+import { isDryRun, handleDryRunOutput } from '../../utils/dry-run.js';
 import { parseFilters } from '../../utils/parse-filters.js';
 
 export function getIncludedResource(
@@ -172,21 +173,34 @@ export async function tasksAdd(ctx: CommandContext): Promise<void> {
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await createTask(
-      {
-        title: String(ctx.options.title),
-        projectId: String(ctx.options.project),
-        taskListId: String(ctx.options['task-list']),
-        assigneeId: ctx.options.assignee ? String(ctx.options.assignee) : undefined,
-        description: ctx.options.description ? String(ctx.options.description) : undefined,
-        dueDate: ctx.options['due-date'] ? String(ctx.options['due-date']) : undefined,
-        startDate: ctx.options['start-date'] ? String(ctx.options['start-date']) : undefined,
-        initialEstimate: ctx.options.estimate ? parseInt(String(ctx.options.estimate)) : undefined,
-        workflowStatusId: ctx.options.status ? String(ctx.options.status) : undefined,
-        isPrivate: ctx.options.private === true,
-      },
-      execCtx,
-    );
+    const payload = {
+      title: String(ctx.options.title),
+      projectId: String(ctx.options.project),
+      taskListId: String(ctx.options['task-list']),
+      assigneeId: ctx.options.assignee ? String(ctx.options.assignee) : undefined,
+      description: ctx.options.description ? String(ctx.options.description) : undefined,
+      dueDate: ctx.options['due-date'] ? String(ctx.options['due-date']) : undefined,
+      startDate: ctx.options['start-date'] ? String(ctx.options['start-date']) : undefined,
+      initialEstimate: ctx.options.estimate ? parseInt(String(ctx.options.estimate)) : undefined,
+      workflowStatusId: ctx.options.status ? String(ctx.options.status) : undefined,
+      isPrivate: ctx.options.private === true,
+    };
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'create',
+          resource: 'task',
+          payload,
+          description: `"${payload.title}" in project ${payload.projectId}`,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
+    const result = await createTask(payload, execCtx);
 
     spinner.succeed();
 
@@ -218,27 +232,50 @@ export async function tasksUpdate(args: string[], ctx: CommandContext): Promise<
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
+    const payload = {
+      id,
+      title: ctx.options.title !== undefined ? String(ctx.options.title) : undefined,
+      description:
+        ctx.options.description !== undefined ? String(ctx.options.description) : undefined,
+      dueDate: ctx.options['due-date'] !== undefined ? String(ctx.options['due-date']) : undefined,
+      startDate:
+        ctx.options['start-date'] !== undefined ? String(ctx.options['start-date']) : undefined,
+      initialEstimate:
+        ctx.options.estimate !== undefined ? parseInt(String(ctx.options.estimate)) : undefined,
+      isPrivate: ctx.options.private !== undefined ? ctx.options.private === true : undefined,
+      assigneeId: ctx.options.assignee !== undefined ? String(ctx.options.assignee) : undefined,
+      workflowStatusId: ctx.options.status !== undefined ? String(ctx.options.status) : undefined,
+    };
+
+    // Check for validation before dry-run to ensure consistent behavior
+    const hasUpdates = Object.entries(payload).some(
+      ([key, value]) => key !== 'id' && value !== undefined,
+    );
+    if (!hasUpdates) {
+      spinner.fail();
+      throw ValidationError.invalid(
+        'options',
+        {},
+        'No updates specified. Use --title, --description, --due-date, --assignee, --status, etc.',
+      );
+    }
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'update',
+          resource: 'task',
+          resourceId: id,
+          payload,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
 
     try {
-      const result = await updateTask(
-        {
-          id,
-          title: ctx.options.title !== undefined ? String(ctx.options.title) : undefined,
-          description:
-            ctx.options.description !== undefined ? String(ctx.options.description) : undefined,
-          dueDate:
-            ctx.options['due-date'] !== undefined ? String(ctx.options['due-date']) : undefined,
-          startDate:
-            ctx.options['start-date'] !== undefined ? String(ctx.options['start-date']) : undefined,
-          initialEstimate:
-            ctx.options.estimate !== undefined ? parseInt(String(ctx.options.estimate)) : undefined,
-          isPrivate: ctx.options.private !== undefined ? ctx.options.private === true : undefined,
-          assigneeId: ctx.options.assignee !== undefined ? String(ctx.options.assignee) : undefined,
-          workflowStatusId:
-            ctx.options.status !== undefined ? String(ctx.options.status) : undefined,
-        },
-        execCtx,
-      );
+      const result = await updateTask(payload, execCtx);
 
       spinner.succeed();
 

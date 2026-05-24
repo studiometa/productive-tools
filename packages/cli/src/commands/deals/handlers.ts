@@ -20,6 +20,7 @@ import { handleError, exitWithValidationError, runCommand } from '../../error-ha
 import { ValidationError } from '../../errors.js';
 import { render, createRenderContext, humanDealDetailRenderer } from '../../renderers/index.js';
 import { colors } from '../../utils/colors.js';
+import { isDryRun, handleDryRunOutput } from '../../utils/dry-run.js';
 import { parseFilters } from '../../utils/parse-filters.js';
 
 function parseListOptions(ctx: CommandContext): ListDealsOptions {
@@ -121,16 +122,31 @@ export async function dealsAdd(ctx: CommandContext): Promise<void> {
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await createDeal(
-      {
-        name: String(ctx.options.name),
-        companyId: String(ctx.options.company),
-        date: ctx.options.date ? String(ctx.options.date) : undefined,
-        budget: ctx.options.budget === true,
-        responsibleId: ctx.options.responsible ? String(ctx.options.responsible) : undefined,
-      },
-      execCtx,
-    );
+    const payload = {
+      name: String(ctx.options.name),
+      companyId: String(ctx.options.company),
+      date: ctx.options.date ? String(ctx.options.date) : undefined,
+      budget: ctx.options.budget === true,
+      responsibleId: ctx.options.responsible ? String(ctx.options.responsible) : undefined,
+    };
+
+    if (isDryRun(ctx)) {
+      const type = payload.budget ? 'budget' : 'deal';
+
+      handleDryRunOutput(
+        {
+          action: 'create',
+          resource: type,
+          payload,
+          description: `${type.charAt(0).toUpperCase() + type.slice(1)} "${payload.name}" for company ${payload.companyId}`,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
+    const result = await createDeal(payload, execCtx);
 
     spinner.succeed();
 
@@ -160,21 +176,45 @@ export async function dealsUpdate(args: string[], ctx: CommandContext): Promise<
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
+    const payload = {
+      id,
+      name: ctx.options.name !== undefined ? String(ctx.options.name) : undefined,
+      date: ctx.options.date !== undefined ? String(ctx.options.date) : undefined,
+      endDate: ctx.options['end-date'] !== undefined ? String(ctx.options['end-date']) : undefined,
+      responsibleId:
+        ctx.options.responsible !== undefined ? String(ctx.options.responsible) : undefined,
+      dealStatusId: ctx.options.status !== undefined ? String(ctx.options.status) : undefined,
+    };
+
+    // Check for validation before dry-run to ensure consistent behavior
+    const hasUpdates = Object.entries(payload).some(
+      ([key, value]) => key !== 'id' && value !== undefined,
+    );
+    if (!hasUpdates) {
+      spinner.fail();
+      throw ValidationError.invalid(
+        'options',
+        {},
+        'No updates specified. Use --name, --date, --end-date, --responsible, --status, etc.',
+      );
+    }
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'update',
+          resource: 'deal',
+          resourceId: id,
+          payload,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
 
     try {
-      const result = await updateDeal(
-        {
-          id,
-          name: ctx.options.name !== undefined ? String(ctx.options.name) : undefined,
-          date: ctx.options.date !== undefined ? String(ctx.options.date) : undefined,
-          endDate:
-            ctx.options['end-date'] !== undefined ? String(ctx.options['end-date']) : undefined,
-          responsibleId:
-            ctx.options.responsible !== undefined ? String(ctx.options.responsible) : undefined,
-          dealStatusId: ctx.options.status !== undefined ? String(ctx.options.status) : undefined,
-        },
-        execCtx,
-      );
+      const result = await updateDeal(payload, execCtx);
 
       spinner.succeed();
 

@@ -152,6 +152,7 @@ ${colors.bold('OPTIONS:')}
   --no-color          Disable colored output
   --no-cache          Bypass cache for this request
   --refresh           Force refresh cached data
+  --dry-run           Show what would happen without making changes
   -p, --page <num>    Page number for pagination
   -s, --size <num>    Page size (default: 100)
   --sort <field>      Sort by field (prefix with - for descending)

@@ -21,6 +21,7 @@ import { handleError, exitWithValidationError, runCommand } from '../../error-ha
 import { ValidationError } from '../../errors.js';
 import { render, createRenderContext, humanPageDetailRenderer } from '../../renderers/index.js';
 import { colors } from '../../utils/colors.js';
+import { isDryRun, handleDryRunOutput } from '../../utils/dry-run.js';
 import { parseFilters } from '../../utils/parse-filters.js';
 
 function parseListOptions(ctx: CommandContext): ListPagesOptions {
@@ -104,15 +105,28 @@ export async function pagesAdd(ctx: CommandContext): Promise<void> {
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await createPage(
-      {
-        title: String(ctx.options.title),
-        projectId: String(ctx.options.project),
-        body: ctx.options.body ? String(ctx.options.body) : undefined,
-        parentPageId: ctx.options['parent-page'] ? String(ctx.options['parent-page']) : undefined,
-      },
-      execCtx,
-    );
+    const payload = {
+      title: String(ctx.options.title),
+      projectId: String(ctx.options.project),
+      body: ctx.options.body ? String(ctx.options.body) : undefined,
+      parentPageId: ctx.options['parent-page'] ? String(ctx.options['parent-page']) : undefined,
+    };
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'create',
+          resource: 'page',
+          payload,
+          description: `"${payload.title}" in project ${payload.projectId}`,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
+    const result = await createPage(payload, execCtx);
 
     spinner.succeed();
 
@@ -138,16 +152,35 @@ export async function pagesUpdate(args: string[], ctx: CommandContext): Promise<
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
+    const payload = {
+      id,
+      title: ctx.options.title !== undefined ? String(ctx.options.title) : undefined,
+      body: ctx.options.body !== undefined ? String(ctx.options.body) : undefined,
+    };
+
+    // Check for validation before dry-run to ensure consistent behavior
+    const hasUpdates = payload.title !== undefined || payload.body !== undefined;
+    if (!hasUpdates) {
+      spinner.fail();
+      throw ValidationError.invalid('options', {}, 'No updates specified. Use --title or --body.');
+    }
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'update',
+          resource: 'page',
+          resourceId: id,
+          payload,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
 
     try {
-      const result = await updatePage(
-        {
-          id,
-          title: ctx.options.title !== undefined ? String(ctx.options.title) : undefined,
-          body: ctx.options.body !== undefined ? String(ctx.options.body) : undefined,
-        },
-        execCtx,
-      );
+      const result = await updatePage(payload, execCtx);
 
       spinner.succeed();
 
@@ -183,6 +216,20 @@ export async function pagesDelete(args: string[], ctx: CommandContext): Promise<
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'delete',
+          resource: 'page',
+          resourceId: id,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
     await deletePage({ id }, execCtx);
 
     spinner.succeed();

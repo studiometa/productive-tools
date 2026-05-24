@@ -20,6 +20,7 @@ import {
   createRenderContext,
   humanAttachmentDetailRenderer,
 } from '../../renderers/index.js';
+import { isDryRun, handleDryRunOutput } from '../../utils/dry-run.js';
 import { parseFilters } from '../../utils/parse-filters.js';
 
 function parseListOptions(ctx: CommandContext): ListAttachmentsOptions {
@@ -105,6 +106,20 @@ export async function attachmentsDelete(args: string[], ctx: CommandContext): Pr
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
+
+    if (isDryRun(ctx)) {
+      handleDryRunOutput(
+        {
+          action: 'delete',
+          resource: 'attachment',
+          resourceId: id,
+        },
+        ctx,
+        spinner,
+      );
+      return;
+    }
+
     await deleteAttachment({ id }, execCtx);
 
     spinner.succeed();
