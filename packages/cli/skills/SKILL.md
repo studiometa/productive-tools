@@ -355,17 +355,18 @@ output.json(tasks);
 
 **Output utilities** available as `output.*`:
 
-| Method                | Description                                |
-| --------------------- | ------------------------------------------ |
-| `output.table(data)`  | ASCII table                                |
-| `output.json(data)`   | Formatted JSON                             |
-| `output.csv(data)`    | CSV output                                 |
-| `output.print(text)`  | Plain text                                 |
-| `output.success(msg)` | Green ✓ message                            |
-| `output.error(msg)`   | Red ✗ message (stderr)                     |
-| `output.warn(msg)`    | Yellow ⚠ message                           |
-| `output.info(msg)`    | Blue info message                          |
-| `output.spinner(msg)` | Start a spinner → `{ update, stop, fail }` |
+| Method                         | Description                                              |
+| ------------------------------ | -------------------------------------------------------- |
+| `output.table(data)`           | ASCII table                                              |
+| `output.json(data)`            | Formatted JSON                                           |
+| `output.csv(data)`             | CSV output                                               |
+| `output.print(text)`           | Plain text                                               |
+| `output.success(msg)`          | Green ✓ message                                          |
+| `output.error(msg)`            | Red ✗ message (stderr)                                   |
+| `output.warn(msg)`             | Yellow ⚠ message                                         |
+| `output.info(msg)`             | Blue info message                                        |
+| `output.spinner(msg)`          | Start a spinner → `{ update, stop, fail }`               |
+| `output.spinner(msg, asyncFn)` | Wrap an async task — spinner auto-stops; returns Promise |
 
 TypeScript files (`.ts`, `.mts`) use Node.js built-in type stripping — no extra tools needed.
 

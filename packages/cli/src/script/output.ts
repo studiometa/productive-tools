@@ -84,10 +84,10 @@ export function createScriptOutput(): ScriptOutput {
       console.log(colors.blue(message));
     },
 
-    spinner(message: string): ScriptSpinner {
+    spinner<T>(message: string, task?: () => Promise<T>): ScriptSpinner | Promise<T> {
       const sp = new Spinner(message).start();
 
-      return {
+      const handle: ScriptSpinner = {
         update(msg: string): void {
           sp.setText(msg);
         },
@@ -102,6 +102,23 @@ export function createScriptOutput(): ScriptOutput {
           sp.fail(msg);
         },
       };
+
+      if (task === undefined) {
+        return handle;
+      }
+
+      // Wrap-style: run the task and auto-stop/fail the spinner
+      return task().then(
+        (result) => {
+          sp.stop();
+          return result;
+        },
+        (err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          sp.fail(msg);
+          throw err;
+        },
+      );
     },
-  };
+  } as ScriptOutput;
 }

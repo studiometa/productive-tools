@@ -134,7 +134,7 @@ describe('createScriptOutput', () => {
     });
   });
 
-  describe('spinner()', () => {
+  describe('spinner() — handle form', () => {
     it('returns an object with update, stop, and fail methods', () => {
       const output = createScriptOutput();
       const sp = output.spinner('Loading…');
@@ -160,6 +160,40 @@ describe('createScriptOutput', () => {
       const output = createScriptOutput();
       const sp = output.spinner('Loading…');
       expect(() => sp.fail('Failed!')).not.toThrow();
+    });
+  });
+
+  describe('spinner() — wrap form', () => {
+    it('returns a promise when a task function is provided', () => {
+      const output = createScriptOutput();
+      const result = output.spinner('Loading…', () => Promise.resolve(42));
+      expect(result).toBeInstanceOf(Promise);
+    });
+
+    it('resolves with the task return value on success', async () => {
+      const output = createScriptOutput();
+      const value = await output.spinner('Loading…', () => Promise.resolve('hello'));
+      expect(value).toBe('hello');
+    });
+
+    it('passes through a complex object returned by the task', async () => {
+      const output = createScriptOutput();
+      const data = [{ id: 1 }, { id: 2 }];
+      const result = await output.spinner('Fetching…', () => Promise.resolve(data));
+      expect(result).toBe(data);
+    });
+
+    it('re-throws the error when the task rejects', async () => {
+      const output = createScriptOutput();
+      const err = new Error('network error');
+      await expect(output.spinner('Loading…', () => Promise.reject(err))).rejects.toThrow(
+        'network error',
+      );
+    });
+
+    it('re-throws non-Error rejections', async () => {
+      const output = createScriptOutput();
+      await expect(output.spinner('Loading…', () => Promise.reject('oops'))).rejects.toBe('oops');
     });
   });
 });

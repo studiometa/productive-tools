@@ -66,7 +66,9 @@ export interface ScriptOutput {
   // ── interactive ───────────────────────────────────────────────────
 
   /**
-   * Start a spinner for long-running operations.
+   * Start a spinner for long-running operations (handle form).
+   *
+   * Returns a handle with `update`, `stop`, and `fail` methods.
    *
    * @example
    * ```ts
@@ -76,6 +78,24 @@ export interface ScriptOutput {
    * ```
    */
   spinner(message: string): ScriptSpinner;
+
+  /**
+   * Wrap-style spinner: start a spinner, run an async task, stop on
+   * completion or show a failure message on error.
+   *
+   * The spinner is stopped automatically — no handle needed.
+   * On success the task's return value is passed through.
+   * On failure the spinner shows an error and re-throws.
+   *
+   * @example
+   * ```ts
+   * const projects = await output.spinner('Loading projects…', () =>
+   *   client.projects.list().toArray(),
+   * );
+   * output.table(projects.map(p => ({ id: p.id, name: p.attributes.name })));
+   * ```
+   */
+  spinner<T>(message: string, task: () => Promise<T>): Promise<T>;
 }
 
 /**

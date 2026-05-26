@@ -55,7 +55,8 @@ ${colors.bold('OUTPUT UTILITIES:')}
   output.error(msg)         Red ✗ message (stderr)
   output.warn(msg)          Yellow ⚠ message
   output.info(msg)          Blue info message
-  output.spinner(msg)       Start a spinner, returns { update, stop, fail }
+  output.spinner(msg)             Start a spinner, returns { update, stop, fail }
+  output.spinner(msg, asyncFn)    Run asyncFn, auto-stop spinner; returns Promise
 
 ${colors.bold('TYPESCRIPT SUPPORT:')}
   .ts and .mts files are executed using Node.js built-in TypeScript stripping
