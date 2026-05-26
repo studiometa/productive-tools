@@ -318,6 +318,57 @@ productive reports time --from 2024-01-01 --to 2024-01-31 --group person
 productive reports budget --project <id>
 ```
 
+### Run Custom Scripts
+
+`productive run` executes a JavaScript or TypeScript script with a pre-configured Productive SDK client. Credentials are loaded from the usual sources (keychain, config file, env vars, CLI flags).
+
+```bash
+# Run a TypeScript script
+productive run ./scripts/weekly-report.ts
+
+# Alias: productive script
+productive script ./scripts/export-time.ts
+
+# Pass arguments to the script
+productive run ./scripts/audit.ts --from 2025-01-01 --to 2025-01-31
+```
+
+Scripts can use two patterns:
+
+**Pattern A — default export (recommended)**:
+
+```typescript
+import type { ScriptContext } from '@studiometa/productive-cli/script';
+
+export default async function ({ client, output, args }: ScriptContext) {
+  const projects = await client.projects.list().toArray();
+  output.table(projects.map((p) => ({ id: p.id, name: p.attributes.name })));
+}
+```
+
+**Pattern B — globals (quick scripts, no imports)**:
+
+```typescript
+const tasks = await productive.tasks.list().toArray();
+output.json(tasks);
+```
+
+**Output utilities** available as `output.*`:
+
+| Method                | Description                                |
+| --------------------- | ------------------------------------------ |
+| `output.table(data)`  | ASCII table                                |
+| `output.json(data)`   | Formatted JSON                             |
+| `output.csv(data)`    | CSV output                                 |
+| `output.print(text)`  | Plain text                                 |
+| `output.success(msg)` | Green ✓ message                            |
+| `output.error(msg)`   | Red ✗ message (stderr)                     |
+| `output.warn(msg)`    | Yellow ⚠ message                           |
+| `output.info(msg)`    | Blue info message                          |
+| `output.spinner(msg)` | Start a spinner → `{ update, stop, fail }` |
+
+TypeScript files (`.ts`, `.mts`) use Node.js built-in type stripping — no extra tools needed.
+
 ### Custom API Requests
 
 > **Prefer named commands** (`tasks list`, `time list`, etc.) over raw `api` calls — they handle filtering, formatting, and pagination automatically.

@@ -8,8 +8,13 @@ export default defineConfig({
     entry: {
       index: './src/index.ts',
       cli: './src/cli.ts',
+      script: './src/script/index.ts',
     },
-    external: ['@studiometa/productive-api', '@studiometa/productive-core'],
+    external: [
+      '@studiometa/productive-api',
+      '@studiometa/productive-core',
+      '@studiometa/productive-sdk',
+    ],
   }),
   test: createTestConfig({
     name: 'cli',

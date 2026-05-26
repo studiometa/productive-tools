@@ -31,6 +31,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./script": {
+      "types": "./dist/script.d.ts",
+      "import": "./dist/script.js"
     }
   },
   "publishConfig": {
@@ -45,7 +49,8 @@
   },
   "dependencies": {
     "@studiometa/productive-api": "*",
-    "@studiometa/productive-core": "*"
+    "@studiometa/productive-core": "*",
+    "@studiometa/productive-sdk": "*"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.0-beta.5",

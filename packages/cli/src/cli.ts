@@ -18,6 +18,7 @@ import { handlePeopleCommand, showPeopleHelp } from './commands/people/index.js'
 import { handleProjectsCommand, showProjectsHelp } from './commands/projects/index.js';
 import { handleReportsCommand, showReportsHelp } from './commands/reports/index.js';
 import { handleResolveCommand, showResolveHelp } from './commands/resolve/index.js';
+import { handleRunCommand, showRunHelp } from './commands/run/index.js';
 import { handleServicesCommand, showServicesHelp } from './commands/services/index.js';
 import { handleTasksCommand, showTasksHelp } from './commands/tasks/index.js';
 import { handleTimeCommand, showTimeHelp } from './commands/time/index.js';
@@ -138,6 +139,9 @@ ${colors.bold('COMMANDS:')}
   cache               Manage CLI cache
     status              Show cache statistics
     clear [pattern]     Clear cached data
+
+  run, script         Run a JS/TS script with a pre-configured Productive client
+    <script>            Path to the script file (.ts, .js, .mjs)
 
   api                 Make custom API requests
     <endpoint>          Execute authenticated API request
@@ -414,6 +418,15 @@ async function main(): Promise<void> {
           process.exit(0);
         }
         await handleResolveCommand(subcommand, positional, options);
+        break;
+
+      case 'run':
+      case 'script':
+        if (wantsHelp) {
+          showRunHelp();
+          process.exit(0);
+        }
+        await handleRunCommand(subcommand, positional, options);
         break;
 
       case 'api':

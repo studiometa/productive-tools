@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **CLI**: Add `productive run` (alias `productive script`) command to execute JS/TS scripts with a pre-configured Productive SDK client injected automatically ([#PR])
+- **CLI**: Export `@studiometa/productive-cli/script` subpath with `ScriptContext`, `ScriptOutput`, `ScriptSpinner` types and `createScriptOutput()` factory for testing scripts in isolation
+- **CLI**: Add `@studiometa/productive-sdk` as a dependency so `productive run` can inject the SDK client into user scripts without additional installation
+
 ## [0.10.11] - 2026.05.19
 
 ### Added
