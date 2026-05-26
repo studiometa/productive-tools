@@ -14,7 +14,10 @@ describe('generateWrapper', () => {
     const code = generateWrapper(OPTS);
     expect(typeof code).toBe('string');
     expect(code).toContain('import { Productive }');
-    expect(code).toContain('import { createScriptOutput, parseScriptArgs }');
+    expect(code).toContain('createScriptOutput');
+    expect(code).toContain('parseScriptArgs');
+    expect(code).toContain('createDryRunFetch');
+    expect(code).toContain('printDryRunSummary');
   });
 
   it('embeds the SDK URL in the Productive import', () => {
@@ -22,11 +25,9 @@ describe('generateWrapper', () => {
     expect(code).toContain(`import { Productive } from '${OPTS.sdkUrl}'`);
   });
 
-  it('embeds the scriptOutputUrl in the createScriptOutput and parseScriptArgs import', () => {
+  it('embeds the scriptOutputUrl in the helper imports', () => {
     const code = generateWrapper(OPTS);
-    expect(code).toContain(
-      `import { createScriptOutput, parseScriptArgs } from '${OPTS.scriptOutputUrl}'`,
-    );
+    expect(code).toContain(OPTS.scriptOutputUrl);
   });
 
   it('embeds the scriptUrl in the dynamic import', () => {
@@ -54,6 +55,13 @@ describe('generateWrapper', () => {
     expect(code).toContain('globalThis.output = output');
     expect(code).toContain('globalThis.args = args');
     expect(code).toContain('globalThis.flags = flags');
+  });
+
+  it('includes dry-run mode support via PRODUCTIVE_DRY_RUN env var', () => {
+    const code = generateWrapper(OPTS);
+    expect(code).toContain("process.env.PRODUCTIVE_DRY_RUN === '1'");
+    expect(code).toContain('createDryRunFetch');
+    expect(code).toContain('printDryRunSummary');
   });
 
   it('calls the default export when it is a function (pattern A) with flags', () => {

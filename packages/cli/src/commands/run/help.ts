@@ -75,6 +75,7 @@ ${colors.bold('OPTIONS:')}
   --org-id <id>       Organization ID (overrides config)
   --user-id <id>      User ID (overrides config)
   --base-url <url>    API base URL (overrides config)
+  --dry-run           Record mutating calls (POST/PATCH/DELETE) without executing them
   -h, --help          Show this help
 
 ${colors.bold('EXAMPLES:')}
@@ -86,6 +87,9 @@ ${colors.bold('EXAMPLES:')}
 
   # Override credentials for this run
   productive run ./scripts/audit.ts --token $TOKEN --org-id $ORG_ID
+
+  # Test a script without making any mutating API calls
+  productive run --dry-run ./scripts/bulk-update.ts
 
   # Quick one-off with inline credentials
   productive run ./scripts/list-projects.js

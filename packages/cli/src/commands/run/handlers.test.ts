@@ -304,4 +304,55 @@ describe('scriptRun', () => {
       expect.objectContaining({ recursive: true, force: true }),
     );
   });
+
+  it('strips --dry-run from script args and sets PRODUCTIVE_DRY_RUN=1', async () => {
+    const { spawn } = await import('node:child_process');
+    const { scriptRun } = await import('./handlers.js');
+
+    const mockChild = {
+      on: vi.fn((event: string, cb: (code: number) => void) => {
+        if (event === 'close') cb(0);
+      }),
+    };
+    vi.mocked(spawn).mockReturnValue(mockChild as never);
+
+    const ctx = makeCtx();
+    const mockResolver = vi.fn().mockResolvedValue('file:///sdk/dist/index.js');
+
+    await scriptRun(
+      ['--dry-run', '/tmp/test-script.js', '--from', '2025-01-01'],
+      ctx,
+      mockResolver,
+    );
+
+    const spawnArgs = vi.mocked(spawn).mock.calls[0];
+    // --dry-run must NOT be passed to the subprocess as a script arg
+    expect(spawnArgs[1]).not.toContain('--dry-run');
+    // PRODUCTIVE_DRY_RUN must be set in env
+    const spawnOptions = spawnArgs[2] as { env: Record<string, string> };
+    expect(spawnOptions.env.PRODUCTIVE_DRY_RUN).toBe('1');
+    // Script path must still be the wrapper, not the --dry-run value
+    const nodeArgs = spawnArgs[1] as string[];
+    expect(nodeArgs.some((a) => a.endsWith('wrapper.mjs'))).toBe(true);
+  });
+
+  it('does not set PRODUCTIVE_DRY_RUN when --dry-run is absent', async () => {
+    const { spawn } = await import('node:child_process');
+    const { scriptRun } = await import('./handlers.js');
+
+    const mockChild = {
+      on: vi.fn((event: string, cb: (code: number) => void) => {
+        if (event === 'close') cb(0);
+      }),
+    };
+    vi.mocked(spawn).mockReturnValue(mockChild as never);
+
+    const ctx = makeCtx();
+    const mockResolver = vi.fn().mockResolvedValue('file:///sdk/dist/index.js');
+
+    await scriptRun(['/tmp/test-script.js'], ctx, mockResolver);
+
+    const spawnOptions = vi.mocked(spawn).mock.calls[0][2] as { env: Record<string, string> };
+    expect(spawnOptions.env.PRODUCTIVE_DRY_RUN).toBeUndefined();
+  });
 });

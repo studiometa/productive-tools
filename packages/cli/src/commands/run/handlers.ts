@@ -62,7 +62,11 @@ export async function scriptRun(
   ctx: CommandContext,
   resolver: ModuleResolver = createDefaultResolver(import.meta.url),
 ): Promise<void> {
-  const [rawScriptPath, ...scriptArgs] = rawArgs;
+  // Extract CLI-level flags before the script path and script args.
+  // --dry-run intercepts mutating API calls without executing them.
+  const dryRun = rawArgs.includes('--dry-run');
+  const argsWithoutCliFlags = rawArgs.filter((a) => a !== '--dry-run');
+  const [rawScriptPath, ...scriptArgs] = argsWithoutCliFlags;
 
   if (!rawScriptPath) {
     ctx.formatter.error('Usage: productive run <script.[ts|js|mjs]> [args...]');
@@ -108,6 +112,7 @@ export async function scriptRun(
     if (ctx.config.organizationId) env.PRODUCTIVE_ORG_ID = ctx.config.organizationId;
     if (ctx.config.userId) env.PRODUCTIVE_USER_ID = ctx.config.userId;
     if (ctx.config.baseUrl) env.PRODUCTIVE_BASE_URL = ctx.config.baseUrl;
+    if (dryRun) env.PRODUCTIVE_DRY_RUN = '1';
 
     const child = spawn(process.execPath, nodeArgs, {
       stdio: 'inherit',

@@ -33,5 +33,7 @@ export type {
 export { createScriptOutput } from './output.js';
 export { parseScriptArgs } from './args.js';
 export type { ParsedScriptArgs } from './args.js';
+export { createDryRunFetch, printDryRunSummary } from './dry-run.js';
+export type { DryRunCall } from './dry-run.js';
 export { generateWrapper } from './wrapper.js';
 export type { WrapperOptions } from './wrapper.js';

@@ -331,6 +331,9 @@ productive script ./scripts/export-time.ts
 
 # Pass arguments to the script
 productive run ./scripts/audit.ts --from 2025-01-01 --to 2025-01-31
+
+# Dry-run: record mutating calls without executing them
+productive run --dry-run ./scripts/bulk-update.ts
 ```
 
 Scripts can use two patterns:
