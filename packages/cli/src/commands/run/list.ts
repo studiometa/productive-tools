@@ -70,7 +70,7 @@ for (const p of paths) {
 process.stdout.write(JSON.stringify(metas));
 `;
 
-  return new Promise((resolve) => {
+  return new Promise((finish) => {
     const child = spawn(
       process.execPath,
       ['--experimental-strip-types', '--experimental-transform-types', '--input-type=module'],
@@ -89,12 +89,14 @@ process.stdout.write(JSON.stringify(metas));
     child.stdin.end();
 
     child.on('close', () => {
+      let result: ScriptMeta[];
       try {
         const parsed = JSON.parse(stdout) as ScriptMeta[];
-        resolve(parsed.length === filePaths.length ? parsed : filePaths.map(() => ({})));
+        result = parsed.length === filePaths.length ? parsed : filePaths.map(() => ({}));
       } catch {
-        resolve(filePaths.map(() => ({})));
+        result = filePaths.map(() => ({}));
       }
+      finish(result);
     });
   });
 }
