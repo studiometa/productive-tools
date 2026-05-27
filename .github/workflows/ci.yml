@@ -53,6 +53,7 @@ jobs:
           path: |
             packages/api/dist/
             packages/core/dist/
+            packages/sdk/dist/
             packages/cli/dist/
             packages/mcp/dist/
 
