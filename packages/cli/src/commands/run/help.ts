@@ -41,13 +41,14 @@ ${colors.bold('DESCRIPTION:')}
 
     ${colors.cyan('export default async function ({ client, output, args, flags }: ScriptContext) {')}
     ${colors.cyan('  const from = flags.from as string | undefined;')}
-    ${colors.cyan('  const projects = await client.projects.list().toArray();')}
-    ${colors.cyan('  output.table(projects.map(p => ({ id: p.id, name: p.attributes.name })));')}
+    ${colors.cyan('  // .all() returns AsyncPaginatedIterator; SDK types are flat (p.name, not p.attributes.name)')}
+    ${colors.cyan('  const projects = await client.projects.all().toArray();')}
+    ${colors.cyan('  output.table(projects.map(p => ({ id: p.id, name: p.name })));')}
     ${colors.cyan('}')}
 
   ${colors.bold('Pattern B — globals')} (quick scripts, no imports):
 
-    ${colors.cyan('const tasks = await productive.tasks.list().toArray();')}
+    ${colors.cyan('const tasks = await productive.tasks.all().toArray();')}
     ${colors.cyan('output.json(tasks);')}
 
 ${colors.bold('AVAILABLE GLOBALS:')}

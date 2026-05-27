@@ -357,15 +357,18 @@ export const meta: ScriptMeta = {
 
 export default async function ({ client, output, args, flags }: ScriptContext) {
   const from = flags.from as string | undefined;
-  const projects = await client.projects.list().toArray();
-  output.table(projects.map((p) => ({ id: p.id, name: p.attributes.name })));
+  // .all() returns AsyncPaginatedIterator with .toArray() — use this for paginated results
+  // SDK types are FlattenResource<T>: attributes are merged flat (p.name, not p.attributes.name)
+  const projects = await client.projects.all().toArray();
+  output.table(projects.map((p) => ({ id: p.id, name: p.name })));
 }
 ```
 
 **Pattern B — globals (quick scripts, no imports)**:
 
 ```typescript
-const tasks = await productive.tasks.list().toArray();
+// .all() returns AsyncPaginatedIterator; .list() is single-page only (returns Promise, no .toArray())
+const tasks = await productive.tasks.all().toArray();
 output.json(tasks);
 ```
 
