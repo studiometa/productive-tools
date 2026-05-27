@@ -81,7 +81,7 @@ describe('handleRunCommand', () => {
     expect(scriptRun).toHaveBeenCalledWith(['./my-script.js', 'arg1'], expect.anything());
   });
 
-  it('calls scriptList when --list flag is present', async () => {
+  it('calls scriptList when --list flag is present in allArgs', async () => {
     const { handleRunCommand } = await import('./command.js');
     const { scriptList } = await import('./list.js');
     const { scriptRun } = await import('./handlers.js');
@@ -92,11 +92,31 @@ describe('handleRunCommand', () => {
     expect(scriptRun).not.toHaveBeenCalled();
   });
 
-  it('passes a directory argument to scriptList when provided after --list', async () => {
+  it('passes a directory argument to scriptList when provided after --list in allArgs', async () => {
     const { handleRunCommand } = await import('./command.js');
     const { scriptList } = await import('./list.js');
 
     await handleRunCommand('--list', ['./automation'], { format: 'human' });
+
+    expect(scriptList).toHaveBeenCalledWith('./automation');
+  });
+
+  it('calls scriptList when options.list is true (global arg parser, no dir)', async () => {
+    const { handleRunCommand } = await import('./command.js');
+    const { scriptList } = await import('./list.js');
+    const { scriptRun } = await import('./handlers.js');
+
+    await handleRunCommand(undefined, [], { format: 'human', list: true });
+
+    expect(scriptList).toHaveBeenCalledWith(undefined);
+    expect(scriptRun).not.toHaveBeenCalled();
+  });
+
+  it('passes directory to scriptList when options.list is a string (global arg parser with dir)', async () => {
+    const { handleRunCommand } = await import('./command.js');
+    const { scriptList } = await import('./list.js');
+
+    await handleRunCommand(undefined, [], { format: 'human', list: './automation' });
 
     expect(scriptList).toHaveBeenCalledWith('./automation');
   });

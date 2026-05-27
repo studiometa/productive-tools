@@ -1,57 +1,102 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { discoverScripts, extractMetaFromSource, printScriptList } from './list.js';
+import { discoverScripts, importScriptMetas, printScriptList } from './list.js';
 
-// ── extractMetaFromSource ─────────────────────────────────────────────────────
+// ── importScriptMetas ─────────────────────────────────────────────────────────
 
-describe('extractMetaFromSource', () => {
-  it('returns an empty object when no meta export is present', () => {
-    expect(extractMetaFromSource('export default function() {}')).toEqual({});
-  });
+vi.mock('node:child_process', () => {
+  const EventEmitter = require('node:events');
 
-  it('extracts name, description, and usage from a meta export', () => {
-    const source = `
-export const meta = {
-  name: 'Weekly Report',
-  description: 'Summarise time entries for the past week.',
-  usage: '--from <date> --to <date>',
-};
-`;
-    expect(extractMetaFromSource(source)).toEqual({
-      name: 'Weekly Report',
-      description: 'Summarise time entries for the past week.',
-      usage: '--from <date> --to <date>',
+  /**
+   * Factory for a fake child process.
+   *
+   * `stdoutData`  — written to the stdout stream after stdin 'end'.
+   * `exitCode`    — emitted with the 'close' event.
+   */
+  function makeFakeChild(stdoutData: string, exitCode = 0) {
+    const stdin = new EventEmitter() as {
+      write: ReturnType<typeof vi.fn>;
+      end: ReturnType<typeof vi.fn>;
+    };
+    const stdout = new EventEmitter();
+
+    stdin.write = vi.fn();
+    stdin.end = vi.fn().mockImplementation(() => {
+      // Simulate async stdout emission then close
+      process.nextTick(() => {
+        stdout.emit('data', Buffer.from(stdoutData));
+        process.nextTick(() => child.emit('close', exitCode));
+      });
     });
+
+    const child = Object.assign(new EventEmitter(), { stdin, stdout });
+    return child;
+  }
+
+  return {
+    spawn: vi
+      .fn()
+      .mockImplementation(() =>
+        makeFakeChild(JSON.stringify([{ name: 'Test Script', description: 'A test.' }])),
+      ),
+    // expose factory so individual tests can override it
+    __makeFakeChild: makeFakeChild,
+  };
+});
+
+describe('importScriptMetas', () => {
+  it('returns an empty array for an empty input', async () => {
+    expect(await importScriptMetas([])).toEqual([]);
   });
 
-  it('extracts partial meta (only name)', () => {
-    const source = `export const meta = { name: 'My Script' };`;
-    expect(extractMetaFromSource(source)).toEqual({ name: 'My Script' });
+  it('spawns node with --experimental-strip-types and --input-type=module', async () => {
+    const { spawn } = await import('node:child_process');
+    await importScriptMetas(['/scripts/test.ts']);
+
+    expect(vi.mocked(spawn)).toHaveBeenCalledWith(
+      process.execPath,
+      expect.arrayContaining(['--experimental-strip-types', '--input-type=module']),
+      expect.objectContaining({ env: expect.objectContaining({ NODE_NO_WARNINGS: '1' }) }),
+    );
   });
 
-  it('handles double-quoted strings', () => {
-    const source = `export const meta = { name: "My Script", description: "Does things" };`;
-    expect(extractMetaFromSource(source)).toEqual({
-      name: 'My Script',
-      description: 'Does things',
-    });
+  it('returns parsed metas from subprocess stdout', async () => {
+    const { spawn } = await import('node:child_process');
+    const { __makeFakeChild } = (await import('node:child_process')) as never as {
+      __makeFakeChild: (data: string) => unknown;
+    };
+
+    vi.mocked(spawn).mockReturnValueOnce(
+      __makeFakeChild(JSON.stringify([{ name: 'My Script' }, {}])) as never,
+    );
+
+    const result = await importScriptMetas(['/a.ts', '/b.ts']);
+    expect(result).toEqual([{ name: 'My Script' }, {}]);
   });
 
-  it('handles backtick strings', () => {
-    const source = 'export const meta = { name: `My Script` };';
-    expect(extractMetaFromSource(source)).toEqual({ name: 'My Script' });
+  it('returns empty metas when subprocess output is invalid JSON', async () => {
+    const { spawn } = await import('node:child_process');
+    const { __makeFakeChild } = (await import('node:child_process')) as never as {
+      __makeFakeChild: (data: string) => unknown;
+    };
+
+    vi.mocked(spawn).mockReturnValueOnce(__makeFakeChild('not-json') as never);
+
+    const result = await importScriptMetas(['/a.ts', '/b.ts']);
+    expect(result).toEqual([{}, {}]);
   });
 
-  it('handles a ScriptMeta type annotation', () => {
-    const source = `export const meta: ScriptMeta = { name: 'Typed Script' };`;
-    expect(extractMetaFromSource(source)).toEqual({ name: 'Typed Script' });
-  });
+  it('returns empty metas when parsed array length mismatches input', async () => {
+    const { spawn } = await import('node:child_process');
+    const { __makeFakeChild } = (await import('node:child_process')) as never as {
+      __makeFakeChild: (data: string) => unknown;
+    };
 
-  it('ignores unknown keys', () => {
-    const source = `export const meta = { name: 'X', author: 'Me' };`;
-    const result = extractMetaFromSource(source);
-    expect(result).toEqual({ name: 'X' });
-    expect('author' in result).toBe(false);
+    vi.mocked(spawn).mockReturnValueOnce(__makeFakeChild(JSON.stringify([{}])) as never);
+
+    // 2 paths but only 1 meta → fallback to all-empty
+    const result = await importScriptMetas(['/a.ts', '/b.ts']);
+    expect(result).toEqual([{}, {}]);
   });
 });
 
@@ -59,7 +104,6 @@ export const meta = {
 
 vi.mock('node:fs/promises', () => ({
   readdir: vi.fn(),
-  readFile: vi.fn(),
 }));
 
 describe('discoverScripts', () => {
@@ -72,18 +116,23 @@ describe('discoverScripts', () => {
   });
 
   it('skips non-script files (e.g. README.md)', async () => {
-    const { readdir, readFile } = await import('node:fs/promises');
+    const { readdir } = await import('node:fs/promises');
     vi.mocked(readdir).mockResolvedValue(['README.md', 'package.json'] as never);
-    vi.mocked(readFile).mockResolvedValue('');
 
     const result = await discoverScripts('/scripts');
     expect(result).toHaveLength(0);
   });
 
   it('discovers .ts, .mts, .js, .mjs files', async () => {
-    const { readdir, readFile } = await import('node:fs/promises');
+    const { readdir } = await import('node:fs/promises');
+    const { spawn } = await import('node:child_process');
+    const { __makeFakeChild } = (await import('node:child_process')) as never as {
+      __makeFakeChild: (data: string) => unknown;
+    };
     vi.mocked(readdir).mockResolvedValue(['a.ts', 'b.mts', 'c.js', 'd.mjs', 'e.txt'] as never);
-    vi.mocked(readFile).mockResolvedValue('');
+    vi.mocked(spawn).mockReturnValueOnce(
+      __makeFakeChild(JSON.stringify([{}, {}, {}, {}])) as never,
+    );
 
     const result = await discoverScripts('/scripts');
     expect(result).toHaveLength(4);
@@ -95,21 +144,29 @@ describe('discoverScripts', () => {
     ]);
   });
 
-  it('extracts meta from script source', async () => {
-    const { readdir, readFile } = await import('node:fs/promises');
+  it('merges imported meta into discovered scripts', async () => {
+    const { readdir } = await import('node:fs/promises');
+    const { spawn } = await import('node:child_process');
+    const { __makeFakeChild } = (await import('node:child_process')) as never as {
+      __makeFakeChild: (data: string) => unknown;
+    };
     vi.mocked(readdir).mockResolvedValue(['report.ts'] as never);
-    vi.mocked(readFile).mockResolvedValue(
-      "export const meta = { name: 'Report', description: 'Weekly report' };" as never,
+    vi.mocked(spawn).mockReturnValueOnce(
+      __makeFakeChild(JSON.stringify([{ name: 'Report', description: 'Weekly report' }])) as never,
     );
 
     const result = await discoverScripts('/scripts');
     expect(result[0].meta).toEqual({ name: 'Report', description: 'Weekly report' });
   });
 
-  it('returns empty meta for scripts without a meta export', async () => {
-    const { readdir, readFile } = await import('node:fs/promises');
+  it('returns empty meta for scripts where import yields no meta', async () => {
+    const { readdir } = await import('node:fs/promises');
+    const { spawn } = await import('node:child_process');
+    const { __makeFakeChild } = (await import('node:child_process')) as never as {
+      __makeFakeChild: (data: string) => unknown;
+    };
     vi.mocked(readdir).mockResolvedValue(['plain.ts'] as never);
-    vi.mocked(readFile).mockResolvedValue('const x = 1;' as never);
+    vi.mocked(spawn).mockReturnValueOnce(__makeFakeChild(JSON.stringify([{}])) as never);
 
     const result = await discoverScripts('/scripts');
     expect(result[0].meta).toEqual({});

@@ -2,16 +2,21 @@
  * `productive run --list` — discover and list scripts in a directory.
  *
  * Lists all `.ts`, `.mts`, `.js`, `.mjs` files found in the target directory
- * (defaults to `./scripts`). If a script exports a `meta` object, its
- * `name`, `description`, and `usage` fields are shown alongside the path.
+ * (defaults to `./scripts`). If a script exports a `meta` object (via
+ * `defineMeta()` or a plain object literal), its `name`, `description`, and
+ * `usage` fields are shown alongside the path.
  *
- * Meta is extracted via a lightweight regex scan of the file source — no
- * module loading or TypeScript execution is required, so the command is fast
- * even for large script collections.
+ * Meta is loaded by dynamically importing each discovered script in a single
+ * Node.js subprocess (with `--experimental-strip-types` so TypeScript files
+ * are supported). Side effects are not a concern because the authoring
+ * convention places all logic inside the default-export function — the
+ * top-level `export const meta = ...` is always a pure, inert value.
  */
 
-import { readdir, readFile } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
+import { readdir } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import type { ScriptMeta } from '../../script/meta.js';
 
@@ -23,37 +28,75 @@ export interface DiscoveredScript {
   path: string;
   /** Path relative to the base directory (for display). */
   relativePath: string;
-  /** Metadata extracted from `export const meta = { ... }`, if present. */
+  /** Metadata from the script's `export const meta` value, if present. */
   meta: ScriptMeta;
 }
 
 const SCRIPT_EXTENSIONS = new Set(['.ts', '.mts', '.js', '.mjs']);
 
 /**
- * Extract a `meta` value from a raw file source using regex.
+ * Import the `meta` export from a batch of script files in a single
+ * subprocess.
  *
- * Only handles simple object literals — nested expressions, variables, or
- * computed keys are not supported intentionally (keep it fast and dependency-
- * free).
+ * Spawns `node --experimental-strip-types --input-type=module` with an
+ * inline ES-module script that imports each file, reads its `.meta` export,
+ * and writes a JSON array to stdout. Using `--experimental-strip-types`
+ * covers both `.ts` and `.js` files in a single pass.
+ *
+ * Returns a `ScriptMeta[]` parallel to `filePaths`. On any per-file import
+ * error (syntax error, missing dependency, etc.) the corresponding entry is
+ * `{}` — the listing degrades gracefully.
+ *
+ * @internal Exported for testing.
  */
-export function extractMetaFromSource(source: string): ScriptMeta {
-  const meta: ScriptMeta = {};
+export async function importScriptMetas(filePaths: string[]): Promise<ScriptMeta[]> {
+  if (filePaths.length === 0) return [];
 
-  // Match: export const meta = { ... } or export const meta: ScriptMeta = { ... }
-  const blockMatch = /export\s+const\s+meta\s*(?::\s*\w+)?\s*=\s*\{([^}]*)\}/.exec(source);
-  if (!blockMatch) return meta;
+  const fileUrls = filePaths.map((p) => pathToFileURL(p).href);
 
-  const block = blockMatch[1];
-
-  // Extract string values for known keys
-  for (const key of ['name', 'description', 'usage'] as const) {
-    const match = new RegExp(`${key}\\s*:\\s*['"\`]([^'"\`\\n]+)['"\`]`).exec(block);
-    if (match) {
-      meta[key] = match[1];
-    }
+  // Inline module: import each file URL, capture .meta, output JSON array.
+  const code = `
+const paths = ${JSON.stringify(fileUrls)};
+const metas = [];
+for (const p of paths) {
+  try {
+    const mod = await import(p);
+    const m = mod.meta;
+    metas.push(m !== null && typeof m === 'object' ? m : {});
+  } catch {
+    metas.push({});
   }
+}
+process.stdout.write(JSON.stringify(metas));
+`;
 
-  return meta;
+  return new Promise((resolve) => {
+    const child = spawn(
+      process.execPath,
+      ['--experimental-strip-types', '--experimental-transform-types', '--input-type=module'],
+      {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env, NODE_NO_WARNINGS: '1' },
+      },
+    );
+
+    let stdout = '';
+    child.stdout.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+
+    child.stdin.write(code, 'utf-8');
+    child.stdin.end();
+
+    child.on('close', () => {
+      try {
+        const parsed = JSON.parse(stdout) as ScriptMeta[];
+        resolve(parsed.length === filePaths.length ? parsed : filePaths.map(() => ({})));
+      } catch {
+        resolve(filePaths.map(() => ({})));
+      }
+    });
+  });
 }
 
 /**
@@ -67,28 +110,21 @@ export async function discoverScripts(dir: string): Promise<DiscoveredScript[]> 
     return [];
   }
 
-  const scripts: DiscoveredScript[] = [];
+  const filePaths: string[] = [];
 
   for (const entry of entries.toSorted()) {
     const ext = entry.slice(entry.lastIndexOf('.'));
     if (!SCRIPT_EXTENSIONS.has(ext)) continue;
-
-    const filePath = join(dir, entry);
-    let source = '';
-    try {
-      source = await readFile(filePath, 'utf-8');
-    } catch {
-      // skip unreadable files
-    }
-
-    scripts.push({
-      path: filePath,
-      relativePath: relative(process.cwd(), filePath),
-      meta: extractMetaFromSource(source),
-    });
+    filePaths.push(join(dir, entry));
   }
 
-  return scripts;
+  const metas = await importScriptMetas(filePaths);
+
+  return filePaths.map((filePath, i) => ({
+    path: filePath,
+    relativePath: relative(process.cwd(), filePath),
+    meta: metas[i] ?? {},
+  }));
 }
 
 /**

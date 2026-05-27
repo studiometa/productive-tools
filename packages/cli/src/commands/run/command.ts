@@ -30,13 +30,23 @@ export async function handleRunCommand(
   // Merge subcommand back into positional if it looks like a file.
   const allArgs = _subcommand ? [_subcommand, ...positional] : positional;
 
-  // --list discovers scripts in a directory without running any
-  if (allArgs.includes('--list')) {
-    const listIndex = allArgs.indexOf('--list');
+  // --list discovers scripts in a directory without running any.
+  //
+  // Two sources to check:
+  //   1. `options.list` — set by the global CLI arg parser when the flag is
+  //      encountered before any positional (e.g. `productive run --list ./dir`
+  //      is parsed as options.list = './dir' or options.list = true)
+  //   2. `allArgs` — raw forwarded args for the unusual case where --list
+  //      appears after a positional (e.g. `productive run ./script --list`)
+  if ('list' in options || allArgs.includes('--list')) {
     const dir =
-      allArgs[listIndex + 1] && !allArgs[listIndex + 1].startsWith('-')
-        ? allArgs[listIndex + 1]
-        : undefined;
+      typeof options.list === 'string'
+        ? options.list
+        : (() => {
+            const listIndex = allArgs.indexOf('--list');
+            const next = allArgs[listIndex + 1];
+            return next && !next.startsWith('-') ? next : undefined;
+          })();
     await scriptList(dir);
     return;
   }
