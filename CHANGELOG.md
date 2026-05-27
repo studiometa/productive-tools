@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.12] - 2026.05.27
+
 ### Added
 
 - **CLI**: Add `productive run` (alias `productive script`) command to execute JS/TS scripts with a pre-configured Productive SDK client injected automatically ([ff1e486], [#173])
@@ -18,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI**: Add `--dry-run` flag to `productive run` — intercepts mutating API calls (POST/PATCH/PUT/DELETE) via a `globalThis.fetch` wrapper, records them without executing, and prints a summary table ([4068429], [#173])
 - **CLI**: Add `export const meta: ScriptMeta` convention and `productive run --list [dir]` for script discovery — lists `.ts`/`.js` files in a directory with name, description, and usage from each script's `meta` export ([db674cd], [#173])
 
+[0.10.12]: https://github.com/studiometa/productive-tools/compare/0.10.11...0.10.12
 [ff1e486]: https://github.com/studiometa/productive-tools/commit/ff1e486
 [c432a57]: https://github.com/studiometa/productive-tools/commit/c432a57
 [2de17c8]: https://github.com/studiometa/productive-tools/commit/2de17c8
