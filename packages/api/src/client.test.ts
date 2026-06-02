@@ -156,6 +156,27 @@ describe('ProductiveApi requests', () => {
     expect(url).toContain('filter%5Barchived%5D=false');
   });
 
+  it('fetches projects with include', async () => {
+    const api = createApi();
+    mockFetchResponse({ data: [] });
+
+    await api.getProjects({ include: ['company'] });
+
+    const url = fetchSpy.mock.calls[0][0] as string;
+    expect(url).toContain('include=company');
+  });
+
+  it('fetches a single project with include', async () => {
+    const api = createApi();
+    mockFetchResponse({ data: { id: '1' } });
+
+    await api.getProject('1', { include: ['company', 'memberships'] });
+
+    const url = fetchSpy.mock.calls[0][0] as string;
+    expect(url).toContain('/projects/1');
+    expect(url).toContain('include=company%2Cmemberships');
+  });
+
   it('creates time entry with relationships', async () => {
     const api = createApi();
     const mockResponse = { data: { id: '1', type: 'time_entries', attributes: {} } };
@@ -513,11 +534,27 @@ describe('ProductiveApi requests', () => {
       expect(url).toContain('sort=name');
     });
 
+    it('getPeople with include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getPeople({ include: ['company'] });
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('include=company');
+    });
+
     it('getPerson', async () => {
       const api = createApi();
       mockFetchResponse({ data: { id: '5' } });
       await api.getPerson('5');
       expect(fetchSpy.mock.calls[0][0] as string).toContain('/people/5');
+    });
+
+    it('getPerson with include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '5' } });
+      await api.getPerson('5', { include: ['company'] });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/people/5');
+      expect(url).toContain('include=company');
     });
   });
 
@@ -528,6 +565,13 @@ describe('ProductiveApi requests', () => {
       await api.getServices({ page: 1, perPage: 50, filter: { project_id: '1' } });
       const url = fetchSpy.mock.calls[0][0] as string;
       expect(url).toContain('/services');
+    });
+
+    it('getServices with include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getServices({ include: ['deal'] });
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('include=deal');
     });
 
     it('getService by id', async () => {
@@ -556,11 +600,27 @@ describe('ProductiveApi requests', () => {
       expect(url).toContain('/companies');
     });
 
+    it('getCompanies with include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getCompanies({ include: ['contacts'] });
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('include=contacts');
+    });
+
     it('getCompany', async () => {
       const api = createApi();
       mockFetchResponse({ data: { id: '1' } });
       await api.getCompany('1');
       expect(fetchSpy.mock.calls[0][0] as string).toContain('/companies/1');
+    });
+
+    it('getCompany with include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1' } });
+      await api.getCompany('1', { include: ['contacts'] });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/companies/1');
+      expect(url).toContain('include=contacts');
     });
 
     it('createCompany', async () => {
@@ -850,6 +910,13 @@ describe('ProductiveApi requests', () => {
       expect(url).toContain('filter%5Btask_id%5D=123');
     });
 
+    it('getAttachments with include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getAttachments({ include: ['task'] });
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('include=task');
+    });
+
     it('getAttachment by id', async () => {
       const api = createApi();
       mockFetchResponse({
@@ -858,6 +925,15 @@ describe('ProductiveApi requests', () => {
       await api.getAttachment('1');
       const url = fetchSpy.mock.calls[0][0] as string;
       expect(url).toContain('/attachments/1');
+    });
+
+    it('getAttachment with include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1', type: 'attachments', attributes: {} } });
+      await api.getAttachment('1', { include: ['task'] });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/attachments/1');
+      expect(url).toContain('include=task');
     });
 
     it('deleteAttachment by id', async () => {
@@ -908,6 +984,13 @@ describe('ProductiveApi requests', () => {
       expect(url).toContain('sort=-created_at');
     });
 
+    it('getPages with include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getPages({ include: ['creator'] });
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('include=creator');
+    });
+
     it('getPage', async () => {
       const api = createApi();
       mockFetchResponse({ data: { id: '1', type: 'pages', attributes: { title: 'Test' } } });
@@ -915,6 +998,15 @@ describe('ProductiveApi requests', () => {
       const url = fetchSpy.mock.calls[0][0] as string;
       expect(url).toContain('/pages/1');
       expect(result.data.id).toBe('1');
+    });
+
+    it('getPage with include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1', type: 'pages', attributes: {} } });
+      await api.getPage('1', { include: ['creator'] });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/pages/1');
+      expect(url).toContain('include=creator');
     });
 
     it('createPage with all fields', async () => {
@@ -984,6 +1076,13 @@ describe('ProductiveApi requests', () => {
       expect(url).toContain('sort=-created_at');
     });
 
+    it('getDiscussions with include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getDiscussions({ include: ['page'] });
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('include=page');
+    });
+
     it('getDiscussion', async () => {
       const api = createApi();
       mockFetchResponse({
@@ -993,6 +1092,15 @@ describe('ProductiveApi requests', () => {
       const url = fetchSpy.mock.calls[0][0] as string;
       expect(url).toContain('/discussions/1');
       expect(result.data.id).toBe('1');
+    });
+
+    it('getDiscussion with include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1', type: 'discussions', attributes: {} } });
+      await api.getDiscussion('1', { include: ['page'] });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/discussions/1');
+      expect(url).toContain('include=page');
     });
 
     it('createDiscussion with all fields', async () => {
@@ -1146,6 +1254,13 @@ describe('ProductiveApi requests', () => {
       expect(url).toContain('page%5Bnumber%5D=1');
       expect(url).toContain('page%5Bsize%5D=100');
       expect(url).toContain('filter%5Bid%5D=417421%2C417422');
+    });
+
+    it('getCustomFieldOptions with include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getCustomFieldOptions({ include: ['custom_field'] });
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('include=custom_field');
     });
   });
 

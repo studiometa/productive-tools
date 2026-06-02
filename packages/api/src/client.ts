@@ -204,6 +204,7 @@ export class ProductiveApi {
     perPage?: number;
     filter?: Record<string, string>;
     sort?: string;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveProject[]>> {
     const query: Record<string, string> = {};
 
@@ -215,12 +216,20 @@ export class ProductiveApi {
         query[`filter[${key}]`] = value;
       });
     }
+    if (params?.include?.length) {
+      query['include'] = params.include.join(',');
+    }
 
     return this.request<ProductiveApiResponse<ProductiveProject[]>>('/projects', { query });
   }
 
-  async getProject(id: string): Promise<ProductiveApiResponse<ProductiveProject>> {
-    return this.request<ProductiveApiResponse<ProductiveProject>>(`/projects/${id}`);
+  async getProject(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductiveProject>> {
+    const query: Record<string, string> = {};
+    if (params?.include?.length) query['include'] = params.include.join(',');
+    return this.request<ProductiveApiResponse<ProductiveProject>>(`/projects/${id}`, { query });
   }
 
   // Time Entries
@@ -479,6 +488,7 @@ export class ProductiveApi {
     perPage?: number;
     filter?: Record<string, string>;
     sort?: string;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductivePerson[]>> {
     const query: Record<string, string> = {};
 
@@ -490,14 +500,22 @@ export class ProductiveApi {
         query[`filter[${key}]`] = value;
       });
     }
+    if (params?.include?.length) {
+      query['include'] = params.include.join(',');
+    }
 
     return this.request<ProductiveApiResponse<ProductivePerson[]>>('/people', {
       query,
     });
   }
 
-  async getPerson(id: string): Promise<ProductiveApiResponse<ProductivePerson>> {
-    return this.request<ProductiveApiResponse<ProductivePerson>>(`/people/${id}`);
+  async getPerson(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductivePerson>> {
+    const query: Record<string, string> = {};
+    if (params?.include?.length) query['include'] = params.include.join(',');
+    return this.request<ProductiveApiResponse<ProductivePerson>>(`/people/${id}`, { query });
   }
 
   // Services
@@ -505,6 +523,7 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveService[]>> {
     const query: Record<string, string> = {};
 
@@ -514,6 +533,9 @@ export class ProductiveApi {
       Object.entries(params.filter).forEach(([key, value]) => {
         query[`filter[${key}]`] = value;
       });
+    }
+    if (params?.include?.length) {
+      query['include'] = params.include.join(',');
     }
 
     return this.request<ProductiveApiResponse<ProductiveService[]>>('/services', { query });
@@ -534,6 +556,7 @@ export class ProductiveApi {
     perPage?: number;
     filter?: Record<string, string>;
     sort?: string;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveCompany[]>> {
     const query: Record<string, string> = {};
 
@@ -545,12 +568,20 @@ export class ProductiveApi {
         query[`filter[${key}]`] = value;
       });
     }
+    if (params?.include?.length) {
+      query['include'] = params.include.join(',');
+    }
 
     return this.request<ProductiveApiResponse<ProductiveCompany[]>>('/companies', { query });
   }
 
-  async getCompany(id: string): Promise<ProductiveApiResponse<ProductiveCompany>> {
-    return this.request<ProductiveApiResponse<ProductiveCompany>>(`/companies/${id}`);
+  async getCompany(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductiveCompany>> {
+    const query: Record<string, string> = {};
+    if (params?.include?.length) query['include'] = params.include.join(',');
+    return this.request<ProductiveApiResponse<ProductiveCompany>>(`/companies/${id}`, { query });
   }
 
   async createCompany(data: {
@@ -1010,6 +1041,7 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveAttachment[]>> {
     const query: Record<string, string> = {};
 
@@ -1020,12 +1052,22 @@ export class ProductiveApi {
         query[`filter[${key}]`] = value;
       });
     }
+    if (params?.include?.length) {
+      query['include'] = params.include.join(',');
+    }
 
     return this.request<ProductiveApiResponse<ProductiveAttachment[]>>('/attachments', { query });
   }
 
-  async getAttachment(id: string): Promise<ProductiveApiResponse<ProductiveAttachment>> {
-    return this.request<ProductiveApiResponse<ProductiveAttachment>>(`/attachments/${id}`);
+  async getAttachment(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductiveAttachment>> {
+    const query: Record<string, string> = {};
+    if (params?.include?.length) query['include'] = params.include.join(',');
+    return this.request<ProductiveApiResponse<ProductiveAttachment>>(`/attachments/${id}`, {
+      query,
+    });
   }
 
   async deleteAttachment(id: string): Promise<void> {
@@ -1040,6 +1082,7 @@ export class ProductiveApi {
     perPage?: number;
     filter?: Record<string, string>;
     sort?: string;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductivePage[]>> {
     const query: Record<string, string> = {};
 
@@ -1051,12 +1094,20 @@ export class ProductiveApi {
         query[`filter[${key}]`] = value;
       });
     }
+    if (params?.include?.length) {
+      query['include'] = params.include.join(',');
+    }
 
     return this.request<ProductiveApiResponse<ProductivePage[]>>('/pages', { query });
   }
 
-  async getPage(id: string): Promise<ProductiveApiResponse<ProductivePage>> {
-    return this.request<ProductiveApiResponse<ProductivePage>>(`/pages/${id}`);
+  async getPage(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductivePage>> {
+    const query: Record<string, string> = {};
+    if (params?.include?.length) query['include'] = params.include.join(',');
+    return this.request<ProductiveApiResponse<ProductivePage>>(`/pages/${id}`, { query });
   }
 
   async createPage(data: {
@@ -1123,6 +1174,7 @@ export class ProductiveApi {
     perPage?: number;
     filter?: Record<string, string>;
     sort?: string;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveDiscussion[]>> {
     const query: Record<string, string> = {};
 
@@ -1134,12 +1186,22 @@ export class ProductiveApi {
         query[`filter[${key}]`] = value;
       });
     }
+    if (params?.include?.length) {
+      query['include'] = params.include.join(',');
+    }
 
     return this.request<ProductiveApiResponse<ProductiveDiscussion[]>>('/discussions', { query });
   }
 
-  async getDiscussion(id: string): Promise<ProductiveApiResponse<ProductiveDiscussion>> {
-    return this.request<ProductiveApiResponse<ProductiveDiscussion>>(`/discussions/${id}`);
+  async getDiscussion(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductiveDiscussion>> {
+    const query: Record<string, string> = {};
+    if (params?.include?.length) query['include'] = params.include.join(',');
+    return this.request<ProductiveApiResponse<ProductiveDiscussion>>(`/discussions/${id}`, {
+      query,
+    });
   }
 
   async createDiscussion(data: {
@@ -1320,6 +1382,7 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveCustomFieldOption[]>> {
     const query: Record<string, string> = {};
 
@@ -1329,6 +1392,9 @@ export class ProductiveApi {
       Object.entries(params.filter).forEach(([key, value]) => {
         query[`filter[${key}]`] = value;
       });
+    }
+    if (params?.include?.length) {
+      query['include'] = params.include.join(',');
     }
 
     return this.request<ProductiveApiResponse<ProductiveCustomFieldOption[]>>(
