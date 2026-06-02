@@ -26,4 +26,5 @@ export interface CliOptions {
   quiet?: boolean;
   verbose?: boolean;
   noColor?: boolean;
+  outputField?: string;
 }
