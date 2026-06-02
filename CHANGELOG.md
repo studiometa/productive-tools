@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **API**: Forward the `include` query param in `getProjects`/`getProject` and the previously-affected `getPeople`/`getPerson`, `getServices`, `getCompanies`/`getCompany`, `getAttachments`/`getAttachment`, `getPages`/`getPage`, `getDiscussions`/`getDiscussion` and `getCustomFieldOptions` methods ([7a88366], [#175])
+- **SDK**: Expose and forward `include` on the projects, people, services, companies, attachments, pages and discussions collections (list/get) plus `time.get()`, so included relationships such as `project.company` resolve consistently ([77177b1], [#175])
+
+[7a88366]: https://github.com/studiometa/productive-tools/commit/7a88366
+[77177b1]: https://github.com/studiometa/productive-tools/commit/77177b1
+[#175]: https://github.com/studiometa/productive-tools/pull/175
+
 ## [0.10.12] - 2026.05.27
 
 ### Added
