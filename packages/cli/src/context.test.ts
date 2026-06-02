@@ -1,59 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { createContext, createTestContext, withContext, type CommandContext } from './context.js';
+import type { ProductiveConfig } from './types.js';
+
+import { createContext, createTestContext, withContext, type CommandContext, type CreateContextDeps } from './context.js';
 import { OutputFormatter } from './output.js';
+import { CacheStore } from './utils/cache.js';
 
-// Mock dependencies
-vi.mock('./api.js', () => ({
-  ProductiveApi: vi.fn(function () {
-    return {
-      getProjects: vi.fn(),
-      getTimeEntries: vi.fn(),
-    };
-  }),
-  ProductiveApiError: class ProductiveApiError extends Error {
-    constructor(
-      message: string,
-      public statusCode?: number,
-      public response?: unknown,
-    ) {
-      super(message);
-      this.name = 'ProductiveApiError';
-    }
-  },
-}));
-
-vi.mock('./config.js', () => ({
-  getConfig: vi.fn().mockReturnValue({
-    apiToken: 'test-token',
-    organizationId: 'test-org',
-    userId: 'test-user',
-    baseUrl: 'https://api.productive.io/api/v2',
-  }),
-}));
-
-vi.mock('./utils/cache.js', () => ({
-  getCache: vi.fn().mockReturnValue({
-    get: vi.fn().mockReturnValue(null),
-    set: vi.fn(),
-    getAsync: vi.fn().mockResolvedValue(null),
-    setAsync: vi.fn().mockResolvedValue(undefined),
-    setOrgId: vi.fn(),
-    invalidate: vi.fn().mockReturnValue(0),
-    invalidateAsync: vi.fn().mockResolvedValue(0),
-  }),
-  CacheStore: vi.fn(function () {
-    return {
-      get: vi.fn().mockReturnValue(null),
-      set: vi.fn(),
-      getAsync: vi.fn().mockResolvedValue(null),
-      setAsync: vi.fn().mockResolvedValue(undefined),
-      setOrgId: vi.fn(),
-      invalidate: vi.fn().mockReturnValue(0),
-      invalidateAsync: vi.fn().mockResolvedValue(0),
-    };
-  }),
-}));
+/** Shared test deps that avoid real config/api/cache */
+function testDeps(): CreateContextDeps {
+  return {
+    getConfig: () => ({
+      apiToken: 'test-token',
+      organizationId: 'test-org',
+      userId: 'test-user',
+      baseUrl: 'https://api.productive.io/api/v2',
+    }),
+    createApi: () =>
+      ({
+        getProjects: vi.fn(),
+        getTimeEntries: vi.fn(),
+      }) as unknown as ReturnType<NonNullable<CreateContextDeps['createApi']>>,
+    getCache: () => new CacheStore(false),
+  };
+}
 
 describe('createContext', () => {
   beforeEach(() => {
@@ -61,7 +30,7 @@ describe('createContext', () => {
   });
 
   it('should create context with default options', () => {
-    const ctx = createContext({});
+    const ctx = createContext({}, testDeps());
 
     expect(ctx.api).toBeDefined();
     expect(ctx.formatter).toBeDefined();
@@ -71,14 +40,13 @@ describe('createContext', () => {
   });
 
   it('should pass format option to formatter', () => {
-    const ctx = createContext({ format: 'json' });
+    const ctx = createContext({ format: 'json' }, testDeps());
 
-    // Formatter should be created with json format
     expect(ctx.formatter).toBeInstanceOf(OutputFormatter);
   });
 
   it('should create spinner for human format', () => {
-    const ctx = createContext({ format: 'human' });
+    const ctx = createContext({ format: 'human' }, testDeps());
     const spinner = ctx.createSpinner('Test message');
 
     expect(spinner).toBeDefined();
@@ -88,10 +56,9 @@ describe('createContext', () => {
   });
 
   it('should create no-op spinner for json format', () => {
-    const ctx = createContext({ format: 'json' });
+    const ctx = createContext({ format: 'json' }, testDeps());
     const spinner = ctx.createSpinner('Test message');
 
-    // Should return the same object (chainable no-op)
     expect(spinner.start()).toBe(spinner);
     expect(spinner.succeed()).toBe(spinner);
     expect(spinner.fail()).toBe(spinner);
@@ -99,7 +66,7 @@ describe('createContext', () => {
 
   describe('getPagination', () => {
     it('should return default pagination', () => {
-      const ctx = createContext({});
+      const ctx = createContext({}, testDeps());
       const { page, perPage } = ctx.getPagination();
 
       expect(page).toBe(1);
@@ -107,28 +74,28 @@ describe('createContext', () => {
     });
 
     it('should parse page option', () => {
-      const ctx = createContext({ page: '3' });
+      const ctx = createContext({ page: '3' }, testDeps());
       const { page } = ctx.getPagination();
 
       expect(page).toBe(3);
     });
 
     it('should parse p (short) option', () => {
-      const ctx = createContext({ p: '5' });
+      const ctx = createContext({ p: '5' }, testDeps());
       const { page } = ctx.getPagination();
 
       expect(page).toBe(5);
     });
 
     it('should parse size option', () => {
-      const ctx = createContext({ size: '50' });
+      const ctx = createContext({ size: '50' }, testDeps());
       const { perPage } = ctx.getPagination();
 
       expect(perPage).toBe(50);
     });
 
     it('should parse s (short) option', () => {
-      const ctx = createContext({ s: '25' });
+      const ctx = createContext({ s: '25' }, testDeps());
       const { perPage } = ctx.getPagination();
 
       expect(perPage).toBe(25);
@@ -137,12 +104,12 @@ describe('createContext', () => {
 
   describe('getSort', () => {
     it('should return empty string by default', () => {
-      const ctx = createContext({});
+      const ctx = createContext({}, testDeps());
       expect(ctx.getSort()).toBe('');
     });
 
     it('should return sort option', () => {
-      const ctx = createContext({ sort: '-created_at' });
+      const ctx = createContext({ sort: '-created_at' }, testDeps());
       expect(ctx.getSort()).toBe('-created_at');
     });
   });
@@ -241,7 +208,7 @@ describe('withContext', () => {
 
   it('should wrap handler with context creation', async () => {
     const handler = vi.fn().mockResolvedValue('result');
-    const wrapped = withContext(handler);
+    const wrapped = withContext(handler, testDeps());
 
     const result = await wrapped({ format: 'json' });
 
@@ -256,7 +223,7 @@ describe('withContext', () => {
     const handler = vi.fn().mockImplementation((ctx: CommandContext) => {
       return ctx.options.sort;
     });
-    const wrapped = withContext(handler);
+    const wrapped = withContext(handler, testDeps());
 
     const result = await wrapped({ sort: '-name' });
 
@@ -266,7 +233,7 @@ describe('withContext', () => {
   it('should propagate errors from handler', async () => {
     const error = new Error('handler error');
     const handler = vi.fn().mockRejectedValue(error);
-    const wrapped = withContext(handler);
+    const wrapped = withContext(handler, testDeps());
 
     await expect(wrapped({})).rejects.toThrow('handler error');
   });
@@ -274,7 +241,6 @@ describe('withContext', () => {
 
 describe('Context usage patterns', () => {
   it('should support testing without vi.mock', async () => {
-    // This demonstrates how to test without vi.mock
     const mockProjects = [
       { id: '1', attributes: { name: 'Project 1' } },
       { id: '2', attributes: { name: 'Project 2' } },
@@ -296,7 +262,6 @@ describe('Context usage patterns', () => {
       formatter: mockFormatter as unknown as OutputFormatter,
     });
 
-    // Simulate a command
     const response = await ctx.api.getProjects();
     ctx.formatter.output(response.data);
 

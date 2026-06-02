@@ -2,13 +2,15 @@
  * Bookings command entry point
  */
 
+import type { CommandRouterConfig } from '../../utils/command-router.js';
+
 import { createCommandRouter } from '../../utils/command-router.js';
 import { bookingsList, bookingsGet, bookingsAdd, bookingsUpdate } from './handlers.js';
 
 /**
- * Handle bookings command
+ * Router configuration — exported for testability
  */
-export const handleBookingsCommand = createCommandRouter({
+export const bookingsCommandConfig: CommandRouterConfig = {
   resource: 'bookings',
   handlers: {
     list: bookingsList,
@@ -18,4 +20,9 @@ export const handleBookingsCommand = createCommandRouter({
     create: bookingsAdd,
     update: [bookingsUpdate, 'args'],
   },
-});
+};
+
+/**
+ * Handle bookings command
+ */
+export const handleBookingsCommand = createCommandRouter(bookingsCommandConfig);

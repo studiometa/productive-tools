@@ -1,25 +1,26 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { ProductiveApi, ProductiveApiError } from './api.js';
-import { setConfig, clearConfig } from './config.js';
+import { setConfig, clearConfig, setKeychainAdapter } from './config.js';
 import { disableCache, resetCache } from './utils/cache.js';
 
-// Mock keychain to avoid reading real keychain values in tests
-vi.mock('./utils/keychain-store.js', () => ({
-  isKeychainAvailable: vi.fn().mockReturnValue(false),
-  getKeychainBackend: vi.fn().mockReturnValue('none'),
-  getKeychainValue: vi.fn().mockReturnValue(null),
-  setKeychainValue: vi.fn().mockReturnValue(false),
-  deleteKeychainValue: vi.fn().mockReturnValue(false),
-  isSecureKey: vi.fn().mockImplementation((key: string) => key === 'apiToken'),
-  SECURE_KEYS: ['apiToken'],
-}));
+/** No-op keychain adapter for tests */
+const noopKeychain = {
+  isKeychainAvailable: () => false,
+  getKeychainBackend: () => 'none',
+  getKeychainValue: () => null,
+  setKeychainValue: () => false,
+  deleteKeychainValue: () => false,
+  isSecureKey: (key: string) => key === 'apiToken',
+};
 
 describe('ProductiveApi', () => {
   const originalEnv = { ...process.env };
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
+    setKeychainAdapter(noopKeychain);
+
     // Clear environment variables to ensure test config is used
     delete process.env.PRODUCTIVE_API_TOKEN;
     delete process.env.PRODUCTIVE_ORG_ID;
@@ -38,6 +39,7 @@ describe('ProductiveApi', () => {
   });
 
   afterEach(() => {
+    setKeychainAdapter();
     // Restore environment
     process.env = { ...originalEnv };
     globalThis.fetch = originalFetch;

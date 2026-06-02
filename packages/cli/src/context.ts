@@ -125,6 +125,16 @@ export interface CommandContext {
 }
 
 /**
+ * Optional dependency overrides for createContext.
+ * Enables testing without vi.mock().
+ */
+export interface CreateContextDeps {
+  getConfig?: (options: Record<string, string | boolean | string[]>) => ProductiveConfig;
+  createApi?: (options: Record<string, string | boolean | string[]>) => ProductiveApi;
+  getCache?: (enabled: boolean) => CacheStore;
+}
+
+/**
  * Creates a command context from CLI options.
  *
  * This is the main factory function for creating contexts in production.
@@ -137,14 +147,22 @@ export interface CommandContext {
  * ctx.formatter.output(projects);
  * ```
  */
-export function createContext(options: CommandOptions = {}): CommandContext {
+export function createContext(
+  options: CommandOptions = {},
+  deps: CreateContextDeps = {},
+): CommandContext {
   const format = (options.format || options.f || 'human') as OutputFormat;
   const noColor = options['no-color'] === true;
 
-  const config = getConfig(options as Record<string, string | boolean | string[]>);
+  const getConfigFn = deps.getConfig ?? getConfig;
+  const createApiFn =
+    deps.createApi ?? ((opts: Record<string, string | boolean | string[]>) => new ProductiveApi(opts));
+  const getCacheFn = deps.getCache ?? getCache;
+
+  const config = getConfigFn(options as Record<string, string | boolean | string[]>);
   const formatter = new OutputFormatter(format, noColor);
-  const api = new ProductiveApi(options as Record<string, string | boolean | string[]>);
-  const cache = getCache(options['no-cache'] !== true);
+  const api = createApiFn(options as Record<string, string | boolean | string[]>);
+  const cache = getCacheFn(options['no-cache'] !== true);
 
   const ctx: CommandContext = {
     api,
@@ -295,9 +313,10 @@ export function createTestContext(overrides: Partial<CommandContext> = {}): Comm
  */
 export function withContext<T>(
   handler: (ctx: CommandContext) => Promise<T>,
+  deps?: CreateContextDeps,
 ): (options: CommandOptions) => Promise<T> {
   return async (options: CommandOptions) => {
-    const ctx = createContext(options);
+    const ctx = createContext(options, deps);
     return handler(ctx);
   };
 }

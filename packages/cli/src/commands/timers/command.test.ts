@@ -1,134 +1,92 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import { handleTimersCommand } from './command.js';
+import { createTestContext } from '../../context.js';
+import { createCommandRouter } from '../../utils/command-router.js';
+import { timersCommandConfig } from './command.js';
+import { timersList, timersGet, timersStart, timersStop } from './handlers.js';
 
-// Mock the handlers to avoid needing real API
-vi.mock('./handlers.js', () => ({
-  timersList: vi.fn().mockResolvedValue(undefined),
-  timersGet: vi.fn().mockResolvedValue(undefined),
-  timersStart: vi.fn().mockResolvedValue(undefined),
-  timersStop: vi.fn().mockResolvedValue(undefined),
-}));
+describe('timers command wiring', () => {
+  it('uses "timers" as resource name', () => {
+    expect(timersCommandConfig.resource).toBe('timers');
+  });
 
-// Mock config to avoid file system access
-vi.mock('../../config.js', () => ({
-  getConfig: vi.fn().mockReturnValue({
-    apiToken: 'test-token',
-    organizationId: 'test-org',
-    baseUrl: 'https://api.productive.io/api/v2',
-  }),
-}));
+  it('wires list and ls to timersList', () => {
+    expect(timersCommandConfig.handlers.list).toBe(timersList);
+    expect(timersCommandConfig.handlers.ls).toBe(timersList);
+  });
 
-// Mock cache with full interface - factory must be inline
-vi.mock('../../utils/cache.js', () => {
-  const mockCacheObj = {
-    get: vi.fn(),
-    set: vi.fn(),
-    delete: vi.fn(),
-    setOrgId: vi.fn(),
-    getCachedPeople: vi.fn(),
-    getCachedProjects: vi.fn(),
-    getCachedTaskLists: vi.fn(),
-    findCachedPersonByEmail: vi.fn(),
-    findCachedProjectByNumber: vi.fn(),
-    findCachedTaskListByName: vi.fn(),
-  };
-  return {
-    getCache: vi.fn().mockReturnValue(mockCacheObj),
-    CacheStore: vi.fn().mockImplementation(() => mockCacheObj),
-  };
+  it('wires get to timersGet as args handler', () => {
+    expect(timersCommandConfig.handlers.get).toEqual([timersGet, 'args']);
+  });
+
+  it('wires start to timersStart', () => {
+    expect(timersCommandConfig.handlers.start).toBe(timersStart);
+  });
+
+  it('wires stop to timersStop as args handler', () => {
+    expect(timersCommandConfig.handlers.stop).toEqual([timersStop, 'args']);
+  });
 });
 
 describe('timers command routing', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
+  const mockTimersList = vi.fn().mockResolvedValue(undefined);
+  const mockTimersGet = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
+  const mockTimersStart = vi.fn().mockResolvedValue(undefined);
+  const mockTimersStop = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
 
-  beforeEach(async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-
-    // Reset mocks before each test
-    const handlers = await import('./handlers.js');
-    vi.mocked(handlers.timersList).mockClear();
-    vi.mocked(handlers.timersGet).mockClear();
-    vi.mocked(handlers.timersStart).mockClear();
-    vi.mocked(handlers.timersStop).mockClear();
+  const router = createCommandRouter({
+    resource: 'timers',
+    handlers: {
+      list: mockTimersList,
+      ls: mockTimersList,
+      get: [mockTimersGet, 'args'],
+      start: mockTimersStart,
+      stop: [mockTimersStop, 'args'],
+    },
+    contextFactory: (options) => createTestContext({ options }),
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    mockTimersList.mockClear();
+    mockTimersGet.mockClear();
+    mockTimersStart.mockClear();
+    mockTimersStop.mockClear();
   });
 
-  it('should route "list" subcommand to timersList', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleTimersCommand('list', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.timersList).toHaveBeenCalled();
+  it('routes "list" subcommand to timersList handler', async () => {
+    await router('list', [], { format: 'json' });
+    expect(mockTimersList).toHaveBeenCalled();
   });
 
-  it('should route "ls" alias to timersList', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleTimersCommand('ls', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.timersList).toHaveBeenCalled();
+  it('routes "ls" alias to timersList handler', async () => {
+    await router('ls', [], { format: 'json' });
+    expect(mockTimersList).toHaveBeenCalled();
   });
 
-  it('should route "get" subcommand to timersGet', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleTimersCommand('get', ['123'], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.timersGet).toHaveBeenCalledWith(['123'], expect.anything());
+  it('routes "get" subcommand to timersGet handler', async () => {
+    await router('get', ['123'], { format: 'json' });
+    expect(mockTimersGet).toHaveBeenCalledWith(['123'], expect.anything());
   });
 
-  it('should route "start" subcommand to timersStart', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleTimersCommand('start', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.timersStart).toHaveBeenCalled();
+  it('routes "start" subcommand to timersStart handler', async () => {
+    await router('start', [], { format: 'json' });
+    expect(mockTimersStart).toHaveBeenCalled();
   });
 
-  it('should route "stop" subcommand to timersStop', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleTimersCommand('stop', ['456'], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.timersStop).toHaveBeenCalledWith(['456'], expect.anything());
+  it('routes "stop" subcommand to timersStop handler', async () => {
+    await router('stop', ['123'], { format: 'json' });
+    expect(mockTimersStop).toHaveBeenCalledWith(['123'], expect.anything());
   });
 
-  it('should exit with error for unknown subcommand', async () => {
-    await handleTimersCommand('unknown', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
+  it('exits with error for unknown subcommand', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+    await router('unknown', [], { format: 'json' });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Unknown timers subcommand: unknown'),
     );
   });

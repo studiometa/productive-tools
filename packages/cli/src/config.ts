@@ -3,13 +3,47 @@ import { ConfigStore } from '@studiometa/productive-api';
 import type { ProductiveConfig } from './types.js';
 
 import {
-  getKeychainValue,
-  setKeychainValue,
-  deleteKeychainValue,
-  isSecureKey,
-  isKeychainAvailable,
-  getKeychainBackend,
+  getKeychainValue as defaultGetKeychainValue,
+  setKeychainValue as defaultSetKeychainValue,
+  deleteKeychainValue as defaultDeleteKeychainValue,
+  isSecureKey as defaultIsSecureKey,
+  isKeychainAvailable as defaultIsKeychainAvailable,
+  getKeychainBackend as defaultGetKeychainBackend,
 } from './utils/keychain-store.js';
+
+/**
+ * Keychain adapter interface for dependency injection.
+ * Enables testing config without mocking the keychain module.
+ */
+export interface KeychainAdapter {
+  isKeychainAvailable: () => boolean;
+  getKeychainBackend: () => string;
+  getKeychainValue: (key: string) => string | null;
+  setKeychainValue: (key: string, value: string) => boolean;
+  deleteKeychainValue: (key: string) => boolean;
+  isSecureKey: (key: string) => boolean;
+}
+
+/** Default keychain adapter using real keychain-store */
+const defaultKeychain: KeychainAdapter = {
+  isKeychainAvailable: defaultIsKeychainAvailable,
+  getKeychainBackend: defaultGetKeychainBackend,
+  getKeychainValue: defaultGetKeychainValue,
+  setKeychainValue: defaultSetKeychainValue,
+  deleteKeychainValue: defaultDeleteKeychainValue,
+  isSecureKey: defaultIsSecureKey,
+};
+
+/** Current keychain adapter (overridable for tests) */
+let keychain: KeychainAdapter = defaultKeychain;
+
+/**
+ * Override the keychain adapter (for testing without vi.mock).
+ * Call with no argument to restore the default.
+ */
+export function setKeychainAdapter(adapter?: KeychainAdapter): void {
+  keychain = adapter ?? defaultKeychain;
+}
 
 const config = new ConfigStore<ProductiveConfig>('productive-cli');
 
@@ -19,8 +53,8 @@ const config = new ConfigStore<ProductiveConfig>('productive-cli');
 function getConfigValue(key: keyof ProductiveConfig): string | undefined {
   const keyStr = String(key);
   // For secure keys, try keychain first
-  if (isSecureKey(keyStr)) {
-    const keychainValue = getKeychainValue(keyStr);
+  if (keychain.isSecureKey(keyStr)) {
+    const keychainValue = keychain.getKeychainValue(keyStr);
     if (keychainValue) {
       return keychainValue;
     }
@@ -72,16 +106,16 @@ export function setConfig(
   options?: { useKeychain?: boolean },
 ): { stored: boolean; location: string } {
   const keyStr = String(key);
-  const useKeychain = options?.useKeychain ?? isSecureKey(keyStr);
+  const useKeychain = options?.useKeychain ?? keychain.isSecureKey(keyStr);
 
-  if (useKeychain && isKeychainAvailable()) {
-    const success = setKeychainValue(keyStr, value);
+  if (useKeychain && keychain.isKeychainAvailable()) {
+    const success = keychain.setKeychainValue(keyStr, value);
     if (success) {
       // Remove from config file if it exists there
       if (config.get(key)) {
         config.delete(key);
       }
-      return { stored: true, location: getKeychainBackend() };
+      return { stored: true, location: keychain.getKeychainBackend() };
     }
   }
 
@@ -96,8 +130,8 @@ export function setConfig(
 export function deleteConfigValue(key: keyof ProductiveConfig): void {
   const keyStr = String(key);
   // Try to delete from keychain
-  if (isSecureKey(keyStr)) {
-    deleteKeychainValue(keyStr);
+  if (keychain.isSecureKey(keyStr)) {
+    keychain.deleteKeychainValue(keyStr);
   }
   // Also delete from config file
   config.delete(key);
@@ -105,8 +139,8 @@ export function deleteConfigValue(key: keyof ProductiveConfig): void {
 
 export function clearConfig(): void {
   // Clear secure keys from keychain
-  if (isKeychainAvailable()) {
-    deleteKeychainValue('apiToken');
+  if (keychain.isKeychainAvailable()) {
+    keychain.deleteKeychainValue('apiToken');
   }
   config.clear();
 }
@@ -117,6 +151,7 @@ export function showConfig(): ProductiveConfig {
 
 // Re-export keychain utilities for use in commands
 export { isKeychainAvailable, getKeychainBackend } from './utils/keychain-store.js';
+export { SECURE_KEYS } from './utils/keychain-store.js';
 
 export function validateConfig(): { valid: boolean; missing: string[] } {
   const cfg = getConfig();

@@ -2,13 +2,15 @@
  * Pages command entry point
  */
 
+import type { CommandRouterConfig } from '../../utils/command-router.js';
+
 import { createCommandRouter } from '../../utils/command-router.js';
 import { pagesList, pagesGet, pagesAdd, pagesUpdate, pagesDelete } from './handlers.js';
 
 /**
- * Handle pages command
+ * Router configuration — exported for testability
  */
-export const handlePagesCommand = createCommandRouter({
+export const pagesCommandConfig: CommandRouterConfig = {
   resource: 'pages',
   handlers: {
     list: pagesList,
@@ -20,4 +22,9 @@ export const handlePagesCommand = createCommandRouter({
     delete: [pagesDelete, 'args'],
     rm: [pagesDelete, 'args'],
   },
-});
+};
+
+/**
+ * Handle pages command
+ */
+export const handlePagesCommand = createCommandRouter(pagesCommandConfig);

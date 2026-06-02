@@ -2,17 +2,24 @@
  * Services command entry point
  */
 
+import type { CommandRouterConfig } from '../../utils/command-router.js';
+
 import { createCommandRouter } from '../../utils/command-router.js';
 import { servicesGet, servicesList } from './handlers.js';
 
 /**
- * Handle services command
+ * Router configuration — exported for testability
  */
-export const handleServicesCommand = createCommandRouter({
+export const servicesCommandConfig: CommandRouterConfig = {
   resource: 'services',
   handlers: {
     list: servicesList,
     ls: servicesList,
     get: [servicesGet, 'args'],
   },
-});
+};
+
+/**
+ * Handle services command
+ */
+export const handleServicesCommand = createCommandRouter(servicesCommandConfig);

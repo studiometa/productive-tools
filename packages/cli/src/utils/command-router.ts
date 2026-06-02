@@ -51,6 +51,8 @@ export interface CommandRouterConfig {
   resource: string;
   /** Map of subcommand names to handlers */
   handlers: Record<string, Handler>;
+  /** Optional context factory for dependency injection (defaults to createContext) */
+  contextFactory?: (options: CommandOptions) => CommandContext;
 }
 
 /**
@@ -71,7 +73,8 @@ export function createCommandRouter(config: CommandRouterConfig) {
     const format = (options.format || options.f || 'human') as OutputFormat;
     const formatter = new OutputFormatter(format, options['no-color'] === true);
 
-    const ctx = createContext(options as CommandOptions);
+    const createCtx = config.contextFactory ?? createContext;
+    const ctx = createCtx(options as CommandOptions);
 
     const handler = config.handlers[subcommand];
     if (!handler) {
