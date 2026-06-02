@@ -65,6 +65,46 @@ describe('ProjectsCollection', () => {
         expect.any(Object),
       );
     });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: [], meta: {} }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new ProjectsCollection(createApi());
+      await col.list({ include: ['company'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=company'),
+        expect.any(Object),
+      );
+    });
+
+    it('resolves the company relationship from the included array (issue #174)', async () => {
+      vi.stubGlobal(
+        'fetch',
+        createMockFetch(() => ({
+          data: [
+            {
+              id: '1',
+              type: 'projects',
+              attributes: { name: 'Project Alpha' },
+              relationships: { company: { data: { id: '99', type: 'companies' } } },
+            },
+          ],
+          included: [{ id: '99', type: 'companies', attributes: { name: 'Acme Inc.' } }],
+          meta: { total: 1 },
+        })),
+      );
+
+      const col = new ProjectsCollection(createApi());
+      const result = await col.where({}).include('company').list();
+
+      expect(result.data[0].company).toMatchObject({
+        id: '99',
+        type: 'companies',
+        name: 'Acme Inc.',
+      });
+    });
   });
 
   describe('get()', () => {
@@ -81,6 +121,19 @@ describe('ProjectsCollection', () => {
       const result = await col.get('42');
 
       expect(result.data).toMatchObject({ id: '42', type: 'projects', name: 'Single Project' });
+    });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: makeProject('42', 'P'), meta: {} }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new ProjectsCollection(createApi());
+      await col.get('42', { include: ['company'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=company'),
+        expect.any(Object),
+      );
     });
   });
 

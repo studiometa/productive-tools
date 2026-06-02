@@ -59,6 +59,19 @@ describe('AttachmentsCollection', () => {
         name: 'screenshot.png',
       });
     });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: [], meta: {} }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new AttachmentsCollection(createApi());
+      await col.list({ include: ['task'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=task'),
+        expect.any(Object),
+      );
+    });
   });
 
   describe('get()', () => {
@@ -71,6 +84,19 @@ describe('AttachmentsCollection', () => {
       const col = new AttachmentsCollection(createApi());
       const result = await col.get('42');
       expect(result.data).toMatchObject({ id: '42', name: 'report.pdf' });
+    });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: makeAttachment('42', 'report.pdf') }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new AttachmentsCollection(createApi());
+      await col.get('42', { include: ['task'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=task'),
+        expect.any(Object),
+      );
     });
 
     it('wraps 404 into ResourceNotFoundError', async () => {

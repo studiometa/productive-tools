@@ -11,6 +11,11 @@ export interface AttachmentListOptions {
   page?: number;
   perPage?: number;
   filter?: Record<string, string>;
+  include?: string[];
+}
+
+export interface AttachmentGetOptions {
+  include?: string[];
 }
 
 export interface AttachmentListResult {
@@ -25,7 +30,7 @@ export interface AttachmentGetResult {
 
 export class AttachmentsCollection extends BaseCollection {
   /**
-   * List attachments with optional filtering and pagination.
+   * List attachments with optional filtering, pagination, and includes.
    */
   async list(options: AttachmentListOptions = {}): Promise<AttachmentListResult> {
     const response = await this.wrapRequest(() => this.api.getAttachments(options));
@@ -33,10 +38,10 @@ export class AttachmentsCollection extends BaseCollection {
   }
 
   /**
-   * Get a single attachment by ID.
+   * Get a single attachment by ID, with optional includes.
    */
-  async get(id: string): Promise<AttachmentGetResult> {
-    const response = await this.wrapRequest(() => this.api.getAttachment(id));
+  async get(id: string, options: AttachmentGetOptions = {}): Promise<AttachmentGetResult> {
+    const response = await this.wrapRequest(() => this.api.getAttachment(id, options));
     return resolveSingleResponse<ProductiveAttachment, Attachment>(response);
   }
 

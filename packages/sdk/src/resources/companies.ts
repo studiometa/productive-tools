@@ -12,6 +12,11 @@ export interface CompanyListOptions {
   perPage?: number;
   filter?: Record<string, string>;
   sort?: string;
+  include?: string[];
+}
+
+export interface CompanyGetOptions {
+  include?: string[];
 }
 
 export interface CompanyCreateData {
@@ -46,7 +51,7 @@ export interface CompanyGetResult {
 
 export class CompaniesCollection extends BaseCollection {
   /**
-   * List companies with optional filtering and pagination.
+   * List companies with optional filtering, pagination, and includes.
    */
   async list(options: CompanyListOptions = {}): Promise<CompanyListResult> {
     const response = await this.wrapRequest(() => this.api.getCompanies(options));
@@ -54,10 +59,10 @@ export class CompaniesCollection extends BaseCollection {
   }
 
   /**
-   * Get a single company by ID.
+   * Get a single company by ID, with optional includes.
    */
-  async get(id: string): Promise<CompanyGetResult> {
-    const response = await this.wrapRequest(() => this.api.getCompany(id));
+  async get(id: string, options: CompanyGetOptions = {}): Promise<CompanyGetResult> {
+    const response = await this.wrapRequest(() => this.api.getCompany(id, options));
     return resolveSingleResponse<ProductiveCompany, Company>(response);
   }
 

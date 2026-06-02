@@ -59,6 +59,19 @@ describe('DiscussionsCollection', () => {
         title: 'Feature request',
       });
     });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: [], meta: {} }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new DiscussionsCollection(createApi());
+      await col.list({ include: ['page'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=page'),
+        expect.any(Object),
+      );
+    });
   });
 
   describe('get()', () => {
@@ -71,6 +84,19 @@ describe('DiscussionsCollection', () => {
       const col = new DiscussionsCollection(createApi());
       const result = await col.get('42');
       expect(result.data).toMatchObject({ id: '42', title: 'My Discussion' });
+    });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: makeDiscussion('42', 'My Discussion') }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new DiscussionsCollection(createApi());
+      await col.get('42', { include: ['page'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=page'),
+        expect.any(Object),
+      );
     });
   });
 

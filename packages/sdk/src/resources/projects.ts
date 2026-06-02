@@ -12,6 +12,11 @@ export interface ProjectListOptions {
   perPage?: number;
   filter?: Record<string, string>;
   sort?: string;
+  include?: string[];
+}
+
+export interface ProjectGetOptions {
+  include?: string[];
 }
 
 export interface ProjectListResult {
@@ -26,7 +31,7 @@ export interface ProjectGetResult {
 
 export class ProjectsCollection extends BaseCollection {
   /**
-   * List projects with optional filtering and pagination.
+   * List projects with optional filtering, pagination, and includes.
    */
   async list(options: ProjectListOptions = {}): Promise<ProjectListResult> {
     const response = await this.wrapRequest(() => this.api.getProjects(options));
@@ -34,10 +39,10 @@ export class ProjectsCollection extends BaseCollection {
   }
 
   /**
-   * Get a single project by ID.
+   * Get a single project by ID, with optional includes.
    */
-  async get(id: string): Promise<ProjectGetResult> {
-    const response = await this.wrapRequest(() => this.api.getProject(id));
+  async get(id: string, options: ProjectGetOptions = {}): Promise<ProjectGetResult> {
+    const response = await this.wrapRequest(() => this.api.getProject(id, options));
     return resolveSingleResponse<ProductiveProject, Project>(response);
   }
 

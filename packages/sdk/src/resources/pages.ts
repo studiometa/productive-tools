@@ -12,6 +12,11 @@ export interface PageListOptions {
   perPage?: number;
   filter?: Record<string, string>;
   sort?: string;
+  include?: string[];
+}
+
+export interface PageGetOptions {
+  include?: string[];
 }
 
 export interface PageCreateData {
@@ -38,7 +43,7 @@ export interface PageGetResult {
 
 export class PagesCollection extends BaseCollection {
   /**
-   * List pages with optional filtering and pagination.
+   * List pages with optional filtering, pagination, and includes.
    */
   async list(options: PageListOptions = {}): Promise<PageListResult> {
     const response = await this.wrapRequest(() => this.api.getPages(options));
@@ -46,10 +51,10 @@ export class PagesCollection extends BaseCollection {
   }
 
   /**
-   * Get a single page by ID.
+   * Get a single page by ID, with optional includes.
    */
-  async get(id: string): Promise<PageGetResult> {
-    const response = await this.wrapRequest(() => this.api.getPage(id));
+  async get(id: string, options: PageGetOptions = {}): Promise<PageGetResult> {
+    const response = await this.wrapRequest(() => this.api.getPage(id, options));
     return resolveSingleResponse<ProductivePage, Page>(response);
   }
 

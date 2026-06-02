@@ -16,6 +16,11 @@ export interface PeopleListOptions {
   perPage?: number;
   filter?: Record<string, string>;
   sort?: string;
+  include?: string[];
+}
+
+export interface PeopleGetOptions {
+  include?: string[];
 }
 
 export interface PeopleListResult {
@@ -37,7 +42,7 @@ export class PeopleCollection extends BaseCollection {
   }
 
   /**
-   * List people with optional filtering and pagination.
+   * List people with optional filtering, pagination, and includes.
    */
   async list(options: PeopleListOptions = {}): Promise<PeopleListResult> {
     const response = await this.wrapRequest(() => this.api.getPeople(options));
@@ -45,10 +50,10 @@ export class PeopleCollection extends BaseCollection {
   }
 
   /**
-   * Get a single person by ID.
+   * Get a single person by ID, with optional includes.
    */
-  async get(id: string): Promise<PeopleGetResult> {
-    const response = await this.wrapRequest(() => this.api.getPerson(id));
+  async get(id: string, options: PeopleGetOptions = {}): Promise<PeopleGetResult> {
+    const response = await this.wrapRequest(() => this.api.getPerson(id, options));
     return resolveSingleResponse<ProductivePerson, Person>(response);
   }
 

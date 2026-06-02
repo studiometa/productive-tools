@@ -12,6 +12,11 @@ export interface DiscussionListOptions {
   perPage?: number;
   filter?: Record<string, string>;
   sort?: string;
+  include?: string[];
+}
+
+export interface DiscussionGetOptions {
+  include?: string[];
 }
 
 export interface DiscussionCreateData {
@@ -37,7 +42,7 @@ export interface DiscussionGetResult {
 
 export class DiscussionsCollection extends BaseCollection {
   /**
-   * List discussions with optional filtering and pagination.
+   * List discussions with optional filtering, pagination, and includes.
    */
   async list(options: DiscussionListOptions = {}): Promise<DiscussionListResult> {
     const response = await this.wrapRequest(() => this.api.getDiscussions(options));
@@ -45,10 +50,10 @@ export class DiscussionsCollection extends BaseCollection {
   }
 
   /**
-   * Get a single discussion by ID.
+   * Get a single discussion by ID, with optional includes.
    */
-  async get(id: string): Promise<DiscussionGetResult> {
-    const response = await this.wrapRequest(() => this.api.getDiscussion(id));
+  async get(id: string, options: DiscussionGetOptions = {}): Promise<DiscussionGetResult> {
+    const response = await this.wrapRequest(() => this.api.getDiscussion(id, options));
     return resolveSingleResponse<ProductiveDiscussion, Discussion>(response);
   }
 

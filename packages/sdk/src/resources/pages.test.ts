@@ -56,6 +56,19 @@ describe('PagesCollection', () => {
       expect(result.data).toHaveLength(2);
       expect(result.data[0]).toMatchObject({ id: '1', type: 'pages', title: 'Getting Started' });
     });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: [], meta: {} }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new PagesCollection(createApi());
+      await col.list({ include: ['creator'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=creator'),
+        expect.any(Object),
+      );
+    });
   });
 
   describe('get()', () => {
@@ -68,6 +81,19 @@ describe('PagesCollection', () => {
       const col = new PagesCollection(createApi());
       const result = await col.get('42');
       expect(result.data).toMatchObject({ id: '42', title: 'My Page' });
+    });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: makePage('42', 'My Page') }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new PagesCollection(createApi());
+      await col.get('42', { include: ['creator'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=creator'),
+        expect.any(Object),
+      );
     });
   });
 

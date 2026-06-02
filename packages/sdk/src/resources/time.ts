@@ -15,6 +15,10 @@ export interface TimeListOptions {
   include?: string[];
 }
 
+export interface TimeGetOptions {
+  include?: string[];
+}
+
 export interface TimeCreateData {
   person_id: string;
   service_id: string;
@@ -50,10 +54,10 @@ export class TimeCollection extends BaseCollection {
   }
 
   /**
-   * Get a single time entry by ID.
+   * Get a single time entry by ID, with optional includes.
    */
-  async get(id: string): Promise<TimeGetResult> {
-    const response = await this.wrapRequest(() => this.api.getTimeEntry(id));
+  async get(id: string, options: TimeGetOptions = {}): Promise<TimeGetResult> {
+    const response = await this.wrapRequest(() => this.api.getTimeEntry(id, options));
     return resolveSingleResponse<ProductiveTimeEntry, TimeEntry>(response);
   }
 

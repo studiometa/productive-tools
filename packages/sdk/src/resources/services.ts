@@ -11,6 +11,11 @@ export interface ServiceListOptions {
   page?: number;
   perPage?: number;
   filter?: Record<string, string>;
+  include?: string[];
+}
+
+export interface ServiceGetOptions {
+  include?: string[];
 }
 
 export interface ServiceListResult {
@@ -25,15 +30,15 @@ export interface ServiceGetResult {
 
 export class ServicesCollection extends BaseCollection {
   /**
-   * Get a single service by ID.
+   * Get a single service by ID, with optional includes.
    */
-  async get(id: string): Promise<ServiceGetResult> {
-    const response = await this.wrapRequest(() => this.api.getService(id));
+  async get(id: string, options: ServiceGetOptions = {}): Promise<ServiceGetResult> {
+    const response = await this.wrapRequest(() => this.api.getService(id, options));
     return resolveSingleResponse<ProductiveService, Service>(response);
   }
 
   /**
-   * List services with optional filtering and pagination.
+   * List services with optional filtering, pagination, and includes.
    */
   async list(options: ServiceListOptions = {}): Promise<ServiceListResult> {
     const response = await this.wrapRequest(() => this.api.getServices(options));

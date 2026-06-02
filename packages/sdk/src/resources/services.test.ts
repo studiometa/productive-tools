@@ -46,6 +46,19 @@ describe('ServicesCollection', () => {
       const result = await col.get('42');
       expect(result.data).toMatchObject({ id: '42', type: 'services', name: 'Design' });
     });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: makeService('42', 'Design') }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new ServicesCollection(createApi());
+      await col.get('42', { include: ['deal'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=deal'),
+        expect.any(Object),
+      );
+    });
   });
 
   describe('list()', () => {
@@ -68,6 +81,19 @@ describe('ServicesCollection', () => {
       const col = new ServicesCollection(createApi());
       const result = await col.list({ page: 1, perPage: 10, filter: { project_id: '5' } });
       expect(result.data).toHaveLength(0);
+    });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: [], meta: {} }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new ServicesCollection(createApi());
+      await col.list({ include: ['deal'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=deal'),
+        expect.any(Object),
+      );
     });
   });
 
