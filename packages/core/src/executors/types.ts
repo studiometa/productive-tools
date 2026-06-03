@@ -57,8 +57,11 @@ export function buildListParams(options: PaginationOptions): {
   include?: string[];
 } {
   return {
-    page: options.page ?? 1,
-    perPage: options.perPage ?? DEFAULT_PAGE_SIZE,
+    // Treat a non-positive (or missing) page/perPage as "unset" so the default
+    // applies — `??` alone would forward an out-of-range 0 (e.g. from `--size 0`)
+    // straight to the API instead of falling back.
+    page: options.page && options.page > 0 ? options.page : 1,
+    perPage: options.perPage && options.perPage > 0 ? options.perPage : DEFAULT_PAGE_SIZE,
     sort: options.sort,
     include: options.include,
   };
