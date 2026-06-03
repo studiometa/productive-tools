@@ -46,6 +46,7 @@ describe('showDealsHelp', () => {
     expect(output).toContain('--name');
     expect(output).toContain('--company');
     expect(output).toContain('--budget');
+    expect(output).toContain('--end-date');
   });
 
   it('shows add help for "create" alias', () => {

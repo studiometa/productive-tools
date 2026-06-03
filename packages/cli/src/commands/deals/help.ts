@@ -69,6 +69,7 @@ ${colors.bold('OPTIONS:')}
   --name <name>         Deal name (required)
   --company <id>        Company ID (required)
   --date <date>         Start date (YYYY-MM-DD, default: today)
+  --end-date <date>     End date (YYYY-MM-DD)
   --budget              Create as budget instead of deal
   --responsible <id>    Responsible person ID
   -f, --format <fmt>    Output format: json, human
@@ -76,7 +77,7 @@ ${colors.bold('OPTIONS:')}
 ${colors.bold('EXAMPLES:')}
   productive deals add --name "New Project" --company 12345
   productive deals add --name "Q1 Budget" --company 12345 --budget
-  productive deals add --name "Website Redesign" --company 12345 --responsible 789
+  productive deals add --name "Website Redesign" --company 12345 --end-date 2026-12-31
 `);
   } else if (subcommand === 'update') {
     console.log(`
