@@ -1,13 +1,12 @@
 import type { ProductiveApiMeta } from '@studiometa/productive-api';
 
+import { DEFAULT_PAGE_SIZE } from '@studiometa/productive-api';
+
 /**
- * Default page size used by collection list/iteration helpers.
- *
- * Single source of truth shared across all SDK collections so the
- * `all()` iterators do not diverge from one another (or from the core
- * executors, which default to the same value).
+ * Re-exported from `@studiometa/productive-api` (the single cross-package
+ * source of truth) so SDK consumers can keep importing it from here.
  */
-export const DEFAULT_PAGE_SIZE = 100;
+export { DEFAULT_PAGE_SIZE };
 
 /**
  * Function that fetches a page of results.

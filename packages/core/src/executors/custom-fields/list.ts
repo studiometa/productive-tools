@@ -8,6 +8,8 @@ import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListCustomFieldsOptions } from './types.js';
 
+import { buildListParams } from '../types.js';
+
 export async function listCustomFields(
   options: ListCustomFieldsOptions,
   ctx: ExecutorContext,
@@ -27,10 +29,8 @@ export async function listCustomFields(
   }
 
   const response = await ctx.api.getCustomFields({
-    page: options.page ?? 1,
-    perPage: options.perPage ?? 100,
+    ...buildListParams(options),
     filter: Object.keys(filter).length > 0 ? filter : undefined,
-    include: options.include,
   });
 
   return {

@@ -13,6 +13,8 @@ import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListTimeEntriesOptions } from './types.js';
 
+import { buildListParams } from '../types.js';
+
 /**
  * Build the filter object from typed options.
  * This is a pure function with no side effects.
@@ -75,11 +77,8 @@ export async function listTimeEntries(
 
   // Call API
   const response = await ctx.api.getTimeEntries({
-    page: options.page ?? 1,
-    perPage: options.perPage ?? 100,
+    ...buildListParams(options),
     filter: resolvedFilter,
-    sort: options.sort,
-    include: options.include,
   });
 
   return {

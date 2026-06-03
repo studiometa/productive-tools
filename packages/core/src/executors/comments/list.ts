@@ -4,6 +4,8 @@ import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListCommentsOptions } from './types.js';
 
+import { buildListParams } from '../types.js';
+
 export function buildCommentFilters(options: ListCommentsOptions): Record<string, string> {
   const filter: Record<string, string> = {};
 
@@ -23,10 +25,8 @@ export async function listComments(
   const filter = buildCommentFilters(options);
 
   const response = await ctx.api.getComments({
-    page: options.page ?? 1,
-    perPage: options.perPage ?? 100,
+    ...buildListParams(options),
     filter,
-    include: options.include,
   });
 
   return {

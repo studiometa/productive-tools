@@ -6,6 +6,8 @@ import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListDealsOptions } from './types.js';
 
+import { buildListParams } from '../types.js';
+
 export function buildDealFilters(options: ListDealsOptions): Record<string, string> {
   const filter: Record<string, string> = {};
 
@@ -39,10 +41,8 @@ export async function listDeals(
   const { resolved: resolvedFilter, metadata } = await ctx.resolver.resolveFilters(filter);
 
   const response = await ctx.api.getDeals({
-    page: options.page ?? 1,
-    perPage: options.perPage ?? 100,
+    ...buildListParams(options),
     filter: resolvedFilter,
-    sort: options.sort,
     include: options.include ?? ['company', 'deal_status', 'responsible'],
   });
 

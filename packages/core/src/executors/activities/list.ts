@@ -8,6 +8,8 @@ import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListActivitiesOptions } from './types.js';
 
+import { buildListParams } from '../types.js';
+
 export async function listActivities(
   options: ListActivitiesOptions,
   ctx: ExecutorContext,
@@ -19,10 +21,8 @@ export async function listActivities(
   }
 
   const response = await ctx.api.getActivities({
-    page: options.page ?? 1,
-    perPage: options.perPage ?? 100,
+    ...buildListParams(options),
     filter: Object.keys(filter).length > 0 ? filter : undefined,
-    include: options.include,
   });
 
   return {
