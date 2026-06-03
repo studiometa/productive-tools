@@ -4,14 +4,12 @@ import type { Attachment } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
-import { QueryBuilder, type BaseListOptions } from '../query-builder.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
 export type AttachmentListOptions = BaseListOptions;
 
-export interface AttachmentGetOptions {
-  include?: string[];
-}
+export type AttachmentGetOptions = IncludeOptions;
 
 export interface AttachmentListResult {
   data: Attachment[];

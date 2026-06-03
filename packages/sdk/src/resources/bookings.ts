@@ -4,14 +4,12 @@ import type { Booking } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
-import { QueryBuilder, type BaseListOptions } from '../query-builder.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
 export type BookingListOptions = BaseListOptions;
 
-export interface BookingGetOptions {
-  include?: string[];
-}
+export type BookingGetOptions = IncludeOptions;
 
 export interface BookingCreateData {
   person_id: string;

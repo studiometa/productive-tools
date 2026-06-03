@@ -4,14 +4,12 @@ import type { Task } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
-import { QueryBuilder, type BaseListOptions } from '../query-builder.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
 export type TaskListOptions = BaseListOptions;
 
-export interface TaskGetOptions {
-  include?: string[];
-}
+export type TaskGetOptions = IncludeOptions;
 
 export interface TaskCreateData {
   title: string;

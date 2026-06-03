@@ -4,14 +4,12 @@ import type { TimeEntry } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
-import { QueryBuilder, type BaseListOptions } from '../query-builder.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
 export type TimeListOptions = BaseListOptions;
 
-export interface TimeGetOptions {
-  include?: string[];
-}
+export type TimeGetOptions = IncludeOptions;
 
 export interface TimeCreateData {
   person_id: string;
