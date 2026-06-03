@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI**: Document `--end-date` in the `deals add` command help — it was wired into the handler but undiscoverable ([f607546], [#175])
 - **Core**: Normalize a non-positive `page`/`perPage` (e.g. from `--size 0`) to the defaults in `buildListParams`, which previously forwarded an out-of-range 0 that `buildListQuery` then silently dropped ([2a9dde4], [#175])
 
+### Security
+
+- **MCP**: Update `@modelcontextprotocol/sdk` and `h3` and refresh the lockfile to patched transitive versions, clearing 5 advisories (high `fast-uri` path traversal/host confusion, plus `hono`, `ip-address`, `express-rate-limit` and `qs`) ([7a0dedc], [#175])
+
 [7a88366]: https://github.com/studiometa/productive-tools/commit/7a88366
 [77177b1]: https://github.com/studiometa/productive-tools/commit/77177b1
 [9433686]: https://github.com/studiometa/productive-tools/commit/9433686
@@ -57,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [82c6136]: https://github.com/studiometa/productive-tools/commit/82c6136
 [1082df4]: https://github.com/studiometa/productive-tools/commit/1082df4
 [2a9dde4]: https://github.com/studiometa/productive-tools/commit/2a9dde4
+[7a0dedc]: https://github.com/studiometa/productive-tools/commit/7a0dedc
 [#175]: https://github.com/studiometa/productive-tools/pull/175
 
 ## [0.10.12] - 2026.05.27
