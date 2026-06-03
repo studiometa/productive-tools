@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI**: Add `--include` to the projects, people, companies, services, pages, discussions and attachments list/get commands (via a shared `ctx.getInclude()`) and surface the resolved relationships in the output ([94802f7], [#175])
 - **CLI**: Document `--end-date` in the `deals add` command help — it was wired into the handler but undiscoverable ([f607546], [#175])
 - **Core**: Normalize a non-positive `page`/`perPage` (e.g. from `--size 0`) to the defaults in `buildListParams`, which previously forwarded an out-of-range 0 that `buildListQuery` then silently dropped ([2a9dde4], [#175])
-- **CLI**: Forward named flags and positionals through `productive run` — the global arg parser stripped every `--flag` and misclassified slash-less tokens, so a script's `flags` was always `{}` and a positional after a slash-path crashed with `ERR_MODULE_NOT_FOUND`; `run` now recovers the invocation from raw argv and forwards everything after the script path verbatim ([f8bfe73], [#178])
+- **CLI**: Forward script args through `productive run` via a `--` separator — the global arg parser previously stripped every `--flag` and misclassified slash-less tokens, so a script's `flags` was always `{}` and a positional after a slash-path crashed with `ERR_MODULE_NOT_FOUND`. Everything after `--` is now forwarded to the script verbatim while run-options stay before it, and `parseArgs` honors `--` as end-of-options so `--version`/`--help` after it reach the script instead of the CLI ([740a04c], [#178])
 
 ### Security
 
@@ -63,7 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1082df4]: https://github.com/studiometa/productive-tools/commit/1082df4
 [2a9dde4]: https://github.com/studiometa/productive-tools/commit/2a9dde4
 [7a0dedc]: https://github.com/studiometa/productive-tools/commit/7a0dedc
-[f8bfe73]: https://github.com/studiometa/productive-tools/commit/f8bfe73
+[740a04c]: https://github.com/studiometa/productive-tools/commit/740a04c
 [#175]: https://github.com/studiometa/productive-tools/pull/175
 [#178]: https://github.com/studiometa/productive-tools/pull/178
 
