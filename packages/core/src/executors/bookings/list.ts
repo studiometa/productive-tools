@@ -44,6 +44,7 @@ export async function listBookings(
   return {
     data: response.data,
     meta: response.meta,
+    included: response.included,
     resolved: Object.keys(metadata).length > 0 ? metadata : undefined,
   };
 }

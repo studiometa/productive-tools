@@ -32,5 +32,6 @@ export async function listComments(
   return {
     data: response.data,
     meta: response.meta,
+    included: response.included,
   };
 }
