@@ -4,7 +4,7 @@
 
 import type { JsonApiResource, FormatOptions } from './types.js';
 
-import { resolveRelationships } from './included.js';
+import { applyIncluded } from './included.js';
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 export interface FormattedAttachment {
@@ -60,9 +60,7 @@ export function formatAttachment(
     result.created_at = attrs.created_at ? String(attrs.created_at) : undefined;
   }
 
-  if (opts.included) {
-    Object.assign(result, resolveRelationships(attachment, opts.included));
-  }
+  applyIncluded(result, attachment, opts.included);
 
   return result;
 }

@@ -66,13 +66,22 @@ function compactify<T extends Record<string, unknown>>(obj: T, fieldsToRemove: s
 }
 
 /**
+ * Build the CLI formatter options for an MCP wrapper: the MCP defaults plus any
+ * sideloaded `included` array carried over, so each formatter forwards
+ * relationships with a single shared call instead of repeating the spread.
+ */
+export function withIncluded(options?: McpFormatOptions): FormatOptions {
+  return { ...MCP_FORMAT_OPTIONS, included: options?.included };
+}
+
+/**
  * Format time entry for agent consumption
  */
 export function formatTimeEntry(
   entry: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatTimeEntry(entry, { ...MCP_FORMAT_OPTIONS, included: options?.included });
+  const result = cliFormatTimeEntry(entry, withIncluded(options));
   if (options?.compact) {
     return compactify(result, ['note', 'billable_time', 'approved']);
   }
@@ -86,7 +95,7 @@ export function formatProject(
   project: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatProject(project, { ...MCP_FORMAT_OPTIONS, included: options?.included });
+  const result = cliFormatProject(project, withIncluded(options));
   if (options?.compact) {
     return compactify(result, ['budget']);
   }
@@ -101,7 +110,7 @@ export function formatTask(
   task: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatTask(task, { ...MCP_FORMAT_OPTIONS, included: options?.included });
+  const result = cliFormatTask(task, withIncluded(options));
   if (options?.compact) {
     return compactify(result, [
       'description',
@@ -122,7 +131,7 @@ export function formatPerson(
   person: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatPerson(person, { ...MCP_FORMAT_OPTIONS, included: options?.included });
+  const result = cliFormatPerson(person, withIncluded(options));
   if (options?.compact) {
     return compactify(result, ['title', 'first_name', 'last_name']); // Keep 'name' which combines them
   }
@@ -136,7 +145,7 @@ export function formatService(
   service: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatService(service, { ...MCP_FORMAT_OPTIONS, included: options?.included });
+  const result = cliFormatService(service, withIncluded(options));
   if (options?.compact) {
     return compactify(result, ['budgeted_time', 'worked_time']);
   }
@@ -150,7 +159,7 @@ export function formatCompany(
   company: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatCompany(company, { ...MCP_FORMAT_OPTIONS, included: options?.included });
+  const result = cliFormatCompany(company, withIncluded(options));
   if (options?.compact) {
     return compactify(result, ['billing_name', 'domain', 'due_days']);
   }
@@ -164,7 +173,7 @@ export function formatComment(
   comment: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatComment(comment, { ...MCP_FORMAT_OPTIONS, included: options?.included });
+  const result = cliFormatComment(comment, withIncluded(options));
   return result;
 }
 
@@ -186,7 +195,7 @@ export function formatDeal(
   deal: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatDeal(deal, { ...MCP_FORMAT_OPTIONS, included: options?.included });
+  const result = cliFormatDeal(deal, withIncluded(options));
   if (options?.compact) {
     return compactify(result, ['won_at', 'lost_at']);
   }
@@ -200,7 +209,7 @@ export function formatBooking(
   booking: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatBooking(booking, { ...MCP_FORMAT_OPTIONS, included: options?.included });
+  const result = cliFormatBooking(booking, withIncluded(options));
   if (options?.compact) {
     return compactify(result, ['approved_at', 'rejected_at', 'rejected_reason']);
   }
@@ -214,10 +223,7 @@ export function formatAttachment(
   attachment: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatAttachment(attachment, {
-    ...MCP_FORMAT_OPTIONS,
-    included: options?.included,
-  });
+  const result = cliFormatAttachment(attachment, withIncluded(options));
   if (options?.compact) {
     return compactify(result, ['url']);
   }
@@ -231,7 +237,7 @@ export function formatPage(
   page: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatPage(page, { ...MCP_FORMAT_OPTIONS, included: options?.included });
+  const result = cliFormatPage(page, withIncluded(options));
   if (options?.compact) {
     return compactify(result, ['body', 'version_number']);
   }
@@ -245,10 +251,7 @@ export function formatDiscussion(
   discussion: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatDiscussion(discussion, {
-    ...MCP_FORMAT_OPTIONS,
-    included: options?.included,
-  });
+  const result = cliFormatDiscussion(discussion, withIncluded(options));
   if (options?.compact) {
     return compactify(result, ['body']);
   }
@@ -259,10 +262,7 @@ export function formatActivity(
   activity: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  return cliFormatActivity(activity, {
-    ...MCP_FORMAT_OPTIONS,
-    included: options?.included,
-  });
+  return cliFormatActivity(activity, withIncluded(options));
 }
 
 /**
@@ -272,10 +272,7 @@ export function formatCustomField(
   field: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  return cliFormatCustomField(field, {
-    ...MCP_FORMAT_OPTIONS,
-    included: options?.included,
-  });
+  return cliFormatCustomField(field, withIncluded(options));
 }
 
 /**
@@ -297,10 +294,7 @@ export function formatListResponse<T>(
     return formatter(item, options);
   };
 
-  const result = cliFormatListResponse(data, wrappedFormatter, meta, {
-    ...MCP_FORMAT_OPTIONS,
-    included: options?.included,
-  });
+  const result = cliFormatListResponse(data, wrappedFormatter, meta, withIncluded(options));
 
   return result as { data: T[]; meta?: FormattedPagination };
 }

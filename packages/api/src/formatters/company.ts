@@ -4,7 +4,7 @@
 
 import type { JsonApiResource, FormatOptions } from './types.js';
 
-import { resolveRelationships } from './included.js';
+import { applyIncluded } from './included.js';
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 export interface FormattedCompany {
@@ -52,9 +52,7 @@ export function formatCompany(company: JsonApiResource, options?: FormatOptions)
     result.updated_at = attrs.updated_at ? String(attrs.updated_at) : undefined;
   }
 
-  if (opts.included) {
-    Object.assign(result, resolveRelationships(company, opts.included));
-  }
+  applyIncluded(result, company, opts.included);
 
   return result;
 }

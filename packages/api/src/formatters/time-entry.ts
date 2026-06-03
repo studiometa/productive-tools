@@ -5,7 +5,7 @@
 import type { JsonApiResource, FormatOptions, FormattedTimeEntry } from './types.js';
 
 import { stripHtml } from '../utils/html.js';
-import { resolveRelationships } from './included.js';
+import { applyIncluded } from './included.js';
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 /**
@@ -58,9 +58,7 @@ export function formatTimeEntry(
     result.updated_at = attrs.updated_at as string | undefined;
   }
 
-  if (opts.included) {
-    Object.assign(result, resolveRelationships(entry, opts.included));
-  }
+  applyIncluded(result, entry, opts.included);
 
   return result;
 }

@@ -13,6 +13,7 @@ import {
   formatDiscussion,
   formatAttachment,
   formatListResponse,
+  withIncluded,
 } from './formatters.js';
 
 describe('formatters', () => {
@@ -368,5 +369,29 @@ describe('formatters thread included relationships through to the API resolver',
       included: [{ id: '77', type: 'tasks', attributes: { title: 'My Task' } }],
     });
     expect(result.attachable).toMatchObject({ id: '77', title: 'My Task' });
+  });
+});
+
+describe('withIncluded', () => {
+  it('merges the MCP format defaults with the sideloaded included array', () => {
+    const included: JsonApiResource[] = [
+      { id: '99', type: 'companies', attributes: { name: 'Acme Inc.' } },
+    ];
+
+    expect(withIncluded({ included })).toEqual({
+      includeRelationshipIds: false,
+      includeTimestamps: false,
+      stripHtml: true,
+      included,
+    });
+  });
+
+  it('defaults included to undefined when no options are passed', () => {
+    expect(withIncluded()).toEqual({
+      includeRelationshipIds: false,
+      includeTimestamps: false,
+      stripHtml: true,
+      included: undefined,
+    });
   });
 });

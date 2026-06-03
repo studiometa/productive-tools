@@ -103,3 +103,18 @@ export function resolveRelationships(
 
   return resolved;
 }
+
+/**
+ * Inline any sideloaded relationships from `included` onto `target` in place.
+ * A no-op when `included` is absent, so every resource formatter shares one
+ * guarded call instead of repeating the `if (opts.included) Object.assign(...)`
+ * block.
+ */
+export function applyIncluded(
+  target: Record<string, unknown>,
+  resource: Parameters<typeof resolveRelationships>[0],
+  included: JsonApiResource[] | undefined,
+): void {
+  if (!included) return;
+  Object.assign(target, resolveRelationships(resource, included));
+}

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { JsonApiResource } from './types.js';
 
-import { getIncludedResource, resolveRelationships } from './included.js';
+import { applyIncluded, getIncludedResource, resolveRelationships } from './included.js';
 
 const included: JsonApiResource[] = [
   { id: '99', type: 'companies', attributes: { name: 'Acme Inc.' } },
@@ -147,5 +147,35 @@ describe('resolveRelationships', () => {
       creator: { id: '5', type: 'people', first_name: 'Jane', last_name: 'Doe' },
       contacts: [{ id: '7', type: 'contact_entries', email: 'a@b.com' }],
     });
+  });
+});
+
+describe('applyIncluded', () => {
+  it('inlines resolved relationships onto the target in place', () => {
+    const resource: JsonApiResource = {
+      id: '1',
+      type: 'projects',
+      attributes: { name: 'P' },
+      relationships: { company: { data: { type: 'companies', id: '99' } } },
+    };
+    const target: Record<string, unknown> = { id: '1', name: 'P' };
+
+    applyIncluded(target, resource, included);
+
+    expect(target.company).toMatchObject({ id: '99', type: 'companies', name: 'Acme Inc.' });
+  });
+
+  it('is a no-op when included is undefined', () => {
+    const resource: JsonApiResource = {
+      id: '1',
+      type: 'projects',
+      attributes: {},
+      relationships: { company: { data: { type: 'companies', id: '99' } } },
+    };
+    const target: Record<string, unknown> = { id: '1' };
+
+    applyIncluded(target, resource, undefined);
+
+    expect(target).toEqual({ id: '1' });
   });
 });
