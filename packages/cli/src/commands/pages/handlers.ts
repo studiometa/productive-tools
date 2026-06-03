@@ -38,6 +38,7 @@ function parseListOptions(ctx: CommandContext): ListPagesOptions {
   options.page = page;
   options.perPage = perPage;
   options.sort = ctx.getSort();
+  options.include = ctx.getInclude();
 
   return options;
 }
@@ -71,7 +72,7 @@ export async function pagesGet(args: string[], ctx: CommandContext): Promise<voi
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await getPage({ id }, execCtx);
+    const result = await getPage({ id, include: ctx.getInclude() }, execCtx);
 
     spinner.succeed();
 

@@ -40,6 +40,7 @@ export async function companiesList(ctx: CommandContext): Promise<void> {
         page,
         perPage,
         sort: ctx.getSort(),
+        include: ctx.getInclude(),
       },
       execCtx,
     );
@@ -47,7 +48,9 @@ export async function companiesList(ctx: CommandContext): Promise<void> {
     spinner.succeed();
 
     const format = (ctx.options.format || ctx.options.f || 'human') as OutputFormat;
-    const formattedData = formatListResponse(result.data, formatCompany, result.meta);
+    const formattedData = formatListResponse(result.data, formatCompany, result.meta, {
+      included: result.included,
+    });
 
     if (format === 'csv' || format === 'table') {
       const data = result.data.map((c) => ({
@@ -75,12 +78,12 @@ export async function companiesGet(args: string[], ctx: CommandContext): Promise
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await getCompany({ id }, execCtx);
+    const result = await getCompany({ id, include: ctx.getInclude() }, execCtx);
 
     spinner.succeed();
 
     const format = (ctx.options.format || ctx.options.f || 'human') as OutputFormat;
-    const formattedData = formatCompany(result.data);
+    const formattedData = formatCompany(result.data, { included: result.included });
 
     if (format === 'json') {
       ctx.formatter.output(formattedData);

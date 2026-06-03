@@ -45,6 +45,7 @@ function parseListOptions(ctx: CommandContext): ListDiscussionsOptions {
   options.page = page;
   options.perPage = perPage;
   options.sort = ctx.getSort();
+  options.include = ctx.getInclude();
 
   return options;
 }
@@ -78,7 +79,7 @@ export async function discussionsGet(args: string[], ctx: CommandContext): Promi
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await getDiscussion({ id }, execCtx);
+    const result = await getDiscussion({ id, include: ctx.getInclude() }, execCtx);
 
     spinner.succeed();
 

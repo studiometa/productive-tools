@@ -617,4 +617,33 @@ describe('pages command', () => {
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
+
+  describe('--include forwarding', () => {
+    it('forwards --include to the list request', async () => {
+      const getPages = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+      const ctx = createTestContext({
+        api: { getPages } as unknown as ProductiveApi,
+        options: { include: 'creator' },
+      });
+
+      await pagesList(ctx);
+
+      expect(getPages).toHaveBeenCalledWith(expect.objectContaining({ include: ['creator'] }));
+    });
+
+    it('forwards --include to the get request', async () => {
+      const getPage = vi.fn().mockResolvedValue({
+        data: { id: '1', type: 'pages', attributes: { title: 'Doc' } },
+        included: [],
+      });
+      const ctx = createTestContext({
+        api: { getPage } as unknown as ProductiveApi,
+        options: { include: 'creator' },
+      });
+
+      await pagesGet(['1'], ctx);
+
+      expect(getPage).toHaveBeenCalledWith('1', { include: ['creator'] });
+    });
+  });
 });

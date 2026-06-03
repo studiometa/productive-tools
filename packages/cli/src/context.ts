@@ -71,6 +71,20 @@ export interface CommandOptions {
 }
 
 /**
+ * Parse a comma-separated `--include` option value (e.g. `company,project`)
+ * into an array of include keys. Returns undefined when no usable value
+ * was provided.
+ */
+function parseIncludeOption(raw: string | boolean | number | undefined): string[] | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const values = raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+  return values.length > 0 ? values : undefined;
+}
+
+/**
  * Context containing all dependencies needed by commands.
  * This is the main interface for dependency injection.
  */
@@ -98,6 +112,9 @@ export interface CommandContext {
 
   /** Get sort parameter */
   getSort(): string;
+
+  /** Get the include parameter (comma-separated `--include` flag parsed into an array) */
+  getInclude(): string[] | undefined;
 
   /**
    * Resolve human-friendly identifiers in filters (emails, project numbers, etc.)
@@ -166,6 +183,10 @@ export function createContext(options: CommandOptions = {}): CommandContext {
 
     getSort(): string {
       return String(options.sort || '');
+    },
+
+    getInclude(): string[] | undefined {
+      return parseIncludeOption(options.include);
     },
 
     resolveFilters(
@@ -267,6 +288,7 @@ export function createTestContext(overrides: Partial<CommandContext> = {}): Comm
         perPage: parseInt(String(opts.size || opts.s || '100')),
       })),
     getSort: overrides.getSort ?? (() => String(opts.sort || '')),
+    getInclude: overrides.getInclude ?? (() => parseIncludeOption(opts.include)),
     resolveFilters: overrides.resolveFilters ?? noopResolveFilters,
     tryResolveValue: overrides.tryResolveValue ?? noopTryResolveValue,
   };

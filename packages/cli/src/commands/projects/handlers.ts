@@ -41,6 +41,7 @@ function parseListOptions(ctx: CommandContext): ListProjectsOptions {
   options.page = page;
   options.perPage = perPage;
   options.sort = ctx.getSort();
+  options.include = ctx.getInclude();
 
   return options;
 }
@@ -60,7 +61,9 @@ export async function projectsList(ctx: CommandContext): Promise<void> {
     spinner.succeed();
 
     const format = (ctx.options.format || ctx.options.f || 'human') as OutputFormat;
-    const formattedData = formatListResponse(result.data, formatProject, result.meta);
+    const formattedData = formatListResponse(result.data, formatProject, result.meta, {
+      included: result.included,
+    });
 
     if (format === 'csv' || format === 'table') {
       const data = result.data.map((p) => ({
@@ -96,13 +99,13 @@ export async function projectsGet(args: string[], ctx: CommandContext): Promise<
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await getProject({ id }, execCtx);
+    const result = await getProject({ id, include: ctx.getInclude() }, execCtx);
     const project = result.data;
 
     spinner.succeed();
 
     const format = (ctx.options.format || ctx.options.f || 'human') as OutputFormat;
-    const formattedData = formatProject(project);
+    const formattedData = formatProject(project, { included: result.included });
 
     if (format === 'json') {
       ctx.formatter.output(formattedData);

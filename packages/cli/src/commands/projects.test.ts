@@ -603,4 +603,33 @@ describe('projects command', () => {
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
+
+  describe('--include forwarding', () => {
+    it('forwards --include to the list request', async () => {
+      const getProjects = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+      const ctx = createTestContext({
+        api: { getProjects } as unknown as ProductiveApi,
+        options: { include: 'company' },
+      });
+
+      await projectsList(ctx);
+
+      expect(getProjects).toHaveBeenCalledWith(expect.objectContaining({ include: ['company'] }));
+    });
+
+    it('forwards --include to the get request', async () => {
+      const getProject = vi.fn().mockResolvedValue({
+        data: { id: '1', type: 'projects', attributes: { name: 'P' } },
+        included: [],
+      });
+      const ctx = createTestContext({
+        api: { getProject } as unknown as ProductiveApi,
+        options: { include: 'company' },
+      });
+
+      await projectsGet(['1'], ctx);
+
+      expect(getProject).toHaveBeenCalledWith('1', { include: ['company'] });
+    });
+  });
 });

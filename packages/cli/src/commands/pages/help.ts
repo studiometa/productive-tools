@@ -16,6 +16,7 @@ ${colors.bold('OPTIONS:')}
   --project <id>      Filter by project ID
   --creator <id>      Filter by creator person ID
   --filter <filters>  Generic filters (comma-separated key=value pairs)
+  --include <list>    Sideload related resources (comma-separated, e.g. creator)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
   --sort <field>      Sort by field (prefix with - for descending)

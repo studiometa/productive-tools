@@ -146,6 +146,30 @@ describe('createContext', () => {
       expect(ctx.getSort()).toBe('-created_at');
     });
   });
+
+  describe('getInclude', () => {
+    it('should return undefined when not provided', () => {
+      expect(createContext({}).getInclude()).toBeUndefined();
+    });
+
+    it('should parse a comma-separated value into a trimmed array', () => {
+      const ctx = createContext({ include: 'company, project.company ,memberships' });
+      expect(ctx.getInclude()).toEqual(['company', 'project.company', 'memberships']);
+    });
+
+    it('should return a single-element array for one value', () => {
+      expect(createContext({ include: 'company' }).getInclude()).toEqual(['company']);
+    });
+
+    it('should return undefined for an empty or whitespace value', () => {
+      expect(createContext({ include: '' }).getInclude()).toBeUndefined();
+      expect(createContext({ include: ' , ' }).getInclude()).toBeUndefined();
+    });
+
+    it('should ignore a non-string value', () => {
+      expect(createContext({ include: true }).getInclude()).toBeUndefined();
+    });
+  });
 });
 
 describe('createTestContext', () => {

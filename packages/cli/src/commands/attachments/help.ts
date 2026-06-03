@@ -18,6 +18,7 @@ ${colors.bold('OPTIONS:')}
   --page <id>         Filter by page ID
   --deal <id>         Filter by deal ID
   --filter <filters>  Generic filters (comma-separated key=value pairs)
+  --include <list>    Sideload related resources (comma-separated, e.g. task)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
   -f, --format <fmt>  Output format: json, human, csv, table

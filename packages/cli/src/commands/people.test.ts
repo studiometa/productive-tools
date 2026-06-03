@@ -324,4 +324,33 @@ describe('people command', () => {
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
+
+  describe('--include forwarding', () => {
+    it('forwards --include to the list request', async () => {
+      const getPeople = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+      const ctx = createTestContext({
+        api: { getPeople } as unknown as ProductiveApi,
+        options: { include: 'company' },
+      });
+
+      await peopleList(ctx);
+
+      expect(getPeople).toHaveBeenCalledWith(expect.objectContaining({ include: ['company'] }));
+    });
+
+    it('forwards --include to the get request', async () => {
+      const getPerson = vi.fn().mockResolvedValue({
+        data: { id: '1', type: 'people', attributes: { first_name: 'J', last_name: 'D' } },
+        included: [],
+      });
+      const ctx = createTestContext({
+        api: { getPerson } as unknown as ProductiveApi,
+        options: { include: 'company' },
+      });
+
+      await peopleGet(['1'], ctx);
+
+      expect(getPerson).toHaveBeenCalledWith('1', { include: ['company'] });
+    });
+  });
 });

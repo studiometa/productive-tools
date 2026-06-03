@@ -20,6 +20,7 @@ ${colors.bold('OPTIONS:')}
   --type <type>       Filter by person type: user, contact, placeholder
   --status <status>   Filter by status: active, deactivated
   --filter <filters>  Generic filters (comma-separated key=value pairs)
+  --include <list>    Sideload related resources (comma-separated, e.g. company)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
   --sort <field>      Sort by field (prefix with - for descending)

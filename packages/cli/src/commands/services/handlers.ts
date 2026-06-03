@@ -37,6 +37,7 @@ function parseListOptions(ctx: CommandContext): ListServicesOptions {
   const { page, perPage } = ctx.getPagination();
   options.page = page;
   options.perPage = perPage;
+  options.include = ctx.getInclude();
 
   return options;
 }
@@ -52,7 +53,9 @@ export async function servicesList(ctx: CommandContext): Promise<void> {
     spinner.succeed();
 
     const format = (ctx.options.format || ctx.options.f || 'human') as OutputFormat;
-    const formattedData = formatListResponse(result.data, formatService, result.meta);
+    const formattedData = formatListResponse(result.data, formatService, result.meta, {
+      included: result.included,
+    });
 
     if (format === 'csv' || format === 'table') {
       const data = result.data.map((s) => ({
@@ -76,12 +79,12 @@ export async function servicesGet(args: string[], ctx: CommandContext): Promise<
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await getService({ id }, execCtx);
+    const result = await getService({ id, include: ctx.getInclude() }, execCtx);
 
     spinner.succeed();
 
     const format = (ctx.options.format || ctx.options.f || 'human') as OutputFormat;
-    const formattedData = formatService(result.data);
+    const formattedData = formatService(result.data, { included: result.included });
 
     if (format === 'json') {
       ctx.formatter.output(formattedData);
