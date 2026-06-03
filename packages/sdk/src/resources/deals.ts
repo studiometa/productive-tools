@@ -23,6 +23,7 @@ export interface DealCreateData {
   name: string;
   company_id: string;
   date?: string;
+  end_date?: string;
   budget?: boolean;
   responsible_id?: string;
 }

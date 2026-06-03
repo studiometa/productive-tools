@@ -65,6 +65,15 @@ describe('createDeal', () => {
     });
   });
 
+  it('passes endDate as end_date (Finding 7)', async () => {
+    const createDealApi = vi.fn().mockResolvedValue({ data: mockDeal });
+    const ctx = createTestExecutorContext({ api: { createDeal: createDealApi } });
+
+    await createDeal({ name: 'Deal', companyId: '100', endDate: '2026-12-31' }, ctx);
+
+    expect(createDealApi).toHaveBeenCalledWith(expect.objectContaining({ end_date: '2026-12-31' }));
+  });
+
   it('passes through numeric company ID without resolving', async () => {
     const createDealApi = vi.fn().mockResolvedValue({ data: mockDeal });
     const resolveValue = vi.fn().mockResolvedValue('100');

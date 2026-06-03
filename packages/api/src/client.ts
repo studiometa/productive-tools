@@ -854,6 +854,7 @@ export class ProductiveApi {
     name: string;
     company_id: string;
     date?: string;
+    end_date?: string;
     budget?: boolean;
     responsible_id?: string;
   }): Promise<ProductiveApiResponse<ProductiveDeal>> {
@@ -865,16 +866,19 @@ export class ProductiveApi {
       relationships.responsible = { data: { type: 'people', id: data.responsible_id } };
     }
 
+    const attributes: Record<string, unknown> = {
+      name: data.name,
+      date: data.date || new Date().toISOString().split('T')[0],
+      budget: data.budget || false,
+    };
+    if (data.end_date !== undefined) attributes.end_date = data.end_date;
+
     return this.request<ProductiveApiResponse<ProductiveDeal>>('/deals', {
       method: 'POST',
       body: {
         data: {
           type: 'deals',
-          attributes: {
-            name: data.name,
-            date: data.date || new Date().toISOString().split('T')[0],
-            budget: data.budget || false,
-          },
+          attributes,
           relationships,
         },
       },

@@ -830,6 +830,14 @@ describe('ProductiveApi requests', () => {
       expect(body.data.attributes.budget).toBe(false);
     });
 
+    it('createDeal with end_date (Finding 7)', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: { id: '1' } });
+      await api.createDeal({ name: 'Deal', company_id: '10', end_date: '2026-12-31' });
+      const body = JSON.parse(fetchSpy.mock.calls[0][1]!.body as string);
+      expect(body.data.attributes.end_date).toBe('2026-12-31');
+    });
+
     it('updateDeal with relationships', async () => {
       const api = createApi();
       mockFetchResponse({ data: { id: '1' } });
