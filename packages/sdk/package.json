@@ -1,6 +1,6 @@
 {
   "name": "@studiometa/productive-sdk",
-  "version": "0.10.12",
+  "version": "0.10.13",
   "description": "Fluent TypeScript SDK for Productive.io API",
   "keywords": [
     "json-api",

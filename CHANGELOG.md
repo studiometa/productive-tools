@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.13] - 2026.06.03
+
 ### Changed
 
 - **API**: Route every list/get method through a shared `buildListQuery(ListParams)` helper (both now exported) so the common query params forward by construction and no method can silently drop one ([ebe09eb], [#175])
@@ -40,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **MCP**: Update `@modelcontextprotocol/sdk` and `h3` and refresh the lockfile to patched transitive versions, clearing 5 advisories (high `fast-uri` path traversal/host confusion, plus `hono`, `ip-address`, `express-rate-limit` and `qs`) ([7a0dedc], [#175])
 
+[0.10.13]: https://github.com/studiometa/productive-tools/compare/0.10.12...0.10.13
 [7a88366]: https://github.com/studiometa/productive-tools/commit/7a88366
 [77177b1]: https://github.com/studiometa/productive-tools/commit/77177b1
 [9433686]: https://github.com/studiometa/productive-tools/commit/9433686
