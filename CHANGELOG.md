@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SDK/Core**: Consolidate the default list page size to a shared `DEFAULT_PAGE_SIZE` (100); SDK `all()` iterators previously defaulted to 200 and two core executors to 25 ([93204e2], [#175])
 - **API/MCP**: Resolve sideloaded `include` relationships into the formatted output — the `include` param was forwarded and the `included` array returned, but the CLI/MCP formatters discarded it, so `project.company` (and `person.company`, `service.deal`, `page.creator`, etc.) never surfaced for any resource except tasks/deals/comments/bookings; add a shared `resolveRelationships()` helper wired into the project/person/company/service/time-entry/page/discussion/attachment formatters ([519d8ca], [#175])
 - **MCP**: Forward `include` in the `people` (get/me/list) and `services` list handlers, which never passed it to their executors, leaving the new include support unreachable from MCP for those two resources ([1b85cc1], [#175])
+- **MCP**: Validate `include` values for the projects, people, companies, services, pages, discussions and attachments resources — a typo previously passed straight through to a raw API 400 instead of returning a helpful suggestion like every other resource ([3c8ae3d], [#175])
+- **CLI**: Add `--include` to the projects, people, companies, services, pages, discussions and attachments list/get commands (via a shared `ctx.getInclude()`) and surface the resolved relationships in the output ([94802f7], [#175])
+- **CLI**: Document `--end-date` in the `deals add` command help — it was wired into the handler but undiscoverable ([f607546], [#175])
 
 [7a88366]: https://github.com/studiometa/productive-tools/commit/7a88366
 [77177b1]: https://github.com/studiometa/productive-tools/commit/77177b1
@@ -38,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [93204e2]: https://github.com/studiometa/productive-tools/commit/93204e2
 [519d8ca]: https://github.com/studiometa/productive-tools/commit/519d8ca
 [1b85cc1]: https://github.com/studiometa/productive-tools/commit/1b85cc1
+[3c8ae3d]: https://github.com/studiometa/productive-tools/commit/3c8ae3d
+[94802f7]: https://github.com/studiometa/productive-tools/commit/94802f7
+[f607546]: https://github.com/studiometa/productive-tools/commit/f607546
 [ebe09eb]: https://github.com/studiometa/productive-tools/commit/ebe09eb
 [513ea65]: https://github.com/studiometa/productive-tools/commit/513ea65
 [eddfaa5]: https://github.com/studiometa/productive-tools/commit/eddfaa5
