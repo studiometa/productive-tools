@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SDK**: Alias every collection's `*ListOptions` to the shared `BaseListOptions` so the fluent builder and the option types can no longer drift apart ([eddfaa5], [#175])
 - **SDK**: Collapse the 13 identical `*GetOptions` interfaces into a shared, exported `IncludeOptions` type (the `include` half of `BaseListOptions`) ([a129c6e], [#175])
 - **SDK**: Remove the unused `createIterator` helper from `BaseCollection` — dead code that still hardcoded the pre-consolidation page size of 200 ([1866110], [#175])
+- **API**: Index each `included` array once (memoized by reference) instead of re-scanning it with `Array.find` per relationship, so resolving sideloads while formatting a list is O(records) rather than O(records × includes) ([82c6136], [#175])
+- **API/MCP**: Extract `applyIncluded()` and `withIncluded()` so the sideloaded-include threading lives in one place per package instead of being copy-pasted across the eight API formatters and sixteen MCP wrappers ([1082df4], [#175])
 
 ### Fixed
 
@@ -31,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MCP**: Validate `include` values for the projects, people, companies, services, pages, discussions and attachments resources — a typo previously passed straight through to a raw API 400 instead of returning a helpful suggestion like every other resource ([3c8ae3d], [#175])
 - **CLI**: Add `--include` to the projects, people, companies, services, pages, discussions and attachments list/get commands (via a shared `ctx.getInclude()`) and surface the resolved relationships in the output ([94802f7], [#175])
 - **CLI**: Document `--end-date` in the `deals add` command help — it was wired into the handler but undiscoverable ([f607546], [#175])
+- **Core**: Normalize a non-positive `page`/`perPage` (e.g. from `--size 0`) to the defaults in `buildListParams`, which previously forwarded an out-of-range 0 that `buildListQuery` then silently dropped ([2a9dde4], [#175])
 
 [7a88366]: https://github.com/studiometa/productive-tools/commit/7a88366
 [77177b1]: https://github.com/studiometa/productive-tools/commit/77177b1
@@ -51,6 +54,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [ebe09eb]: https://github.com/studiometa/productive-tools/commit/ebe09eb
 [513ea65]: https://github.com/studiometa/productive-tools/commit/513ea65
 [eddfaa5]: https://github.com/studiometa/productive-tools/commit/eddfaa5
+[82c6136]: https://github.com/studiometa/productive-tools/commit/82c6136
+[1082df4]: https://github.com/studiometa/productive-tools/commit/1082df4
+[2a9dde4]: https://github.com/studiometa/productive-tools/commit/2a9dde4
 [#175]: https://github.com/studiometa/productive-tools/pull/175
 
 ## [0.10.12] - 2026.05.27
