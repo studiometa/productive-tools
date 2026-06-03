@@ -1,7 +1,37 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ProductiveApi } from './client.js';
+import { ProductiveApi, buildListQuery } from './client.js';
 import { ProductiveApiError } from './error.js';
+
+describe('buildListQuery', () => {
+  it('returns an empty object for no params', () => {
+    expect(buildListQuery()).toEqual({});
+    expect(buildListQuery({})).toEqual({});
+  });
+
+  it('maps every common list param to its JSON:API query key', () => {
+    expect(
+      buildListQuery({
+        page: 2,
+        perPage: 50,
+        sort: '-created_at',
+        filter: { project_id: '1', archived: 'false' },
+        include: ['company', 'memberships'],
+      }),
+    ).toEqual({
+      'page[number]': '2',
+      'page[size]': '50',
+      sort: '-created_at',
+      'filter[project_id]': '1',
+      'filter[archived]': 'false',
+      include: 'company,memberships',
+    });
+  });
+
+  it('omits include when the array is empty', () => {
+    expect(buildListQuery({ include: [] })).toEqual({});
+  });
+});
 
 const validConfig = {
   apiToken: 'test-token',
