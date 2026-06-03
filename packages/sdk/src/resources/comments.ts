@@ -4,16 +4,10 @@ import type { Comment } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
 import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { QueryBuilder, type BaseListOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface CommentListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-  sort?: string;
-  include?: string[];
-}
+export type CommentListOptions = BaseListOptions;
 
 export interface CommentGetOptions {
   include?: string[];
