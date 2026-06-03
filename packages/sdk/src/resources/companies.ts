@@ -3,7 +3,7 @@ import type { ProductiveCompany, ProductiveApiMeta } from '@studiometa/productiv
 import type { Company } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
 import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
@@ -93,7 +93,7 @@ export class CompaniesCollection extends BaseCollection {
    * Iterate over all companies across all pages.
    */
   all(options: Omit<CompanyListOptions, 'page'> = {}): AsyncPaginatedIterator<Company> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Company>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

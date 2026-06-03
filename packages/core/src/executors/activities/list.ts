@@ -20,7 +20,7 @@ export async function listActivities(
 
   const response = await ctx.api.getActivities({
     page: options.page ?? 1,
-    perPage: options.perPage ?? 25,
+    perPage: options.perPage ?? 100,
     filter: Object.keys(filter).length > 0 ? filter : undefined,
     include: options.include,
   });

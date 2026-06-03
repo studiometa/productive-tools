@@ -3,7 +3,7 @@ import type { ProductiveDeal, ProductiveApiMeta } from '@studiometa/productive-a
 import type { Deal } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
 import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
@@ -90,7 +90,7 @@ export class DealsCollection extends BaseCollection {
    * Iterate over all deals across all pages.
    */
   all(options: Omit<DealListOptions, 'page'> = {}): AsyncPaginatedIterator<Deal> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Deal>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

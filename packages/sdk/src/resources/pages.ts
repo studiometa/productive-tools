@@ -3,7 +3,7 @@ import type { ProductivePage, ProductiveApiMeta } from '@studiometa/productive-a
 import type { Page } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
 import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
@@ -92,7 +92,7 @@ export class PagesCollection extends BaseCollection {
    * Iterate over all pages across all pages.
    */
   all(options: Omit<PageListOptions, 'page'> = {}): AsyncPaginatedIterator<Page> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Page>(async (pageNum) => {
       return this.list({ ...options, page: pageNum, perPage });
     }, perPage);

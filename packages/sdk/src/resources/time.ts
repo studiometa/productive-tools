@@ -3,7 +3,7 @@ import type { ProductiveTimeEntry, ProductiveApiMeta } from '@studiometa/product
 import type { TimeEntry } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
 import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
@@ -95,7 +95,7 @@ export class TimeCollection extends BaseCollection {
    * Iterate over all time entries across all pages.
    */
   all(options: Omit<TimeListOptions, 'page'> = {}): AsyncPaginatedIterator<TimeEntry> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<TimeEntry>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

@@ -3,7 +3,7 @@ import type { ProductiveService, ProductiveApiMeta } from '@studiometa/productiv
 import type { Service } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
 import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
@@ -57,7 +57,7 @@ export class ServicesCollection extends BaseCollection {
    * Iterate over all services across all pages.
    */
   all(options: Omit<ServiceListOptions, 'page'> = {}): AsyncPaginatedIterator<Service> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Service>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

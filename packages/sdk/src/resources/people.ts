@@ -7,7 +7,7 @@ import type {
 import type { Person } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
 import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
@@ -79,7 +79,7 @@ export class PeopleCollection extends BaseCollection {
    * Iterate over all people across all pages.
    */
   all(options: Omit<PeopleListOptions, 'page'> = {}): AsyncPaginatedIterator<Person> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Person>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

@@ -3,7 +3,7 @@ import type { ProductiveAttachment, ProductiveApiMeta } from '@studiometa/produc
 import type { Attachment } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
 import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
@@ -64,7 +64,7 @@ export class AttachmentsCollection extends BaseCollection {
    * Iterate over all attachments across all pages.
    */
   all(options: Omit<AttachmentListOptions, 'page'> = {}): AsyncPaginatedIterator<Attachment> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Attachment>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

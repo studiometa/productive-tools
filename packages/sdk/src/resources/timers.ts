@@ -3,7 +3,7 @@ import type { ProductiveTimer, ProductiveApiMeta } from '@studiometa/productive-
 import type { Timer } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
 import { QueryBuilder } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
@@ -78,7 +78,7 @@ export class TimersCollection extends BaseCollection {
    * Iterate over all timers across all pages.
    */
   all(options: Omit<TimerListOptions, 'page'> = {}): AsyncPaginatedIterator<Timer> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Timer>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

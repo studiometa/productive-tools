@@ -1,6 +1,15 @@
 import type { ProductiveApiMeta } from '@studiometa/productive-api';
 
 /**
+ * Default page size used by collection list/iteration helpers.
+ *
+ * Single source of truth shared across all SDK collections so the
+ * `all()` iterators do not diverge from one another (or from the core
+ * executors, which default to the same value).
+ */
+export const DEFAULT_PAGE_SIZE = 100;
+
+/**
  * Function that fetches a page of results.
  */
 export type PageFetcher<T> = (page: number) => Promise<{ data: T[]; meta?: ProductiveApiMeta }>;
@@ -12,7 +21,7 @@ export class AsyncPaginatedIterator<T> {
   private fetchPage: PageFetcher<T>;
   private perPage: number;
 
-  constructor(fetchPage: PageFetcher<T>, perPage = 200) {
+  constructor(fetchPage: PageFetcher<T>, perPage = DEFAULT_PAGE_SIZE) {
     this.fetchPage = fetchPage;
     this.perPage = perPage;
   }

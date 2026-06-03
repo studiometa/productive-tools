@@ -28,7 +28,7 @@ export async function listCustomFields(
 
   const response = await ctx.api.getCustomFields({
     page: options.page ?? 1,
-    perPage: options.perPage ?? 25,
+    perPage: options.perPage ?? 100,
     filter: Object.keys(filter).length > 0 ? filter : undefined,
     include: options.include,
   });
