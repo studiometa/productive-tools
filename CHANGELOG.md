@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **API**: Route every list/get method through a shared `buildListQuery(ListParams)` helper (both now exported) so the common query params forward by construction and no method can silently drop one ([ebe09eb], [#175])
 - **Core**: Add a `buildListParams()` helper spread into every list executor, and promote `DEFAULT_PAGE_SIZE` to `@studiometa/productive-api` as the single cross-package default ([513ea65], [#175])
 - **SDK**: Alias every collection's `*ListOptions` to the shared `BaseListOptions` so the fluent builder and the option types can no longer drift apart ([eddfaa5], [#175])
+- **SDK**: Collapse the 13 identical `*GetOptions` interfaces into a shared, exported `IncludeOptions` type (the `include` half of `BaseListOptions`) ([a129c6e], [#175])
+- **SDK**: Remove the unused `createIterator` helper from `BaseCollection` — dead code that still hardcoded the pre-consolidation page size of 200 ([1866110], [#175])
 
 ### Fixed
 
@@ -42,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [519d8ca]: https://github.com/studiometa/productive-tools/commit/519d8ca
 [1b85cc1]: https://github.com/studiometa/productive-tools/commit/1b85cc1
 [3c8ae3d]: https://github.com/studiometa/productive-tools/commit/3c8ae3d
+[1866110]: https://github.com/studiometa/productive-tools/commit/1866110
+[a129c6e]: https://github.com/studiometa/productive-tools/commit/a129c6e
 [94802f7]: https://github.com/studiometa/productive-tools/commit/94802f7
 [f607546]: https://github.com/studiometa/productive-tools/commit/f607546
 [ebe09eb]: https://github.com/studiometa/productive-tools/commit/ebe09eb
