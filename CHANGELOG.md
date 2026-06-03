@@ -11,9 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **API**: Forward the `include` query param in `getProjects`/`getProject` and the previously-affected `getPeople`/`getPerson`, `getServices`, `getCompanies`/`getCompany`, `getAttachments`/`getAttachment`, `getPages`/`getPage`, `getDiscussions`/`getDiscussion` and `getCustomFieldOptions` methods ([7a88366], [#175])
 - **SDK**: Expose and forward `include` on the projects, people, services, companies, attachments, pages and discussions collections (list/get) plus `time.get()`, so included relationships such as `project.company` resolve consistently ([77177b1], [#175])
+- **Core**: Forward `include` and return `included` from the projects, people, services, companies, attachments and time list/get executors — the MCP/CLI path silently dropped sideloads even when the include was validated as supported ([9433686], [#175])
+- **Core**: Return `included` from the comments, bookings and timers list executors, which forwarded `include` but discarded the sideloaded resources ([9ff9682], [#175])
+- **Core**: Forward `include` from the pages and discussions list/get executors, which returned an always-empty `included` because the param was never sent ([dbc5a0e], [#175])
+- **API/SDK**: Add the `sort` param to `getServices`, `getComments`, `getAttachments`, `getActivities`, `getCustomFields` and `getCustomFieldOptions`, and declare `sort` on the matching SDK list options so `QueryBuilder.orderBy()` is no longer silently dropped ([36aa8a8], [#175])
+- **SDK**: Add `timers.start()`/`timers.stop()` and `discussions.resolve()`/`discussions.reopen()`, which existed in every other layer but were missing from the SDK ([09844e9], [#175])
+- **API/Core/SDK/CLI**: Support `end_date` when creating a deal — it was settable on update but silently unavailable on create ([d50575a], [#175])
+- **SDK/Core**: Consolidate the default list page size to a shared `DEFAULT_PAGE_SIZE` (100); SDK `all()` iterators previously defaulted to 200 and two core executors to 25 ([93204e2], [#175])
 
 [7a88366]: https://github.com/studiometa/productive-tools/commit/7a88366
 [77177b1]: https://github.com/studiometa/productive-tools/commit/77177b1
+[9433686]: https://github.com/studiometa/productive-tools/commit/9433686
+[9ff9682]: https://github.com/studiometa/productive-tools/commit/9ff9682
+[dbc5a0e]: https://github.com/studiometa/productive-tools/commit/dbc5a0e
+[36aa8a8]: https://github.com/studiometa/productive-tools/commit/36aa8a8
+[09844e9]: https://github.com/studiometa/productive-tools/commit/09844e9
+[d50575a]: https://github.com/studiometa/productive-tools/commit/d50575a
+[93204e2]: https://github.com/studiometa/productive-tools/commit/93204e2
 [#175]: https://github.com/studiometa/productive-tools/pull/175
 
 ## [0.10.12] - 2026.05.27
