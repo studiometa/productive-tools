@@ -107,4 +107,15 @@ describe('listServices', () => {
 
     expect(getServices).toHaveBeenCalledWith(expect.objectContaining({ page: 1, perPage: 100 }));
   });
+
+  it('forwards include and returns included (Finding 1)', async () => {
+    const included = [{ id: '4', type: 'deals', attributes: { name: 'Deal' } }];
+    const getServices = vi.fn().mockResolvedValue({ data: [], meta: {}, included });
+    const ctx = createTestExecutorContext({ api: { getServices } });
+
+    const result = await listServices({ include: ['deal'] }, ctx);
+
+    expect(getServices).toHaveBeenCalledWith(expect.objectContaining({ include: ['deal'] }));
+    expect(result.included).toEqual(included);
+  });
 });

@@ -17,9 +17,10 @@ export async function getProject(
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductiveProject>> {
   const resolvedId = await ctx.resolver.resolveValue(options.id, 'project');
-  const response = await ctx.api.getProject(resolvedId);
+  const response = await ctx.api.getProject(resolvedId, { include: options.include });
 
   return {
     data: response.data,
+    included: response.included,
   };
 }

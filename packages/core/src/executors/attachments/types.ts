@@ -10,6 +10,8 @@ export interface ListAttachmentsOptions extends PaginationOptions {
 
 export interface GetAttachmentOptions {
   id: string;
+  /** Related resources to include */
+  include?: string[];
 }
 
 export interface DeleteAttachmentOptions {

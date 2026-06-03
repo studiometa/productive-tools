@@ -13,6 +13,6 @@ export async function getPerson(
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductivePerson>> {
   const resolvedId = await ctx.resolver.resolveValue(options.id, 'person');
-  const response = await ctx.api.getPerson(resolvedId);
-  return { data: response.data };
+  const response = await ctx.api.getPerson(resolvedId, { include: options.include });
+  return { data: response.data, included: response.included };
 }

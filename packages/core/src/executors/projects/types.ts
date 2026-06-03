@@ -28,6 +28,8 @@ export interface ListProjectsOptions extends PaginationOptions {
 export interface GetProjectOptions {
   /** Project ID or human-friendly identifier (e.g., PRJ-123) */
   id: string;
+  /** Related resources to include (e.g., company) */
+  include?: string[];
 }
 
 /**

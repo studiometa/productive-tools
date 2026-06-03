@@ -13,6 +13,6 @@ export async function getCompany(
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductiveCompany>> {
   const resolvedId = await ctx.resolver.resolveValue(options.id, 'company');
-  const response = await ctx.api.getCompany(resolvedId);
-  return { data: response.data };
+  const response = await ctx.api.getCompany(resolvedId, { include: options.include });
+  return { data: response.data, included: response.included };
 }

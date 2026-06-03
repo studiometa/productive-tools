@@ -51,11 +51,13 @@ export async function listProjects(
     perPage: options.perPage ?? 100,
     filter: resolvedFilter,
     sort: options.sort,
+    include: options.include,
   });
 
   return {
     data: response.data,
     meta: response.meta,
+    included: response.included,
     resolved: Object.keys(metadata).length > 0 ? metadata : undefined,
   };
 }

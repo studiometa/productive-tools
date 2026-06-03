@@ -26,7 +26,22 @@ describe('getProject', () => {
     const result = await getProject({ id: 'PRJ-001' }, ctx);
 
     expect(resolveValue).toHaveBeenCalledWith('PRJ-001', 'project');
-    expect(getProjectApi).toHaveBeenCalledWith('42');
+    expect(getProjectApi).toHaveBeenCalledWith('42', { include: undefined });
     expect(result.data).toEqual(mockProject);
+  });
+
+  it('forwards include and returns included (Finding 1)', async () => {
+    const included = [{ id: '99', type: 'companies', attributes: { name: 'Acme' } }];
+    const resolveValue = vi.fn().mockResolvedValue('42');
+    const getProjectApi = vi.fn().mockResolvedValue({ data: mockProject, included });
+    const ctx = createTestExecutorContext({
+      api: { getProject: getProjectApi },
+      resolver: { resolveValue },
+    });
+
+    const result = await getProject({ id: 'PRJ-001', include: ['company'] }, ctx);
+
+    expect(getProjectApi).toHaveBeenCalledWith('42', { include: ['company'] });
+    expect(result.included).toEqual(included);
   });
 });

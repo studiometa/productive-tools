@@ -18,8 +18,19 @@ describe('getCompany', () => {
 
     const result = await getCompany({ id: '1' }, ctx);
 
-    expect(getCompanyApi).toHaveBeenCalledWith('1');
+    expect(getCompanyApi).toHaveBeenCalledWith('1', { include: undefined });
     expect(result.data).toEqual(mockCompany);
+  });
+
+  it('forwards include and returns included (Finding 1)', async () => {
+    const included = [{ id: '5', type: 'people', attributes: { first_name: 'Jane' } }];
+    const getCompanyApi = vi.fn().mockResolvedValue({ data: mockCompany, included });
+    const ctx = createTestExecutorContext({ api: { getCompany: getCompanyApi } });
+
+    const result = await getCompany({ id: '1', include: ['contacts'] }, ctx);
+
+    expect(getCompanyApi).toHaveBeenCalledWith('1', { include: ['contacts'] });
+    expect(result.included).toEqual(included);
   });
 
   it('resolves non-numeric ID before fetching', async () => {
@@ -33,6 +44,6 @@ describe('getCompany', () => {
     await getCompany({ id: 'Acme Corp' }, ctx);
 
     expect(resolveValue).toHaveBeenCalledWith('Acme Corp', 'company');
-    expect(getCompanyApi).toHaveBeenCalledWith('1');
+    expect(getCompanyApi).toHaveBeenCalledWith('1', { include: undefined });
   });
 });

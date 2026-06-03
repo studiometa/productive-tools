@@ -66,4 +66,15 @@ describe('listCompanies', () => {
     expect(result.data).toEqual(mockResponse.data);
     expect(result.meta).toEqual(mockResponse.meta);
   });
+
+  it('forwards include and returns included (Finding 1)', async () => {
+    const included = [{ id: '5', type: 'people', attributes: { first_name: 'Jane' } }];
+    const getCompanies = vi.fn().mockResolvedValue({ data: [], meta: {}, included });
+    const ctx = createTestExecutorContext({ api: { getCompanies } });
+
+    const result = await listCompanies({ include: ['contacts'] }, ctx);
+
+    expect(getCompanies).toHaveBeenCalledWith(expect.objectContaining({ include: ['contacts'] }));
+    expect(result.included).toEqual(included);
+  });
 });

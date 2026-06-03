@@ -76,4 +76,15 @@ describe('listAttachments', () => {
     expect(result.data).toEqual(mockResponse.data);
     expect(result.meta).toEqual(mockResponse.meta);
   });
+
+  it('forwards include and returns included (Finding 1)', async () => {
+    const included = [{ id: '7', type: 'tasks', attributes: { title: 'Task' } }];
+    const getAttachments = vi.fn().mockResolvedValue({ data: [], meta: {}, included });
+    const ctx = createTestExecutorContext({ api: { getAttachments } });
+
+    const result = await listAttachments({ include: ['task'] }, ctx);
+
+    expect(getAttachments).toHaveBeenCalledWith(expect.objectContaining({ include: ['task'] }));
+    expect(result.included).toEqual(included);
+  });
 });

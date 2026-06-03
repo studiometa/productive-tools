@@ -26,10 +26,12 @@ export async function listAttachments(
     page: options.page ?? 1,
     perPage: options.perPage ?? 100,
     filter,
+    include: options.include,
   });
 
   return {
     data: response.data,
     meta: response.meta,
+    included: response.included,
   };
 }

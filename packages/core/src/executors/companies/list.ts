@@ -35,10 +35,12 @@ export async function listCompanies(
     perPage: options.perPage ?? 100,
     filter,
     sort: options.sort,
+    include: options.include,
   });
 
   return {
     data: response.data,
     meta: response.meta,
+    included: response.included,
   };
 }

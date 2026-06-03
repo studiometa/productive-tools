@@ -45,11 +45,13 @@ export async function listServices(
     page: options.page ?? 1,
     perPage: options.perPage ?? 100,
     filter: resolvedFilter,
+    include: options.include,
   });
 
   return {
     data: response.data,
     meta: response.meta,
+    included: response.included,
     resolved: Object.keys(metadata).length > 0 ? metadata : undefined,
   };
 }

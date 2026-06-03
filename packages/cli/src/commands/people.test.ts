@@ -227,7 +227,7 @@ describe('people command', () => {
 
       await peopleGet(['1'], ctx);
 
-      expect(getPerson).toHaveBeenCalledWith('1');
+      expect(getPerson).toHaveBeenCalledWith('1', { include: undefined });
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 

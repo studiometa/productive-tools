@@ -274,7 +274,7 @@ describe('attachments command', () => {
 
       await attachmentsGet(['1'], ctx);
 
-      expect(getAttachment).toHaveBeenCalledWith('1');
+      expect(getAttachment).toHaveBeenCalledWith('1', { include: undefined });
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
@@ -465,7 +465,7 @@ describe('attachments command', () => {
         options: { format: 'json' },
       });
       await attachmentsGet(['1'], ctx);
-      expect(getAttachment).toHaveBeenCalledWith('1');
+      expect(getAttachment).toHaveBeenCalledWith('1', { include: undefined });
     });
 
     it('should route delete subcommand', async () => {

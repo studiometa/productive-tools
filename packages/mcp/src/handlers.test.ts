@@ -168,7 +168,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBeUndefined();
-        expect(mockApi.getProject).toHaveBeenCalledWith('123');
+        expect(mockApi.getProject).toHaveBeenCalledWith('123', { include: undefined });
       });
 
       it('should return error for get without id', async () => {
@@ -623,7 +623,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBeUndefined();
-        expect(mockApi.getPerson).toHaveBeenCalledWith('123');
+        expect(mockApi.getPerson).toHaveBeenCalledWith('123', { include: undefined });
       });
 
       it('should handle me action with userId', async () => {
@@ -643,7 +643,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBeUndefined();
-        expect(mockApi.getPerson).toHaveBeenCalledWith('500521');
+        expect(mockApi.getPerson).toHaveBeenCalledWith('500521', { include: undefined });
       });
 
       it('should handle me action without userId', async () => {
@@ -1316,7 +1316,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBeUndefined();
-        expect(mockApi.getCompany).toHaveBeenCalledWith('123');
+        expect(mockApi.getCompany).toHaveBeenCalledWith('123', { include: undefined });
       });
 
       it('should return error for get without id', async () => {
@@ -2507,7 +2507,7 @@ describe('include parameter', () => {
       );
 
       expect(result.isError).toBeFalsy();
-      expect(mockApi.getAttachment).toHaveBeenCalledWith('1');
+      expect(mockApi.getAttachment).toHaveBeenCalledWith('1', { include: undefined });
     });
 
     it('should handle delete action', async () => {
@@ -2881,7 +2881,7 @@ describe('smart ID resolution', () => {
 
       expect(result.isError).toBeUndefined();
       expect(mockApi.getPeople).toHaveBeenCalled();
-      expect(mockApi.getPerson).toHaveBeenCalledWith('500521');
+      expect(mockApi.getPerson).toHaveBeenCalledWith('500521', { include: undefined });
     });
 
     it('should handle resolve action for people resource', async () => {
@@ -2955,7 +2955,7 @@ describe('smart ID resolution', () => {
 
       expect(result.isError).toBeUndefined();
       expect(mockApi.getProjects).toHaveBeenCalled();
-      expect(mockApi.getProject).toHaveBeenCalledWith('777');
+      expect(mockApi.getProject).toHaveBeenCalledWith('777', { include: undefined });
     });
 
     it('should resolve filter with company name in list action', async () => {

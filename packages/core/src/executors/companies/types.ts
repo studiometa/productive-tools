@@ -13,6 +13,8 @@ export interface ListCompaniesOptions extends PaginationOptions {
 export interface GetCompanyOptions {
   /** Company ID or human-friendly identifier (name) */
   id: string;
+  /** Related resources to include (e.g., contacts) */
+  include?: string[];
 }
 
 export interface CreateCompanyOptions {

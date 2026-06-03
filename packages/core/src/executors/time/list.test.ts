@@ -189,4 +189,15 @@ describe('listTimeEntries', () => {
     const result = await listTimeEntries({ personId: '123' }, ctx);
     expect(result.resolved).toBeUndefined();
   });
+
+  it('forwards include and returns included (Finding 1)', async () => {
+    const included = [{ id: '8', type: 'people', attributes: { first_name: 'Jane' } }];
+    const getTimeEntries = vi.fn().mockResolvedValue({ data: [], meta: {}, included });
+    const ctx = createTestExecutorContext({ api: { getTimeEntries } });
+
+    const result = await listTimeEntries({ include: ['person'] }, ctx);
+
+    expect(getTimeEntries).toHaveBeenCalledWith(expect.objectContaining({ include: ['person'] }));
+    expect(result.included).toEqual(included);
+  });
 });

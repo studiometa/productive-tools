@@ -95,7 +95,7 @@ describe('companies command', () => {
 
       await companiesGet(['1'], ctx);
 
-      expect(getCompany).toHaveBeenCalledWith('1');
+      expect(getCompany).toHaveBeenCalledWith('1', { include: undefined });
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 

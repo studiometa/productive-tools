@@ -431,7 +431,7 @@ describe('projects command', () => {
 
       await projectsGet(['1'], ctx);
 
-      expect(getProject).toHaveBeenCalledWith('1');
+      expect(getProject).toHaveBeenCalledWith('1', { include: undefined });
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
