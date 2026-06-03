@@ -9,11 +9,11 @@ Ready-to-run script examples for `productive run`. Copy any file to your own
 # From the repo root (using the built CLI)
 productive run packages/cli/examples/my-tasks.ts
 
-# Pass flags
-productive run packages/cli/examples/time-report.ts --from 2025-01-01 --to 2025-01-31
+# Pass flags to the script after `--`
+productive run packages/cli/examples/time-report.ts -- --from 2025-01-01 --to 2025-01-31
 
-# Preview mutations without executing them
-productive run --dry-run packages/cli/examples/log-time.ts --service-id 12345 --hours 2
+# Preview mutations without executing them (run-options go before `--`)
+productive run --dry-run packages/cli/examples/log-time.ts -- --service-id 12345 --hours 2
 ```
 
 ## Examples
@@ -39,8 +39,8 @@ export const meta = defineMeta({
 export default createScript(async ({ client, output, flags }) => {
   // client   → pre-configured Productive SDK client
   // output   → output.table(), .csv(), .json(), .spinner(), .info(), …
-  // flags    → parsed flags: --from 2025-01-01 → flags.from === '2025-01-01'
-  // args     → positional args after the script path
+  // flags    → parsed flags after `--`: -- --from 2025-01-01 → flags.from === '2025-01-01'
+  // args     → positional args after `--`
 });
 ```
 

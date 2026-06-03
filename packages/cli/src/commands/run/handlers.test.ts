@@ -160,7 +160,7 @@ describe('scriptRun', () => {
       .mockResolvedValue('file:///node_modules/@studiometa/productive-sdk/dist/index.js');
 
     // Both .ts and .js files should get --enable-source-maps
-    await scriptRun(['/tmp/test-script.js'], ctx, mockResolver);
+    await scriptRun(['/tmp/test-script.js'], ctx, {}, mockResolver);
     expect(vi.mocked(spawn).mock.calls[0][1]).toContain('--enable-source-maps');
   });
 
@@ -180,7 +180,7 @@ describe('scriptRun', () => {
       .fn()
       .mockResolvedValue('file:///node_modules/@studiometa/productive-sdk/dist/index.js');
 
-    await scriptRun(['/tmp/test-script.ts'], ctx, mockResolver);
+    await scriptRun(['/tmp/test-script.ts'], ctx, {}, mockResolver);
 
     const spawnArgs = vi.mocked(spawn).mock.calls[0];
     expect(spawnArgs[1]).toContain('--enable-source-maps');
@@ -204,7 +204,7 @@ describe('scriptRun', () => {
       .fn()
       .mockResolvedValue('file:///node_modules/@studiometa/productive-sdk/dist/index.js');
 
-    await scriptRun(['/tmp/test-script.js'], ctx, mockResolver);
+    await scriptRun(['/tmp/test-script.js'], ctx, {}, mockResolver);
 
     const spawnArgs = vi.mocked(spawn).mock.calls[0];
     expect(spawnArgs[1]).not.toContain('--experimental-strip-types');
@@ -230,7 +230,7 @@ describe('scriptRun', () => {
     });
 
     const mockResolver = vi.fn().mockResolvedValue('file:///sdk/dist/index.js');
-    await scriptRun(['/tmp/test-script.js'], ctx, mockResolver);
+    await scriptRun(['/tmp/test-script.js'], ctx, {}, mockResolver);
 
     const spawnOptions = vi.mocked(spawn).mock.calls[0][2] as { env: Record<string, string> };
     expect(spawnOptions.env.PRODUCTIVE_API_TOKEN).toBe('my-token');
@@ -255,7 +255,7 @@ describe('scriptRun', () => {
     const ctx = makeCtx();
     const mockResolver = vi.fn().mockResolvedValue('file:///sdk/dist/index.js');
 
-    await scriptRun(['/tmp/test-script.js'], ctx, mockResolver);
+    await scriptRun(['/tmp/test-script.js'], ctx, {}, mockResolver);
 
     expect(processExitSpy).toHaveBeenCalledWith(42);
   });
@@ -275,7 +275,7 @@ describe('scriptRun', () => {
     const ctx = makeCtx();
     const mockResolver = vi.fn().mockResolvedValue('file:///sdk/dist/index.js');
 
-    await scriptRun(['/tmp/test-script.js'], ctx, mockResolver);
+    await scriptRun(['/tmp/test-script.js'], ctx, {}, mockResolver);
 
     expect(writeFile).toHaveBeenCalledWith(
       expect.stringContaining('wrapper.mjs'),
@@ -299,7 +299,7 @@ describe('scriptRun', () => {
     const ctx = makeCtx();
     const mockResolver = vi.fn().mockResolvedValue('file:///sdk/dist/index.js');
 
-    await scriptRun(['/tmp/test-script.js'], ctx, mockResolver);
+    await scriptRun(['/tmp/test-script.js'], ctx, {}, mockResolver);
 
     expect(rm).toHaveBeenCalledWith(
       expect.stringContaining('productive-script'),
@@ -307,7 +307,7 @@ describe('scriptRun', () => {
     );
   });
 
-  it('strips --dry-run from script args and sets PRODUCTIVE_DRY_RUN=1', async () => {
+  it('sets PRODUCTIVE_DRY_RUN=1 and still forwards script args when dryRun is passed', async () => {
     const { spawn } = await import('node:child_process');
     const { scriptRun } = await import('./handlers.js');
 
@@ -322,23 +322,24 @@ describe('scriptRun', () => {
     const mockResolver = vi.fn().mockResolvedValue('file:///sdk/dist/index.js');
 
     await scriptRun(
-      ['--dry-run', '/tmp/test-script.js', '--from', '2025-01-01'],
+      ['/tmp/test-script.js', '--from', '2025-01-01'],
       ctx,
+      { dryRun: true },
       mockResolver,
     );
 
     const spawnArgs = vi.mocked(spawn).mock.calls[0];
-    // --dry-run must NOT be passed to the subprocess as a script arg
-    expect(spawnArgs[1]).not.toContain('--dry-run');
     // PRODUCTIVE_DRY_RUN must be set in env
     const spawnOptions = spawnArgs[2] as { env: Record<string, string> };
     expect(spawnOptions.env.PRODUCTIVE_DRY_RUN).toBe('1');
-    // Script path must still be the wrapper, not the --dry-run value
+    // The forwarded script args reach the subprocess after the wrapper path
     const nodeArgs = spawnArgs[1] as string[];
+    expect(nodeArgs).toContain('--from');
+    expect(nodeArgs).toContain('2025-01-01');
     expect(nodeArgs.some((a) => a.endsWith('wrapper.mjs'))).toBe(true);
   });
 
-  it('does not set PRODUCTIVE_DRY_RUN when --dry-run is absent', async () => {
+  it('does not set PRODUCTIVE_DRY_RUN when dryRun is not passed', async () => {
     const { spawn } = await import('node:child_process');
     const { scriptRun } = await import('./handlers.js');
 
@@ -352,7 +353,7 @@ describe('scriptRun', () => {
     const ctx = makeCtx();
     const mockResolver = vi.fn().mockResolvedValue('file:///sdk/dist/index.js');
 
-    await scriptRun(['/tmp/test-script.js'], ctx, mockResolver);
+    await scriptRun(['/tmp/test-script.js'], ctx, {}, mockResolver);
 
     const spawnOptions = vi.mocked(spawn).mock.calls[0][2] as { env: Record<string, string> };
     expect(spawnOptions.env.PRODUCTIVE_DRY_RUN).toBeUndefined();

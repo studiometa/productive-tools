@@ -51,24 +51,32 @@ describe('CLI: run argument forwarding', () => {
     await mockServer.close();
   });
 
-  it('forwards named flags after the script path (the reported bug)', async () => {
-    const result = await cli.run('run', scriptPath, '--from', '2025-01-01', '--to', '2025-01-31');
+  it('forwards named flags placed after the -- separator (the reported bug)', async () => {
+    const result = await cli.run(
+      'run',
+      scriptPath,
+      '--',
+      '--from',
+      '2025-01-01',
+      '--to',
+      '2025-01-31',
+    );
 
     expect(result.exitCode).toBe(0);
     const { flags } = parseForwarded(result.stdout);
     expect(flags).toEqual({ from: '2025-01-01', to: '2025-01-31' });
   });
 
-  it('forwards a boolean named flag', async () => {
-    const result = await cli.run('run', scriptPath, '--mine');
+  it('forwards a boolean named flag after --', async () => {
+    const result = await cli.run('run', scriptPath, '--', '--mine');
 
     expect(result.exitCode).toBe(0);
     const { flags } = parseForwarded(result.stdout);
     expect(flags.mine).toBe(true);
   });
 
-  it('forwards positional args after a slash-containing script path (no module-not-found crash)', async () => {
-    const result = await cli.run('run', scriptPath, '2025-01-01', '2025-01-31');
+  it('forwards positional args after -- with no module-not-found crash', async () => {
+    const result = await cli.run('run', scriptPath, '--', '2025-01-01', '2025-01-31');
 
     expect(result.exitCode).toBe(0);
     expect(result.stderr).not.toContain('ERR_MODULE_NOT_FOUND');
@@ -76,8 +84,16 @@ describe('CLI: run argument forwarding', () => {
     expect(args).toEqual(['2025-01-01', '2025-01-31']);
   });
 
-  it('treats a leading --dry-run as a CLI flag and still forwards script flags', async () => {
-    const result = await cli.run('run', '--dry-run', scriptPath, '--from', 'x');
+  it('forwards --version after -- to the script instead of printing the CLI version', async () => {
+    const result = await cli.run('run', scriptPath, '--', '--version');
+
+    expect(result.exitCode).toBe(0);
+    const { flags } = parseForwarded(result.stdout);
+    expect(flags.version).toBe(true);
+  });
+
+  it('treats a leading --dry-run as a run-option and still forwards script flags after --', async () => {
+    const result = await cli.run('run', '--dry-run', scriptPath, '--', '--from', 'x');
 
     expect(result.exitCode).toBe(0);
     const { flags } = parseForwarded(result.stdout);
@@ -85,7 +101,7 @@ describe('CLI: run argument forwarding', () => {
   });
 
   it('supports the `script` alias', async () => {
-    const result = await cli.run('script', scriptPath, '--from', 'y');
+    const result = await cli.run('script', scriptPath, '--', '--from', 'y');
 
     expect(result.exitCode).toBe(0);
     const { flags } = parseForwarded(result.stdout);

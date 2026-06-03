@@ -12,20 +12,22 @@ ${colors.bold('ALIASES:')}
   productive script
 
 ${colors.bold('USAGE:')}
-  productive run [run-options] <script> [script args...]
+  productive run [run-options] <script> -- [script args...]
 
 ${colors.bold('ARGUMENTS:')}
   <script>            Path to a .ts, .js, or .mjs script file
-  [script args...]    Arguments forwarded to the script verbatim, parsed into
-                      \`args\` (positionals) and \`flags\` (named)
+  [script args...]    Arguments after \`--\`, forwarded to the script verbatim and
+                      parsed inside it into \`args\` (positionals) and \`flags\` (named)
 
 ${colors.bold('DESCRIPTION:')}
   Executes a script with credentials already loaded from the CLI config
   (keychain, config file, environment variables, or CLI flags).
 
-  Flags placed ${colors.bold('before')} the script path configure \`run\` itself (credentials,
-  --dry-run, --list). Everything ${colors.bold('after')} the script path is forwarded to the
-  script untouched, so the script can define its own --flags freely.
+  Use a \`--\` separator to split run-options from script args. Everything
+  ${colors.bold('before')} \`--\` configures \`run\` itself (the script path, credentials,
+  --dry-run, --list). Everything ${colors.bold('after')} \`--\` is forwarded to the script
+  untouched, so a script can define its own --flags without colliding with the
+  CLI's. Without a \`--\`, all flags are treated as run-options.
 
   Use \`--list\` to discover scripts in a directory (defaults to \`./scripts\`)
   without running any of them. Scripts can export a \`meta\` object to provide
@@ -69,8 +71,8 @@ ${colors.bold('DESCRIPTION:')}
 ${colors.bold('AVAILABLE GLOBALS:')}
   productive          Pre-configured Productive SDK client
   output              Output utilities (see below)
-  args                Positional arguments after the script path (strings only)
-  flags               Named flags parsed from the script arguments
+  args                Positional arguments after \`--\` (strings only)
+  flags               Named flags parsed from the arguments after \`--\`
 
 ${colors.bold('OUTPUT UTILITIES:')}
   output.table(data)        Render an array of objects as an ASCII table
@@ -109,11 +111,11 @@ ${colors.bold('EXAMPLES:')}
   # Run a TypeScript script
   productive run ./scripts/weekly-report.ts
 
-  # Pass named flags (available as \`flags.from\`, \`flags.to\`, \`flags.mine\`)
-  productive run ./scripts/export-time.ts --from 2025-01-01 --to 2025-01-31 --mine
+  # Pass named flags after -- (available as \`flags.from\`, \`flags.to\`, \`flags.mine\`)
+  productive run ./scripts/export-time.ts -- --from 2025-01-01 --to 2025-01-31 --mine
 
-  # Override credentials for this run (run-options go BEFORE the script path)
-  productive run --token $TOKEN --org-id $ORG_ID ./scripts/audit.ts
+  # Override credentials for this run (run-options go before --)
+  productive run ./scripts/audit.ts --token $TOKEN --org-id $ORG_ID -- --verbose
 
   # Test a script without making any mutating API calls
   productive run --dry-run ./scripts/bulk-update.ts

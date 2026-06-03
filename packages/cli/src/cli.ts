@@ -422,17 +422,16 @@ async function main(): Promise<void> {
 
       case 'run':
       case 'script': {
-        // `run` forwards everything after the script path verbatim, so recover
-        // the script invocation from raw argv rather than the globally-parsed
-        // positional/options (which strip the script's own flags). Only flags
-        // BEFORE the script path configure `run` itself.
-        const { cliArgs, scriptArgs } = extractRunArgs(process.argv.slice(2));
+        // `run` forwards everything after the `--` separator to the script
+        // verbatim; flags before it configure `run` itself. Recover the split
+        // from raw argv and parse only the run-options portion.
+        const { cliArgs, scriptPath, scriptArgs } = extractRunArgs(process.argv.slice(2));
         const runOptions = parseArgs(cliArgs).options;
         if (runOptions.help || runOptions.h) {
           showRunHelp();
           process.exit(0);
         }
-        await handleRunCommand(scriptArgs, runOptions);
+        await handleRunCommand(scriptPath, scriptArgs, runOptions);
         break;
       }
 

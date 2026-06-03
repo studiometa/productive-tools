@@ -42,69 +42,92 @@ vi.mock('../../utils/cache.js', () => {
 
 // ── extractRunArgs ──────────────────────────────────────────────────────────
 //
-// The global CLI arg parser strips every `--flag` and misclassifies tokens that
-// follow a slash-path, so the `run` command MUST recover the script invocation
-// straight from raw argv. extractRunArgs splits the raw argv into the CLI-level
-// flags (before the script path) and the script args (the script path plus
-// everything after it, forwarded verbatim).
+// The `--` separator divides run-options (left) from script args (right). The
+// script path is the first JS/TS file token before `--`. Everything after `--`
+// is forwarded to the script verbatim — the global parser never sees it.
 
 describe('extractRunArgs', () => {
-  it('forwards named flags after the script path verbatim (the core bug)', async () => {
+  it('forwards named flags placed after the -- separator', async () => {
     const { extractRunArgs } = await import('./command.js');
 
     expect(
-      extractRunArgs(['run', './report.mjs', '--from', '2025-01-01', '--to', '2025-01-31']),
+      extractRunArgs(['run', './report.mjs', '--', '--from', '2025-01-01', '--to', '2025-01-31']),
     ).toEqual({
-      cliArgs: [],
-      scriptArgs: ['./report.mjs', '--from', '2025-01-01', '--to', '2025-01-31'],
+      cliArgs: ['./report.mjs'],
+      scriptPath: './report.mjs',
+      scriptArgs: ['--from', '2025-01-01', '--to', '2025-01-31'],
     });
   });
 
-  it('forwards positional args after a slash-path without misclassifying them', async () => {
+  it('forwards positional args placed after the -- separator', async () => {
     const { extractRunArgs } = await import('./command.js');
 
-    // Previously the global parser routed `2025-01-01` into `command`, so the
-    // script path became `2025-01-01` → ERR_MODULE_NOT_FOUND.
-    expect(extractRunArgs(['run', './report.mjs', '2025-01-01', '2025-01-31'])).toEqual({
-      cliArgs: [],
-      scriptArgs: ['./report.mjs', '2025-01-01', '2025-01-31'],
+    expect(extractRunArgs(['run', './report.mjs', '--', '2025-01-01', '2025-01-31'])).toEqual({
+      cliArgs: ['./report.mjs'],
+      scriptPath: './report.mjs',
+      scriptArgs: ['2025-01-01', '2025-01-31'],
     });
+  });
+
+  it('keeps run-options that follow the script path on the left of --', async () => {
+    const { extractRunArgs } = await import('./command.js');
+
+    expect(
+      extractRunArgs(['run', './report.mjs', '--token', 'abc', '--org-id', '42', '--', '--mine']),
+    ).toEqual({
+      cliArgs: ['./report.mjs', '--token', 'abc', '--org-id', '42'],
+      scriptPath: './report.mjs',
+      scriptArgs: ['--mine'],
+    });
+  });
+
+  it('detects the script path even when run-options precede it', async () => {
+    const { extractRunArgs } = await import('./command.js');
+
+    expect(extractRunArgs(['run', '--dry-run', './report.mjs', '--', '--from', 'x'])).toEqual({
+      cliArgs: ['--dry-run', './report.mjs'],
+      scriptPath: './report.mjs',
+      scriptArgs: ['--from', 'x'],
+    });
+  });
+
+  it('treats flags as run-options (not forwarded) when there is no -- separator', async () => {
+    const { extractRunArgs } = await import('./command.js');
+
+    expect(extractRunArgs(['run', './report.mjs', '--from', 'x'])).toEqual({
+      cliArgs: ['./report.mjs', '--from', 'x'],
+      scriptPath: './report.mjs',
+      scriptArgs: [],
+    });
+  });
+
+  it('only splits on the first --, preserving any further -- in script args', async () => {
+    const { extractRunArgs } = await import('./command.js');
+
+    expect(extractRunArgs(['run', './report.mjs', '--', '--from', '--', 'x']).scriptArgs).toEqual([
+      '--from',
+      '--',
+      'x',
+    ]);
   });
 
   it('detects a slash-less script path', async () => {
     const { extractRunArgs } = await import('./command.js');
 
-    expect(extractRunArgs(['run', 'report.mjs', '--mine'])).toEqual({
-      cliArgs: [],
-      scriptArgs: ['report.mjs', '--mine'],
+    expect(extractRunArgs(['run', 'report.mjs', '--', '--mine'])).toEqual({
+      cliArgs: ['report.mjs'],
+      scriptPath: 'report.mjs',
+      scriptArgs: ['--mine'],
     });
   });
 
   it('detects an absolute script path', async () => {
     const { extractRunArgs } = await import('./command.js');
 
-    expect(extractRunArgs(['run', '/abs/path/report.ts', '--from', 'x'])).toEqual({
-      cliArgs: [],
-      scriptArgs: ['/abs/path/report.ts', '--from', 'x'],
-    });
-  });
-
-  it('keeps a boolean CLI flag before the script in cliArgs', async () => {
-    const { extractRunArgs } = await import('./command.js');
-
-    expect(extractRunArgs(['run', '--dry-run', './report.mjs', '--from', 'x'])).toEqual({
-      cliArgs: ['--dry-run'],
-      scriptArgs: ['./report.mjs', '--from', 'x'],
-    });
-  });
-
-  it('keeps value-taking CLI flags before the script in cliArgs', async () => {
-    const { extractRunArgs } = await import('./command.js');
-
-    // The flag value `abc` must NOT be mistaken for the script path.
-    expect(extractRunArgs(['run', '--token', 'abc', './report.mjs', '--from', 'x'])).toEqual({
-      cliArgs: ['--token', 'abc'],
-      scriptArgs: ['./report.mjs', '--from', 'x'],
+    expect(extractRunArgs(['run', '/abs/path/report.ts', '--', '--from', 'x'])).toEqual({
+      cliArgs: ['/abs/path/report.ts'],
+      scriptPath: '/abs/path/report.ts',
+      scriptArgs: ['--from', 'x'],
     });
   });
 
@@ -112,35 +135,28 @@ describe('extractRunArgs', () => {
     const { extractRunArgs } = await import('./command.js');
 
     expect(extractRunArgs(['script', './report.ts'])).toEqual({
-      cliArgs: [],
-      scriptArgs: ['./report.ts'],
-    });
-  });
-
-  it('treats a flag after the script path as a forwarded script arg, not a CLI flag', async () => {
-    const { extractRunArgs } = await import('./command.js');
-
-    // `--list` after the script path belongs to the script, not to `run`.
-    expect(extractRunArgs(['run', './report.mjs', '--list'])).toEqual({
-      cliArgs: [],
-      scriptArgs: ['./report.mjs', '--list'],
-    });
-  });
-
-  it('returns no script args for `--list` with no directory', async () => {
-    const { extractRunArgs } = await import('./command.js');
-
-    expect(extractRunArgs(['run', '--list'])).toEqual({
-      cliArgs: ['--list'],
+      cliArgs: ['./report.ts'],
+      scriptPath: './report.ts',
       scriptArgs: [],
     });
   });
 
-  it('keeps `--list <dir>` entirely in cliArgs when dir is not a script file', async () => {
+  it('returns no script path or args for `--list` with no directory', async () => {
+    const { extractRunArgs } = await import('./command.js');
+
+    expect(extractRunArgs(['run', '--list'])).toEqual({
+      cliArgs: ['--list'],
+      scriptPath: undefined,
+      scriptArgs: [],
+    });
+  });
+
+  it('keeps `--list <dir>` in cliArgs when dir is not a script file', async () => {
     const { extractRunArgs } = await import('./command.js');
 
     expect(extractRunArgs(['run', '--list', './automation'])).toEqual({
       cliArgs: ['--list', './automation'],
+      scriptPath: undefined,
       scriptArgs: [],
     });
   });
@@ -148,7 +164,21 @@ describe('extractRunArgs', () => {
   it('returns empty args when only the command is present', async () => {
     const { extractRunArgs } = await import('./command.js');
 
-    expect(extractRunArgs(['run'])).toEqual({ cliArgs: [], scriptArgs: [] });
+    expect(extractRunArgs(['run'])).toEqual({
+      cliArgs: [],
+      scriptPath: undefined,
+      scriptArgs: [],
+    });
+  });
+
+  it('returns empty script args for a trailing -- with nothing after it', async () => {
+    const { extractRunArgs } = await import('./command.js');
+
+    expect(extractRunArgs(['run', './report.mjs', '--'])).toEqual({
+      cliArgs: ['./report.mjs'],
+      scriptPath: './report.mjs',
+      scriptArgs: [],
+    });
   });
 
   it.each([
@@ -164,16 +194,15 @@ describe('extractRunArgs', () => {
   ])('recognizes %s as a runnable script file', async (file) => {
     const { extractRunArgs } = await import('./command.js');
 
-    expect(extractRunArgs(['run', file, '--flag']).scriptArgs).toEqual([file, '--flag']);
+    expect(extractRunArgs(['run', file]).scriptPath).toBe(file);
   });
 
-  it('does not treat a .json flag value as the script path', async () => {
+  it('does not treat a .json run-option value as the script path', async () => {
     const { extractRunArgs } = await import('./command.js');
 
-    expect(extractRunArgs(['run', '--config', 'app.json', './real.mjs'])).toEqual({
-      cliArgs: ['--config', 'app.json'],
-      scriptArgs: ['./real.mjs'],
-    });
+    expect(extractRunArgs(['run', '--config', 'app.json', './real.mjs']).scriptPath).toBe(
+      './real.mjs',
+    );
   });
 });
 
@@ -192,55 +221,56 @@ describe('handleRunCommand', () => {
     vi.resetModules();
   });
 
-  it('calls scriptRun with the script path', async () => {
+  it('calls scriptRun with the script path and no dry-run by default', async () => {
     const { handleRunCommand } = await import('./command.js');
     const { scriptRun } = await import('./handlers.js');
 
-    await handleRunCommand(['./my-script.ts'], {});
+    await handleRunCommand('./my-script.ts', [], {});
 
-    expect(scriptRun).toHaveBeenCalledWith(['./my-script.ts'], expect.anything());
+    expect(scriptRun).toHaveBeenCalledWith(['./my-script.ts'], expect.anything(), {
+      dryRun: false,
+    });
   });
 
   it('forwards script args verbatim to scriptRun', async () => {
     const { handleRunCommand } = await import('./command.js');
     const { scriptRun } = await import('./handlers.js');
 
-    await handleRunCommand(['./my-script.ts', '--from', '2025-01-01', '--mine'], {});
+    await handleRunCommand('./my-script.ts', ['--from', '2025-01-01', '--mine'], {});
 
     expect(scriptRun).toHaveBeenCalledWith(
       ['./my-script.ts', '--from', '2025-01-01', '--mine'],
       expect.anything(),
+      { dryRun: false },
     );
   });
 
-  it('re-injects --dry-run ahead of the script args when the CLI flag is set', async () => {
+  it('passes dryRun: true when the --dry-run run-option is set', async () => {
     const { handleRunCommand } = await import('./command.js');
     const { scriptRun } = await import('./handlers.js');
 
-    await handleRunCommand(['./my-script.ts', '--from', 'x'], { 'dry-run': true });
+    await handleRunCommand('./my-script.ts', ['--from', 'x'], { 'dry-run': true });
 
-    expect(scriptRun).toHaveBeenCalledWith(
-      ['--dry-run', './my-script.ts', '--from', 'x'],
-      expect.anything(),
-    );
+    expect(scriptRun).toHaveBeenCalledWith(['./my-script.ts', '--from', 'x'], expect.anything(), {
+      dryRun: true,
+    });
   });
 
-  it('does not re-inject --dry-run when the flag is absent', async () => {
+  it('calls scriptRun with empty args when no script path was found', async () => {
     const { handleRunCommand } = await import('./command.js');
     const { scriptRun } = await import('./handlers.js');
 
-    await handleRunCommand(['./my-script.ts'], {});
+    await handleRunCommand(undefined, [], {});
 
-    const call = vi.mocked(scriptRun).mock.calls[0][0];
-    expect(call).not.toContain('--dry-run');
+    expect(scriptRun).toHaveBeenCalledWith([], expect.anything(), { dryRun: false });
   });
 
-  it('calls scriptList (no dir) when options.list is true', async () => {
+  it('calls scriptList (no dir) when options.list is true, without running', async () => {
     const { handleRunCommand } = await import('./command.js');
     const { scriptList } = await import('./list.js');
     const { scriptRun } = await import('./handlers.js');
 
-    await handleRunCommand([], { list: true });
+    await handleRunCommand(undefined, [], { list: true });
 
     expect(scriptList).toHaveBeenCalledWith(undefined);
     expect(scriptRun).not.toHaveBeenCalled();
@@ -250,7 +280,7 @@ describe('handleRunCommand', () => {
     const { handleRunCommand } = await import('./command.js');
     const { scriptList } = await import('./list.js');
 
-    await handleRunCommand([], { list: './automation' });
+    await handleRunCommand(undefined, [], { list: './automation' });
 
     expect(scriptList).toHaveBeenCalledWith('./automation');
   });
@@ -259,9 +289,9 @@ describe('handleRunCommand', () => {
 // ── End-to-end argv path (the coverage gap called out in the issue) ─────────
 //
 // Feeds a real argv through extractRunArgs → parseArgs → handleRunCommand and
-// asserts that a named flag after the script path reaches scriptRun. The old
-// suite only called scriptRun directly with the flags already present, so it
-// never exercised the global parser stripping them.
+// asserts that a named flag after `--` reaches scriptRun. The old suite only
+// called scriptRun directly with the flags already present, so it never
+// exercised the global parser.
 
 describe('run command: argv → handleRunCommand forwarding', () => {
   beforeEach(() => {
@@ -276,34 +306,40 @@ describe('run command: argv → handleRunCommand forwarding', () => {
     vi.resetModules();
   });
 
-  it('forwards `--from x` from a raw argv all the way to scriptRun', async () => {
+  it('forwards `--from x` after -- from a raw argv all the way to scriptRun', async () => {
     const { extractRunArgs, handleRunCommand } = await import('./command.js');
     const { scriptRun } = await import('./handlers.js');
 
-    const { cliArgs, scriptArgs } = extractRunArgs(['run', 'report.mjs', '--from', 'x']);
-    const options = parseArgs(cliArgs).options;
-    await handleRunCommand(scriptArgs, options);
-
-    expect(scriptRun).toHaveBeenCalledWith(['report.mjs', '--from', 'x'], expect.anything());
-  });
-
-  it('routes a leading --dry-run to dry-run mode while still forwarding flags', async () => {
-    const { extractRunArgs, handleRunCommand } = await import('./command.js');
-    const { scriptRun } = await import('./handlers.js');
-
-    const { cliArgs, scriptArgs } = extractRunArgs([
+    const { scriptPath, scriptArgs, cliArgs } = extractRunArgs([
       'run',
-      '--dry-run',
-      './report.mjs',
+      'report.mjs',
+      '--',
       '--from',
       'x',
     ]);
-    const options = parseArgs(cliArgs).options;
-    await handleRunCommand(scriptArgs, options);
+    await handleRunCommand(scriptPath, scriptArgs, parseArgs(cliArgs).options);
 
-    expect(scriptRun).toHaveBeenCalledWith(
-      ['--dry-run', './report.mjs', '--from', 'x'],
-      expect.anything(),
-    );
+    expect(scriptRun).toHaveBeenCalledWith(['report.mjs', '--from', 'x'], expect.anything(), {
+      dryRun: false,
+    });
+  });
+
+  it('routes a leading --dry-run to dry-run mode while still forwarding script flags', async () => {
+    const { extractRunArgs, handleRunCommand } = await import('./command.js');
+    const { scriptRun } = await import('./handlers.js');
+
+    const { scriptPath, scriptArgs, cliArgs } = extractRunArgs([
+      'run',
+      '--dry-run',
+      './report.mjs',
+      '--',
+      '--from',
+      'x',
+    ]);
+    await handleRunCommand(scriptPath, scriptArgs, parseArgs(cliArgs).options);
+
+    expect(scriptRun).toHaveBeenCalledWith(['./report.mjs', '--from', 'x'], expect.anything(), {
+      dryRun: true,
+    });
   });
 });
