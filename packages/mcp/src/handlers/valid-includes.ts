@@ -1,8 +1,11 @@
 /**
  * Valid include values per resource.
  *
- * Sourced from help.ts and schema.ts include lists.
- * Resources not listed here have no include validation (pass-through).
+ * Sourced from help.ts/schema.ts include lists and each resource's documented
+ * Productive relationships. Resources not listed here have no include
+ * validation (pass-through). Lists are intentionally generous: an unknown
+ * include is hard-rejected before the request is sent, so omitting a genuinely
+ * valid relationship would block it — when in doubt, include the relationship.
  */
 
 export const VALID_INCLUDES: Record<string, string[]> = {
@@ -21,6 +24,13 @@ export const VALID_INCLUDES: Record<string, string[]> = {
   deals: ['company', 'deal_status', 'responsible', 'project'],
   bookings: ['person', 'service', 'event'],
   time: ['person', 'service', 'task'],
+  projects: ['company', 'memberships', 'project_manager', 'last_actor', 'workflow'],
+  people: ['company', 'subsidiary', 'manager', 'teams', 'holiday_schedule'],
+  companies: ['contacts', 'owner', 'subsidiaries', 'parent_company'],
+  services: ['deal', 'service_type', 'person', 'section'],
+  pages: ['project', 'creator', 'parent_page', 'root_page'],
+  discussions: ['page', 'creator'],
+  attachments: ['attachable', 'creator', 'task'],
 };
 
 export interface ValidateIncludesResult {

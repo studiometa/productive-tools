@@ -4146,7 +4146,7 @@ describe('smart ID resolution', () => {
       expect(result.isError).toBeUndefined();
     });
 
-    it('should skip validation for resources with no include map (projects)', async () => {
+    it('should pass through valid includes for projects (now validated)', async () => {
       mockApi.getProjects.mockResolvedValue({
         data: [{ id: '1', type: 'projects', attributes: { name: 'Project 1' } }],
         meta: { current_page: 1, total_pages: 1 },
@@ -4154,11 +4154,37 @@ describe('smart ID resolution', () => {
 
       const result = await executeToolWithCredentials(
         'productive',
+        { resource: 'projects', action: 'list', include: ['company'] },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+    });
+
+    it('should return error for an invalid include on projects', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
         { resource: 'projects', action: 'list', include: ['anything'] },
         credentials,
       );
 
-      // Projects has no include map — should not error
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Invalid include value');
+    });
+
+    it('should skip validation for resources with no include map (timers)', async () => {
+      mockApi.getTimers.mockResolvedValue({
+        data: [{ id: '1', type: 'timers', attributes: {} }],
+        meta: { current_page: 1, total_pages: 1 },
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'timers', action: 'list', include: ['anything'] },
+        credentials,
+      );
+
+      // Timers has no include map — should not error
       expect(result.isError).toBeUndefined();
     });
 
