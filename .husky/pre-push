@@ -1,8 +1,21 @@
 #!/bin/sh
 
-# --- Reject tags with v prefix ---
-# Read pushed refs from stdin (format: <local ref> <local sha> <remote ref> <remote sha>)
+# All-zero object id for this repo's hash algorithm (SHA-1 or SHA-256). git sends
+# this as the local sha when a ref is being deleted.
+zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
+
+# Read pushed refs from stdin (format: <local ref> <local sha> <remote ref> <remote sha>).
+#   - reject tags with a v prefix
+#   - track whether every pushed ref is a deletion (local sha all zeros)
+saw_ref=0
+only_deletes=1
 while read -r local_ref local_sha remote_ref remote_sha; do
+  saw_ref=1
+
+  if [ "$local_sha" != "$zero" ]; then
+    only_deletes=0
+  fi
+
   if echo "$local_ref" | grep -qE "^refs/tags/v"; then
     tag_name=$(echo "$local_ref" | sed 's|refs/tags/||')
     echo "❌ Tag rejected: \"$tag_name\" uses a v prefix."
@@ -16,6 +29,13 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     exit 1
   fi
 done
+
+# A delete-only push (e.g. removing a merged branch) introduces no new content,
+# so there is nothing to build or test — skip the heavy checks.
+if [ "$saw_ref" -eq 1 ] && [ "$only_deletes" -eq 1 ]; then
+  echo "↪︎  Push only deletes refs — skipping build and tests."
+  exit 0
+fi
 
 # --- Build and test ---
 echo "🔨 Building (includes type checking)..."
