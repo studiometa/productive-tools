@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **API**: Route every list/get method through a shared `buildListQuery(ListParams)` helper (both now exported) so the common query params forward by construction and no method can silently drop one ([ebe09eb], [#175])
+- **Core**: Add a `buildListParams()` helper spread into every list executor, and promote `DEFAULT_PAGE_SIZE` to `@studiometa/productive-api` as the single cross-package default ([513ea65], [#175])
+- **SDK**: Alias every collection's `*ListOptions` to the shared `BaseListOptions` so the fluent builder and the option types can no longer drift apart ([eddfaa5], [#175])
+
 ### Fixed
 
 - **API**: Forward the `include` query param in `getProjects`/`getProject` and the previously-affected `getPeople`/`getPerson`, `getServices`, `getCompanies`/`getCompany`, `getAttachments`/`getAttachment`, `getPages`/`getPage`, `getDiscussions`/`getDiscussion` and `getCustomFieldOptions` methods ([7a88366], [#175])
@@ -28,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [09844e9]: https://github.com/studiometa/productive-tools/commit/09844e9
 [d50575a]: https://github.com/studiometa/productive-tools/commit/d50575a
 [93204e2]: https://github.com/studiometa/productive-tools/commit/93204e2
+[ebe09eb]: https://github.com/studiometa/productive-tools/commit/ebe09eb
+[513ea65]: https://github.com/studiometa/productive-tools/commit/513ea65
+[eddfaa5]: https://github.com/studiometa/productive-tools/commit/eddfaa5
 [#175]: https://github.com/studiometa/productive-tools/pull/175
 
 ## [0.10.12] - 2026.05.27
