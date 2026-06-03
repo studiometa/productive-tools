@@ -147,5 +147,18 @@ describe('ServicesCollection', () => {
       const result = await col.where({ project_id: '5' }).list();
       expect(result.data).toHaveLength(1);
     });
+
+    it('forwards orderBy as the sort param (Finding 4)', async () => {
+      const mockFetch = createMockFetch(() => ({ data: [], meta: {} }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new ServicesCollection(createApi());
+      await col.where({}).orderBy('-created_at').list();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('sort=-created_at'),
+        expect.any(Object),
+      );
+    });
   });
 });

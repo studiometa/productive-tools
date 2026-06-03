@@ -574,6 +574,13 @@ describe('ProductiveApi requests', () => {
       expect(fetchSpy.mock.calls[0][0] as string).toContain('include=deal');
     });
 
+    it('getServices with sort', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getServices({ sort: 'name' });
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('sort=name');
+    });
+
     it('getService by id', async () => {
       const api = createApi();
       mockFetchResponse({ data: { id: '42' } });
@@ -650,6 +657,13 @@ describe('ProductiveApi requests', () => {
       await api.getComments({ include: ['creator'], filter: { task_id: '1' } });
       const url = fetchSpy.mock.calls[0][0] as string;
       expect(url).toContain('include=creator');
+    });
+
+    it('getComments with sort', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getComments({ sort: '-created_at' });
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('sort=-created_at');
     });
 
     it('getComment with include', async () => {
@@ -915,6 +929,13 @@ describe('ProductiveApi requests', () => {
       mockFetchResponse({ data: [] });
       await api.getAttachments({ include: ['task'] });
       expect(fetchSpy.mock.calls[0][0] as string).toContain('include=task');
+    });
+
+    it('getAttachments with sort', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getAttachments({ sort: '-created_at' });
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('sort=-created_at');
     });
 
     it('getAttachment by id', async () => {
@@ -1200,6 +1221,13 @@ describe('ProductiveApi requests', () => {
       expect(url).toContain('include=options');
     });
 
+    it('getCustomFields with sort', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getCustomFields({ sort: 'name' });
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('sort=name');
+    });
+
     it('getCustomField by ID', async () => {
       const api = createApi();
       mockFetchResponse({
@@ -1261,6 +1289,32 @@ describe('ProductiveApi requests', () => {
       mockFetchResponse({ data: [] });
       await api.getCustomFieldOptions({ include: ['custom_field'] });
       expect(fetchSpy.mock.calls[0][0] as string).toContain('include=custom_field');
+    });
+
+    it('getCustomFieldOptions with sort', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getCustomFieldOptions({ sort: 'name' });
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('sort=name');
+    });
+  });
+
+  describe('activities', () => {
+    it('getActivities with filters and include', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getActivities({ filter: { event: 'create' }, include: ['creator'] });
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('/activities');
+      expect(url).toContain('filter%5Bevent%5D=create');
+      expect(url).toContain('include=creator');
+    });
+
+    it('getActivities with sort', async () => {
+      const api = createApi();
+      mockFetchResponse({ data: [] });
+      await api.getActivities({ sort: '-created_at' });
+      expect(fetchSpy.mock.calls[0][0] as string).toContain('sort=-created_at');
     });
   });
 

@@ -523,12 +523,14 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    sort?: string;
     include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveService[]>> {
     const query: Record<string, string> = {};
 
     if (params?.page) query['page[number]'] = String(params.page);
     if (params?.perPage) query['page[size]'] = String(params.perPage);
+    if (params?.sort) query['sort'] = params.sort;
     if (params?.filter) {
       Object.entries(params.filter).forEach(([key, value]) => {
         query[`filter[${key}]`] = value;
@@ -650,12 +652,14 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    sort?: string;
     include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveComment[]>> {
     const query: Record<string, string> = {};
 
     if (params?.page) query['page[number]'] = String(params.page);
     if (params?.perPage) query['page[size]'] = String(params.perPage);
+    if (params?.sort) query['sort'] = params.sort;
     if (params?.filter) {
       Object.entries(params.filter).forEach(([key, value]) => {
         query[`filter[${key}]`] = value;
@@ -1041,12 +1045,14 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    sort?: string;
     include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveAttachment[]>> {
     const query: Record<string, string> = {};
 
     if (params?.page) query['page[number]'] = String(params.page);
     if (params?.perPage) query['page[size]'] = String(params.perPage);
+    if (params?.sort) query['sort'] = params.sort;
     if (params?.filter) {
       Object.entries(params.filter).forEach(([key, value]) => {
         query[`filter[${key}]`] = value;
@@ -1322,12 +1328,14 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    sort?: string;
     include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveActivity[]>> {
     const query: Record<string, string> = {};
 
     if (params?.page) query['page[number]'] = String(params.page);
     if (params?.perPage) query['page[size]'] = String(params.perPage);
+    if (params?.sort) query['sort'] = params.sort;
     if (params?.filter) {
       Object.entries(params.filter).forEach(([key, value]) => {
         query[`filter[${key}]`] = value;
@@ -1345,12 +1353,14 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    sort?: string;
     include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveCustomField[]>> {
     const query: Record<string, string> = {};
 
     if (params?.page) query['page[number]'] = String(params.page);
     if (params?.perPage) query['page[size]'] = String(params.perPage);
+    if (params?.sort) query['sort'] = params.sort;
     if (params?.filter) {
       Object.entries(params.filter).forEach(([key, value]) => {
         query[`filter[${key}]`] = value;
@@ -1382,12 +1392,14 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    sort?: string;
     include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveCustomFieldOption[]>> {
     const query: Record<string, string> = {};
 
     if (params?.page) query['page[number]'] = String(params.page);
     if (params?.perPage) query['page[size]'] = String(params.perPage);
+    if (params?.sort) query['sort'] = params.sort;
     if (params?.filter) {
       Object.entries(params.filter).forEach(([key, value]) => {
         query[`filter[${key}]`] = value;

@@ -11,6 +11,7 @@ export interface ActivityListOptions {
   page?: number;
   perPage?: number;
   filter?: Record<string, string>;
+  sort?: string;
   include?: string[];
 }
 
