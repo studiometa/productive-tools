@@ -322,6 +322,8 @@ productive reports budget --project <id>
 
 `productive run` executes a JavaScript or TypeScript script with a pre-configured Productive SDK client. Credentials are loaded from the usual sources (keychain, config file, env vars, CLI flags).
 
+Run-options (credentials, `--dry-run`, `--list`) go **before** the script path; everything **after** the script path is forwarded to the script verbatim and parsed into `args` (positionals) and `flags` (named).
+
 ```bash
 # Run a TypeScript script
 productive run ./scripts/weekly-report.ts
@@ -331,6 +333,9 @@ productive script ./scripts/export-time.ts
 
 # Pass arguments to the script (available as flags.from, flags.to, flags.mine)
 productive run ./scripts/audit.ts --from 2025-01-01 --to 2025-01-31 --mine
+
+# Override credentials for this run (run-options go before the script path)
+productive run --token $TOKEN --org-id $ORG_ID ./scripts/audit.ts
 
 # Dry-run: record mutating calls without executing them
 productive run --dry-run ./scripts/bulk-update.ts

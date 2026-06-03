@@ -12,15 +12,20 @@ ${colors.bold('ALIASES:')}
   productive script
 
 ${colors.bold('USAGE:')}
-  productive run <script> [args...]
+  productive run [run-options] <script> [script args...]
 
 ${colors.bold('ARGUMENTS:')}
   <script>            Path to a .ts, .js, or .mjs script file
-  [args...]           Arguments forwarded to the script as \`args\`
+  [script args...]    Arguments forwarded to the script verbatim, parsed into
+                      \`args\` (positionals) and \`flags\` (named)
 
 ${colors.bold('DESCRIPTION:')}
   Executes a script with credentials already loaded from the CLI config
   (keychain, config file, environment variables, or CLI flags).
+
+  Flags placed ${colors.bold('before')} the script path configure \`run\` itself (credentials,
+  --dry-run, --list). Everything ${colors.bold('after')} the script path is forwarded to the
+  script untouched, so the script can define its own --flags freely.
 
   Use \`--list\` to discover scripts in a directory (defaults to \`./scripts\`)
   without running any of them. Scripts can export a \`meta\` object to provide
@@ -107,8 +112,8 @@ ${colors.bold('EXAMPLES:')}
   # Pass named flags (available as \`flags.from\`, \`flags.to\`, \`flags.mine\`)
   productive run ./scripts/export-time.ts --from 2025-01-01 --to 2025-01-31 --mine
 
-  # Override credentials for this run
-  productive run ./scripts/audit.ts --token $TOKEN --org-id $ORG_ID
+  # Override credentials for this run (run-options go BEFORE the script path)
+  productive run --token $TOKEN --org-id $ORG_ID ./scripts/audit.ts
 
   # Test a script without making any mutating API calls
   productive run --dry-run ./scripts/bulk-update.ts

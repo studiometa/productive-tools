@@ -18,7 +18,7 @@ import { handlePeopleCommand, showPeopleHelp } from './commands/people/index.js'
 import { handleProjectsCommand, showProjectsHelp } from './commands/projects/index.js';
 import { handleReportsCommand, showReportsHelp } from './commands/reports/index.js';
 import { handleResolveCommand, showResolveHelp } from './commands/resolve/index.js';
-import { handleRunCommand, showRunHelp } from './commands/run/index.js';
+import { extractRunArgs, handleRunCommand, showRunHelp } from './commands/run/index.js';
 import { handleServicesCommand, showServicesHelp } from './commands/services/index.js';
 import { handleTasksCommand, showTasksHelp } from './commands/tasks/index.js';
 import { handleTimeCommand, showTimeHelp } from './commands/time/index.js';
@@ -421,13 +421,20 @@ async function main(): Promise<void> {
         break;
 
       case 'run':
-      case 'script':
-        if (wantsHelp) {
+      case 'script': {
+        // `run` forwards everything after the script path verbatim, so recover
+        // the script invocation from raw argv rather than the globally-parsed
+        // positional/options (which strip the script's own flags). Only flags
+        // BEFORE the script path configure `run` itself.
+        const { cliArgs, scriptArgs } = extractRunArgs(process.argv.slice(2));
+        const runOptions = parseArgs(cliArgs).options;
+        if (runOptions.help || runOptions.h) {
           showRunHelp();
           process.exit(0);
         }
-        await handleRunCommand(subcommand, positional, options);
+        await handleRunCommand(scriptArgs, runOptions);
         break;
+      }
 
       case 'api':
         if (wantsHelp) {
