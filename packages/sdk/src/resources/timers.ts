@@ -3,20 +3,17 @@ import type { ProductiveTimer, ProductiveApiMeta } from '@studiometa/productive-
 import type { Timer } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface TimerListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-  sort?: string;
-  include?: string[];
-}
+export type TimerListOptions = BaseListOptions;
 
-export interface TimerGetOptions {
-  include?: string[];
+export type TimerGetOptions = IncludeOptions;
+
+export interface TimerStartData {
+  service_id?: string;
+  time_entry_id?: string;
 }
 
 export interface TimerListResult {
@@ -47,6 +44,22 @@ export class TimersCollection extends BaseCollection {
   }
 
   /**
+   * Start a new timer, optionally bound to a service or time entry.
+   */
+  async start(data: TimerStartData = {}): Promise<TimerGetResult> {
+    const response = await this.wrapRequest(() => this.api.startTimer(data));
+    return resolveSingleResponse<ProductiveTimer, Timer>(response);
+  }
+
+  /**
+   * Stop a running timer by ID.
+   */
+  async stop(id: string): Promise<TimerGetResult> {
+    const response = await this.wrapRequest(() => this.api.stopTimer(id));
+    return resolveSingleResponse<ProductiveTimer, Timer>(response);
+  }
+
+  /**
    * Start a fluent query builder for timers, optionally with initial filters.
    */
   where(filters: Record<string, string> = {}): QueryBuilder<Timer, TimerListResult> {
@@ -57,7 +70,7 @@ export class TimersCollection extends BaseCollection {
    * Iterate over all timers across all pages.
    */
   all(options: Omit<TimerListOptions, 'page'> = {}): AsyncPaginatedIterator<Timer> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Timer>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

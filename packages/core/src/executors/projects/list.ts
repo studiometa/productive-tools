@@ -10,6 +10,8 @@ import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListProjectsOptions } from './types.js';
 
+import { buildListParams } from '../types.js';
+
 /**
  * Build the filter object from typed options.
  */
@@ -47,15 +49,14 @@ export async function listProjects(
   const { resolved: resolvedFilter, metadata } = await ctx.resolver.resolveFilters(filter);
 
   const response = await ctx.api.getProjects({
-    page: options.page ?? 1,
-    perPage: options.perPage ?? 100,
+    ...buildListParams(options),
     filter: resolvedFilter,
-    sort: options.sort,
   });
 
   return {
     data: response.data,
     meta: response.meta,
+    included: response.included,
     resolved: Object.keys(metadata).length > 0 ? metadata : undefined,
   };
 }

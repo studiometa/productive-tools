@@ -10,6 +10,8 @@ import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListPeopleOptions } from './types.js';
 
+import { buildListParams } from '../types.js';
+
 export function buildPeopleFilters(options: ListPeopleOptions): Record<string, string> {
   const filter: Record<string, string> = {};
 
@@ -41,15 +43,14 @@ export async function listPeople(
   const { resolved: resolvedFilter, metadata } = await ctx.resolver.resolveFilters(filter);
 
   const response = await ctx.api.getPeople({
-    page: options.page ?? 1,
-    perPage: options.perPage ?? 100,
+    ...buildListParams(options),
     filter: resolvedFilter,
-    sort: options.sort,
   });
 
   return {
     data: response.data,
     meta: response.meta,
+    included: response.included,
     resolved: Object.keys(metadata).length > 0 ? metadata : undefined,
   };
 }

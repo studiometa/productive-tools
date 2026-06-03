@@ -3,15 +3,13 @@ import type { ProductiveAttachment, ProductiveApiMeta } from '@studiometa/produc
 import type { Attachment } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface AttachmentListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-}
+export type AttachmentListOptions = BaseListOptions;
+
+export type AttachmentGetOptions = IncludeOptions;
 
 export interface AttachmentListResult {
   data: Attachment[];
@@ -25,7 +23,7 @@ export interface AttachmentGetResult {
 
 export class AttachmentsCollection extends BaseCollection {
   /**
-   * List attachments with optional filtering and pagination.
+   * List attachments with optional filtering, pagination, and includes.
    */
   async list(options: AttachmentListOptions = {}): Promise<AttachmentListResult> {
     const response = await this.wrapRequest(() => this.api.getAttachments(options));
@@ -33,10 +31,10 @@ export class AttachmentsCollection extends BaseCollection {
   }
 
   /**
-   * Get a single attachment by ID.
+   * Get a single attachment by ID, with optional includes.
    */
-  async get(id: string): Promise<AttachmentGetResult> {
-    const response = await this.wrapRequest(() => this.api.getAttachment(id));
+  async get(id: string, options: AttachmentGetOptions = {}): Promise<AttachmentGetResult> {
+    const response = await this.wrapRequest(() => this.api.getAttachment(id, options));
     return resolveSingleResponse<ProductiveAttachment, Attachment>(response);
   }
 
@@ -58,7 +56,7 @@ export class AttachmentsCollection extends BaseCollection {
    * Iterate over all attachments across all pages.
    */
   all(options: Omit<AttachmentListOptions, 'page'> = {}): AsyncPaginatedIterator<Attachment> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Attachment>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

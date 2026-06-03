@@ -19,4 +19,6 @@ export interface ListPeopleOptions extends PaginationOptions {
 export interface GetPersonOptions {
   /** Person ID or human-friendly identifier (email) */
   id: string;
+  /** Related resources to include (e.g., company) */
+  include?: string[];
 }

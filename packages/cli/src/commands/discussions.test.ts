@@ -271,7 +271,7 @@ describe('discussions command', () => {
 
       await discussionsGet(['1'], ctx);
 
-      expect(getDiscussion).toHaveBeenCalledWith('1');
+      expect(getDiscussion).toHaveBeenCalledWith('1', { include: undefined });
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
@@ -316,7 +316,7 @@ describe('discussions command', () => {
 
       await discussionsGet(['1'], ctx);
 
-      expect(getDiscussion).toHaveBeenCalledWith('1');
+      expect(getDiscussion).toHaveBeenCalledWith('1', { include: undefined });
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
@@ -814,6 +814,35 @@ describe('discussions command', () => {
       });
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('--include forwarding', () => {
+    it('forwards --include to the list request', async () => {
+      const getDiscussions = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+      const ctx = createTestContext({
+        api: { getDiscussions } as unknown as ProductiveApi,
+        options: { include: 'page' },
+      });
+
+      await discussionsList(ctx);
+
+      expect(getDiscussions).toHaveBeenCalledWith(expect.objectContaining({ include: ['page'] }));
+    });
+
+    it('forwards --include to the get request', async () => {
+      const getDiscussion = vi.fn().mockResolvedValue({
+        data: { id: '1', type: 'discussions', attributes: { title: 'D', status: 1 } },
+        included: [],
+      });
+      const ctx = createTestContext({
+        api: { getDiscussion } as unknown as ProductiveApi,
+        options: { include: 'page' },
+      });
+
+      await discussionsGet(['1'], ctx);
+
+      expect(getDiscussion).toHaveBeenCalledWith('1', { include: ['page'] });
     });
   });
 });

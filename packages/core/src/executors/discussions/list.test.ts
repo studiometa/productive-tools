@@ -84,4 +84,15 @@ describe('listDiscussions', () => {
     const result = await listDiscussions({ pageId: '123' }, ctx);
     expect(result.resolved).toBeUndefined();
   });
+
+  it('forwards include and returns included (Finding 3)', async () => {
+    const included = [{ id: '7', type: 'pages', attributes: { title: 'Page' } }];
+    const getDiscussions = vi.fn().mockResolvedValue({ data: [], meta: {}, included });
+    const ctx = createTestExecutorContext({ api: { getDiscussions } });
+
+    const result = await listDiscussions({ include: ['page'] }, ctx);
+
+    expect(getDiscussions).toHaveBeenCalledWith(expect.objectContaining({ include: ['page'] }));
+    expect(result.included).toEqual(included);
+  });
 });

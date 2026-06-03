@@ -16,6 +16,7 @@ ${colors.bold('OPTIONS:')}
   --page-id <id>      Filter by page ID
   --status <status>   Filter by status: active, resolved
   --filter <filters>  Generic filters (comma-separated key=value pairs)
+  --include <list>    Sideload related resources (comma-separated, e.g. page)
   -p, --page <num>    Page number (default: 1)
   -s, --size <num>    Page size (default: 100)
   --sort <field>      Sort by field (prefix with - for descending)

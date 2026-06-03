@@ -3,16 +3,13 @@ import type { ProductiveDiscussion, ProductiveApiMeta } from '@studiometa/produc
 import type { Discussion } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface DiscussionListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-  sort?: string;
-}
+export type DiscussionListOptions = BaseListOptions;
+
+export type DiscussionGetOptions = IncludeOptions;
 
 export interface DiscussionCreateData {
   body: string;
@@ -37,7 +34,7 @@ export interface DiscussionGetResult {
 
 export class DiscussionsCollection extends BaseCollection {
   /**
-   * List discussions with optional filtering and pagination.
+   * List discussions with optional filtering, pagination, and includes.
    */
   async list(options: DiscussionListOptions = {}): Promise<DiscussionListResult> {
     const response = await this.wrapRequest(() => this.api.getDiscussions(options));
@@ -45,10 +42,10 @@ export class DiscussionsCollection extends BaseCollection {
   }
 
   /**
-   * Get a single discussion by ID.
+   * Get a single discussion by ID, with optional includes.
    */
-  async get(id: string): Promise<DiscussionGetResult> {
-    const response = await this.wrapRequest(() => this.api.getDiscussion(id));
+  async get(id: string, options: DiscussionGetOptions = {}): Promise<DiscussionGetResult> {
+    const response = await this.wrapRequest(() => this.api.getDiscussion(id, options));
     return resolveSingleResponse<ProductiveDiscussion, Discussion>(response);
   }
 
@@ -76,6 +73,22 @@ export class DiscussionsCollection extends BaseCollection {
   }
 
   /**
+   * Mark a discussion as resolved.
+   */
+  async resolve(id: string): Promise<DiscussionGetResult> {
+    const response = await this.wrapRequest(() => this.api.resolveDiscussion(id));
+    return resolveSingleResponse<ProductiveDiscussion, Discussion>(response);
+  }
+
+  /**
+   * Reopen a previously resolved discussion.
+   */
+  async reopen(id: string): Promise<DiscussionGetResult> {
+    const response = await this.wrapRequest(() => this.api.reopenDiscussion(id));
+    return resolveSingleResponse<ProductiveDiscussion, Discussion>(response);
+  }
+
+  /**
    * Start a fluent query builder for discussions, optionally with initial filters.
    */
   where(filters: Record<string, string> = {}): QueryBuilder<Discussion, DiscussionListResult> {
@@ -86,7 +99,7 @@ export class DiscussionsCollection extends BaseCollection {
    * Iterate over all discussions across all pages.
    */
   all(options: Omit<DiscussionListOptions, 'page'> = {}): AsyncPaginatedIterator<Discussion> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Discussion>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

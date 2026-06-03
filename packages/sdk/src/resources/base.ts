@@ -1,9 +1,6 @@
 import type { ProductiveApi } from '@studiometa/productive-api';
 
-import type { PageFetcher } from '../pagination.js';
-
 import { wrapError } from '../errors.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
 
 /**
  * Abstract base class for resource collections.
@@ -14,13 +11,6 @@ export abstract class BaseCollection {
 
   constructor(api: ProductiveApi) {
     this.api = api;
-  }
-
-  /**
-   * Create an async paginated iterator for this resource.
-   */
-  protected createIterator<T>(fetcher: PageFetcher<T>, perPage = 200): AsyncPaginatedIterator<T> {
-    return new AsyncPaginatedIterator<T>(fetcher, perPage);
   }
 
   /**

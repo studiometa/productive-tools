@@ -3,16 +3,13 @@ import type { ProductiveCompany, ProductiveApiMeta } from '@studiometa/productiv
 import type { Company } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface CompanyListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-  sort?: string;
-}
+export type CompanyListOptions = BaseListOptions;
+
+export type CompanyGetOptions = IncludeOptions;
 
 export interface CompanyCreateData {
   name: string;
@@ -46,7 +43,7 @@ export interface CompanyGetResult {
 
 export class CompaniesCollection extends BaseCollection {
   /**
-   * List companies with optional filtering and pagination.
+   * List companies with optional filtering, pagination, and includes.
    */
   async list(options: CompanyListOptions = {}): Promise<CompanyListResult> {
     const response = await this.wrapRequest(() => this.api.getCompanies(options));
@@ -54,10 +51,10 @@ export class CompaniesCollection extends BaseCollection {
   }
 
   /**
-   * Get a single company by ID.
+   * Get a single company by ID, with optional includes.
    */
-  async get(id: string): Promise<CompanyGetResult> {
-    const response = await this.wrapRequest(() => this.api.getCompany(id));
+  async get(id: string, options: CompanyGetOptions = {}): Promise<CompanyGetResult> {
+    const response = await this.wrapRequest(() => this.api.getCompany(id, options));
     return resolveSingleResponse<ProductiveCompany, Company>(response);
   }
 
@@ -88,7 +85,7 @@ export class CompaniesCollection extends BaseCollection {
    * Iterate over all companies across all pages.
    */
   all(options: Omit<CompanyListOptions, 'page'> = {}): AsyncPaginatedIterator<Company> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Company>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

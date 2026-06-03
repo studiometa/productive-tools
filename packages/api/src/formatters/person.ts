@@ -4,6 +4,7 @@
 
 import type { JsonApiResource, FormatOptions, FormattedPerson } from './types.js';
 
+import { applyIncluded } from './included.js';
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 /**
@@ -44,6 +45,8 @@ export function formatPerson(
     result.created_at = attrs.created_at as string | undefined;
     result.updated_at = attrs.updated_at as string | undefined;
   }
+
+  applyIncluded(result, person, opts.included);
 
   return result;
 }

@@ -8,6 +8,6 @@ export async function getPage(
   options: GetPageOptions,
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductivePage>> {
-  const response = await ctx.api.getPage(options.id);
+  const response = await ctx.api.getPage(options.id, { include: options.include });
   return { data: response.data, included: response.included };
 }

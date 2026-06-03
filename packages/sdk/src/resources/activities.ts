@@ -3,16 +3,11 @@ import type { ProductiveActivity, ProductiveApiMeta } from '@studiometa/producti
 import type { Activity } from '../types.js';
 
 import { resolveListResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
+import { QueryBuilder, type BaseListOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface ActivityListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-  include?: string[];
-}
+export type ActivityListOptions = BaseListOptions;
 
 export interface ActivityListResult {
   data: Activity[];
@@ -39,7 +34,7 @@ export class ActivitiesCollection extends BaseCollection {
    * Iterate over all activities across all pages.
    */
   all(options: Omit<ActivityListOptions, 'page'> = {}): AsyncPaginatedIterator<Activity> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Activity>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

@@ -1,11 +1,19 @@
 import type { AsyncPaginatedIterator } from './pagination.js';
 
-export interface BaseListOptions {
+/**
+ * Options shared by every single-resource `get()`: which related resources to
+ * sideload via the JSON:API `include` param. Also the `include` half of
+ * {@link BaseListOptions}.
+ */
+export interface IncludeOptions {
+  include?: string[];
+}
+
+export interface BaseListOptions extends IncludeOptions {
   page?: number;
   perPage?: number;
   filter?: Record<string, string>;
   sort?: string;
-  include?: string[];
 }
 
 interface CollectionAdapter<T, R> {

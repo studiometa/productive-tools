@@ -11,6 +11,14 @@
  */
 
 /**
+ * Default page size for list/collection requests.
+ *
+ * Single source of truth shared by the core executors and the SDK `all()`
+ * iterators so the default batch size never diverges across layers.
+ */
+export const DEFAULT_PAGE_SIZE = 100;
+
+/**
  * A status/type map with bidirectional lookup capabilities.
  *
  * The base object contains SCREAMING_SNAKE_CASE keys mapping to API string values.

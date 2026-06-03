@@ -76,4 +76,14 @@ describe('listTimers', () => {
       perPage: 100,
     });
   });
+
+  it('returns included sideloaded resources (Finding 2)', async () => {
+    const included = [{ id: '9', type: 'people', attributes: { first_name: 'Jane' } }];
+    const getTimers = vi.fn().mockResolvedValue({ data: [], meta: {}, included });
+    const ctx = createTestExecutorContext({ api: { getTimers } });
+
+    const result = await listTimers({ include: ['person'] }, ctx);
+
+    expect(result.included).toEqual(included);
+  });
 });

@@ -3,16 +3,13 @@ import type { ProductivePage, ProductiveApiMeta } from '@studiometa/productive-a
 import type { Page } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface PageListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-  sort?: string;
-}
+export type PageListOptions = BaseListOptions;
+
+export type PageGetOptions = IncludeOptions;
 
 export interface PageCreateData {
   title: string;
@@ -38,7 +35,7 @@ export interface PageGetResult {
 
 export class PagesCollection extends BaseCollection {
   /**
-   * List pages with optional filtering and pagination.
+   * List pages with optional filtering, pagination, and includes.
    */
   async list(options: PageListOptions = {}): Promise<PageListResult> {
     const response = await this.wrapRequest(() => this.api.getPages(options));
@@ -46,10 +43,10 @@ export class PagesCollection extends BaseCollection {
   }
 
   /**
-   * Get a single page by ID.
+   * Get a single page by ID, with optional includes.
    */
-  async get(id: string): Promise<PageGetResult> {
-    const response = await this.wrapRequest(() => this.api.getPage(id));
+  async get(id: string, options: PageGetOptions = {}): Promise<PageGetResult> {
+    const response = await this.wrapRequest(() => this.api.getPage(id, options));
     return resolveSingleResponse<ProductivePage, Page>(response);
   }
 
@@ -87,7 +84,7 @@ export class PagesCollection extends BaseCollection {
    * Iterate over all pages across all pages.
    */
   all(options: Omit<PageListOptions, 'page'> = {}): AsyncPaginatedIterator<Page> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Page>(async (pageNum) => {
       return this.list({ ...options, page: pageNum, perPage });
     }, perPage);

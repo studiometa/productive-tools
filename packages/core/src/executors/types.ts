@@ -10,6 +10,8 @@
 
 import type { IncludedResource, JsonApiMeta } from '@studiometa/productive-api';
 
+import { DEFAULT_PAGE_SIZE } from '@studiometa/productive-api';
+
 import type { ExecutorContext, ResolvedInfo } from '../context/types.js';
 
 /**
@@ -40,6 +42,29 @@ export interface PaginationOptions {
   sort?: string;
   /** JSON:API include parameter for sideloading related resources */
   include?: string[];
+}
+
+/**
+ * Map the common pagination/sort/include options to the shape the API client
+ * expects, applying defaults. Spreading this into every list executor's API
+ * call guarantees these params are forwarded uniformly — no executor can
+ * silently drop `sort` or `include` the way several historically did.
+ */
+export function buildListParams(options: PaginationOptions): {
+  page: number;
+  perPage: number;
+  sort?: string;
+  include?: string[];
+} {
+  return {
+    // Treat a non-positive (or missing) page/perPage as "unset" so the default
+    // applies — `??` alone would forward an out-of-range 0 (e.g. from `--size 0`)
+    // straight to the API instead of falling back.
+    page: options.page && options.page > 0 ? options.page : 1,
+    perPage: options.perPage && options.perPage > 0 ? options.perPage : DEFAULT_PAGE_SIZE,
+    sort: options.sort,
+    include: options.include,
+  };
 }
 
 /**

@@ -28,10 +28,10 @@ export const handleServices = createResourceHandler<CommonArgs>({
   },
   customActions: {
     list: async (args, ctx, execCtx) => {
-      const { formatOptions, filter, page, perPage } = ctx;
+      const { formatOptions, filter, page, perPage, include } = ctx;
       const additionalFilters = { ...filter };
 
-      const result = await listServices({ page, perPage, additionalFilters }, execCtx);
+      const result = await listServices({ page, perPage, additionalFilters, include }, execCtx);
 
       const response = formatListResponse(result.data, formatService, result.meta, {
         ...formatOptions,

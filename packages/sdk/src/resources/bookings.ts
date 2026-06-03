@@ -3,21 +3,13 @@ import type { ProductiveBooking, ProductiveApiMeta } from '@studiometa/productiv
 import type { Booking } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface BookingListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-  sort?: string;
-  include?: string[];
-}
+export type BookingListOptions = BaseListOptions;
 
-export interface BookingGetOptions {
-  include?: string[];
-}
+export type BookingGetOptions = IncludeOptions;
 
 export interface BookingCreateData {
   person_id: string;
@@ -97,7 +89,7 @@ export class BookingsCollection extends BaseCollection {
    * Iterate over all bookings across all pages.
    */
   all(options: Omit<BookingListOptions, 'page'> = {}): AsyncPaginatedIterator<Booking> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Booking>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

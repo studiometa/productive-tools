@@ -8,7 +8,12 @@ import {
   formatTask,
   formatPerson,
   formatService,
+  formatCompany,
+  formatPage,
+  formatDiscussion,
+  formatAttachment,
   formatListResponse,
+  withIncluded,
 } from './formatters.js';
 
 describe('formatters', () => {
@@ -255,6 +260,138 @@ describe('formatters', () => {
 
       expect(result.data).toHaveLength(1);
       expect(result.data[0]).toHaveProperty('title', 'Task 1');
+    });
+  });
+});
+
+describe('formatters thread included relationships through to the API resolver', () => {
+  it('formatProject inlines the company relationship (issue #174)', () => {
+    const project: JsonApiResource = {
+      id: '1',
+      type: 'projects',
+      attributes: { name: 'Alpha' },
+      relationships: { company: { data: { id: '99', type: 'companies' } } },
+    };
+    const result = formatProject(project, {
+      included: [{ id: '99', type: 'companies', attributes: { name: 'Acme Inc.' } }],
+    });
+    expect(result.company).toMatchObject({ id: '99', type: 'companies', name: 'Acme Inc.' });
+  });
+
+  it('formatPerson inlines the company relationship', () => {
+    const person: JsonApiResource = {
+      id: '1',
+      type: 'people',
+      attributes: { first_name: 'Jane', last_name: 'Doe' },
+      relationships: { company: { data: { id: '99', type: 'companies' } } },
+    };
+    const result = formatPerson(person, {
+      included: [{ id: '99', type: 'companies', attributes: { name: 'Acme Inc.' } }],
+    });
+    expect(result.company).toMatchObject({ id: '99', name: 'Acme Inc.' });
+  });
+
+  it('formatService inlines the deal relationship', () => {
+    const service: JsonApiResource = {
+      id: '1',
+      type: 'services',
+      attributes: { name: 'Dev' },
+      relationships: { deal: { data: { id: '4', type: 'deals' } } },
+    };
+    const result = formatService(service, {
+      included: [{ id: '4', type: 'deals', attributes: { name: 'Big Deal' } }],
+    });
+    expect(result.deal).toMatchObject({ id: '4', name: 'Big Deal' });
+  });
+
+  it('formatTimeEntry inlines the service relationship', () => {
+    const entry: JsonApiResource = {
+      id: '1',
+      type: 'time_entries',
+      attributes: { date: '2026-01-01', time: 60 },
+      relationships: { service: { data: { id: '5', type: 'services' } } },
+    };
+    const result = formatTimeEntry(entry, {
+      included: [{ id: '5', type: 'services', attributes: { name: 'Dev' } }],
+    });
+    expect(result.service).toMatchObject({ id: '5', name: 'Dev' });
+  });
+
+  it('formatCompany inlines the contacts relationship', () => {
+    const company: JsonApiResource = {
+      id: '1',
+      type: 'companies',
+      attributes: { name: 'Acme' },
+      relationships: { contacts: { data: [{ id: '7', type: 'contact_entries' }] } } as never,
+    };
+    const result = formatCompany(company, {
+      included: [{ id: '7', type: 'contact_entries', attributes: { email: 'a@b.com' } }],
+    });
+    expect(result.contacts).toEqual([{ id: '7', type: 'contact_entries', email: 'a@b.com' }]);
+  });
+
+  it('formatPage inlines the creator relationship', () => {
+    const page: JsonApiResource = {
+      id: '1',
+      type: 'pages',
+      attributes: { title: 'Doc' },
+      relationships: { creator: { data: { id: '20', type: 'people' } } },
+    };
+    const result = formatPage(page, {
+      included: [
+        { id: '20', type: 'people', attributes: { first_name: 'Jane', last_name: 'Doe' } },
+      ],
+    });
+    expect(result.creator).toMatchObject({ id: '20', first_name: 'Jane' });
+  });
+
+  it('formatDiscussion inlines the page relationship', () => {
+    const discussion: JsonApiResource = {
+      id: '1',
+      type: 'discussions',
+      attributes: { title: 'D', status: 1 },
+      relationships: { page: { data: { id: '10', type: 'pages' } } },
+    };
+    const result = formatDiscussion(discussion, {
+      included: [{ id: '10', type: 'pages', attributes: { title: 'Parent Page' } }],
+    });
+    expect(result.page).toMatchObject({ id: '10', title: 'Parent Page' });
+  });
+
+  it('formatAttachment inlines the attachable relationship', () => {
+    const attachment: JsonApiResource = {
+      id: '1',
+      type: 'attachments',
+      attributes: { name: 'f.pdf', size: 1, content_type: 'application/pdf', url: 'http://x' },
+      relationships: { attachable: { data: { id: '77', type: 'tasks' } } },
+    };
+    const result = formatAttachment(attachment, {
+      included: [{ id: '77', type: 'tasks', attributes: { title: 'My Task' } }],
+    });
+    expect(result.attachable).toMatchObject({ id: '77', title: 'My Task' });
+  });
+});
+
+describe('withIncluded', () => {
+  it('merges the MCP format defaults with the sideloaded included array', () => {
+    const included: JsonApiResource[] = [
+      { id: '99', type: 'companies', attributes: { name: 'Acme Inc.' } },
+    ];
+
+    expect(withIncluded({ included })).toEqual({
+      includeRelationshipIds: false,
+      includeTimestamps: false,
+      stripHtml: true,
+      included,
+    });
+  });
+
+  it('defaults included to undefined when no options are passed', () => {
+    expect(withIncluded()).toEqual({
+      includeRelationshipIds: false,
+      includeTimestamps: false,
+      stripHtml: true,
+      included: undefined,
     });
   });
 });

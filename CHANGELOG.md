@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **API**: Route every list/get method through a shared `buildListQuery(ListParams)` helper (both now exported) so the common query params forward by construction and no method can silently drop one ([ebe09eb], [#175])
+- **Core**: Add a `buildListParams()` helper spread into every list executor, and promote `DEFAULT_PAGE_SIZE` to `@studiometa/productive-api` as the single cross-package default ([513ea65], [#175])
+- **SDK**: Alias every collection's `*ListOptions` to the shared `BaseListOptions` so the fluent builder and the option types can no longer drift apart ([eddfaa5], [#175])
+- **SDK**: Collapse the 13 identical `*GetOptions` interfaces into a shared, exported `IncludeOptions` type (the `include` half of `BaseListOptions`) ([a129c6e], [#175])
+- **SDK**: Remove the unused `createIterator` helper from `BaseCollection` — dead code that still hardcoded the pre-consolidation page size of 200 ([1866110], [#175])
+- **API**: Index each `included` array once (memoized by reference) instead of re-scanning it with `Array.find` per relationship, so resolving sideloads while formatting a list is O(records) rather than O(records × includes) ([82c6136], [#175])
+- **API/MCP**: Extract `applyIncluded()` and `withIncluded()` so the sideloaded-include threading lives in one place per package instead of being copy-pasted across the eight API formatters and sixteen MCP wrappers ([1082df4], [#175])
+
+### Fixed
+
+- **API**: Forward the `include` query param in `getProjects`/`getProject` and the previously-affected `getPeople`/`getPerson`, `getServices`, `getCompanies`/`getCompany`, `getAttachments`/`getAttachment`, `getPages`/`getPage`, `getDiscussions`/`getDiscussion` and `getCustomFieldOptions` methods ([7a88366], [#175])
+- **SDK**: Expose and forward `include` on the projects, people, services, companies, attachments, pages and discussions collections (list/get) plus `time.get()`, so included relationships such as `project.company` resolve consistently ([77177b1], [#175])
+- **Core**: Forward `include` and return `included` from the projects, people, services, companies, attachments and time list/get executors — the MCP/CLI path silently dropped sideloads even when the include was validated as supported ([9433686], [#175])
+- **Core**: Return `included` from the comments, bookings and timers list executors, which forwarded `include` but discarded the sideloaded resources ([9ff9682], [#175])
+- **Core**: Forward `include` from the pages and discussions list/get executors, which returned an always-empty `included` because the param was never sent ([dbc5a0e], [#175])
+- **API/SDK**: Add the `sort` param to `getServices`, `getComments`, `getAttachments`, `getActivities`, `getCustomFields` and `getCustomFieldOptions`, and declare `sort` on the matching SDK list options so `QueryBuilder.orderBy()` is no longer silently dropped ([36aa8a8], [#175])
+- **SDK**: Add `timers.start()`/`timers.stop()` and `discussions.resolve()`/`discussions.reopen()`, which existed in every other layer but were missing from the SDK ([09844e9], [#175])
+- **API/Core/SDK/CLI**: Support `end_date` when creating a deal — it was settable on update but silently unavailable on create ([d50575a], [#175])
+- **SDK/Core**: Consolidate the default list page size to a shared `DEFAULT_PAGE_SIZE` (100); SDK `all()` iterators previously defaulted to 200 and two core executors to 25 ([93204e2], [#175])
+- **API/MCP**: Resolve sideloaded `include` relationships into the formatted output — the `include` param was forwarded and the `included` array returned, but the CLI/MCP formatters discarded it, so `project.company` (and `person.company`, `service.deal`, `page.creator`, etc.) never surfaced for any resource except tasks/deals/comments/bookings; add a shared `resolveRelationships()` helper wired into the project/person/company/service/time-entry/page/discussion/attachment formatters ([519d8ca], [#175])
+- **MCP**: Forward `include` in the `people` (get/me/list) and `services` list handlers, which never passed it to their executors, leaving the new include support unreachable from MCP for those two resources ([1b85cc1], [#175])
+- **MCP**: Validate `include` values for the projects, people, companies, services, pages, discussions and attachments resources — a typo previously passed straight through to a raw API 400 instead of returning a helpful suggestion like every other resource ([3c8ae3d], [#175])
+- **CLI**: Add `--include` to the projects, people, companies, services, pages, discussions and attachments list/get commands (via a shared `ctx.getInclude()`) and surface the resolved relationships in the output ([94802f7], [#175])
+- **CLI**: Document `--end-date` in the `deals add` command help — it was wired into the handler but undiscoverable ([f607546], [#175])
+- **Core**: Normalize a non-positive `page`/`perPage` (e.g. from `--size 0`) to the defaults in `buildListParams`, which previously forwarded an out-of-range 0 that `buildListQuery` then silently dropped ([2a9dde4], [#175])
+
+### Security
+
+- **MCP**: Update `@modelcontextprotocol/sdk` and `h3` and refresh the lockfile to patched transitive versions, clearing 5 advisories (high `fast-uri` path traversal/host confusion, plus `hono`, `ip-address`, `express-rate-limit` and `qs`) ([7a0dedc], [#175])
+
+[7a88366]: https://github.com/studiometa/productive-tools/commit/7a88366
+[77177b1]: https://github.com/studiometa/productive-tools/commit/77177b1
+[9433686]: https://github.com/studiometa/productive-tools/commit/9433686
+[9ff9682]: https://github.com/studiometa/productive-tools/commit/9ff9682
+[dbc5a0e]: https://github.com/studiometa/productive-tools/commit/dbc5a0e
+[36aa8a8]: https://github.com/studiometa/productive-tools/commit/36aa8a8
+[09844e9]: https://github.com/studiometa/productive-tools/commit/09844e9
+[d50575a]: https://github.com/studiometa/productive-tools/commit/d50575a
+[93204e2]: https://github.com/studiometa/productive-tools/commit/93204e2
+[519d8ca]: https://github.com/studiometa/productive-tools/commit/519d8ca
+[1b85cc1]: https://github.com/studiometa/productive-tools/commit/1b85cc1
+[3c8ae3d]: https://github.com/studiometa/productive-tools/commit/3c8ae3d
+[1866110]: https://github.com/studiometa/productive-tools/commit/1866110
+[a129c6e]: https://github.com/studiometa/productive-tools/commit/a129c6e
+[94802f7]: https://github.com/studiometa/productive-tools/commit/94802f7
+[f607546]: https://github.com/studiometa/productive-tools/commit/f607546
+[ebe09eb]: https://github.com/studiometa/productive-tools/commit/ebe09eb
+[513ea65]: https://github.com/studiometa/productive-tools/commit/513ea65
+[eddfaa5]: https://github.com/studiometa/productive-tools/commit/eddfaa5
+[82c6136]: https://github.com/studiometa/productive-tools/commit/82c6136
+[1082df4]: https://github.com/studiometa/productive-tools/commit/1082df4
+[2a9dde4]: https://github.com/studiometa/productive-tools/commit/2a9dde4
+[7a0dedc]: https://github.com/studiometa/productive-tools/commit/7a0dedc
+[#175]: https://github.com/studiometa/productive-tools/pull/175
+
 ## [0.10.12] - 2026.05.27
 
 ### Added

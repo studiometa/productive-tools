@@ -102,3 +102,18 @@ describe('formatDiscussion', () => {
     expect(r.status).toBe('active');
   });
 });
+
+describe('formatDiscussion resolves included relationships', () => {
+  it('inlines the page relationship from the included array', () => {
+    const result = formatDiscussion(fullDiscussion, {
+      included: [{ id: '10', type: 'pages', attributes: { title: 'Parent Page' } }],
+    });
+
+    expect(result.page).toEqual({ id: '10', type: 'pages', title: 'Parent Page' });
+  });
+
+  it('adds no relationship object when nothing is sideloaded', () => {
+    const result = formatDiscussion(fullDiscussion);
+    expect(result.page).toBeUndefined();
+  });
+});

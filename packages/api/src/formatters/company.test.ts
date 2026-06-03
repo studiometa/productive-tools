@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
+import type { JsonApiResource } from './types.js';
+
 import { formatCompany } from './company.js';
 
 const full = {
@@ -69,5 +71,40 @@ describe('formatCompany', () => {
       attributes: { ...full.attributes, custom_fields: {} },
     });
     expect(r.custom_fields).toBeUndefined();
+  });
+});
+
+describe('formatCompany resolves included relationships', () => {
+  it('inlines a to-many contacts relationship from the included array', () => {
+    const company = {
+      id: '1',
+      type: 'companies',
+      attributes: { name: 'Acme' },
+      relationships: {
+        contacts: {
+          data: [
+            { type: 'contact_entries', id: '7' },
+            { type: 'contact_entries', id: '8' },
+          ],
+        },
+      },
+    } as unknown as JsonApiResource;
+
+    const result = formatCompany(company, {
+      included: [
+        { id: '7', type: 'contact_entries', attributes: { email: 'a@b.com' } },
+        { id: '8', type: 'contact_entries', attributes: { email: 'c@d.com' } },
+      ],
+    });
+
+    expect(result.contacts).toEqual([
+      { id: '7', type: 'contact_entries', email: 'a@b.com' },
+      { id: '8', type: 'contact_entries', email: 'c@d.com' },
+    ]);
+  });
+
+  it('adds no relationship object when nothing is sideloaded', () => {
+    const result = formatCompany({ id: '1', type: 'companies', attributes: { name: 'Acme' } });
+    expect(result.contacts).toBeUndefined();
   });
 });

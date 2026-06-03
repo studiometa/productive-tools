@@ -8,6 +8,8 @@ export interface ListDiscussionsOptions extends PaginationOptions {
 
 export interface GetDiscussionOptions {
   id: string;
+  /** Related resources to include (e.g., page) */
+  include?: string[];
 }
 
 export interface CreateDiscussionOptions {

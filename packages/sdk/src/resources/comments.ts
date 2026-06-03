@@ -3,20 +3,13 @@ import type { ProductiveComment, ProductiveApiMeta } from '@studiometa/productiv
 import type { Comment } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface CommentListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-  include?: string[];
-}
+export type CommentListOptions = BaseListOptions;
 
-export interface CommentGetOptions {
-  include?: string[];
-}
+export type CommentGetOptions = IncludeOptions;
 
 export interface CommentCreateData {
   body: string;
@@ -88,7 +81,7 @@ export class CommentsCollection extends BaseCollection {
    * Iterate over all comments across all pages.
    */
   all(options: Omit<CommentListOptions, 'page'> = {}): AsyncPaginatedIterator<Comment> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Comment>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

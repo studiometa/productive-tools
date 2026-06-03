@@ -113,4 +113,14 @@ describe('listBookings', () => {
     expect(callArgs.filter.after).toBe('2026-01-01');
     expect(callArgs.filter.with_draft).toBe('true');
   });
+
+  it('returns included sideloaded resources (Finding 2)', async () => {
+    const included = [{ id: '9', type: 'people', attributes: { first_name: 'Jane' } }];
+    const getBookings = vi.fn().mockResolvedValue({ data: [], meta: {}, included });
+    const ctx = createTestExecutorContext({ api: { getBookings } });
+
+    const result = await listBookings({ include: ['person'] }, ctx);
+
+    expect(result.included).toEqual(included);
+  });
 });

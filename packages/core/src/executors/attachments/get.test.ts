@@ -15,7 +15,21 @@ describe('getAttachment', () => {
 
     const result = await getAttachment({ id: '1' }, ctx);
 
-    expect(getAttachmentApi).toHaveBeenCalledWith('1');
+    expect(getAttachmentApi).toHaveBeenCalledWith('1', { include: undefined });
     expect(result.data).toEqual(mockAttachment);
+  });
+
+  it('forwards include and returns included (Finding 1)', async () => {
+    const included = [{ id: '7', type: 'tasks', attributes: { title: 'Task' } }];
+    const getAttachmentApi = vi.fn().mockResolvedValue({
+      data: { id: '1', type: 'attachments', attributes: {} },
+      included,
+    });
+    const ctx = createTestExecutorContext({ api: { getAttachment: getAttachmentApi } });
+
+    const result = await getAttachment({ id: '1', include: ['task'] }, ctx);
+
+    expect(getAttachmentApi).toHaveBeenCalledWith('1', { include: ['task'] });
+    expect(result.included).toEqual(included);
   });
 });

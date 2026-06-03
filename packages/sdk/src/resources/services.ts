@@ -3,15 +3,13 @@ import type { ProductiveService, ProductiveApiMeta } from '@studiometa/productiv
 import type { Service } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface ServiceListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-}
+export type ServiceListOptions = BaseListOptions;
+
+export type ServiceGetOptions = IncludeOptions;
 
 export interface ServiceListResult {
   data: Service[];
@@ -25,15 +23,15 @@ export interface ServiceGetResult {
 
 export class ServicesCollection extends BaseCollection {
   /**
-   * Get a single service by ID.
+   * Get a single service by ID, with optional includes.
    */
-  async get(id: string): Promise<ServiceGetResult> {
-    const response = await this.wrapRequest(() => this.api.getService(id));
+  async get(id: string, options: ServiceGetOptions = {}): Promise<ServiceGetResult> {
+    const response = await this.wrapRequest(() => this.api.getService(id, options));
     return resolveSingleResponse<ProductiveService, Service>(response);
   }
 
   /**
-   * List services with optional filtering and pagination.
+   * List services with optional filtering, pagination, and includes.
    */
   async list(options: ServiceListOptions = {}): Promise<ServiceListResult> {
     const response = await this.wrapRequest(() => this.api.getServices(options));
@@ -51,7 +49,7 @@ export class ServicesCollection extends BaseCollection {
    * Iterate over all services across all pages.
    */
   all(options: Omit<ServiceListOptions, 'page'> = {}): AsyncPaginatedIterator<Service> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Service>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

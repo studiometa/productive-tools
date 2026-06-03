@@ -3,16 +3,11 @@ import type { ProductiveCustomField, ProductiveApiMeta } from '@studiometa/produ
 import type { CustomField } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
+import { QueryBuilder, type BaseListOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface CustomFieldListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-  include?: string[];
-}
+export type CustomFieldListOptions = BaseListOptions;
 
 export interface CustomFieldListResult {
   data: CustomField[];
@@ -56,7 +51,7 @@ export class CustomFieldsCollection extends BaseCollection {
    * Iterate over all custom field definitions across all pages.
    */
   all(options: Omit<CustomFieldListOptions, 'page'> = {}): AsyncPaginatedIterator<CustomField> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<CustomField>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

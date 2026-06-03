@@ -95,7 +95,7 @@ describe('companies command', () => {
 
       await companiesGet(['1'], ctx);
 
-      expect(getCompany).toHaveBeenCalledWith('1');
+      expect(getCompany).toHaveBeenCalledWith('1', { include: undefined });
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
@@ -288,6 +288,35 @@ describe('companies command', () => {
       });
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('--include forwarding', () => {
+    it('forwards --include to the list request', async () => {
+      const getCompanies = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+      const ctx = createTestContext({
+        api: { getCompanies } as unknown as ProductiveApi,
+        options: { include: 'contacts' },
+      });
+
+      await companiesList(ctx);
+
+      expect(getCompanies).toHaveBeenCalledWith(expect.objectContaining({ include: ['contacts'] }));
+    });
+
+    it('forwards --include to the get request', async () => {
+      const getCompany = vi.fn().mockResolvedValue({
+        data: { id: '1', type: 'companies', attributes: { name: 'Acme' } },
+        included: [],
+      });
+      const ctx = createTestContext({
+        api: { getCompany } as unknown as ProductiveApi,
+        options: { include: 'contacts' },
+      });
+
+      await companiesGet(['1'], ctx);
+
+      expect(getCompany).toHaveBeenCalledWith('1', { include: ['contacts'] });
     });
   });
 });

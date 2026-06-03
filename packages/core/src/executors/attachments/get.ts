@@ -8,6 +8,6 @@ export async function getAttachment(
   options: GetAttachmentOptions,
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductiveAttachment>> {
-  const response = await ctx.api.getAttachment(options.id);
-  return { data: response.data };
+  const response = await ctx.api.getAttachment(options.id, { include: options.include });
+  return { data: response.data, included: response.included };
 }

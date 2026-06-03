@@ -10,6 +10,8 @@ import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListCompaniesOptions } from './types.js';
 
+import { buildListParams } from '../types.js';
+
 export function buildCompanyFilters(options: ListCompaniesOptions): Record<string, string> {
   const filter: Record<string, string> = {};
 
@@ -31,14 +33,13 @@ export async function listCompanies(
   const filter = buildCompanyFilters(options);
 
   const response = await ctx.api.getCompanies({
-    page: options.page ?? 1,
-    perPage: options.perPage ?? 100,
+    ...buildListParams(options),
     filter,
-    sort: options.sort,
   });
 
   return {
     data: response.data,
     meta: response.meta,
+    included: response.included,
   };
 }

@@ -14,8 +14,22 @@ describe('getPage', () => {
 
     const result = await getPage({ id: '1' }, ctx);
 
-    expect(getPageApi).toHaveBeenCalledWith('1');
+    expect(getPageApi).toHaveBeenCalledWith('1', { include: undefined });
     expect(result.data).toEqual(mockResponse.data);
     expect(result.included).toEqual([]);
+  });
+
+  it('forwards include (Finding 3)', async () => {
+    const included = [{ id: '7', type: 'people', attributes: { first_name: 'Jane' } }];
+    const getPageApi = vi.fn().mockResolvedValue({
+      data: { id: '1', type: 'pages', attributes: {} },
+      included,
+    });
+    const ctx = createTestExecutorContext({ api: { getPage: getPageApi } });
+
+    const result = await getPage({ id: '1', include: ['creator'] }, ctx);
+
+    expect(getPageApi).toHaveBeenCalledWith('1', { include: ['creator'] });
+    expect(result.included).toEqual(included);
   });
 });

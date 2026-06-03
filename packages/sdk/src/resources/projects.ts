@@ -3,16 +3,13 @@ import type { ProductiveProject, ProductiveApiMeta } from '@studiometa/productiv
 import type { Project } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface ProjectListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-  sort?: string;
-}
+export type ProjectListOptions = BaseListOptions;
+
+export type ProjectGetOptions = IncludeOptions;
 
 export interface ProjectListResult {
   data: Project[];
@@ -26,7 +23,7 @@ export interface ProjectGetResult {
 
 export class ProjectsCollection extends BaseCollection {
   /**
-   * List projects with optional filtering and pagination.
+   * List projects with optional filtering, pagination, and includes.
    */
   async list(options: ProjectListOptions = {}): Promise<ProjectListResult> {
     const response = await this.wrapRequest(() => this.api.getProjects(options));
@@ -34,10 +31,10 @@ export class ProjectsCollection extends BaseCollection {
   }
 
   /**
-   * Get a single project by ID.
+   * Get a single project by ID, with optional includes.
    */
-  async get(id: string): Promise<ProjectGetResult> {
-    const response = await this.wrapRequest(() => this.api.getProject(id));
+  async get(id: string, options: ProjectGetOptions = {}): Promise<ProjectGetResult> {
+    const response = await this.wrapRequest(() => this.api.getProject(id, options));
     return resolveSingleResponse<ProductiveProject, Project>(response);
   }
 
@@ -52,7 +49,7 @@ export class ProjectsCollection extends BaseCollection {
    * Iterate over all projects across all pages.
    */
   all(options: Omit<ProjectListOptions, 'page'> = {}): AsyncPaginatedIterator<Project> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Project>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

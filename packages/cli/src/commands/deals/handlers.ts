@@ -126,6 +126,7 @@ export async function dealsAdd(ctx: CommandContext): Promise<void> {
         name: String(ctx.options.name),
         companyId: String(ctx.options.company),
         date: ctx.options.date ? String(ctx.options.date) : undefined,
+        endDate: ctx.options['end-date'] ? String(ctx.options['end-date']) : undefined,
         budget: ctx.options.budget === true,
         responsibleId: ctx.options.responsible ? String(ctx.options.responsible) : undefined,
       },

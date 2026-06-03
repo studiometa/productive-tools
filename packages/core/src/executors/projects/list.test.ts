@@ -70,8 +70,20 @@ describe('listProjects', () => {
       perPage: 100,
       filter: {},
       sort: undefined,
+      include: undefined,
     });
     expect(result.data).toEqual(mockProjects);
+  });
+
+  it('forwards include and returns included (Finding 1)', async () => {
+    const included = [{ id: '99', type: 'companies', attributes: { name: 'Acme' } }];
+    const getProjects = vi.fn().mockResolvedValue({ data: mockProjects, meta: {}, included });
+    const ctx = createTestExecutorContext({ api: { getProjects } });
+
+    const result = await listProjects({ include: ['company'] }, ctx);
+
+    expect(getProjects).toHaveBeenCalledWith(expect.objectContaining({ include: ['company'] }));
+    expect(result.included).toEqual(included);
   });
 
   it('resolves filters with type mapping', async () => {

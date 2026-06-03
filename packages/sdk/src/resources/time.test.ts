@@ -62,6 +62,19 @@ describe('TimeCollection', () => {
       const result = await col.get('5');
       expect(result.data).toMatchObject({ id: '5', time: 90 });
     });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: makeEntry('5', 90) }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new TimeCollection(createApi());
+      await col.get('5', { include: ['service'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=service'),
+        expect.any(Object),
+      );
+    });
   });
 
   describe('create()', () => {

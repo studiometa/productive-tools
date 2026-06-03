@@ -259,4 +259,33 @@ describe('services command', () => {
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
+
+  describe('--include forwarding', () => {
+    it('forwards --include to the list request', async () => {
+      const getServices = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+      const ctx = createTestContext({
+        api: { getServices } as unknown as ProductiveApi,
+        options: { include: 'deal' },
+      });
+
+      await servicesList(ctx);
+
+      expect(getServices).toHaveBeenCalledWith(expect.objectContaining({ include: ['deal'] }));
+    });
+
+    it('forwards --include to the get request', async () => {
+      const getService = vi.fn().mockResolvedValue({
+        data: { id: '1', type: 'services', attributes: { name: 'Dev' } },
+        included: [],
+      });
+      const ctx = createTestContext({
+        api: { getService } as unknown as ProductiveApi,
+        options: { include: 'deal', format: 'json' },
+      });
+
+      await servicesGet(['1'], ctx);
+
+      expect(getService).toHaveBeenCalledWith('1', { include: ['deal'] });
+    });
+  });
 });

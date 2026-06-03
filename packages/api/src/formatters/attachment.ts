@@ -4,6 +4,7 @@
 
 import type { JsonApiResource, FormatOptions } from './types.js';
 
+import { applyIncluded } from './included.js';
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 export interface FormattedAttachment {
@@ -58,6 +59,8 @@ export function formatAttachment(
   if (opts.includeTimestamps) {
     result.created_at = attrs.created_at ? String(attrs.created_at) : undefined;
   }
+
+  applyIncluded(result, attachment, opts.included);
 
   return result;
 }

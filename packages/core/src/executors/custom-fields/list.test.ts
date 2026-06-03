@@ -45,7 +45,7 @@ describe('listCustomFields', () => {
 
     expect(getCustomFields).toHaveBeenCalledWith({
       page: 1,
-      perPage: 25,
+      perPage: 100,
       filter: undefined,
       include: undefined,
     });

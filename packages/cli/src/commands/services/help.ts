@@ -22,6 +22,7 @@ ${colors.bold('OPTIONS:')}
   --time-tracking      Filter services with time tracking enabled
   --no-time-tracking   Filter services without time tracking
   --filter <filters>   Generic filters (comma-separated key=value pairs)
+  --include <list>     Sideload related resources (comma-separated, e.g. deal)
   -p, --page <num>     Page number (default: 1)
   -s, --size <num>     Page size (default: 100)
   -f, --format <fmt>   Output format: json, human, csv, table

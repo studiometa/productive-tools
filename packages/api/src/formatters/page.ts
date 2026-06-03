@@ -5,6 +5,7 @@
 import type { JsonApiResource, FormatOptions } from './types.js';
 
 import { stripHtml } from '../utils/html.js';
+import { applyIncluded } from './included.js';
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 export interface FormattedPage {
@@ -54,6 +55,8 @@ export function formatPage(page: JsonApiResource, options?: FormatOptions): Form
     result.updated_at = attrs.updated_at ? String(attrs.updated_at) : undefined;
     result.edited_at = attrs.edited_at ? String(attrs.edited_at) : undefined;
   }
+
+  applyIncluded(result, page, opts.included);
 
   return result;
 }

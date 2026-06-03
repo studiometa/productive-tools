@@ -23,6 +23,7 @@ export interface CreateDealOptions {
   name: string;
   companyId: string;
   date?: string;
+  endDate?: string;
   budget?: boolean;
   responsibleId?: string;
 }

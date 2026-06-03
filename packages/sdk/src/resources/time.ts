@@ -3,17 +3,13 @@ import type { ProductiveTimeEntry, ProductiveApiMeta } from '@studiometa/product
 import type { TimeEntry } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface TimeListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-  sort?: string;
-  include?: string[];
-}
+export type TimeListOptions = BaseListOptions;
+
+export type TimeGetOptions = IncludeOptions;
 
 export interface TimeCreateData {
   person_id: string;
@@ -50,10 +46,10 @@ export class TimeCollection extends BaseCollection {
   }
 
   /**
-   * Get a single time entry by ID.
+   * Get a single time entry by ID, with optional includes.
    */
-  async get(id: string): Promise<TimeGetResult> {
-    const response = await this.wrapRequest(() => this.api.getTimeEntry(id));
+  async get(id: string, options: TimeGetOptions = {}): Promise<TimeGetResult> {
+    const response = await this.wrapRequest(() => this.api.getTimeEntry(id, options));
     return resolveSingleResponse<ProductiveTimeEntry, TimeEntry>(response);
   }
 
@@ -91,7 +87,7 @@ export class TimeCollection extends BaseCollection {
    * Iterate over all time entries across all pages.
    */
   all(options: Omit<TimeListOptions, 'page'> = {}): AsyncPaginatedIterator<TimeEntry> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<TimeEntry>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

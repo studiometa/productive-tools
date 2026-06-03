@@ -36,3 +36,30 @@ describe('formatProject', () => {
     expect(result.updated_at).toBeUndefined();
   });
 });
+
+describe('formatProject resolves included relationships', () => {
+  it('inlines the company relationship from the included array (issue #174)', () => {
+    const result = formatProject(
+      {
+        id: '1',
+        type: 'projects',
+        attributes: { name: 'Alpha' },
+        relationships: { company: { data: { type: 'companies', id: '99' } } },
+      },
+      { included: [{ id: '99', type: 'companies', attributes: { name: 'Acme Inc.' } }] },
+    );
+
+    expect(result.company).toEqual({ id: '99', type: 'companies', name: 'Acme Inc.' });
+  });
+
+  it('adds no relationship object when nothing is sideloaded', () => {
+    const result = formatProject({
+      id: '1',
+      type: 'projects',
+      attributes: { name: 'Alpha' },
+      relationships: { company: { data: { type: 'companies', id: '99' } } },
+    });
+
+    expect(result.company).toBeUndefined();
+  });
+});

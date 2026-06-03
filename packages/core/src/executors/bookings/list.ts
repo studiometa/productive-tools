@@ -4,6 +4,8 @@ import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListBookingsOptions } from './types.js';
 
+import { buildListParams } from '../types.js';
+
 export function buildBookingFilters(options: ListBookingsOptions): Record<string, string> {
   const filter: Record<string, string> = {};
 
@@ -34,16 +36,14 @@ export async function listBookings(
   const { resolved: resolvedFilter, metadata } = await ctx.resolver.resolveFilters(filter);
 
   const response = await ctx.api.getBookings({
-    page: options.page ?? 1,
-    perPage: options.perPage ?? 100,
+    ...buildListParams(options),
     filter: resolvedFilter,
-    sort: options.sort,
-    include: options.include,
   });
 
   return {
     data: response.data,
     meta: response.meta,
+    included: response.included,
     resolved: Object.keys(metadata).length > 0 ? metadata : undefined,
   };
 }

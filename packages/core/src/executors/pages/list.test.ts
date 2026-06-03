@@ -85,4 +85,15 @@ describe('listPages', () => {
 
     expect(getPages).toHaveBeenCalledWith(expect.objectContaining({ page: 1, perPage: 100 }));
   });
+
+  it('forwards include and returns included (Finding 3)', async () => {
+    const included = [{ id: '7', type: 'people', attributes: { first_name: 'Jane' } }];
+    const getPages = vi.fn().mockResolvedValue({ data: [], meta: {}, included });
+    const ctx = createTestExecutorContext({ api: { getPages } });
+
+    const result = await listPages({ include: ['creator'] }, ctx);
+
+    expect(getPages).toHaveBeenCalledWith(expect.objectContaining({ include: ['creator'] }));
+    expect(result.included).toEqual(included);
+  });
 });

@@ -135,4 +135,34 @@ describe('TimersCollection', () => {
       expect(result.data).toHaveLength(1);
     });
   });
+
+  describe('start() / stop() (Finding 5)', () => {
+    it('start() posts to /timers and resolves the timer', async () => {
+      const mockFetch = createMockFetch(() => ({ data: makeTimer('1', 0) }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new TimersCollection(createApi());
+      const result = await col.start({ service_id: '5' });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/timers'),
+        expect.objectContaining({ method: 'POST' }),
+      );
+      expect(result.data).toMatchObject({ id: '1', type: 'timers' });
+    });
+
+    it('stop() patches /timers/:id/stop', async () => {
+      const mockFetch = createMockFetch(() => ({ data: makeTimer('1', 3600) }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new TimersCollection(createApi());
+      const result = await col.stop('1');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/timers/1/stop'),
+        expect.objectContaining({ method: 'PATCH' }),
+      );
+      expect(result.data).toMatchObject({ id: '1' });
+    });
+  });
 });

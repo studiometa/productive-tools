@@ -3,21 +3,13 @@ import type { ProductiveTask, ProductiveApiMeta } from '@studiometa/productive-a
 import type { Task } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface TaskListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-  sort?: string;
-  include?: string[];
-}
+export type TaskListOptions = BaseListOptions;
 
-export interface TaskGetOptions {
-  include?: string[];
-}
+export type TaskGetOptions = IncludeOptions;
 
 export interface TaskCreateData {
   title: string;
@@ -97,7 +89,7 @@ export class TasksCollection extends BaseCollection {
    * Iterate over all tasks across all pages.
    */
   all(options: Omit<TaskListOptions, 'page'> = {}): AsyncPaginatedIterator<Task> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Task>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

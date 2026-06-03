@@ -4,6 +4,7 @@
 
 import type { JsonApiResource, FormatOptions, FormattedService } from './types.js';
 
+import { applyIncluded } from './included.js';
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 /**
@@ -37,6 +38,8 @@ export function formatService(
     result.created_at = attrs.created_at as string | undefined;
     result.updated_at = attrs.updated_at as string | undefined;
   }
+
+  applyIncluded(result, service, opts.included);
 
   return result;
 }

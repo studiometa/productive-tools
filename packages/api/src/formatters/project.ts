@@ -4,6 +4,7 @@
 
 import type { JsonApiResource, FormatOptions, FormattedProject } from './types.js';
 
+import { applyIncluded } from './included.js';
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 /**
@@ -33,6 +34,8 @@ export function formatProject(
     result.created_at = attrs.created_at as string | undefined;
     result.updated_at = attrs.updated_at as string | undefined;
   }
+
+  applyIncluded(result, project, opts.included);
 
   return result;
 }

@@ -7,16 +7,13 @@ import type {
 import type { Person } from '../types.js';
 
 import { resolveListResponse, resolveSingleResponse } from '../json-api.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
-import { QueryBuilder } from '../query-builder.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
+import { QueryBuilder, type BaseListOptions, type IncludeOptions } from '../query-builder.js';
 import { BaseCollection } from './base.js';
 
-export interface PeopleListOptions {
-  page?: number;
-  perPage?: number;
-  filter?: Record<string, string>;
-  sort?: string;
-}
+export type PeopleListOptions = BaseListOptions;
+
+export type PeopleGetOptions = IncludeOptions;
 
 export interface PeopleListResult {
   data: Person[];
@@ -37,7 +34,7 @@ export class PeopleCollection extends BaseCollection {
   }
 
   /**
-   * List people with optional filtering and pagination.
+   * List people with optional filtering, pagination, and includes.
    */
   async list(options: PeopleListOptions = {}): Promise<PeopleListResult> {
     const response = await this.wrapRequest(() => this.api.getPeople(options));
@@ -45,10 +42,10 @@ export class PeopleCollection extends BaseCollection {
   }
 
   /**
-   * Get a single person by ID.
+   * Get a single person by ID, with optional includes.
    */
-  async get(id: string): Promise<PeopleGetResult> {
-    const response = await this.wrapRequest(() => this.api.getPerson(id));
+  async get(id: string, options: PeopleGetOptions = {}): Promise<PeopleGetResult> {
+    const response = await this.wrapRequest(() => this.api.getPerson(id, options));
     return resolveSingleResponse<ProductivePerson, Person>(response);
   }
 
@@ -74,7 +71,7 @@ export class PeopleCollection extends BaseCollection {
    * Iterate over all people across all pages.
    */
   all(options: Omit<PeopleListOptions, 'page'> = {}): AsyncPaginatedIterator<Person> {
-    const perPage = options.perPage ?? 200;
+    const perPage = options.perPage ?? DEFAULT_PAGE_SIZE;
     return new AsyncPaginatedIterator<Person>(async (page) => {
       return this.list({ ...options, page, perPage });
     }, perPage);

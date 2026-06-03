@@ -2,10 +2,10 @@ export { Productive } from './productive.js';
 export type { ProductiveOptions } from './productive.js';
 export { loadConfig, ConfigurationError } from './config.js';
 export type { LoadConfigResult, ConfigSource } from './config.js';
-export { AsyncPaginatedIterator } from './pagination.js';
+export { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from './pagination.js';
 export type { PageFetcher } from './pagination.js';
 export { QueryBuilder } from './query-builder.js';
-export type { BaseListOptions } from './query-builder.js';
+export type { BaseListOptions, IncludeOptions } from './query-builder.js';
 export { resolveResource, resolveListResponse, resolveSingleResponse } from './json-api.js';
 export type { ResolvedResource } from './json-api.js';
 export type {

@@ -274,7 +274,7 @@ describe('attachments command', () => {
 
       await attachmentsGet(['1'], ctx);
 
-      expect(getAttachment).toHaveBeenCalledWith('1');
+      expect(getAttachment).toHaveBeenCalledWith('1', { include: undefined });
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
@@ -465,7 +465,7 @@ describe('attachments command', () => {
         options: { format: 'json' },
       });
       await attachmentsGet(['1'], ctx);
-      expect(getAttachment).toHaveBeenCalledWith('1');
+      expect(getAttachment).toHaveBeenCalledWith('1', { include: undefined });
     });
 
     it('should route delete subcommand', async () => {
@@ -476,6 +476,35 @@ describe('attachments command', () => {
       });
       await attachmentsDelete(['1'], ctx);
       expect(deleteAttachment).toHaveBeenCalledWith('1');
+    });
+  });
+
+  describe('--include forwarding', () => {
+    it('forwards --include to the list request', async () => {
+      const getAttachments = vi.fn().mockResolvedValue({ data: [], meta: {}, included: [] });
+      const ctx = createTestContext({
+        api: { getAttachments } as unknown as ProductiveApi,
+        options: { include: 'task' },
+      });
+
+      await attachmentsList(ctx);
+
+      expect(getAttachments).toHaveBeenCalledWith(expect.objectContaining({ include: ['task'] }));
+    });
+
+    it('forwards --include to the get request', async () => {
+      const getAttachment = vi.fn().mockResolvedValue({
+        data: { id: '1', type: 'attachments', attributes: { name: 'f.pdf' } },
+        included: [],
+      });
+      const ctx = createTestContext({
+        api: { getAttachment } as unknown as ProductiveApi,
+        options: { include: 'task' },
+      });
+
+      await attachmentsGet(['1'], ctx);
+
+      expect(getAttachment).toHaveBeenCalledWith('1', { include: ['task'] });
     });
   });
 });

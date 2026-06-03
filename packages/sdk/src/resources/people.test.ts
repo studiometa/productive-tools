@@ -54,6 +54,19 @@ describe('PeopleCollection', () => {
       expect(result.data).toHaveLength(2);
       expect(result.data[0]).toMatchObject({ id: '1', type: 'people', name: 'Alice' });
     });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: [], meta: {} }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new PeopleCollection(createApi());
+      await col.list({ include: ['company'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=company'),
+        expect.any(Object),
+      );
+    });
   });
 
   describe('get()', () => {
@@ -66,6 +79,19 @@ describe('PeopleCollection', () => {
       const col = new PeopleCollection(createApi());
       const result = await col.get('10');
       expect(result.data).toMatchObject({ id: '10', name: 'Charlie' });
+    });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: makePerson('10', 'Charlie') }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new PeopleCollection(createApi());
+      await col.get('10', { include: ['company'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=company'),
+        expect.any(Object),
+      );
     });
   });
 

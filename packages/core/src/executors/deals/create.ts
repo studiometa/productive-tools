@@ -17,6 +17,7 @@ export async function createDeal(
     name: options.name,
     company_id: companyId,
     date: options.date,
+    end_date: options.endDate,
     budget: options.budget,
     responsible_id: responsibleId,
   });

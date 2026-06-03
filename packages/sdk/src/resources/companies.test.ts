@@ -49,6 +49,19 @@ describe('CompaniesCollection', () => {
       expect(result.data).toHaveLength(2);
       expect(result.data[0]).toMatchObject({ id: '1', type: 'companies', name: 'Acme' });
     });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: [], meta: {} }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new CompaniesCollection(createApi());
+      await col.list({ include: ['contacts'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=contacts'),
+        expect.any(Object),
+      );
+    });
   });
 
   describe('get()', () => {
@@ -61,6 +74,19 @@ describe('CompaniesCollection', () => {
       const col = new CompaniesCollection(createApi());
       const result = await col.get('42');
       expect(result.data).toMatchObject({ id: '42', name: 'Initech' });
+    });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: makeCompany('42', 'Initech') }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new CompaniesCollection(createApi());
+      await col.get('42', { include: ['contacts'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=contacts'),
+        expect.any(Object),
+      );
     });
   });
 

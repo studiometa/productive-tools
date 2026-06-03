@@ -39,6 +39,44 @@ export interface ApiOptions {
   rateLimit?: RateLimitConfig;
 }
 
+/**
+ * Common JSON:API query parameters shared by every collection (list) endpoint.
+ *
+ * Centralizing this shape — together with {@link buildListQuery} — is the single
+ * source of truth for list params, so no endpoint can silently drop `page`,
+ * `perPage`, `sort`, `filter` or `include` the way they historically did.
+ */
+export interface ListParams {
+  page?: number;
+  perPage?: number;
+  sort?: string;
+  filter?: Record<string, string>;
+  include?: string[];
+}
+
+/**
+ * Build the query object for a list (or single-resource `include`) request from
+ * the common {@link ListParams}. Every list/get method routes through this so the
+ * common params are forwarded uniformly by construction.
+ */
+export function buildListQuery(params?: ListParams): Record<string, string> {
+  const query: Record<string, string> = {};
+
+  if (params?.page) query['page[number]'] = String(params.page);
+  if (params?.perPage) query['page[size]'] = String(params.perPage);
+  if (params?.sort) query['sort'] = params.sort;
+  if (params?.filter) {
+    Object.entries(params.filter).forEach(([key, value]) => {
+      query[`filter[${key}]`] = value;
+    });
+  }
+  if (params?.include?.length) {
+    query['include'] = params.include.join(',');
+  }
+
+  return query;
+}
+
 export class ProductiveApi {
   private baseUrl: string;
   private apiToken: string;
@@ -204,23 +242,19 @@ export class ProductiveApi {
     perPage?: number;
     filter?: Record<string, string>;
     sort?: string;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveProject[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.sort) query['sort'] = params.sort;
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductiveProject[]>>('/projects', { query });
   }
 
-  async getProject(id: string): Promise<ProductiveApiResponse<ProductiveProject>> {
-    return this.request<ProductiveApiResponse<ProductiveProject>>(`/projects/${id}`);
+  async getProject(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductiveProject>> {
+    const query = buildListQuery(params);
+    return this.request<ProductiveApiResponse<ProductiveProject>>(`/projects/${id}`, { query });
   }
 
   // Time Entries
@@ -231,19 +265,7 @@ export class ProductiveApi {
     sort?: string;
     include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveTimeEntry[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.sort) query['sort'] = params.sort;
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductiveTimeEntry[]>>('/time_entries', { query });
   }
@@ -252,8 +274,7 @@ export class ProductiveApi {
     id: string,
     params?: { include?: string[] },
   ): Promise<ProductiveApiResponse<ProductiveTimeEntry>> {
-    const query: Record<string, string> = {};
-    if (params?.include?.length) query['include'] = params.include.join(',');
+    const query = buildListQuery(params);
     return this.request<ProductiveApiResponse<ProductiveTimeEntry>>(`/time_entries/${id}`, {
       query,
     });
@@ -333,19 +354,7 @@ export class ProductiveApi {
     sort?: string;
     include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveTask[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.sort) query['sort'] = params.sort;
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductiveTask[]>>('/tasks', {
       query,
@@ -356,10 +365,7 @@ export class ProductiveApi {
     id: string,
     params?: { include?: string[] },
   ): Promise<ProductiveApiResponse<ProductiveTask>> {
-    const query: Record<string, string> = {};
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
+    const query = buildListQuery(params);
     return this.request<ProductiveApiResponse<ProductiveTask>>(`/tasks/${id}`, {
       query,
     });
@@ -479,25 +485,21 @@ export class ProductiveApi {
     perPage?: number;
     filter?: Record<string, string>;
     sort?: string;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductivePerson[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.sort) query['sort'] = params.sort;
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductivePerson[]>>('/people', {
       query,
     });
   }
 
-  async getPerson(id: string): Promise<ProductiveApiResponse<ProductivePerson>> {
-    return this.request<ProductiveApiResponse<ProductivePerson>>(`/people/${id}`);
+  async getPerson(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductivePerson>> {
+    const query = buildListQuery(params);
+    return this.request<ProductiveApiResponse<ProductivePerson>>(`/people/${id}`, { query });
   }
 
   // Services
@@ -505,16 +507,10 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    sort?: string;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveService[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductiveService[]>>('/services', { query });
   }
@@ -523,8 +519,7 @@ export class ProductiveApi {
     id: string,
     params?: { include?: string[] },
   ): Promise<ProductiveApiResponse<ProductiveService>> {
-    const query: Record<string, string> = {};
-    if (params?.include?.length) query['include'] = params.include.join(',');
+    const query = buildListQuery(params);
     return this.request<ProductiveApiResponse<ProductiveService>>(`/services/${id}`, { query });
   }
 
@@ -534,23 +529,19 @@ export class ProductiveApi {
     perPage?: number;
     filter?: Record<string, string>;
     sort?: string;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveCompany[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.sort) query['sort'] = params.sort;
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductiveCompany[]>>('/companies', { query });
   }
 
-  async getCompany(id: string): Promise<ProductiveApiResponse<ProductiveCompany>> {
-    return this.request<ProductiveApiResponse<ProductiveCompany>>(`/companies/${id}`);
+  async getCompany(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductiveCompany>> {
+    const query = buildListQuery(params);
+    return this.request<ProductiveApiResponse<ProductiveCompany>>(`/companies/${id}`, { query });
   }
 
   async createCompany(data: {
@@ -619,20 +610,10 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    sort?: string;
     include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveComment[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductiveComment[]>>('/comments', { query });
   }
@@ -641,10 +622,7 @@ export class ProductiveApi {
     id: string,
     params?: { include?: string[] },
   ): Promise<ProductiveApiResponse<ProductiveComment>> {
-    const query: Record<string, string> = {};
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
+    const query = buildListQuery(params);
     return this.request<ProductiveApiResponse<ProductiveComment>>(`/comments/${id}`, { query });
   }
 
@@ -721,19 +699,7 @@ export class ProductiveApi {
     sort?: string;
     include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveTimer[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.sort) query['sort'] = params.sort;
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductiveTimer[]>>('/timers', { query });
   }
@@ -742,10 +708,7 @@ export class ProductiveApi {
     id: string,
     params?: { include?: string[] },
   ): Promise<ProductiveApiResponse<ProductiveTimer>> {
-    const query: Record<string, string> = {};
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
+    const query = buildListQuery(params);
     return this.request<ProductiveApiResponse<ProductiveTimer>>(`/timers/${id}`, { query });
   }
 
@@ -787,19 +750,7 @@ export class ProductiveApi {
     sort?: string;
     include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveDeal[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.sort) query['sort'] = params.sort;
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductiveDeal[]>>('/deals', { query });
   }
@@ -808,10 +759,7 @@ export class ProductiveApi {
     id: string,
     params?: { include?: string[] },
   ): Promise<ProductiveApiResponse<ProductiveDeal>> {
-    const query: Record<string, string> = {};
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
+    const query = buildListQuery(params);
     return this.request<ProductiveApiResponse<ProductiveDeal>>(`/deals/${id}`, { query });
   }
 
@@ -819,6 +767,7 @@ export class ProductiveApi {
     name: string;
     company_id: string;
     date?: string;
+    end_date?: string;
     budget?: boolean;
     responsible_id?: string;
   }): Promise<ProductiveApiResponse<ProductiveDeal>> {
@@ -830,16 +779,19 @@ export class ProductiveApi {
       relationships.responsible = { data: { type: 'people', id: data.responsible_id } };
     }
 
+    const attributes: Record<string, unknown> = {
+      name: data.name,
+      date: data.date || new Date().toISOString().split('T')[0],
+      budget: data.budget || false,
+    };
+    if (data.end_date !== undefined) attributes.end_date = data.end_date;
+
     return this.request<ProductiveApiResponse<ProductiveDeal>>('/deals', {
       method: 'POST',
       body: {
         data: {
           type: 'deals',
-          attributes: {
-            name: data.name,
-            date: data.date || new Date().toISOString().split('T')[0],
-            budget: data.budget || false,
-          },
+          attributes,
           relationships,
         },
       },
@@ -899,19 +851,7 @@ export class ProductiveApi {
     sort?: string;
     include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveBooking[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.sort) query['sort'] = params.sort;
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductiveBooking[]>>('/bookings', { query });
   }
@@ -920,10 +860,7 @@ export class ProductiveApi {
     id: string,
     params?: { include?: string[] },
   ): Promise<ProductiveApiResponse<ProductiveBooking>> {
-    const query: Record<string, string> = {};
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
+    const query = buildListQuery(params);
     return this.request<ProductiveApiResponse<ProductiveBooking>>(`/bookings/${id}`, { query });
   }
 
@@ -1010,22 +947,22 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    sort?: string;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveAttachment[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductiveAttachment[]>>('/attachments', { query });
   }
 
-  async getAttachment(id: string): Promise<ProductiveApiResponse<ProductiveAttachment>> {
-    return this.request<ProductiveApiResponse<ProductiveAttachment>>(`/attachments/${id}`);
+  async getAttachment(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductiveAttachment>> {
+    const query = buildListQuery(params);
+    return this.request<ProductiveApiResponse<ProductiveAttachment>>(`/attachments/${id}`, {
+      query,
+    });
   }
 
   async deleteAttachment(id: string): Promise<void> {
@@ -1040,23 +977,19 @@ export class ProductiveApi {
     perPage?: number;
     filter?: Record<string, string>;
     sort?: string;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductivePage[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.sort) query['sort'] = params.sort;
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductivePage[]>>('/pages', { query });
   }
 
-  async getPage(id: string): Promise<ProductiveApiResponse<ProductivePage>> {
-    return this.request<ProductiveApiResponse<ProductivePage>>(`/pages/${id}`);
+  async getPage(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductivePage>> {
+    const query = buildListQuery(params);
+    return this.request<ProductiveApiResponse<ProductivePage>>(`/pages/${id}`, { query });
   }
 
   async createPage(data: {
@@ -1123,23 +1056,21 @@ export class ProductiveApi {
     perPage?: number;
     filter?: Record<string, string>;
     sort?: string;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveDiscussion[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.sort) query['sort'] = params.sort;
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductiveDiscussion[]>>('/discussions', { query });
   }
 
-  async getDiscussion(id: string): Promise<ProductiveApiResponse<ProductiveDiscussion>> {
-    return this.request<ProductiveApiResponse<ProductiveDiscussion>>(`/discussions/${id}`);
+  async getDiscussion(
+    id: string,
+    params?: { include?: string[] },
+  ): Promise<ProductiveApiResponse<ProductiveDiscussion>> {
+    const query = buildListQuery(params);
+    return this.request<ProductiveApiResponse<ProductiveDiscussion>>(`/discussions/${id}`, {
+      query,
+    });
   }
 
   async createDiscussion(data: {
@@ -1236,19 +1167,8 @@ export class ProductiveApi {
       include?: string[];
     },
   ): Promise<ProductiveApiResponse<ProductiveReport[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
+    const query = buildListQuery(params);
     if (params?.group) query['group'] = params.group;
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
 
     return this.request<ProductiveApiResponse<ProductiveReport[]>>(`/reports/${reportType}`, {
       query,
@@ -1260,20 +1180,10 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    sort?: string;
     include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveActivity[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductiveActivity[]>>('/activities', { query });
   }
@@ -1283,20 +1193,10 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    sort?: string;
     include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveCustomField[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductiveCustomField[]>>('/custom_fields', {
       query,
@@ -1307,10 +1207,7 @@ export class ProductiveApi {
     id: string,
     params?: { include?: string[] },
   ): Promise<ProductiveApiResponse<ProductiveCustomField>> {
-    const query: Record<string, string> = {};
-    if (params?.include?.length) {
-      query['include'] = params.include.join(',');
-    }
+    const query = buildListQuery(params);
     return this.request<ProductiveApiResponse<ProductiveCustomField>>(`/custom_fields/${id}`, {
       query,
     });
@@ -1320,16 +1217,10 @@ export class ProductiveApi {
     page?: number;
     perPage?: number;
     filter?: Record<string, string>;
+    sort?: string;
+    include?: string[];
   }): Promise<ProductiveApiResponse<ProductiveCustomFieldOption[]>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page) query['page[number]'] = String(params.page);
-    if (params?.perPage) query['page[size]'] = String(params.perPage);
-    if (params?.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        query[`filter[${key}]`] = value;
-      });
-    }
+    const query = buildListQuery(params);
 
     return this.request<ProductiveApiResponse<ProductiveCustomFieldOption[]>>(
       '/custom_field_options',

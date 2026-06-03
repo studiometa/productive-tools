@@ -38,6 +38,7 @@ function parseListOptions(ctx: CommandContext): ListAttachmentsOptions {
   const { page, perPage } = ctx.getPagination();
   options.page = page;
   options.perPage = perPage;
+  options.include = ctx.getInclude();
 
   return options;
 }
@@ -53,7 +54,9 @@ export async function attachmentsList(ctx: CommandContext): Promise<void> {
     spinner.succeed();
 
     const format = (ctx.options.format || ctx.options.f || 'human') as OutputFormat;
-    const formattedData = formatListResponse(result.data, formatAttachment, result.meta);
+    const formattedData = formatListResponse(result.data, formatAttachment, result.meta, {
+      included: result.included,
+    });
 
     if (format === 'csv' || format === 'table') {
       const data = result.data.map((a) => ({
@@ -80,12 +83,12 @@ export async function attachmentsGet(args: string[], ctx: CommandContext): Promi
 
   await runCommand(async () => {
     const execCtx = fromCommandContext(ctx);
-    const result = await getAttachment({ id }, execCtx);
+    const result = await getAttachment({ id, include: ctx.getInclude() }, execCtx);
 
     spinner.succeed();
 
     const format = (ctx.options.format || ctx.options.f || 'human') as OutputFormat;
-    const formattedData = formatAttachment(result.data);
+    const formattedData = formatAttachment(result.data, { included: result.included });
 
     if (format === 'json') {
       ctx.formatter.output(formattedData);

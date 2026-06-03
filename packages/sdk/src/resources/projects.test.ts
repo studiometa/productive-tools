@@ -2,7 +2,7 @@ import { ProductiveApi } from '@studiometa/productive-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ResourceNotFoundError } from '../errors.js';
-import { AsyncPaginatedIterator } from '../pagination.js';
+import { AsyncPaginatedIterator, DEFAULT_PAGE_SIZE } from '../pagination.js';
 import { QueryBuilder } from '../query-builder.js';
 import { createMockFetch } from '../test-utils.js';
 import { ProjectsCollection } from './projects.js';
@@ -65,6 +65,46 @@ describe('ProjectsCollection', () => {
         expect.any(Object),
       );
     });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: [], meta: {} }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new ProjectsCollection(createApi());
+      await col.list({ include: ['company'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=company'),
+        expect.any(Object),
+      );
+    });
+
+    it('resolves the company relationship from the included array (issue #174)', async () => {
+      vi.stubGlobal(
+        'fetch',
+        createMockFetch(() => ({
+          data: [
+            {
+              id: '1',
+              type: 'projects',
+              attributes: { name: 'Project Alpha' },
+              relationships: { company: { data: { id: '99', type: 'companies' } } },
+            },
+          ],
+          included: [{ id: '99', type: 'companies', attributes: { name: 'Acme Inc.' } }],
+          meta: { total: 1 },
+        })),
+      );
+
+      const col = new ProjectsCollection(createApi());
+      const result = await col.where({}).include('company').list();
+
+      expect(result.data[0].company).toMatchObject({
+        id: '99',
+        type: 'companies',
+        name: 'Acme Inc.',
+      });
+    });
   });
 
   describe('get()', () => {
@@ -82,6 +122,19 @@ describe('ProjectsCollection', () => {
 
       expect(result.data).toMatchObject({ id: '42', type: 'projects', name: 'Single Project' });
     });
+
+    it('forwards the include param to the request', async () => {
+      const mockFetch = createMockFetch(() => ({ data: makeProject('42', 'P'), meta: {} }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new ProjectsCollection(createApi());
+      await col.get('42', { include: ['company'] });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('include=company'),
+        expect.any(Object),
+      );
+    });
   });
 
   describe('all()', () => {
@@ -89,6 +142,20 @@ describe('ProjectsCollection', () => {
       const col = new ProjectsCollection(createApi());
       const iter = col.all();
       expect(iter).toBeInstanceOf(AsyncPaginatedIterator);
+    });
+
+    it('defaults to the shared DEFAULT_PAGE_SIZE per request (Finding 8)', async () => {
+      expect(DEFAULT_PAGE_SIZE).toBe(100);
+      const mockFetch = createMockFetch(() => ({ data: [], meta: { total_pages: 1 } }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new ProjectsCollection(createApi());
+      await col.all().toArray();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining(`page%5Bsize%5D=${DEFAULT_PAGE_SIZE}`),
+        expect.any(Object),
+      );
     });
 
     it('iterates through all pages', async () => {

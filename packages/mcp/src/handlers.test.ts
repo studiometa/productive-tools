@@ -168,7 +168,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBeUndefined();
-        expect(mockApi.getProject).toHaveBeenCalledWith('123');
+        expect(mockApi.getProject).toHaveBeenCalledWith('123', { include: undefined });
       });
 
       it('should return error for get without id', async () => {
@@ -623,7 +623,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBeUndefined();
-        expect(mockApi.getPerson).toHaveBeenCalledWith('123');
+        expect(mockApi.getPerson).toHaveBeenCalledWith('123', { include: undefined });
       });
 
       it('should handle me action with userId', async () => {
@@ -643,7 +643,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBeUndefined();
-        expect(mockApi.getPerson).toHaveBeenCalledWith('500521');
+        expect(mockApi.getPerson).toHaveBeenCalledWith('500521', { include: undefined });
       });
 
       it('should handle me action without userId', async () => {
@@ -1316,7 +1316,7 @@ describe('handlers', () => {
         );
 
         expect(result.isError).toBeUndefined();
-        expect(mockApi.getCompany).toHaveBeenCalledWith('123');
+        expect(mockApi.getCompany).toHaveBeenCalledWith('123', { include: undefined });
       });
 
       it('should return error for get without id', async () => {
@@ -2282,6 +2282,72 @@ describe('include parameter', () => {
     });
   });
 
+  describe('people', () => {
+    it('forwards include to getPerson for get', async () => {
+      mockApi.getPerson.mockResolvedValue({
+        data: { id: '1', type: 'people', attributes: { first_name: 'J', last_name: 'D' } },
+      });
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'people', action: 'get', id: '1', include: ['company'] },
+        credentials,
+      );
+
+      expect(mockApi.getPerson).toHaveBeenCalledWith('1', { include: ['company'] });
+    });
+
+    it('forwards include to getPerson for me', async () => {
+      mockApi.getPerson.mockResolvedValue({
+        data: { id: '500521', type: 'people', attributes: { first_name: 'T', last_name: 'U' } },
+      });
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'people', action: 'me', include: ['company'] },
+        credentials,
+      );
+
+      expect(mockApi.getPerson).toHaveBeenCalledWith('500521', { include: ['company'] });
+    });
+
+    it('forwards include to getPeople for list', async () => {
+      mockApi.getPeople.mockResolvedValue({
+        data: [{ id: '1', type: 'people', attributes: { first_name: 'J', last_name: 'D' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      });
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'people', action: 'list', include: ['company'] },
+        credentials,
+      );
+
+      expect(mockApi.getPeople).toHaveBeenCalledWith(
+        expect.objectContaining({ include: ['company'] }),
+      );
+    });
+  });
+
+  describe('services', () => {
+    it('forwards include to getServices for list', async () => {
+      mockApi.getServices.mockResolvedValue({
+        data: [{ id: '1', type: 'services', attributes: { name: 'Dev' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      });
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'services', action: 'list', include: ['deal'] },
+        credentials,
+      );
+
+      expect(mockApi.getServices).toHaveBeenCalledWith(
+        expect.objectContaining({ include: ['deal'] }),
+      );
+    });
+  });
+
   describe('bookings', () => {
     it('should use default includes when no user includes', async () => {
       const mockResponse = {
@@ -2507,7 +2573,7 @@ describe('include parameter', () => {
       );
 
       expect(result.isError).toBeFalsy();
-      expect(mockApi.getAttachment).toHaveBeenCalledWith('1');
+      expect(mockApi.getAttachment).toHaveBeenCalledWith('1', { include: undefined });
     });
 
     it('should handle delete action', async () => {
@@ -2881,7 +2947,7 @@ describe('smart ID resolution', () => {
 
       expect(result.isError).toBeUndefined();
       expect(mockApi.getPeople).toHaveBeenCalled();
-      expect(mockApi.getPerson).toHaveBeenCalledWith('500521');
+      expect(mockApi.getPerson).toHaveBeenCalledWith('500521', { include: undefined });
     });
 
     it('should handle resolve action for people resource', async () => {
@@ -2955,7 +3021,7 @@ describe('smart ID resolution', () => {
 
       expect(result.isError).toBeUndefined();
       expect(mockApi.getProjects).toHaveBeenCalled();
-      expect(mockApi.getProject).toHaveBeenCalledWith('777');
+      expect(mockApi.getProject).toHaveBeenCalledWith('777', { include: undefined });
     });
 
     it('should resolve filter with company name in list action', async () => {
@@ -3301,7 +3367,7 @@ describe('smart ID resolution', () => {
       );
 
       expect(result.isError).toBeUndefined();
-      expect(mockApi.getPage).toHaveBeenCalledWith('1');
+      expect(mockApi.getPage).toHaveBeenCalledWith('1', { include: undefined });
     });
 
     it('should return error for get without id', async () => {
@@ -3473,7 +3539,7 @@ describe('smart ID resolution', () => {
       );
 
       expect(result.isError).toBeUndefined();
-      expect(mockApi.getDiscussion).toHaveBeenCalledWith('1');
+      expect(mockApi.getDiscussion).toHaveBeenCalledWith('1', { include: undefined });
     });
 
     it('should return error for get without id', async () => {
@@ -4080,7 +4146,7 @@ describe('smart ID resolution', () => {
       expect(result.isError).toBeUndefined();
     });
 
-    it('should skip validation for resources with no include map (projects)', async () => {
+    it('should pass through valid includes for projects (now validated)', async () => {
       mockApi.getProjects.mockResolvedValue({
         data: [{ id: '1', type: 'projects', attributes: { name: 'Project 1' } }],
         meta: { current_page: 1, total_pages: 1 },
@@ -4088,11 +4154,37 @@ describe('smart ID resolution', () => {
 
       const result = await executeToolWithCredentials(
         'productive',
+        { resource: 'projects', action: 'list', include: ['company'] },
+        credentials,
+      );
+
+      expect(result.isError).toBeUndefined();
+    });
+
+    it('should return error for an invalid include on projects', async () => {
+      const result = await executeToolWithCredentials(
+        'productive',
         { resource: 'projects', action: 'list', include: ['anything'] },
         credentials,
       );
 
-      // Projects has no include map — should not error
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Invalid include value');
+    });
+
+    it('should skip validation for resources with no include map (timers)', async () => {
+      mockApi.getTimers.mockResolvedValue({
+        data: [{ id: '1', type: 'timers', attributes: {} }],
+        meta: { current_page: 1, total_pages: 1 },
+      });
+
+      const result = await executeToolWithCredentials(
+        'productive',
+        { resource: 'timers', action: 'list', include: ['anything'] },
+        credentials,
+      );
+
+      // Timers has no include map — should not error
       expect(result.isError).toBeUndefined();
     });
 

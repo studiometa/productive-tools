@@ -104,4 +104,15 @@ describe('listPeople', () => {
 
     expect(getPeople).toHaveBeenCalledWith(expect.objectContaining({ page: 1, perPage: 100 }));
   });
+
+  it('forwards include and returns included (Finding 1)', async () => {
+    const included = [{ id: '9', type: 'companies', attributes: { name: 'Acme' } }];
+    const getPeople = vi.fn().mockResolvedValue({ data: [], meta: {}, included });
+    const ctx = createTestExecutorContext({ api: { getPeople } });
+
+    const result = await listPeople({ include: ['company'] }, ctx);
+
+    expect(getPeople).toHaveBeenCalledWith(expect.objectContaining({ include: ['company'] }));
+    expect(result.included).toEqual(included);
+  });
 });

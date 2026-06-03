@@ -71,4 +71,14 @@ describe('listComments', () => {
     expect(result.data).toEqual(mockResponse.data);
     expect(result.meta).toEqual(mockResponse.meta);
   });
+
+  it('returns included sideloaded resources (Finding 2)', async () => {
+    const included = [{ id: '7', type: 'people', attributes: { first_name: 'Jane' } }];
+    const getComments = vi.fn().mockResolvedValue({ data: [], meta: {}, included });
+    const ctx = createTestExecutorContext({ api: { getComments } });
+
+    const result = await listComments({ include: ['creator'] }, ctx);
+
+    expect(result.included).toEqual(included);
+  });
 });

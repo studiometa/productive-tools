@@ -4,6 +4,8 @@ import type { ExecutorContext } from '../../context/types.js';
 import type { ExecutorResult } from '../types.js';
 import type { ListPagesOptions } from './types.js';
 
+import { buildListParams } from '../types.js';
+
 export function buildPageFilters(options: ListPagesOptions): Record<string, string> {
   const filter: Record<string, string> = {};
 
@@ -23,10 +25,8 @@ export async function listPages(
   const { resolved: resolvedFilter, metadata } = await ctx.resolver.resolveFilters(filter);
 
   const response = await ctx.api.getPages({
-    page: options.page ?? 1,
-    perPage: options.perPage ?? 100,
+    ...buildListParams(options),
     filter: resolvedFilter,
-    sort: options.sort,
   });
 
   return {

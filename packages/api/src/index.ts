@@ -6,8 +6,8 @@
  */
 
 // API client
-export { ProductiveApi } from './client.js';
-export type { ApiOptions } from './client.js';
+export { ProductiveApi, buildListQuery } from './client.js';
+export type { ApiOptions, ListParams } from './client.js';
 
 // Rate limiter
 export { RateLimiter, DEFAULT_RATE_LIMIT_CONFIG } from './rate-limiter.js';
@@ -110,6 +110,7 @@ export type {
 } from './formatters/custom-field.js';
 
 // Status/type constants (bidirectional lookup maps)
+export { DEFAULT_PAGE_SIZE } from './constants.js';
 export { createStatusMap, createNumericStatusMap } from './constants.js';
 export type { StatusMap, NumericStatusMap } from './constants.js';
 export {

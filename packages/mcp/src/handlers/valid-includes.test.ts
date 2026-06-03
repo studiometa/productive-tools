@@ -45,28 +45,48 @@ describe('VALID_INCLUDES', () => {
     expect(VALID_INCLUDES.time).toContain('service');
     expect(VALID_INCLUDES.time).toContain('task');
   });
+
+  it('contains the formerly-unvalidated resources', () => {
+    expect(VALID_INCLUDES.projects).toContain('company');
+    expect(VALID_INCLUDES.people).toContain('company');
+    expect(VALID_INCLUDES.companies).toContain('contacts');
+    expect(VALID_INCLUDES.services).toContain('deal');
+    expect(VALID_INCLUDES.pages).toContain('creator');
+    expect(VALID_INCLUDES.discussions).toContain('page');
+    expect(VALID_INCLUDES.attachments).toContain('task');
+  });
 });
 
 describe('validateIncludes', () => {
-  describe('returns null for unknown resources', () => {
-    it('returns null for projects (no include validation)', () => {
-      expect(validateIncludes('projects', ['company'])).toBeNull();
+  describe('returns null for resources without an include whitelist', () => {
+    it('returns null for timers (no include validation)', () => {
+      expect(validateIncludes('timers', ['service'])).toBeNull();
     });
 
-    it('returns null for services', () => {
-      expect(validateIncludes('services', ['project'])).toBeNull();
-    });
-
-    it('returns null for people', () => {
-      expect(validateIncludes('people', ['company'])).toBeNull();
-    });
-
-    it('returns null for companies', () => {
-      expect(validateIncludes('companies', ['contacts'])).toBeNull();
-    });
-
-    it('returns null for completely unknown resource', () => {
+    it('returns null for a completely unknown resource', () => {
       expect(validateIncludes('foobar', ['anything'])).toBeNull();
+    });
+  });
+
+  describe('validates the formerly-unvalidated resources', () => {
+    it('accepts valid includes for projects, people, companies, services', () => {
+      expect(validateIncludes('projects', ['company'])!.invalid).toEqual([]);
+      expect(validateIncludes('people', ['company'])!.invalid).toEqual([]);
+      expect(validateIncludes('companies', ['contacts'])!.invalid).toEqual([]);
+      expect(validateIncludes('services', ['deal'])!.invalid).toEqual([]);
+    });
+
+    it('accepts valid includes for pages, discussions, attachments', () => {
+      expect(validateIncludes('pages', ['creator'])!.invalid).toEqual([]);
+      expect(validateIncludes('discussions', ['page'])!.invalid).toEqual([]);
+      expect(validateIncludes('attachments', ['task'])!.invalid).toEqual([]);
+    });
+
+    it('catches a typo on projects with a helpful suggestion', () => {
+      const result = validateIncludes('projects', ['copmany']);
+      expect(result!.invalid).toEqual(['copmany']);
+      expect(result!.suggestions.copmany).toContain('Valid includes for projects');
+      expect(result!.suggestions.copmany).toContain('company');
     });
   });
 

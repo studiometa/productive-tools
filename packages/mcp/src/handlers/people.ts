@@ -21,7 +21,7 @@ export async function handlePeople(
   ctx: HandlerContext,
   credentials: ProductiveCredentials,
 ): Promise<ToolResult> {
-  const { formatOptions, filter, page, perPage } = ctx;
+  const { formatOptions, filter, page, perPage, include } = ctx;
   const { id, query, type } = args;
 
   if (action === 'resolve') {
@@ -33,8 +33,8 @@ export async function handlePeople(
   if (action === 'get') {
     if (!id) return inputErrorResult(ErrorMessages.missingId('get'));
 
-    const result = await getPerson({ id }, execCtx);
-    const formatted = formatPerson(result.data, formatOptions);
+    const result = await getPerson({ id, include }, execCtx);
+    const formatted = formatPerson(result.data, { ...formatOptions, included: result.included });
 
     if (ctx.includeHints !== false) {
       return jsonResult({ ...formatted, _hints: getPersonHints(id) });
@@ -44,8 +44,8 @@ export async function handlePeople(
 
   if (action === 'me') {
     if (credentials.userId) {
-      const result = await getPerson({ id: credentials.userId }, execCtx);
-      const formatted = formatPerson(result.data, formatOptions);
+      const result = await getPerson({ id: credentials.userId, include }, execCtx);
+      const formatted = formatPerson(result.data, { ...formatOptions, included: result.included });
 
       if (ctx.includeHints !== false) {
         return jsonResult({ ...formatted, _hints: getPersonHints(credentials.userId) });
@@ -60,9 +60,12 @@ export async function handlePeople(
   }
 
   if (action === 'list') {
-    const result = await listPeople({ page, perPage, additionalFilters: filter }, execCtx);
+    const result = await listPeople({ page, perPage, additionalFilters: filter, include }, execCtx);
 
-    const response = formatListResponse(result.data, formatPerson, result.meta, formatOptions);
+    const response = formatListResponse(result.data, formatPerson, result.meta, {
+      ...formatOptions,
+      included: result.included,
+    });
 
     if (result.resolved && Object.keys(result.resolved).length > 0) {
       return jsonResult({ ...response, _resolved: result.resolved });
