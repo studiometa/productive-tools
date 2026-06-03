@@ -2282,6 +2282,72 @@ describe('include parameter', () => {
     });
   });
 
+  describe('people', () => {
+    it('forwards include to getPerson for get', async () => {
+      mockApi.getPerson.mockResolvedValue({
+        data: { id: '1', type: 'people', attributes: { first_name: 'J', last_name: 'D' } },
+      });
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'people', action: 'get', id: '1', include: ['company'] },
+        credentials,
+      );
+
+      expect(mockApi.getPerson).toHaveBeenCalledWith('1', { include: ['company'] });
+    });
+
+    it('forwards include to getPerson for me', async () => {
+      mockApi.getPerson.mockResolvedValue({
+        data: { id: '500521', type: 'people', attributes: { first_name: 'T', last_name: 'U' } },
+      });
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'people', action: 'me', include: ['company'] },
+        credentials,
+      );
+
+      expect(mockApi.getPerson).toHaveBeenCalledWith('500521', { include: ['company'] });
+    });
+
+    it('forwards include to getPeople for list', async () => {
+      mockApi.getPeople.mockResolvedValue({
+        data: [{ id: '1', type: 'people', attributes: { first_name: 'J', last_name: 'D' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      });
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'people', action: 'list', include: ['company'] },
+        credentials,
+      );
+
+      expect(mockApi.getPeople).toHaveBeenCalledWith(
+        expect.objectContaining({ include: ['company'] }),
+      );
+    });
+  });
+
+  describe('services', () => {
+    it('forwards include to getServices for list', async () => {
+      mockApi.getServices.mockResolvedValue({
+        data: [{ id: '1', type: 'services', attributes: { name: 'Dev' } }],
+        meta: { current_page: 1, total_pages: 1 },
+      });
+
+      await executeToolWithCredentials(
+        'productive',
+        { resource: 'services', action: 'list', include: ['deal'] },
+        credentials,
+      );
+
+      expect(mockApi.getServices).toHaveBeenCalledWith(
+        expect.objectContaining({ include: ['deal'] }),
+      );
+    });
+  });
+
   describe('bookings', () => {
     it('should use default includes when no user includes', async () => {
       const mockResponse = {
