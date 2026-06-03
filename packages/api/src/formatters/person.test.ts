@@ -79,3 +79,29 @@ describe('formatPerson', () => {
     expect(r.custom_fields).toBeUndefined();
   });
 });
+
+describe('formatPerson resolves included relationships', () => {
+  it('inlines the company relationship from the included array', () => {
+    const result = formatPerson(
+      {
+        id: '1',
+        type: 'people',
+        attributes: { first_name: 'Jane', last_name: 'Doe' },
+        relationships: { company: { data: { type: 'companies', id: '99' } } },
+      },
+      { included: [{ id: '99', type: 'companies', attributes: { name: 'Acme Inc.' } }] },
+    );
+
+    expect(result.company).toEqual({ id: '99', type: 'companies', name: 'Acme Inc.' });
+  });
+
+  it('adds no relationship object when nothing is sideloaded', () => {
+    const result = formatPerson({
+      id: '1',
+      type: 'people',
+      attributes: { first_name: 'Jane', last_name: 'Doe' },
+    });
+
+    expect(result.company).toBeUndefined();
+  });
+});

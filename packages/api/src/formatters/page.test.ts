@@ -83,3 +83,25 @@ describe('formatPage', () => {
     expect(r.public).toBe(false);
   });
 });
+
+describe('formatPage resolves included relationships', () => {
+  it('inlines the creator relationship from the included array', () => {
+    const result = formatPage(fullPage, {
+      included: [
+        { id: '20', type: 'people', attributes: { first_name: 'Jane', last_name: 'Doe' } },
+      ],
+    });
+
+    expect(result.creator).toEqual({
+      id: '20',
+      type: 'people',
+      first_name: 'Jane',
+      last_name: 'Doe',
+    });
+  });
+
+  it('adds no relationship object when nothing is sideloaded', () => {
+    const result = formatPage(fullPage);
+    expect(result.creator).toBeUndefined();
+  });
+});

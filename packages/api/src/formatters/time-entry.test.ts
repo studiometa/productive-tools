@@ -77,3 +77,18 @@ describe('formatTimeEntry', () => {
     expect(result.started_at).toBeUndefined();
   });
 });
+
+describe('formatTimeEntry resolves included relationships', () => {
+  it('inlines the service relationship from the included array', () => {
+    const result = formatTimeEntry(mockEntry, {
+      included: [{ id: '200', type: 'services', attributes: { name: 'Development' } }],
+    });
+
+    expect(result.service).toEqual({ id: '200', type: 'services', name: 'Development' });
+  });
+
+  it('adds no relationship object when nothing is sideloaded', () => {
+    const result = formatTimeEntry(mockEntry);
+    expect(result.service).toBeUndefined();
+  });
+});

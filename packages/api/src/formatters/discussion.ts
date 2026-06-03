@@ -5,6 +5,7 @@
 import type { JsonApiResource, FormatOptions } from './types.js';
 
 import { stripHtml } from '../utils/html.js';
+import { resolveRelationships } from './included.js';
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 const STATUS_LABELS: Record<number, string> = {
@@ -58,6 +59,10 @@ export function formatDiscussion(
   if (opts.includeTimestamps) {
     result.created_at = attrs.created_at ? String(attrs.created_at) : undefined;
     result.updated_at = attrs.updated_at ? String(attrs.updated_at) : undefined;
+  }
+
+  if (opts.included) {
+    Object.assign(result, resolveRelationships(discussion, opts.included));
   }
 
   return result;

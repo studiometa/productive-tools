@@ -4,6 +4,7 @@
 
 import type { JsonApiResource, FormatOptions, FormattedPerson } from './types.js';
 
+import { resolveRelationships } from './included.js';
 import { DEFAULT_FORMAT_OPTIONS } from './types.js';
 
 /**
@@ -43,6 +44,10 @@ export function formatPerson(
   if (opts.includeTimestamps) {
     result.created_at = attrs.created_at as string | undefined;
     result.updated_at = attrs.updated_at as string | undefined;
+  }
+
+  if (opts.included) {
+    Object.assign(result, resolveRelationships(person, opts.included));
   }
 
   return result;

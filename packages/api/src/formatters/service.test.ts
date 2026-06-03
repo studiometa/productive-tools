@@ -69,3 +69,30 @@ describe('formatService', () => {
     expect(r.billing_type_id).toBeUndefined();
   });
 });
+
+describe('formatService resolves included relationships', () => {
+  it('inlines the deal relationship from the included array', () => {
+    const result = formatService(
+      {
+        id: '1',
+        type: 'services',
+        attributes: { name: 'Dev' },
+        relationships: { deal: { data: { type: 'deals', id: '4' } } },
+      },
+      { included: [{ id: '4', type: 'deals', attributes: { name: 'Big Deal' } }] },
+    );
+
+    expect(result.deal).toEqual({ id: '4', type: 'deals', name: 'Big Deal' });
+  });
+
+  it('adds no relationship object when nothing is sideloaded', () => {
+    const result = formatService({
+      id: '1',
+      type: 'services',
+      attributes: { name: 'Dev' },
+      relationships: { deal: { data: { type: 'deals', id: '4' } } },
+    });
+
+    expect(result.deal).toBeUndefined();
+  });
+});

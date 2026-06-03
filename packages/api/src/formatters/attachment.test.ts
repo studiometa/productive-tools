@@ -86,3 +86,30 @@ describe('formatAttachment', () => {
     expect(r.attachable_type).toBeUndefined();
   });
 });
+
+describe('formatAttachment resolves included relationships', () => {
+  it('inlines the attachable relationship from the included array', () => {
+    const result = formatAttachment(
+      {
+        id: '1',
+        type: 'attachments',
+        attributes: { name: 'f.pdf', content_type: 'application/pdf', size: 1024, url: 'http://x' },
+        relationships: { attachable: { data: { type: 'tasks', id: '77' } } },
+      },
+      { included: [{ id: '77', type: 'tasks', attributes: { title: 'My Task' } }] },
+    );
+
+    expect(result.attachable).toEqual({ id: '77', type: 'tasks', title: 'My Task' });
+  });
+
+  it('adds no relationship object when nothing is sideloaded', () => {
+    const result = formatAttachment({
+      id: '1',
+      type: 'attachments',
+      attributes: { name: 'f.pdf', content_type: 'application/pdf', size: 1024, url: 'http://x' },
+      relationships: { attachable: { data: { type: 'tasks', id: '77' } } },
+    });
+
+    expect(result.attachable).toBeUndefined();
+  });
+});

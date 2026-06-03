@@ -72,7 +72,7 @@ export function formatTimeEntry(
   entry: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatTimeEntry(entry, MCP_FORMAT_OPTIONS);
+  const result = cliFormatTimeEntry(entry, { ...MCP_FORMAT_OPTIONS, included: options?.included });
   if (options?.compact) {
     return compactify(result, ['note', 'billable_time', 'approved']);
   }
@@ -86,7 +86,7 @@ export function formatProject(
   project: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatProject(project, MCP_FORMAT_OPTIONS);
+  const result = cliFormatProject(project, { ...MCP_FORMAT_OPTIONS, included: options?.included });
   if (options?.compact) {
     return compactify(result, ['budget']);
   }
@@ -122,7 +122,7 @@ export function formatPerson(
   person: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatPerson(person, MCP_FORMAT_OPTIONS);
+  const result = cliFormatPerson(person, { ...MCP_FORMAT_OPTIONS, included: options?.included });
   if (options?.compact) {
     return compactify(result, ['title', 'first_name', 'last_name']); // Keep 'name' which combines them
   }
@@ -136,7 +136,7 @@ export function formatService(
   service: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatService(service, MCP_FORMAT_OPTIONS);
+  const result = cliFormatService(service, { ...MCP_FORMAT_OPTIONS, included: options?.included });
   if (options?.compact) {
     return compactify(result, ['budgeted_time', 'worked_time']);
   }
@@ -150,7 +150,7 @@ export function formatCompany(
   company: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatCompany(company, MCP_FORMAT_OPTIONS);
+  const result = cliFormatCompany(company, { ...MCP_FORMAT_OPTIONS, included: options?.included });
   if (options?.compact) {
     return compactify(result, ['billing_name', 'domain', 'due_days']);
   }
@@ -214,7 +214,10 @@ export function formatAttachment(
   attachment: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatAttachment(attachment, MCP_FORMAT_OPTIONS);
+  const result = cliFormatAttachment(attachment, {
+    ...MCP_FORMAT_OPTIONS,
+    included: options?.included,
+  });
   if (options?.compact) {
     return compactify(result, ['url']);
   }
@@ -228,7 +231,7 @@ export function formatPage(
   page: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatPage(page, MCP_FORMAT_OPTIONS);
+  const result = cliFormatPage(page, { ...MCP_FORMAT_OPTIONS, included: options?.included });
   if (options?.compact) {
     return compactify(result, ['body', 'version_number']);
   }
@@ -242,7 +245,10 @@ export function formatDiscussion(
   discussion: JsonApiResource,
   options?: McpFormatOptions,
 ): Record<string, unknown> {
-  const result = cliFormatDiscussion(discussion, MCP_FORMAT_OPTIONS);
+  const result = cliFormatDiscussion(discussion, {
+    ...MCP_FORMAT_OPTIONS,
+    included: options?.included,
+  });
   if (options?.compact) {
     return compactify(result, ['body']);
   }
