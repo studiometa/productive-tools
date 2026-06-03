@@ -53,20 +53,20 @@ export function waitForProcess(child: ReturnType<typeof spawn>): Promise<number>
 /**
  * Run a script with `productive run`.
  *
- * @param rawArgs   - Positional args from the CLI: [scriptPath, ...scriptArgs]
+ * @param rawArgs   - [scriptPath, ...scriptArgs] — the script path followed by
+ *                    the args to forward (everything after the CLI's `--`)
  * @param ctx       - Command context (config, formatter)
+ * @param options   - Run options. `dryRun` intercepts mutating API calls
+ *                    without executing them.
  * @param resolver  - Module resolver (defaults to import.meta.resolve)
  */
 export async function scriptRun(
   rawArgs: string[],
   ctx: CommandContext,
+  { dryRun = false }: { dryRun?: boolean } = {},
   resolver: ModuleResolver = createDefaultResolver(import.meta.url),
 ): Promise<void> {
-  // Extract CLI-level flags before the script path and script args.
-  // --dry-run intercepts mutating API calls without executing them.
-  const dryRun = rawArgs.includes('--dry-run');
-  const argsWithoutCliFlags = rawArgs.filter((a) => a !== '--dry-run');
-  const [rawScriptPath, ...scriptArgs] = argsWithoutCliFlags;
+  const [rawScriptPath, ...scriptArgs] = rawArgs;
 
   if (!rawScriptPath) {
     ctx.formatter.error('Usage: productive run <script.[ts|js|mjs]> [args...]');

@@ -18,7 +18,7 @@ import { handlePeopleCommand, showPeopleHelp } from './commands/people/index.js'
 import { handleProjectsCommand, showProjectsHelp } from './commands/projects/index.js';
 import { handleReportsCommand, showReportsHelp } from './commands/reports/index.js';
 import { handleResolveCommand, showResolveHelp } from './commands/resolve/index.js';
-import { handleRunCommand, showRunHelp } from './commands/run/index.js';
+import { extractRunArgs, handleRunCommand, showRunHelp } from './commands/run/index.js';
 import { handleServicesCommand, showServicesHelp } from './commands/services/index.js';
 import { handleTasksCommand, showTasksHelp } from './commands/tasks/index.js';
 import { handleTimeCommand, showTimeHelp } from './commands/time/index.js';
@@ -421,13 +421,19 @@ async function main(): Promise<void> {
         break;
 
       case 'run':
-      case 'script':
-        if (wantsHelp) {
+      case 'script': {
+        // `run` forwards everything after the `--` separator to the script
+        // verbatim; flags before it configure `run` itself. Recover the split
+        // from raw argv and parse only the run-options portion.
+        const { cliArgs, scriptPath, scriptArgs } = extractRunArgs(process.argv.slice(2));
+        const runOptions = parseArgs(cliArgs).options;
+        if (runOptions.help || runOptions.h) {
           showRunHelp();
           process.exit(0);
         }
-        await handleRunCommand(subcommand, positional, options);
+        await handleRunCommand(scriptPath, scriptArgs, runOptions);
         break;
+      }
 
       case 'api':
         if (wantsHelp) {

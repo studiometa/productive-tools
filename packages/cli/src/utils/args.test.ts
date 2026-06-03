@@ -68,6 +68,30 @@ describe('parseArgs', () => {
     expect(result.options['no-color']).toBe(true);
   });
 
+  describe('-- end-of-options separator', () => {
+    it('forwards everything after -- as positionals without parsing flags', () => {
+      const result = parseArgs(['run', './script.mjs', '--', '--from', '2025-01-01', '-v']);
+      expect(result.command).toEqual(['run']);
+      expect(result.positional).toEqual(['./script.mjs', '--from', '2025-01-01', '-v']);
+      // Post-separator flags must NOT leak into options
+      expect(result.options.from).toBeUndefined();
+      expect(result.options.v).toBeUndefined();
+    });
+
+    it('does not set a bogus empty-key option for a bare --', () => {
+      const result = parseArgs(['--']);
+      expect(result.options).toEqual({});
+      expect(result.positional).toEqual([]);
+    });
+
+    it('keeps flags before -- as options', () => {
+      const result = parseArgs(['--format', 'json', '--', '--version']);
+      expect(result.options.format).toBe('json');
+      expect(result.options.version).toBeUndefined();
+      expect(result.positional).toEqual(['--version']);
+    });
+  });
+
   describe('repeatable options', () => {
     it('should collect repeated --filter into array', () => {
       const result = parseArgs(['--filter', 'project_id=123', '--filter', 'status=1']);

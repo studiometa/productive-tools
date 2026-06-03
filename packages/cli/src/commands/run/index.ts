@@ -1,2 +1,2 @@
-export { handleRunCommand } from './command.js';
+export { extractRunArgs, handleRunCommand } from './command.js';
 export { showRunHelp } from './help.js';

@@ -37,6 +37,17 @@ export function parseArgs(argv: string[] = process.argv.slice(2)): ParsedArgs {
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
 
+    if (arg === '--') {
+      // End-of-options separator (getopt convention): forward the remaining
+      // tokens verbatim as positionals so they are never parsed as flags. This
+      // keeps a passthrough command's args (e.g. `productive run … -- --flag`)
+      // out of the global option set.
+      for (let j = i + 1; j < argv.length; j++) {
+        positional.push(argv[j]);
+      }
+      break;
+    }
+
     if (arg.startsWith('--')) {
       // Long option: --key=value or --key value or --flag
       const equalIndex = arg.indexOf('=');
