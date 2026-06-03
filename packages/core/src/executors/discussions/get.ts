@@ -8,6 +8,6 @@ export async function getDiscussion(
   options: GetDiscussionOptions,
   ctx: ExecutorContext,
 ): Promise<ExecutorResult<ProductiveDiscussion>> {
-  const response = await ctx.api.getDiscussion(options.id);
+  const response = await ctx.api.getDiscussion(options.id, { include: options.include });
   return { data: response.data, included: response.included };
 }

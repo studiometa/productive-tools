@@ -3301,7 +3301,7 @@ describe('smart ID resolution', () => {
       );
 
       expect(result.isError).toBeUndefined();
-      expect(mockApi.getPage).toHaveBeenCalledWith('1');
+      expect(mockApi.getPage).toHaveBeenCalledWith('1', { include: undefined });
     });
 
     it('should return error for get without id', async () => {
@@ -3473,7 +3473,7 @@ describe('smart ID resolution', () => {
       );
 
       expect(result.isError).toBeUndefined();
-      expect(mockApi.getDiscussion).toHaveBeenCalledWith('1');
+      expect(mockApi.getDiscussion).toHaveBeenCalledWith('1', { include: undefined });
     });
 
     it('should return error for get without id', async () => {

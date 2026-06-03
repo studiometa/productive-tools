@@ -33,6 +33,7 @@ export async function listDiscussions(
     perPage: options.perPage ?? 100,
     filter: resolvedFilter,
     sort: options.sort,
+    include: options.include,
   });
 
   return {

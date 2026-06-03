@@ -271,7 +271,7 @@ describe('discussions command', () => {
 
       await discussionsGet(['1'], ctx);
 
-      expect(getDiscussion).toHaveBeenCalledWith('1');
+      expect(getDiscussion).toHaveBeenCalledWith('1', { include: undefined });
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
@@ -316,7 +316,7 @@ describe('discussions command', () => {
 
       await discussionsGet(['1'], ctx);
 
-      expect(getDiscussion).toHaveBeenCalledWith('1');
+      expect(getDiscussion).toHaveBeenCalledWith('1', { include: undefined });
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 

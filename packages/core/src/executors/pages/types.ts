@@ -8,6 +8,8 @@ export interface ListPagesOptions extends PaginationOptions {
 
 export interface GetPageOptions {
   id: string;
+  /** Related resources to include (e.g., creator) */
+  include?: string[];
 }
 
 export interface CreatePageOptions {

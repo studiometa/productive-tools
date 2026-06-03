@@ -234,7 +234,7 @@ describe('pages command', () => {
 
       await pagesGet(['1'], ctx);
 
-      expect(getPage).toHaveBeenCalledWith('1');
+      expect(getPage).toHaveBeenCalledWith('1', { include: undefined });
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
@@ -254,7 +254,7 @@ describe('pages command', () => {
 
       await pagesGet(['1'], ctx);
 
-      expect(getPage).toHaveBeenCalledWith('1');
+      expect(getPage).toHaveBeenCalledWith('1', { include: undefined });
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
@@ -280,7 +280,7 @@ describe('pages command', () => {
 
       await pagesGet(['1'], ctx);
 
-      expect(getPage).toHaveBeenCalledWith('1');
+      expect(getPage).toHaveBeenCalledWith('1', { include: undefined });
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
