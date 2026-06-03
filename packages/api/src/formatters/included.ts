@@ -20,6 +20,30 @@ export interface ResolvedRelationship {
 }
 
 /**
+ * Index of an `included` array keyed by `${type}\0${id}`, memoized per array
+ * reference. A list response hands the *same* `included` array to every record's
+ * formatter, so indexing once turns the formatting pass from O(records × includes)
+ * linear scans into O(records) O(1) lookups over a single shared index.
+ */
+const lookupCache = new WeakMap<JsonApiResource[], Map<string, JsonApiResource>>();
+
+const lookupKey = (type: string, id: string): string => `${type}\0${id}`;
+
+function getLookup(included: JsonApiResource[]): Map<string, JsonApiResource> {
+  const cached = lookupCache.get(included);
+  if (cached) return cached;
+
+  const lookup = new Map<string, JsonApiResource>();
+  for (const resource of included) {
+    const key = lookupKey(resource.type, resource.id);
+    // First entry wins, matching the previous Array.find semantics.
+    if (!lookup.has(key)) lookup.set(key, resource);
+  }
+  lookupCache.set(included, lookup);
+  return lookup;
+}
+
+/**
  * Find a sideloaded resource in the `included` array by type and id.
  */
 export function getIncludedResource(
@@ -28,7 +52,7 @@ export function getIncludedResource(
   id: string | undefined,
 ): JsonApiResource | undefined {
   if (!included || !type || !id) return undefined;
-  return included.find((resource) => resource.type === type && resource.id === id);
+  return getLookup(included).get(lookupKey(type, id));
 }
 
 interface ResourceRef {

@@ -22,6 +22,38 @@ describe('getIncludedResource', () => {
     expect(getIncludedResource(included, undefined, '99')).toBeUndefined();
     expect(getIncludedResource(undefined, 'companies', '99')).toBeUndefined();
   });
+
+  it('indexes the included array once and reuses it across lookups', () => {
+    let typeReads = 0;
+    const probe = included.map(
+      (resource) =>
+        new Proxy(resource, {
+          get(target, prop, receiver) {
+            if (prop === 'type') typeReads += 1;
+            return Reflect.get(target, prop, receiver);
+          },
+        }) as JsonApiResource,
+    );
+
+    // Three lookups against the same `included` reference must build the
+    // type/id index a single time — reading each entry's `type` exactly once —
+    // instead of re-scanning the array linearly on every lookup.
+    getIncludedResource(probe, 'people', '5');
+    getIncludedResource(probe, 'contact_entries', '8');
+    getIncludedResource(probe, 'companies', '99');
+
+    expect(typeReads).toBe(probe.length);
+  });
+
+  it('keeps the first match when included has duplicate type/id entries', () => {
+    const dupes: JsonApiResource[] = [
+      { id: '1', type: 'companies', attributes: { name: 'First' } },
+      { id: '1', type: 'companies', attributes: { name: 'Second' } },
+    ];
+    expect(getIncludedResource(dupes, 'companies', '1')).toMatchObject({
+      attributes: { name: 'First' },
+    });
+  });
 });
 
 describe('resolveRelationships', () => {
