@@ -210,4 +210,34 @@ describe('DiscussionsCollection', () => {
       expect(result.data).toHaveLength(1);
     });
   });
+
+  describe('resolve() / reopen() (Finding 5)', () => {
+    it('resolve() patches the discussion and resolves it', async () => {
+      const mockFetch = createMockFetch(() => ({ data: makeDiscussion('1', 'Done') }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new DiscussionsCollection(createApi());
+      const result = await col.resolve('1');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/discussions/1'),
+        expect.objectContaining({ method: 'PATCH' }),
+      );
+      expect(result.data).toMatchObject({ id: '1', type: 'discussions' });
+    });
+
+    it('reopen() patches the discussion', async () => {
+      const mockFetch = createMockFetch(() => ({ data: makeDiscussion('1', 'Reopened') }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const col = new DiscussionsCollection(createApi());
+      const result = await col.reopen('1');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/discussions/1'),
+        expect.objectContaining({ method: 'PATCH' }),
+      );
+      expect(result.data).toMatchObject({ id: '1' });
+    });
+  });
 });

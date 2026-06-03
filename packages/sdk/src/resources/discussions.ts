@@ -81,6 +81,22 @@ export class DiscussionsCollection extends BaseCollection {
   }
 
   /**
+   * Mark a discussion as resolved.
+   */
+  async resolve(id: string): Promise<DiscussionGetResult> {
+    const response = await this.wrapRequest(() => this.api.resolveDiscussion(id));
+    return resolveSingleResponse<ProductiveDiscussion, Discussion>(response);
+  }
+
+  /**
+   * Reopen a previously resolved discussion.
+   */
+  async reopen(id: string): Promise<DiscussionGetResult> {
+    const response = await this.wrapRequest(() => this.api.reopenDiscussion(id));
+    return resolveSingleResponse<ProductiveDiscussion, Discussion>(response);
+  }
+
+  /**
    * Start a fluent query builder for discussions, optionally with initial filters.
    */
   where(filters: Record<string, string> = {}): QueryBuilder<Discussion, DiscussionListResult> {

@@ -19,6 +19,11 @@ export interface TimerGetOptions {
   include?: string[];
 }
 
+export interface TimerStartData {
+  service_id?: string;
+  time_entry_id?: string;
+}
+
 export interface TimerListResult {
   data: Timer[];
   meta: ProductiveApiMeta | undefined;
@@ -43,6 +48,22 @@ export class TimersCollection extends BaseCollection {
    */
   async get(id: string, options: TimerGetOptions = {}): Promise<TimerGetResult> {
     const response = await this.wrapRequest(() => this.api.getTimer(id, options));
+    return resolveSingleResponse<ProductiveTimer, Timer>(response);
+  }
+
+  /**
+   * Start a new timer, optionally bound to a service or time entry.
+   */
+  async start(data: TimerStartData = {}): Promise<TimerGetResult> {
+    const response = await this.wrapRequest(() => this.api.startTimer(data));
+    return resolveSingleResponse<ProductiveTimer, Timer>(response);
+  }
+
+  /**
+   * Stop a running timer by ID.
+   */
+  async stop(id: string): Promise<TimerGetResult> {
+    const response = await this.wrapRequest(() => this.api.stopTimer(id));
     return resolveSingleResponse<ProductiveTimer, Timer>(response);
   }
 
