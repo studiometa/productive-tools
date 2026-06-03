@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SDK**: Add `timers.start()`/`timers.stop()` and `discussions.resolve()`/`discussions.reopen()`, which existed in every other layer but were missing from the SDK ([09844e9], [#175])
 - **API/Core/SDK/CLI**: Support `end_date` when creating a deal — it was settable on update but silently unavailable on create ([d50575a], [#175])
 - **SDK/Core**: Consolidate the default list page size to a shared `DEFAULT_PAGE_SIZE` (100); SDK `all()` iterators previously defaulted to 200 and two core executors to 25 ([93204e2], [#175])
+- **API/MCP**: Resolve sideloaded `include` relationships into the formatted output — the `include` param was forwarded and the `included` array returned, but the CLI/MCP formatters discarded it, so `project.company` (and `person.company`, `service.deal`, `page.creator`, etc.) never surfaced for any resource except tasks/deals/comments/bookings; add a shared `resolveRelationships()` helper wired into the project/person/company/service/time-entry/page/discussion/attachment formatters ([519d8ca], [#175])
+- **MCP**: Forward `include` in the `people` (get/me/list) and `services` list handlers, which never passed it to their executors, leaving the new include support unreachable from MCP for those two resources ([1b85cc1], [#175])
 
 [7a88366]: https://github.com/studiometa/productive-tools/commit/7a88366
 [77177b1]: https://github.com/studiometa/productive-tools/commit/77177b1
@@ -34,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [09844e9]: https://github.com/studiometa/productive-tools/commit/09844e9
 [d50575a]: https://github.com/studiometa/productive-tools/commit/d50575a
 [93204e2]: https://github.com/studiometa/productive-tools/commit/93204e2
+[519d8ca]: https://github.com/studiometa/productive-tools/commit/519d8ca
+[1b85cc1]: https://github.com/studiometa/productive-tools/commit/1b85cc1
 [ebe09eb]: https://github.com/studiometa/productive-tools/commit/ebe09eb
 [513ea65]: https://github.com/studiometa/productive-tools/commit/513ea65
 [eddfaa5]: https://github.com/studiometa/productive-tools/commit/eddfaa5
