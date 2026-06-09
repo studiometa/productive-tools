@@ -24,6 +24,8 @@ export default defineConfig({
       '@studiometa/productive-api',
       '@studiometa/productive-core',
       'h3',
+      'quickjs-emscripten-core',
+      '@jitl/quickjs-singlefile-cjs-release-sync',
     ],
   }),
   test: createTestConfig({

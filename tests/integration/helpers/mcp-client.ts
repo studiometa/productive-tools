@@ -27,8 +27,11 @@ export interface McpStdioClient {
  * Spawn the real productive-mcp binary and connect via StdioClientTransport.
  * The child process gets a locked-down env — no real config/keychain access.
  */
-export async function createMcpStdioClient(mockApiUrl: string): Promise<McpStdioClient> {
-  const sandbox = await createSandbox({ mockApiUrl });
+export async function createMcpStdioClient(
+  mockApiUrl: string,
+  extraEnv?: Record<string, string>,
+): Promise<McpStdioClient> {
+  const sandbox = await createSandbox({ mockApiUrl, extraEnv });
 
   const transport = new StdioClientTransport({
     command: process.execPath,

@@ -7,7 +7,13 @@ describe('tools', () => {
   describe('TOOLS', () => {
     it('should export the productive and raw API tools', () => {
       expect(Array.isArray(TOOLS)).toBe(true);
-      expect(TOOLS.map((tool) => tool.name)).toEqual(['productive', 'api_read', 'api_write']);
+      expect(TOOLS.map((tool) => tool.name)).toEqual([
+        'productive',
+        'api_read',
+        'api_write',
+        'run_script',
+        'run_script_search_docs',
+      ]);
     });
 
     it('should have valid tool structure', () => {
@@ -134,13 +140,13 @@ describe('tools', () => {
   describe('token optimization', () => {
     it('should have reasonable tool schema size', () => {
       const totalSize = JSON.stringify(TOOLS).length;
-      expect(totalSize).toBeLessThan(6500);
+      expect(totalSize).toBeLessThan(8500);
     });
 
     it('should estimate under 1700 tokens', () => {
       const totalSize = JSON.stringify(TOOLS).length;
       const estimatedTokens = Math.ceil(totalSize / 4);
-      expect(estimatedTokens).toBeLessThan(1700);
+      expect(estimatedTokens).toBeLessThan(2200);
     });
   });
 });

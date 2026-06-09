@@ -196,6 +196,96 @@ export const TOOLS: Tool[] = [
       required: ['method', 'path', 'confirm'],
     },
   },
+  {
+    name: 'run_script',
+    description:
+      'Run a sandboxed JavaScript/TypeScript script for advanced multi-step logic in one call. ' +
+      'Globals: productive(resource, action, params), api.read/write, output.*, args, flags; `return` a value for the result. ' +
+      'Call `run_script_search_docs` for the full scripting API before writing a script. ' +
+      'dry_run=true previews mutations. No direct network/filesystem access (API calls run host-side). ' +
+      'Disabled by default, requires PRODUCTIVE_MCP_ENABLE_RUN=true.',
+    annotations: {
+      title: 'Run Script',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        code: {
+          type: 'string',
+          description: 'JavaScript/TypeScript source to execute in the sandbox.',
+        },
+        args: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Positional arguments exposed to the script as `args`.',
+        },
+        flags: {
+          type: 'object',
+          description: 'Named values exposed to the script as `flags`.',
+        },
+        dry_run: {
+          type: 'boolean',
+          description:
+            'Record mutating calls (create/update/delete/...) instead of executing them.',
+        },
+      },
+      required: ['code'],
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        result: { description: 'The value the script returned (any JSON).' },
+        output: {
+          type: 'array',
+          description: 'Buffered output.* entries, in order.',
+          items: {
+            type: 'object',
+            properties: { type: { type: 'string' }, data: {} },
+            required: ['type'],
+          },
+        },
+        _run: {
+          type: 'object',
+          description: 'Run metadata.',
+          properties: {
+            apiCalls: { type: 'number' },
+            dryRun: { type: 'boolean' },
+            outputTruncated: { type: 'boolean' },
+            recorded: { type: 'array' },
+          },
+          required: ['apiCalls', 'dryRun'],
+        },
+      },
+      required: ['result', 'output', '_run'],
+    },
+  },
+  {
+    name: 'run_script_search_docs',
+    description:
+      'Reference for the run_script scripting API — globals (productive, api, output, args, flags), ' +
+      'available resources, output rendering, dry_run, limits, and examples. Call with no query for a ' +
+      'table of contents, or a query (e.g. "table", "api", "dry_run") to load a topic. Use before writing a run_script.',
+    annotations: {
+      title: 'Run Script Docs',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Optional topic/keyword filter (e.g. "table", "api", "dry_run").',
+        },
+      },
+    },
+  },
 ];
 
 /**

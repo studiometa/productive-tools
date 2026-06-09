@@ -59,9 +59,9 @@ describe('stdio handlers', () => {
       expect(getConfig).toBeDefined();
     });
 
-    it('should have 5 total tools (3 main + 2 stdio-only)', () => {
+    it('should have 7 total tools (5 main + 2 stdio-only)', () => {
       const tools = getAvailableTools();
-      expect(tools.length).toBe(5);
+      expect(tools.length).toBe(7);
     });
   });
 

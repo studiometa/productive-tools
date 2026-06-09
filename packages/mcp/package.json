@@ -81,10 +81,12 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
+    "@jitl/quickjs-singlefile-cjs-release-sync": "^0.32.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@studiometa/productive-api": "*",
     "@studiometa/productive-core": "*",
     "h3": "^2.0.1-rc.22",
+    "quickjs-emscripten-core": "^0.32.0",
     "zod": "4.3.6"
   },
   "devDependencies": {
