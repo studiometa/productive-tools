@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { searchDocs, DOC_SECTIONS } from './docs.js';
+import { searchDocs, findDocSections, DOC_SECTIONS } from './docs.js';
 import { SCRIPT_RESOURCES } from './prelude.js';
 
 describe('searchDocs', () => {
@@ -39,6 +39,12 @@ describe('searchDocs', () => {
     const docs = searchDocs('csv');
     expect(docs).toContain('## output helpers');
     expect(docs).not.toContain('## dry run');
+  });
+
+  it('findDocSections returns matching section objects', () => {
+    const sections = findDocSections('table');
+    expect(sections.some((s) => s.title === 'output helpers')).toBe(true);
+    expect(findDocSections('zzqqxx-nope')).toEqual([]);
   });
 
   it('matches on title and keyword aliases', () => {

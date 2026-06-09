@@ -325,17 +325,32 @@ export type ProductiveToolInput = z.infer<typeof ProductiveToolInputSchema>;
 /**
  * Full input schema for the raw api_read tool.
  */
-export const ApiReadToolInputSchema = z.object({
-  path: z.string().trim().min(1, 'Path cannot be empty').describe('Relative Productive API path'),
-  describe: z.boolean().optional(),
-  filter: FilterSchema,
-  include: ParamInclude.optional(),
-  sort: z.array(z.string().trim()).optional(),
-  page: ParamPage.optional(),
-  per_page: ParamPerPage.optional(),
-  paginate: z.boolean().optional(),
-  max_pages: z.number().int().min(1).max(50).optional(),
-});
+export const ApiReadToolInputSchema = z
+  .object({
+    path: z
+      .string()
+      .trim()
+      .min(1, 'Path cannot be empty')
+      .optional()
+      .describe('Relative Productive API path (required unless using "search")'),
+    search: z
+      .string()
+      .trim()
+      .min(1, 'Search cannot be empty')
+      .optional()
+      .describe('Keyword search over the documented endpoint catalog; returns matching paths'),
+    describe: z.boolean().optional(),
+    filter: FilterSchema,
+    include: ParamInclude.optional(),
+    sort: z.array(z.string().trim()).optional(),
+    page: ParamPage.optional(),
+    per_page: ParamPerPage.optional(),
+    paginate: z.boolean().optional(),
+    max_pages: z.number().int().min(1).max(50).optional(),
+  })
+  .refine((data) => !!data.path || !!data.search, {
+    message: 'Provide either "path" (to read/describe) or "search" (to find endpoints).',
+  });
 
 export type ApiReadToolInput = z.infer<typeof ApiReadToolInputSchema>;
 

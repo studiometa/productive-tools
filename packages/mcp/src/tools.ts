@@ -11,7 +11,7 @@ function generateDescription(): string {
     'Productive.io API.',
     `Resources: ${RESOURCES.join(', ')}.`,
     `Actions: ${ACTIONS.join(', ')} (varies by resource).`,
-    'Discovery: action=help with any resource for filters, fields, examples. action=schema for compact machine-readable spec.',
+    'Discovery: action=help with a resource for filters/fields/examples, action=help with query to search across resources, action=schema for a compact spec. Or use the search_docs tool to discover across resources, raw endpoints, and scripting.',
     'Filters: filter:{key:value}. Common: project_id, person_id, after/before (YYYY-MM-DD).',
     'Includes: include:[...] for related data (e.g. ["project","assignee"]).',
     'Output: compact=false for full detail (default for get; list defaults true).',
@@ -146,7 +146,7 @@ export const TOOLS: Tool[] = [
   {
     name: 'api_read',
     description:
-      'Read-only raw Productive API access for documented GET endpoints. Supports describe=true for endpoint docs, filter/include/sort, and optional safe pagination.',
+      'Read-only raw Productive API access for documented GET endpoints. Use search="<term>" to discover endpoints, describe=true for an endpoint spec, or path + filter/include/sort with optional safe pagination.',
     annotations: {
       title: 'Productive API Read',
       readOnlyHint: true,
@@ -158,6 +158,11 @@ export const TOOLS: Tool[] = [
       type: 'object',
       properties: {
         path: { type: 'string', description: 'Relative Productive API path, e.g. /invoices' },
+        search: {
+          type: 'string',
+          description:
+            'Find documented endpoints by keyword (returns matching paths). Use instead of path.',
+        },
         describe: {
           type: 'boolean',
           description: 'Return endpoint documentation instead of calling the API',
@@ -170,7 +175,6 @@ export const TOOLS: Tool[] = [
         paginate: { type: 'boolean' },
         max_pages: { type: 'number' },
       },
-      required: ['path'],
     },
   },
   {
@@ -282,6 +286,31 @@ export const TOOLS: Tool[] = [
         query: {
           type: 'string',
           description: 'Optional topic/keyword filter (e.g. "table", "api", "dry_run").',
+        },
+      },
+    },
+  },
+  {
+    name: 'search_docs',
+    description:
+      'Discover documentation across everything this server exposes — Productive resources, raw API ' +
+      'endpoints, and the run_script scripting API. Call with no query for a table of contents, or a query ' +
+      '(e.g. "invoices", "billing", "table") for ranked cross-domain matches, each pointing at the tool to ' +
+      'drill in. Good first call when you do not know where to look.',
+    annotations: {
+      title: 'Search Docs',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description:
+            'Optional keyword to search across resources, endpoints, and scripting docs.',
         },
       },
     },

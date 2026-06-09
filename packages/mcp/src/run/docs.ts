@@ -172,6 +172,16 @@ function renderTableOfContents(): string {
  * a query, only the matching sections (falling back to the table of contents
  * when nothing matches).
  */
+export function findDocSections(query: string): DocSection[] {
+  const q = query.trim().toLowerCase();
+  return DOC_SECTIONS.filter(
+    (section) =>
+      section.title.toLowerCase().includes(q) ||
+      section.keywords.some((k) => k.includes(q) || q.includes(k)) ||
+      section.body.toLowerCase().includes(q),
+  );
+}
+
 export function searchDocs(query?: string): string {
   const q = query?.trim().toLowerCase();
 
@@ -179,12 +189,7 @@ export function searchDocs(query?: string): string {
     return renderTableOfContents();
   }
 
-  const matches = DOC_SECTIONS.filter(
-    (section) =>
-      section.title.toLowerCase().includes(q) ||
-      section.keywords.some((k) => k.includes(q) || q.includes(k)) ||
-      section.body.toLowerCase().includes(q),
-  );
+  const matches = findDocSections(q);
 
   if (matches.length === 0) {
     return `${HEADER}\n\nNo sections matched "${query}".\n\n${renderTableOfContents()}`;

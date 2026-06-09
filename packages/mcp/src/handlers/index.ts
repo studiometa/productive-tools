@@ -31,7 +31,7 @@ import { handleCompanies } from './companies.js';
 import { handleCustomFields } from './custom-fields.js';
 import { handleDeals } from './deals.js';
 import { handleDiscussions } from './discussions.js';
-import { handleHelp, handleHelpOverview } from './help.js';
+import { handleHelp, handleHelpOverview, handleHelpSearch } from './help.js';
 import { handlePages } from './pages.js';
 import { handlePeople } from './people.js';
 import { runPreValidationGuards } from './pre-validation-guards.js';
@@ -41,6 +41,7 @@ import { handleReports } from './reports.js';
 import { type ResolvableResourceType } from './resolve.js';
 import { handleRunScript, handleRunScriptDocs } from './run.js';
 import { handleSchema, handleSchemaOverview } from './schema.js';
+import { handleSearchDocs } from './search-docs.js';
 import { handleSearch } from './search.js';
 import { handleServices } from './services.js';
 import { handleSummaries } from './summaries.js';
@@ -254,6 +255,10 @@ export async function executeToolWithCredentials(
     return handleRunScriptDocs(args);
   }
 
+  if (name === 'search_docs') {
+    return handleSearchDocs(typeof args.query === 'string' ? args.query : undefined);
+  }
+
   if (name === 'run_script') {
     const parsed = RunScriptToolInputSchema.safeParse(args);
     if (!parsed.success) {
@@ -372,6 +377,7 @@ export async function executeToolWithCredentials(
     // Handle help action first (doesn't need API)
     // Exception: summaries has its own help handler
     if (action === 'help' && resource !== 'summaries') {
+      if (query) return handleHelpSearch(query);
       return resource ? handleHelp(resource) : handleHelpOverview();
     }
 
