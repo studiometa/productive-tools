@@ -12,7 +12,6 @@ describe('tools', () => {
         'api_read',
         'api_write',
         'run_script',
-        'run_script_search_docs',
         'search_docs',
       ]);
     });

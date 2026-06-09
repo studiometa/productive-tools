@@ -55,6 +55,19 @@ describe('MCP: documentation discovery', () => {
     expect((data.api_endpoints as { count: number }).count).toBeGreaterThan(0);
   });
 
+  it('search_docs returns full run_script sections (no separate docs tool)', async () => {
+    const result = (await mcp.client.callTool({
+      name: 'search_docs',
+      arguments: { query: 'output' },
+    })) as Result;
+    const scripting = body(result).run_script as {
+      count: number;
+      sections: Array<{ title: string; body: string }>;
+    };
+    expect(scripting.count).toBeGreaterThan(0);
+    expect(scripting.sections.some((s) => s.body.includes('output.table'))).toBe(true);
+  });
+
   it('productive action=help with a query searches across resources', async () => {
     const result = (await mcp.client.callTool({
       name: 'productive',

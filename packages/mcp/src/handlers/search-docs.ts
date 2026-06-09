@@ -3,19 +3,20 @@
  *
  * One front door for "where do I even look?". It reuses the per-domain search
  * engines so nothing drifts:
- * - resource help      (productive action=help)         — searchResourceHelp
- * - raw API endpoints  (api_read/api_write)              — searchApiEndpoints
- * - run_script API     (run_script_search_docs)          — findDocSections
+ * - resource help      → searchResourceHelp  (drill in with productive action=help)
+ * - raw API endpoints  → searchApiEndpoints   (drill in with api_read describe)
+ * - run_script API     → findDocSections      (this tool IS the drill-in: it owns
+ *                        the scripting docs and returns their full bodies)
  *
  * With no query it returns a compact table of contents across those domains;
- * with a query it returns ranked cross-domain matches, each pointing at the
- * focused tool to drill in. It does not replace those tools — it's an
- * additional discovery path on top of them.
+ * with a query it returns ranked cross-domain matches. For resources and
+ * endpoints it points at the focused tool to drill in; for scripting (which has
+ * no other owning tool) it returns the matching section bodies directly.
  */
 
 import type { ToolResult } from './types.js';
 
-import { DOC_SECTIONS, findDocSections } from '../run/docs.js';
+import { docSectionTitles, findDocSections } from '../run/docs.js';
 import { apiEndpointCount, searchApiEndpoints } from './api-utils.js';
 import { helpResourceNames, searchResourceHelp } from './help.js';
 import { jsonResult } from './utils.js';
@@ -42,8 +43,8 @@ function tableOfContents(): ToolResult {
       {
         domain: 'run_script',
         description: 'Sandboxed scripting API (globals, output rendering, limits).',
-        topics: DOC_SECTIONS.map((s) => s.title),
-        drill_in: 'run_script_search_docs query="<topic>"',
+        topics: docSectionTitles(),
+        drill_in: 'search_docs query="<topic>" (returns the full scripting section)',
       },
     ],
     _tip: 'Example: search_docs query="invoices" searches resources, endpoints, and scripting docs together.',
@@ -62,7 +63,8 @@ export function handleSearchDocs(query?: string): ToolResult {
 
   const resources = searchResourceHelp(q);
   const endpoints = searchApiEndpoints(q);
-  const scripting = findDocSections(q).map((s) => ({ title: s.title, summary: s.summary }));
+  // Scripting docs have no other owning tool, so return their full bodies here.
+  const scripting = findDocSections(q).map((s) => ({ title: s.title, body: s.body }));
 
   const total = resources.length + endpoints.matches.length + scripting.length;
 
@@ -82,12 +84,11 @@ export function handleSearchDocs(query?: string): ToolResult {
     },
     run_script: {
       count: scripting.length,
-      matches: scripting,
-      drill_in: 'run_script_search_docs query="<topic>"',
+      sections: scripting,
     },
     _tip:
       total === 0
         ? 'No matches. Call search_docs without a query for a table of contents.'
-        : 'Use the drill_in tool noted for each domain to load full documentation.',
+        : 'For resources and endpoints, use the drill_in tool noted; run_script sections are returned in full.',
   });
 }

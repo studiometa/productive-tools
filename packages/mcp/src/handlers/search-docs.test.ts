@@ -36,22 +36,30 @@ describe('handleSearchDocs', () => {
   it('aggregates matches across the three domains for a query', () => {
     const body = parse(handleSearchDocs('table'));
     expect(body.query).toBe('table');
-    // "table" appears in the run_script output docs at least.
-    const scripting = body.run_script as { count: number; matches: unknown[] };
+    // "table" appears in the run_script output docs — returned with full body.
+    const scripting = body.run_script as {
+      count: number;
+      sections: Array<{ title: string; body: string }>;
+    };
     expect(scripting.count).toBeGreaterThan(0);
+    expect(scripting.sections[0].body).toContain('output.table');
     expect(body.api_endpoints).toBeDefined();
     expect(body.resources).toBeDefined();
     expect(typeof body.total).toBe('number');
   });
 
-  it('reports a domain count and drill-in pointers per domain', () => {
+  it('points resources/endpoints at a drill-in tool and returns scripting in full', () => {
     const body = parse(handleSearchDocs('time'));
-    for (const key of ['resources', 'api_endpoints', 'run_script']) {
+    for (const key of ['resources', 'api_endpoints']) {
       const domain = body[key] as Record<string, unknown>;
       expect(typeof domain.count).toBe('number');
       expect(typeof domain.drill_in).toBe('string');
       expect(Array.isArray(domain.matches)).toBe(true);
     }
+    const scripting = body.run_script as Record<string, unknown>;
+    expect(typeof scripting.count).toBe('number');
+    expect(Array.isArray(scripting.sections)).toBe(true);
+    expect(scripting.drill_in).toBeUndefined();
   });
 
   it('handles a no-match query with a helpful tip', () => {

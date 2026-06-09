@@ -41,20 +41,9 @@ describe('MCP: run_script tool', () => {
     await mockServer.close();
   });
 
-  it('exposes run_script and its docs tool in the tool list', async () => {
+  it('exposes run_script in the tool list', async () => {
     const { tools } = await enabled.client.listTools();
     expect(tools.find((t) => t.name === 'run_script')).toBeDefined();
-    expect(tools.find((t) => t.name === 'run_script_search_docs')).toBeDefined();
-  });
-
-  it('serves the scripting API reference via run_script_search_docs', async () => {
-    const result = (await enabled.client.callTool({
-      name: 'run_script_search_docs',
-      arguments: { query: 'table' },
-    })) as RunResult;
-
-    expect(result.isError).toBeFalsy();
-    expect(textOf(result)).toContain('output.table');
   });
 
   it('runs a script that fetches data through the bridge', async () => {

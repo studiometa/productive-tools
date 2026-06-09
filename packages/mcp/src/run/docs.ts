@@ -1,15 +1,12 @@
 /**
- * Scripting-API reference for `run_script`, served by the companion
- * `run_script_search_docs` tool.
+ * Scripting-API reference content for `run_script`, surfaced through the global
+ * `search_docs` tool (resources / endpoints / scripting all discoverable from
+ * one place).
  *
- * Keeping the full reference here (returned in a tool *response*) rather than in
- * the `run_script` tool's `inputSchema`/`description` keeps the tool definition
- * small while still making the API discoverable on demand. Calling the tool
- * with no query returns a compact table of contents (cheap); a query returns
- * only the matching sections — so the full reference is never loaded wholesale.
- *
- * The resource list is derived from {@link SCRIPT_RESOURCES} so it can't drift
- * from what the prelude actually exposes.
+ * This module owns the content as structured sections; `search_docs` is the
+ * only consumer (it lists section titles in its table of contents and returns
+ * matching section bodies on a query). The resource list is derived from
+ * {@link SCRIPT_RESOURCES} so it can't drift from what the prelude exposes.
  */
 
 import { SCRIPT_RESOURCES } from './prelude.js';
@@ -144,56 +141,19 @@ export const DOC_SECTIONS: DocSection[] = [
   },
 ];
 
-const HEADER = '# run_script scripting API';
-
-/** Render a single section as Markdown. */
-function renderSection(section: DocSection): string {
-  return `## ${section.title}\n\n${section.body}`;
+/** Section titles, for the documentation table of contents. */
+export function docSectionTitles(): string[] {
+  return DOC_SECTIONS.map((section) => section.title);
 }
 
-/** Render a compact table of contents with query hints. */
-function renderTableOfContents(): string {
-  const lines = DOC_SECTIONS.map((section) => {
-    const hint = section.keywords.slice(0, 3).join(', ');
-    return `- **${section.title}** — ${section.summary} _(query: ${hint})_`;
-  });
-  return [
-    HEADER,
-    '',
-    'Call this tool again with a `query` (e.g. one of the terms in parentheses) to load a topic.',
-    '',
-    ...lines,
-  ].join('\n');
-}
-
-/**
- * Return the scripting-API reference. With no query, a compact table of
- * contents is returned (so the full reference is never loaded wholesale); with
- * a query, only the matching sections (falling back to the table of contents
- * when nothing matches).
- */
+/** Find scripting-doc sections matching a query (title, keywords, or body). */
 export function findDocSections(query: string): DocSection[] {
   const q = query.trim().toLowerCase();
+  if (q === '') return [];
   return DOC_SECTIONS.filter(
     (section) =>
       section.title.toLowerCase().includes(q) ||
       section.keywords.some((k) => k.includes(q) || q.includes(k)) ||
       section.body.toLowerCase().includes(q),
   );
-}
-
-export function searchDocs(query?: string): string {
-  const q = query?.trim().toLowerCase();
-
-  if (!q) {
-    return renderTableOfContents();
-  }
-
-  const matches = findDocSections(q);
-
-  if (matches.length === 0) {
-    return `${HEADER}\n\nNo sections matched "${query}".\n\n${renderTableOfContents()}`;
-  }
-
-  return `${HEADER}\n\n${matches.map(renderSection).join('\n\n')}`;
 }

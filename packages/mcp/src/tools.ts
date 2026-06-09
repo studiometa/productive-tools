@@ -205,7 +205,7 @@ export const TOOLS: Tool[] = [
     description:
       'Run a sandboxed JavaScript/TypeScript script for advanced multi-step logic in one call. ' +
       'Globals: productive(resource, action, params), api.read/write, output.*, args, flags; `return` a value for the result. ' +
-      'Call `run_script_search_docs` for the full scripting API before writing a script. ' +
+      'Call `search_docs` (e.g. query="output", "productive") for the scripting API before writing a script. ' +
       'dry_run=true previews mutations. No direct network/filesystem access (API calls run host-side). ' +
       'Disabled by default, requires PRODUCTIVE_MCP_ENABLE_RUN=true.',
     annotations: {
@@ -268,35 +268,12 @@ export const TOOLS: Tool[] = [
     },
   },
   {
-    name: 'run_script_search_docs',
-    description:
-      'Reference for the run_script scripting API — globals (productive, api, output, args, flags), ' +
-      'available resources, output rendering, dry_run, limits, and examples. Call with no query for a ' +
-      'table of contents, or a query (e.g. "table", "api", "dry_run") to load a topic. Use before writing a run_script.',
-    annotations: {
-      title: 'Run Script Docs',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: {
-          type: 'string',
-          description: 'Optional topic/keyword filter (e.g. "table", "api", "dry_run").',
-        },
-      },
-    },
-  },
-  {
     name: 'search_docs',
     description:
       'Discover documentation across everything this server exposes — Productive resources, raw API ' +
       'endpoints, and the run_script scripting API. Call with no query for a table of contents, or a query ' +
-      '(e.g. "invoices", "billing", "table") for ranked cross-domain matches, each pointing at the tool to ' +
-      'drill in. Good first call when you do not know where to look.',
+      '(e.g. "invoices", "billing", "output") for ranked cross-domain matches: resources/endpoints point at ' +
+      'the tool to drill in, run_script sections are returned in full. Good first call when unsure where to look.',
     annotations: {
       title: 'Search Docs',
       readOnlyHint: true,

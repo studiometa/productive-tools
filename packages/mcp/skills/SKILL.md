@@ -18,11 +18,11 @@ There are several ways to find docs — use whichever fits:
 - **`search_docs`** — the global front door. No query returns a table of contents across all domains; a `query` (e.g. `"invoices"`, `"billing"`) returns ranked matches across **resources**, **raw API endpoints**, and the **run_script scripting API**, each pointing at the tool to drill in. Best when you don't know where to look.
 - **`productive` `action=help`** — per resource (filters, fields, includes, examples), or with a `query` to search across all resources. `action=schema` for a compact spec.
 - **`api_read` `search="<term>"`** — find documented raw endpoints by keyword; then `describe=true` with a path for its full spec.
-- **`run_script_search_docs`** — the scripting API reference (no query → table of contents, a query → a topic).
+- The **scripting API** (run_script globals, output, limits) is part of `search_docs` too — it appears in the table of contents and a matching query (e.g. `"output"`, `"productive"`) returns the full section.
 
 ## MCP Tools
 
-This server exposes one high-level tool, two low-level raw API tools, a sandboxed scripting tool (`run_script`), and documentation-discovery tools (`search_docs`, `run_script_search_docs`).
+This server exposes one high-level tool, two low-level raw API tools, a sandboxed scripting tool (`run_script`), and a documentation-discovery tool (`search_docs`).
 
 ### `productive`
 
@@ -82,7 +82,7 @@ keeps credentials out of the sandbox and constrains egress to the Productive API
 
 **Disabled by default** — the server operator must set `PRODUCTIVE_MCP_ENABLE_RUN=true`.
 
-Call **`run_script_search_docs`** to discover the scripting API — no query returns a table of contents, a `query` loads a topic (globals, resources, output rendering, `dry_run`, limits, examples).
+Discover the scripting API through **`search_docs`** — it lists the run_script topics in its table of contents, and a matching `query` (e.g. `"output"`, `"productive"`, `"dry_run"`) returns the full section (globals, resources, output rendering, limits, examples).
 
 ### Parameters
 
