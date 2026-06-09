@@ -267,8 +267,8 @@ export const TOOLS: Tool[] = [
     name: 'run_script_search_docs',
     description:
       'Reference for the run_script scripting API — globals (productive, api, output, args, flags), ' +
-      'available resources, output rendering, dry_run, limits, and examples. Call with no query for the ' +
-      'full reference, or a query (e.g. "table", "api", "dry_run") to filter. Use before writing a run_script.',
+      'available resources, output rendering, dry_run, limits, and examples. Call with no query for a ' +
+      'table of contents, or a query (e.g. "table", "api", "dry_run") to load a topic. Use before writing a run_script.',
     annotations: {
       title: 'Run Script Docs',
       readOnlyHint: true,

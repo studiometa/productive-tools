@@ -73,7 +73,7 @@ keeps credentials out of the sandbox and constrains egress to the Productive API
 
 **Disabled by default** — the server operator must set `PRODUCTIVE_MCP_ENABLE_RUN=true`.
 
-Call **`run_script_search_docs`** (optionally with a `query`) for the full scripting API reference — globals, available resources, output rendering, `dry_run`, limits, and examples.
+Call **`run_script_search_docs`** to discover the scripting API — no query returns a table of contents, a `query` loads a topic (globals, resources, output rendering, `dry_run`, limits, examples).
 
 ### Parameters
 

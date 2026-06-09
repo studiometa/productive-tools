@@ -4,7 +4,9 @@
  *
  * Keeping the full reference here (returned in a tool *response*) rather than in
  * the `run_script` tool's `inputSchema`/`description` keeps the tool definition
- * small while still making the API discoverable on demand.
+ * small while still making the API discoverable on demand. Calling the tool
+ * with no query returns a compact table of contents (cheap); a query returns
+ * only the matching sections — so the full reference is never loaded wholesale.
  *
  * The resource list is derived from {@link SCRIPT_RESOURCES} so it can't drift
  * from what the prelude actually exposes.
@@ -14,6 +16,8 @@ import { SCRIPT_RESOURCES } from './prelude.js';
 
 export interface DocSection {
   title: string;
+  /** One-line description shown in the table of contents. */
+  summary: string;
   keywords: string[];
   body: string;
 }
@@ -21,6 +25,7 @@ export interface DocSection {
 export const DOC_SECTIONS: DocSection[] = [
   {
     title: 'Overview',
+    summary: 'What run_script is and how the sandbox works.',
     keywords: ['overview', 'intro', 'sandbox', 'how', 'start'],
     body: [
       '`run_script` runs JavaScript/TypeScript in a sandboxed QuickJS isolate. There is no direct',
@@ -31,6 +36,7 @@ export const DOC_SECTIONS: DocSection[] = [
   },
   {
     title: 'productive client',
+    summary: 'productive(...) and per-resource list/get/create/update accessors.',
     keywords: [
       'productive',
       'client',
@@ -55,6 +61,7 @@ export const DOC_SECTIONS: DocSection[] = [
   },
   {
     title: 'api client (raw)',
+    summary: 'api.read / api.write for raw API endpoints.',
     keywords: ['api', 'read', 'write', 'raw', 'endpoint', 'path', 'fetch'],
     body: [
       '`api.read(path, opts?)` — raw GET, e.g. `await api.read("/invoices", { page: 2 })`.',
@@ -63,6 +70,7 @@ export const DOC_SECTIONS: DocSection[] = [
   },
   {
     title: 'output helpers',
+    summary: 'output.json/table/csv/log/... and how they render.',
     keywords: [
       'output',
       'table',
@@ -87,6 +95,7 @@ export const DOC_SECTIONS: DocSection[] = [
   },
   {
     title: 'args, flags & result',
+    summary: 'Inputs (args, flags) and returning a result.',
     keywords: ['args', 'flags', 'input', 'parameters', 'return', 'result'],
     body: [
       '`args` (string[]) and `flags` (object) are the values passed in the tool call.',
@@ -95,6 +104,7 @@ export const DOC_SECTIONS: DocSection[] = [
   },
   {
     title: 'resources & actions',
+    summary: 'Available resources and how to discover their filters/fields.',
     keywords: ['resources', 'actions', 'help', 'schema', 'filters', 'fields', 'includes'],
     body: [
       `Resource accessors: ${SCRIPT_RESOURCES.join(', ')}.`,
@@ -106,11 +116,13 @@ export const DOC_SECTIONS: DocSection[] = [
   },
   {
     title: 'dry run',
+    summary: 'Preview mutations without executing them (dry_run).',
     keywords: ['dry_run', 'dry', 'preview', 'mutation', 'safe'],
     body: 'Pass `dry_run: true` to record mutating calls (create/update/delete/start/stop/...) instead of executing them; they are listed under `_run.recorded`.',
   },
   {
     title: 'limits & gating',
+    summary: 'Timeouts, memory, budgets, and the enable flag.',
     keywords: ['limit', 'limits', 'timeout', 'memory', 'budget', 'gating', 'enable', 'disabled'],
     body: [
       'Disabled unless the server sets `PRODUCTIVE_MCP_ENABLE_RUN=true`.',
@@ -119,6 +131,7 @@ export const DOC_SECTIONS: DocSection[] = [
   },
   {
     title: 'example',
+    summary: 'A complete example script.',
     keywords: ['example', 'examples', 'sample'],
     body: [
       '```js',
@@ -131,22 +144,39 @@ export const DOC_SECTIONS: DocSection[] = [
   },
 ];
 
+const HEADER = '# run_script scripting API';
+
 /** Render a single section as Markdown. */
 function renderSection(section: DocSection): string {
   return `## ${section.title}\n\n${section.body}`;
 }
 
+/** Render a compact table of contents with query hints. */
+function renderTableOfContents(): string {
+  const lines = DOC_SECTIONS.map((section) => {
+    const hint = section.keywords.slice(0, 3).join(', ');
+    return `- **${section.title}** — ${section.summary} _(query: ${hint})_`;
+  });
+  return [
+    HEADER,
+    '',
+    'Call this tool again with a `query` (e.g. one of the terms in parentheses) to load a topic.',
+    '',
+    ...lines,
+  ].join('\n');
+}
+
 /**
- * Return the scripting-API reference, optionally filtered by a query. With no
- * query the full reference is returned; with a query, only matching sections
- * (falling back to a topic index when nothing matches).
+ * Return the scripting-API reference. With no query, a compact table of
+ * contents is returned (so the full reference is never loaded wholesale); with
+ * a query, only the matching sections (falling back to the table of contents
+ * when nothing matches).
  */
 export function searchDocs(query?: string): string {
-  const header = '# run_script scripting API';
   const q = query?.trim().toLowerCase();
 
   if (!q) {
-    return `${header}\n\n${DOC_SECTIONS.map(renderSection).join('\n\n')}`;
+    return renderTableOfContents();
   }
 
   const matches = DOC_SECTIONS.filter(
@@ -157,9 +187,8 @@ export function searchDocs(query?: string): string {
   );
 
   if (matches.length === 0) {
-    const topics = DOC_SECTIONS.map((s) => s.title).join(', ');
-    return `${header}\n\nNo sections matched "${query}". Available topics: ${topics}.`;
+    return `${HEADER}\n\nNo sections matched "${query}".\n\n${renderTableOfContents()}`;
   }
 
-  return `${header}\n\n${matches.map(renderSection).join('\n\n')}`;
+  return `${HEADER}\n\n${matches.map(renderSection).join('\n\n')}`;
 }

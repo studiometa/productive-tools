@@ -144,10 +144,11 @@ describe('handleRunScript', () => {
     expect(body.result).toEqual({ args: ['a', '1'], flags: { mine: true } });
   });
 
-  it('serves the scripting docs (full reference and filtered)', () => {
-    const full = text(handleRunScriptDocs({}));
-    expect(full).toContain('## productive client');
-    expect(full).toContain('output.table');
+  it('serves a table of contents with no query and full sections when filtered', () => {
+    const toc = text(handleRunScriptDocs({}));
+    expect(toc).toContain('Call this tool again with a `query`');
+    expect(toc).toContain('**productive client**');
+    expect(toc).not.toContain('## output helpers');
 
     const filtered = text(handleRunScriptDocs({ query: 'dry_run' }));
     expect(filtered).toContain('## dry run');

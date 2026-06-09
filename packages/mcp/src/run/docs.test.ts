@@ -8,17 +8,28 @@ import { searchDocs, DOC_SECTIONS } from './docs.js';
 import { SCRIPT_RESOURCES } from './prelude.js';
 
 describe('searchDocs', () => {
-  it('returns the full reference when no query is given', () => {
+  it('returns a compact table of contents when no query is given', () => {
     const docs = searchDocs();
+    // Lists every section title and its summary as a bullet...
     for (const section of DOC_SECTIONS) {
-      expect(docs).toContain(`## ${section.title}`);
+      expect(docs).toContain(`**${section.title}**`);
+      expect(docs).toContain(section.summary);
     }
-    expect(docs).toContain('productive(resource, action, params)');
-    expect(docs).toContain('output.table');
+    expect(docs).toContain('Call this tool again with a `query`');
+    // ...but does NOT inline the full section bodies.
+    expect(docs).not.toContain('## productive client');
+    expect(docs).not.toContain('output.table(rows)');
   });
 
-  it('lists the actual script resources (derived from the prelude)', () => {
-    const docs = searchDocs();
+  it('returns full section bodies only when queried', () => {
+    const docs = searchDocs('productive');
+    expect(docs).toContain('## productive client');
+    expect(docs).toContain('productive(resource, action, params)');
+  });
+
+  it('lists the actual script resources when querying that topic', () => {
+    const docs = searchDocs('resources');
+    expect(docs).toContain('## resources & actions');
     for (const resource of SCRIPT_RESOURCES) {
       expect(docs).toContain(resource);
     }
@@ -39,10 +50,10 @@ describe('searchDocs', () => {
     expect(searchDocs('TABLE')).toContain('## output helpers');
   });
 
-  it('returns a topic index when nothing matches', () => {
+  it('falls back to the table of contents when nothing matches', () => {
     const docs = searchDocs('zzz-nonexistent');
     expect(docs).toContain('No sections matched');
-    expect(docs).toContain('Available topics:');
-    expect(docs).toContain('Overview');
+    expect(docs).toContain('Call this tool again with a `query`');
+    expect(docs).toContain('**Overview**');
   });
 });
