@@ -22,7 +22,7 @@ describe('generateWrapper', () => {
 
   it('embeds the SDK URL in the Productive import', () => {
     const code = generateWrapper(OPTS);
-    expect(code).toContain(`import { Productive } from '${OPTS.sdkUrl}'`);
+    expect(code).toContain(`import { Productive } from ${JSON.stringify(OPTS.sdkUrl)}`);
   });
 
   it('embeds the scriptOutputUrl in the helper imports', () => {
@@ -32,7 +32,18 @@ describe('generateWrapper', () => {
 
   it('embeds the scriptUrl in the dynamic import', () => {
     const code = generateWrapper(OPTS);
-    expect(code).toContain(`await import('${OPTS.scriptUrl}')`);
+    expect(code).toContain(`await import(${JSON.stringify(OPTS.scriptUrl)})`);
+  });
+
+  it('escapes URLs so a path with a single quote cannot break the generated module', () => {
+    const scriptUrl = "file:///home/u/o'brien/report.ts";
+    const hooksUrl = "file:///tmp/o'brien/resolver-hooks.mjs";
+    const code = generateWrapper({ ...OPTS, scriptUrl, hooksUrl });
+    // The raw apostrophe must not appear inside a single-quoted literal; the
+    // generated code uses JSON (double-quoted) string literals instead.
+    expect(code).toContain(`await import(${JSON.stringify(scriptUrl)})`);
+    expect(code).toContain(`register(${JSON.stringify(hooksUrl)}, import.meta.url)`);
+    expect(code).not.toContain(`'${scriptUrl}'`);
   });
 
   it('reads PRODUCTIVE_* env vars', () => {
@@ -86,10 +97,10 @@ describe('generateWrapper', () => {
     const hooksUrl = 'file:///tmp/productive-script-abc/resolver-hooks.mjs';
     const code = generateWrapper({ ...OPTS, hooksUrl });
     expect(code).toContain("import { register } from 'node:module'");
-    expect(code).toContain(`register('${hooksUrl}', import.meta.url)`);
+    expect(code).toContain(`register(${JSON.stringify(hooksUrl)}, import.meta.url)`);
     // The register call must precede the dynamic import of the user script.
     expect(code.indexOf('register(')).toBeLessThan(
-      code.indexOf(`await import('${OPTS.scriptUrl}')`),
+      code.indexOf(`await import(${JSON.stringify(OPTS.scriptUrl)})`),
     );
   });
 });

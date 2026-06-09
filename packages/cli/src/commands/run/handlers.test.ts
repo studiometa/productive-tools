@@ -284,7 +284,7 @@ describe('scriptRun', () => {
     );
   });
 
-  it('writes a resolver-hooks .mjs mapping the @studiometa/* packages', async () => {
+  it('writes a resolver-hooks .mjs mapping every @studiometa/* specifier to its resolved URL', async () => {
     const { spawn } = await import('node:child_process');
     const { writeFile } = await import('node:fs/promises');
     const { scriptRun } = await import('./handlers.js');
@@ -297,20 +297,60 @@ describe('scriptRun', () => {
     vi.mocked(spawn).mockReturnValue(mockChild as never);
 
     const ctx = makeCtx();
-    const mockResolver = vi.fn().mockResolvedValue('file:///sdk/dist/index.js');
+    // Specifier-aware so each map entry can be validated independently.
+    const mockResolver = vi.fn(async (specifier: string) => {
+      const slug = specifier.replace('@studiometa/', '').replace(/\//g, '__');
+      return `file:///resolved/${slug}.js`;
+    });
 
     await scriptRun(['/tmp/test-script.ts'], ctx, {}, mockResolver);
 
-    expect(writeFile).toHaveBeenCalledWith(
-      expect.stringContaining('resolver-hooks.mjs'),
-      expect.stringContaining('@studiometa/productive-cli/script'),
-      'utf-8',
-    );
-    // The SDK url resolved by the resolver is mapped in the hooks module.
     const hooksCall = vi
       .mocked(writeFile)
       .mock.calls.find((call) => String(call[0]).endsWith('resolver-hooks.mjs'));
-    expect(hooksCall?.[1]).toContain('file:///sdk/dist/index.js');
+    const hooks = String(hooksCall?.[1]);
+
+    // Every public specifier — including the CLI root — is resolved via the
+    // injected resolver and embedded with its resolved URL.
+    expect(hooks).toContain('"@studiometa/productive-cli": "file:///resolved/productive-cli.js"');
+    expect(hooks).toContain(
+      '"@studiometa/productive-cli/script": "file:///resolved/productive-cli__script.js"',
+    );
+    expect(hooks).toContain('"@studiometa/productive-sdk": "file:///resolved/productive-sdk.js"');
+    expect(hooks).toContain('"@studiometa/productive-api": "file:///resolved/productive-api.js"');
+  });
+
+  it('skips a @studiometa/* specifier that fails to resolve instead of aborting the run', async () => {
+    const { spawn } = await import('node:child_process');
+    const { writeFile } = await import('node:fs/promises');
+    const { scriptRun } = await import('./handlers.js');
+
+    const mockChild = {
+      on: vi.fn((event: string, cb: (code: number) => void) => {
+        if (event === 'close') cb(0);
+      }),
+    };
+    vi.mocked(spawn).mockReturnValue(mockChild as never);
+
+    const ctx = makeCtx();
+    // productive-api is not installed in this layout → rejects.
+    const mockResolver = vi.fn(async (specifier: string) => {
+      if (specifier === '@studiometa/productive-api') throw new Error('not found');
+      return `file:///resolved/${specifier.replace('@studiometa/', '')}.js`;
+    });
+
+    await scriptRun(['/tmp/test-script.ts'], ctx, {}, mockResolver);
+
+    const hooksCall = vi
+      .mocked(writeFile)
+      .mock.calls.find((call) => String(call[0]).endsWith('resolver-hooks.mjs'));
+    const hooks = String(hooksCall?.[1]);
+
+    // The run still completed, the resolvable specifiers are present, and the
+    // unresolvable one is simply absent.
+    expect(processExitSpy).toHaveBeenCalledWith(0);
+    expect(hooks).toContain('@studiometa/productive-sdk');
+    expect(hooks).not.toContain('@studiometa/productive-api');
   });
 
   it('registers the resolver hooks from the wrapper', async () => {
