@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { generateWrapper } from './wrapper.js';
+import { generateResolverHooks, generateWrapper } from './wrapper.js';
 
 const OPTS = {
   scriptUrl: 'file:///home/user/scripts/my-script.ts',
@@ -74,5 +74,64 @@ describe('generateWrapper', () => {
     const code = generateWrapper(OPTS);
     expect(code).toContain('parseScriptArgs(process.argv.slice(2))');
     expect(code).toContain('const { args, flags }');
+  });
+
+  it('does not register resolver hooks when no hooksUrl is given', () => {
+    const code = generateWrapper(OPTS);
+    expect(code).not.toContain("import { register } from 'node:module'");
+    expect(code).not.toContain('register(');
+  });
+
+  it('registers the resolver hooks before importing the user script when hooksUrl is given', () => {
+    const hooksUrl = 'file:///tmp/productive-script-abc/resolver-hooks.mjs';
+    const code = generateWrapper({ ...OPTS, hooksUrl });
+    expect(code).toContain("import { register } from 'node:module'");
+    expect(code).toContain(`register('${hooksUrl}', import.meta.url)`);
+    // The register call must precede the dynamic import of the user script.
+    expect(code.indexOf('register(')).toBeLessThan(
+      code.indexOf(`await import('${OPTS.scriptUrl}')`),
+    );
+  });
+});
+
+describe('generateResolverHooks', () => {
+  const MAP = {
+    '@studiometa/productive-cli': 'file:///cli/dist/index.js',
+    '@studiometa/productive-cli/script': 'file:///cli/dist/script.js',
+    '@studiometa/productive-sdk': 'file:///sdk/dist/index.js',
+  };
+
+  it('exports an async resolve hook', () => {
+    const code = generateResolverHooks(MAP);
+    expect(code).toContain('export async function resolve(specifier, context, nextResolve)');
+  });
+
+  it('embeds every mapped specifier and its target URL', () => {
+    const code = generateResolverHooks(MAP);
+    for (const [specifier, url] of Object.entries(MAP)) {
+      expect(code).toContain(specifier);
+      expect(code).toContain(url);
+    }
+  });
+
+  it('short-circuits mapped specifiers and falls through unknown ones', () => {
+    const code = generateResolverHooks(MAP);
+    expect(code).toContain('shortCircuit: true');
+    expect(code).toContain('return nextResolve(specifier, context)');
+  });
+
+  it('produces an evaluable module whose map matches the input', async () => {
+    const code = generateResolverHooks(MAP);
+    const mod = await import(`data:text/javascript,${encodeURIComponent(code)}`);
+    const next = (specifier: string) => ({ url: `default:${specifier}` });
+
+    // Mapped specifier → short-circuited to the absolute URL.
+    await expect(mod.resolve('@studiometa/productive-cli/script', {}, next)).resolves.toEqual({
+      url: MAP['@studiometa/productive-cli/script'],
+      shortCircuit: true,
+    });
+
+    // Unknown specifier → delegated to nextResolve.
+    await expect(mod.resolve('node:fs', {}, next)).resolves.toEqual({ url: 'default:node:fs' });
   });
 });

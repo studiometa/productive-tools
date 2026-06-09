@@ -14,7 +14,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import type { CommandContext } from '../../context.js';
 
-import { generateWrapper } from '../../script/wrapper.js';
+import { generateResolverHooks, generateWrapper } from '../../script/wrapper.js';
 
 /**
  * Resolve the absolute path to a module entry point.
@@ -81,17 +81,31 @@ export async function scriptRun(
   const cliDir = dirname(fileURLToPath(import.meta.url));
   const scriptOutputPath = resolve(cliDir, 'script.js');
   const scriptOutputUrl = pathToFileURL(scriptOutputPath).href;
+  const cliMainUrl = pathToFileURL(resolve(cliDir, 'index.js')).href;
 
   const sdkUrl = String(await resolver('@studiometa/productive-sdk'));
+
+  // Map the public @studiometa/* specifiers to the CLI's own installed copies.
+  // The user's script may live outside any node_modules tree (e.g. ~/Downloads),
+  // where these bare imports would otherwise fail to resolve.
+  const importMap = {
+    '@studiometa/productive-cli': cliMainUrl,
+    '@studiometa/productive-cli/script': scriptOutputUrl,
+    '@studiometa/productive-sdk': sdkUrl,
+  };
 
   // Write wrapper to a temp directory
   const tmpDir = await mkdtemp(resolve(tmpdir(), 'productive-script-'));
   const wrapperPath = resolve(tmpDir, 'wrapper.mjs');
+  const hooksPath = resolve(tmpDir, 'resolver-hooks.mjs');
+  const hooksUrl = pathToFileURL(hooksPath).href;
 
   let exitCode = 0;
 
   try {
-    const wrapperContent = generateWrapper({ scriptUrl, scriptOutputUrl, sdkUrl });
+    await writeFile(hooksPath, generateResolverHooks(importMap), 'utf-8');
+
+    const wrapperContent = generateWrapper({ scriptUrl, scriptOutputUrl, sdkUrl, hooksUrl });
     await writeFile(wrapperPath, wrapperContent, 'utf-8');
 
     // Build node args — add TS stripping flags for .ts/.mts files.

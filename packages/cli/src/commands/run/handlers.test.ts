@@ -284,6 +284,59 @@ describe('scriptRun', () => {
     );
   });
 
+  it('writes a resolver-hooks .mjs mapping the @studiometa/* packages', async () => {
+    const { spawn } = await import('node:child_process');
+    const { writeFile } = await import('node:fs/promises');
+    const { scriptRun } = await import('./handlers.js');
+
+    const mockChild = {
+      on: vi.fn((event: string, cb: (code: number) => void) => {
+        if (event === 'close') cb(0);
+      }),
+    };
+    vi.mocked(spawn).mockReturnValue(mockChild as never);
+
+    const ctx = makeCtx();
+    const mockResolver = vi.fn().mockResolvedValue('file:///sdk/dist/index.js');
+
+    await scriptRun(['/tmp/test-script.ts'], ctx, {}, mockResolver);
+
+    expect(writeFile).toHaveBeenCalledWith(
+      expect.stringContaining('resolver-hooks.mjs'),
+      expect.stringContaining('@studiometa/productive-cli/script'),
+      'utf-8',
+    );
+    // The SDK url resolved by the resolver is mapped in the hooks module.
+    const hooksCall = vi
+      .mocked(writeFile)
+      .mock.calls.find((call) => String(call[0]).endsWith('resolver-hooks.mjs'));
+    expect(hooksCall?.[1]).toContain('file:///sdk/dist/index.js');
+  });
+
+  it('registers the resolver hooks from the wrapper', async () => {
+    const { spawn } = await import('node:child_process');
+    const { writeFile } = await import('node:fs/promises');
+    const { scriptRun } = await import('./handlers.js');
+
+    const mockChild = {
+      on: vi.fn((event: string, cb: (code: number) => void) => {
+        if (event === 'close') cb(0);
+      }),
+    };
+    vi.mocked(spawn).mockReturnValue(mockChild as never);
+
+    const ctx = makeCtx();
+    const mockResolver = vi.fn().mockResolvedValue('file:///sdk/dist/index.js');
+
+    await scriptRun(['/tmp/test-script.ts'], ctx, {}, mockResolver);
+
+    const wrapperCall = vi
+      .mocked(writeFile)
+      .mock.calls.find((call) => String(call[0]).endsWith('wrapper.mjs'));
+    expect(wrapperCall?.[1]).toContain("import { register } from 'node:module'");
+    expect(wrapperCall?.[1]).toContain('resolver-hooks.mjs');
+  });
+
   it('cleans up the temp directory after execution', async () => {
     const { spawn } = await import('node:child_process');
     const { rm } = await import('node:fs/promises');
