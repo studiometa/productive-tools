@@ -40,7 +40,17 @@ export function buildPrelude(opts: PreludeOptions): string {
 const __channel = (channel, payload) =>
   __hostCall(channel, JSON.stringify(payload)).then((s) => JSON.parse(s));
 
-const __out = (type, data) => __emit(JSON.stringify({ type, data }));
+const __out = (type, data) => {
+  let payload;
+  try {
+    payload = JSON.stringify({ type, data });
+  } catch (e) {
+    // A circular structure / BigInt would otherwise abort the whole script;
+    // emit a placeholder so output.* is best-effort instead.
+    payload = JSON.stringify({ type, data: '[unserializable: ' + String((e && e.message) || e) + ']' });
+  }
+  __emit(payload);
+};
 
 // Routing keys (resource/action/id/filter/path) are applied LAST so a
 // user-supplied param of the same name can never silently change routing.

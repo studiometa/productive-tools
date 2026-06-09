@@ -47,13 +47,13 @@ function makeBridge(overrides: Partial<Parameters<typeof createBridge>[0]> = {})
 }
 
 describe('createBridge', () => {
-  it('routes productive calls and returns parsed JSON', async () => {
+  it('routes productive calls and returns the tool JSON text', async () => {
     const exec = vi.fn(async () => jsonOk([{ id: '1' }])) as ToolExecutor;
     const { bridge } = makeBridge({ exec });
 
     const result = await bridge.call('productive', { resource: 'tasks', action: 'list' });
 
-    expect(result).toEqual([{ id: '1' }]);
+    expect(JSON.parse(result)).toEqual([{ id: '1' }]);
     expect(exec).toHaveBeenCalledWith(
       'productive',
       { resource: 'tasks', action: 'list' },
@@ -86,7 +86,7 @@ describe('createBridge', () => {
     );
   });
 
-  it('returns raw text when the result is not JSON', async () => {
+  it('passes the tool text through verbatim', async () => {
     const exec = vi.fn(async () => ({
       content: [{ type: 'text', text: 'plain' }],
     })) as ToolExecutor;
@@ -139,7 +139,7 @@ describe('createBridge', () => {
         title: 'T',
       });
 
-      expect(result).toMatchObject({ _dryRun: true });
+      expect(JSON.parse(result)).toMatchObject({ _dryRun: true });
       expect(exec).not.toHaveBeenCalled();
       expect(bridge.getStats().recorded).toHaveLength(1);
     });
@@ -153,7 +153,7 @@ describe('createBridge', () => {
 
       expect(exec).toHaveBeenCalledTimes(1);
       expect(exec).toHaveBeenCalledWith('productive', expect.anything(), credentials);
-      expect(reads).toEqual([{ id: '1' }]);
+      expect(JSON.parse(reads)).toEqual([{ id: '1' }]);
       expect(bridge.getStats().recorded).toHaveLength(1);
     });
   });

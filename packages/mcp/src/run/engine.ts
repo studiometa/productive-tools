@@ -19,6 +19,7 @@ import variant from '@jitl/quickjs-singlefile-cjs-release-sync';
 import {
   newQuickJSWASMModuleFromVariant,
   type QuickJSContext,
+  type QuickJSDeferredPromise,
   type QuickJSWASMModule,
 } from 'quickjs-emscripten-core';
 
@@ -39,8 +40,12 @@ export interface EngineResult {
   truncated: boolean;
 }
 
-/** Host call performed on behalf of the guest. */
-export type HostCall = (channel: string, payload: Record<string, unknown>) => Promise<unknown>;
+/**
+ * Host call performed on behalf of the guest. Returns the result as a JSON
+ * **string** (the text the tool already produced), which is handed straight to
+ * the guest without a re-serialization round trip.
+ */
+export type HostCall = (channel: string, payload: Record<string, unknown>) => Promise<string>;
 
 export interface RunScriptInput {
   code: string;
@@ -129,6 +134,7 @@ function installHostFunctions(
     truncated: boolean;
     captured?: Captured;
     disposed: boolean;
+    pendingDeferreds: Set<QuickJSDeferredPromise>;
   },
 ): void {
   const emit = ctx.newFunction('__emit', (handle) => {
@@ -173,6 +179,10 @@ function installHostFunctions(
     const channel = ctx.getString(channelHandle);
     const payloadStr = ctx.getString(payloadHandle);
     const deferred = ctx.newPromise();
+    // Track until settled so an aborted/timed-out run can dispose any
+    // still-pending deferred before tearing down the context — disposing a
+    // context with a live, unsettled promise trips a fatal QuickJS GC assert.
+    state.pendingDeferreds.add(deferred);
 
     void (async () => {
       let payload: Record<string, unknown> = {};
@@ -181,19 +191,21 @@ function installHostFunctions(
       } catch {
         // Treat unparseable payloads as empty.
       }
-      const value = await input.hostCall(channel, payload);
-      return JSON.stringify(value === undefined ? null : value);
+      // hostCall already returns JSON text — pass it through unchanged.
+      return input.hostCall(channel, payload);
     })().then(
       (jsonStr) => {
         // The run may have been torn down (timeout/abort) while the host call
         // was in flight — touching a disposed context would throw.
         if (state.disposed) return;
+        state.pendingDeferreds.delete(deferred);
         const handle = ctx.newString(jsonStr);
         deferred.resolve(handle);
         handle.dispose();
       },
       (err: unknown) => {
         if (state.disposed) return;
+        state.pendingDeferreds.delete(deferred);
         const message = err instanceof Error ? err.message : String(err);
         // Reject with a guest Error so scripts can read `e.message`.
         const handle = ctx.newError(message);
@@ -202,9 +214,16 @@ function installHostFunctions(
       },
     );
 
-    // Drive the guest microtask queue whenever this promise settles.
+    // Drive the guest microtask queue whenever this promise settles. Guard
+    // against a torn-down context and swallow any teardown-race throw so it
+    // can't escape as an unhandled rejection.
     deferred.settled.then(() => {
-      if (!state.disposed) ctx.runtime.executePendingJobs();
+      if (state.disposed) return;
+      try {
+        ctx.runtime.executePendingJobs();
+      } catch {
+        // Context was disposed mid-flight — nothing left to drive.
+      }
     });
     return deferred.handle;
   });
@@ -240,20 +259,9 @@ export async function runScript(input: RunScriptInput): Promise<EngineResult> {
     truncated: false,
     captured: undefined as Captured | undefined,
     disposed: false,
+    pendingDeferreds: new Set<QuickJSDeferredPromise>(),
   };
   const abort = abortPromise(input.signal);
-
-  // Internal timer so the engine is self-bounding even when no external signal
-  // fires. The +50ms lets the interrupt handler's deadline win for CPU loops
-  // (clearer "timed out" semantics) before this host timer trips.
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => {
-      interrupted = true;
-      reject(new ScriptError('Script execution timed out'));
-    }, input.limits.timeoutMs + 50);
-  });
-  timeout.catch(() => {});
 
   try {
     installHostFunctions(ctx, input, state);
@@ -273,15 +281,23 @@ export async function runScript(input: RunScriptInput): Promise<EngineResult> {
     topPromise.dispose();
     runtime.executePendingJobs();
 
-    const settled = await Promise.race([native, abort.promise, timeout]);
+    const settled = await Promise.race([native, abort.promise]);
     if (settled.error) settled.error.dispose();
     else settled.value.dispose();
   } finally {
-    clearTimeout(timer);
     abort.cleanup();
     // Mark disposed before tearing down so any in-flight host-call
     // continuation skips touching the context.
     state.disposed = true;
+    // Dispose any still-pending deferreds (e.g. an in-flight call when the run
+    // timed out/aborted) so the context has no live promises to assert on.
+    for (const deferred of state.pendingDeferreds) {
+      try {
+        deferred.dispose();
+      } catch {
+        // Already settled/freed — ignore.
+      }
+    }
     ctx.dispose();
   }
 

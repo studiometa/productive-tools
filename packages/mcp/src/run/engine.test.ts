@@ -28,7 +28,7 @@ function run(code: string, overrides: Partial<RunScriptInput> = {}) {
     flags: {},
     limits: baseLimits,
     signal: controller.signal,
-    hostCall: vi.fn(async () => ({ ok: true })) as HostCall,
+    hostCall: vi.fn(async () => JSON.stringify({ ok: true })) as HostCall,
     ...overrides,
   };
   return { promise: runScript(input), controller, input };
@@ -70,7 +70,7 @@ describe('runScript', () => {
   });
 
   it('round-trips a productive call through the host bridge', async () => {
-    const hostCall = vi.fn(async () => [{ id: '1', name: 'Task' }]) as HostCall;
+    const hostCall = vi.fn(async () => JSON.stringify([{ id: '1', name: 'Task' }])) as HostCall;
     const { promise } = run(
       `const t = await productive.tasks.list({ status: 'open' }); return t;`,
       {
@@ -88,7 +88,7 @@ describe('runScript', () => {
 
   it('supports multiple awaited calls and loops', async () => {
     let n = 0;
-    const hostCall = vi.fn(async () => ({ n: ++n })) as HostCall;
+    const hostCall = vi.fn(async () => JSON.stringify({ n: ++n })) as HostCall;
     const { promise } = run(
       `
       const out = [];
@@ -105,7 +105,7 @@ describe('runScript', () => {
   });
 
   it('routes api.read and api.write through the bridge', async () => {
-    const hostCall = vi.fn(async () => ({ ok: true })) as HostCall;
+    const hostCall = vi.fn(async () => JSON.stringify({ ok: true })) as HostCall;
     const { promise } = run(
       `
       await api.read('/invoices', { page: 2 });
@@ -179,7 +179,7 @@ describe('runScript', () => {
   });
 
   it('does not let a colliding param override routing keys', async () => {
-    const hostCall = vi.fn(async () => ({})) as HostCall;
+    const hostCall = vi.fn(async () => JSON.stringify({})) as HostCall;
     await run(`await productive.tasks.update('5', { id: '9', title: 'x' }); return 1;`, {
       hostCall,
     }).promise;
@@ -196,11 +196,19 @@ describe('runScript', () => {
     await expect(promise).rejects.toThrow('not serializable');
   });
 
+  it('keeps output.* best-effort when a value is not serializable', async () => {
+    const { promise } = run(`const a = {}; a.self = a; output.json(a); return 'ok';`);
+    const { result, output } = await promise;
+    expect(result).toBe('ok');
+    expect(output).toHaveLength(1);
+    expect(String(output[0].data)).toContain('unserializable');
+  });
+
   it('aborts when the external signal fires mid-run', async () => {
     const controller = new AbortController();
     const hostCall = vi.fn(async () => {
       controller.abort();
-      return {};
+      return JSON.stringify({});
     }) as HostCall;
     const promise = runScript({
       code: `await productive.tasks.list(); return 'unreached';`,
@@ -210,6 +218,24 @@ describe('runScript', () => {
       signal: controller.signal,
       hostCall,
     });
+    await expect(promise).rejects.toThrow('timed out');
+  });
+
+  it('disposes cleanly when aborted with a host call still in flight', async () => {
+    const controller = new AbortController();
+    // Never resolves — the run is torn down while the deferred is still pending.
+    const hostCall = vi.fn(() => new Promise<string>(() => {})) as HostCall;
+    setTimeout(() => controller.abort(), 20);
+    const promise = runScript({
+      code: `await productive.tasks.list(); return 'unreached';`,
+      args: [],
+      flags: {},
+      limits: { ...baseLimits, timeoutMs: 1_000 },
+      signal: controller.signal,
+      hostCall,
+    });
+    // Without disposing the pending deferred this throws a fatal QuickJS GC
+    // assertion instead of a clean timeout.
     await expect(promise).rejects.toThrow('timed out');
   });
 

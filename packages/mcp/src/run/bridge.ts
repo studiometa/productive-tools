@@ -42,8 +42,14 @@ export interface BridgeOptions {
 }
 
 export interface Bridge {
-  /** Execute a single bridged call, returning the parsed JSON payload. */
-  call(channel: BridgeChannel, payload: Record<string, unknown>): Promise<unknown>;
+  /**
+   * Execute a single bridged call, returning the result as a JSON **string**
+   * (the text the tool already produced). Returning text rather than a parsed
+   * value lets the engine hand it straight to the guest without an extra
+   * parse-then-restringify round trip. Throws on error results so guest-side
+   * `try/catch` works naturally.
+   */
+  call(channel: BridgeChannel, payload: Record<string, unknown>): Promise<string>;
   /** Snapshot of usage so the handler can report it. */
   getStats(): { apiCalls: number; recorded: RecordedCall[] };
 }
@@ -73,10 +79,11 @@ function toolNameFor(channel: BridgeChannel): string {
 }
 
 /**
- * Extract the JSON payload from a tool result, throwing on error results so
- * that guest-side `try/catch` works naturally.
+ * Extract the JSON text from a tool result, throwing on error results so that
+ * guest-side `try/catch` works naturally. The text is returned verbatim (MCP
+ * handlers already produce JSON via `jsonResult`); the guest parses it once.
  */
-function unwrapToolResult(result: ToolResult): unknown {
+function toJsonText(result: ToolResult): string {
   const content = result.content?.[0];
   const text = content && content.type === 'text' ? content.text : undefined;
 
@@ -86,11 +93,7 @@ function unwrapToolResult(result: ToolResult): unknown {
   if (text === undefined) {
     throw new Error('Tool returned no content');
   }
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
+  return text;
 }
 
 /**
@@ -100,7 +103,7 @@ export function createBridge(opts: BridgeOptions): Bridge {
   let apiCalls = 0;
   const recorded: RecordedCall[] = [];
 
-  async function call(channel: BridgeChannel, payload: Record<string, unknown>): Promise<unknown> {
+  async function call(channel: BridgeChannel, payload: Record<string, unknown>): Promise<string> {
     if (channel !== 'productive' && channel !== 'api_read' && channel !== 'api_write') {
       throw new Error(`Unknown bridge channel: ${channel}`);
     }
@@ -117,11 +120,11 @@ export function createBridge(opts: BridgeOptions): Bridge {
 
     if (opts.dryRun && isMutating(channel, payload)) {
       recorded.push({ channel, payload });
-      return { _dryRun: true, channel, payload };
+      return JSON.stringify({ _dryRun: true, channel, payload });
     }
 
     const result = await opts.exec(toolNameFor(channel), payload, opts.credentials);
-    return unwrapToolResult(result);
+    return toJsonText(result);
   }
 
   return {
