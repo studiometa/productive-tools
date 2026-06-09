@@ -1,6 +1,6 @@
 {
   "name": "@studiometa/productive-api",
-  "version": "0.10.13",
+  "version": "0.10.14",
   "description": "Productive.io API client, types, and formatters",
   "keywords": [
     "api",

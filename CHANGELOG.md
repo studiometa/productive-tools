@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.14] - 2026.06.09
+
 ### Fixed
 
 - **CLI**: Make the `@studiometa/productive-cli`, `.../script` and `@studiometa/productive-sdk` packages resolvable from `productive run` scripts that live outside any `node_modules` tree (e.g. `~/Downloads`) — the wrapper now registers an ESM resolve hook mapping those bare specifiers to the CLI's installed copies before importing the script, instead of failing with `ERR_MODULE_NOT_FOUND` ([182c653], [#179])
 
+[0.10.14]: https://github.com/studiometa/productive-tools/compare/0.10.13...0.10.14
 [182c653]: https://github.com/studiometa/productive-tools/commit/182c653
 [#179]: https://github.com/studiometa/productive-tools/pull/179
 
