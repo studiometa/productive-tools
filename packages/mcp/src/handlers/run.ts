@@ -15,6 +15,7 @@ import type { ToolResult } from './types.js';
 
 import { UserInputError } from '../errors.js';
 import { createBridge } from '../run/bridge.js';
+import { searchDocs } from '../run/docs.js';
 import { runScript, ScriptError } from '../run/engine.js';
 import { isRunScriptEnabled, resolveRunLimits } from '../run/limits.js';
 import { renderRunResult } from '../run/render.js';
@@ -26,6 +27,15 @@ export interface RunScriptArgs {
   args?: unknown;
   flags?: unknown;
   dry_run?: unknown;
+}
+
+/**
+ * Companion `run_script_search_docs` tool — returns the scripting-API reference
+ * (optionally filtered by a query). Needs no credentials or sandbox.
+ */
+export function handleRunScriptDocs(args: { query?: unknown }): ToolResult {
+  const query = typeof args.query === 'string' ? args.query : undefined;
+  return { content: [{ type: 'text', text: searchDocs(query) }] };
 }
 
 /** Coerce the `args` argument into a string array. */

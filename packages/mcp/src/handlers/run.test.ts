@@ -8,7 +8,7 @@ import type { ProductiveCredentials } from '../auth.js';
 import type { ToolExecutor } from '../run/bridge.js';
 import type { ToolResult } from './types.js';
 
-import { handleRunScript } from './run.js';
+import { handleRunScript, handleRunScriptDocs } from './run.js';
 
 const credentials: ProductiveCredentials = {
   apiToken: 'test-token',
@@ -142,6 +142,16 @@ describe('handleRunScript', () => {
     );
     const body = parse(result);
     expect(body.result).toEqual({ args: ['a', '1'], flags: { mine: true } });
+  });
+
+  it('serves the scripting docs (full reference and filtered)', () => {
+    const full = text(handleRunScriptDocs({}));
+    expect(full).toContain('## productive client');
+    expect(full).toContain('output.table');
+
+    const filtered = text(handleRunScriptDocs({ query: 'dry_run' }));
+    expect(filtered).toContain('## dry run');
+    expect(filtered).not.toContain('## output helpers');
   });
 
   it('returns an error result when the script throws', async () => {

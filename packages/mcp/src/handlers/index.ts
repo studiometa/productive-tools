@@ -39,7 +39,7 @@ import { runPreValidationGuards } from './pre-validation-guards.js';
 import { handleProjects } from './projects.js';
 import { handleReports } from './reports.js';
 import { type ResolvableResourceType } from './resolve.js';
-import { handleRunScript } from './run.js';
+import { handleRunScript, handleRunScriptDocs } from './run.js';
 import { handleSchema, handleSchemaOverview } from './schema.js';
 import { handleSearch } from './search.js';
 import { handleServices } from './services.js';
@@ -248,6 +248,10 @@ export async function executeToolWithCredentials(
       includeSuggestions: false,
       executor: () => execCtx,
     });
+  }
+
+  if (name === 'run_script_search_docs') {
+    return handleRunScriptDocs(args);
   }
 
   if (name === 'run_script') {

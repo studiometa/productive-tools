@@ -200,11 +200,9 @@ export const TOOLS: Tool[] = [
     name: 'run_script',
     description:
       'Run a sandboxed JavaScript/TypeScript script for advanced multi-step logic in one call. ' +
-      'Globals: productive(resource, action, params) and productive.<resource>.list/get/create/update; ' +
-      'api.read(path, opts)/api.write(method, path, body); output.json/table/csv/log/...; args; flags. ' +
-      'Return a value to surface it as the result. dry_run=true records mutations without executing them. ' +
-      'No direct network/filesystem access (no fetch, no arbitrary URLs); Productive API access is provided ' +
-      'via the injected client, executed on the host through the same validated, rate-limited pipeline. ' +
+      'Globals: productive(resource, action, params), api.read/write, output.*, args, flags; `return` a value for the result. ' +
+      'Call `run_script_search_docs` for the full scripting API before writing a script. ' +
+      'dry_run=true previews mutations. No direct network/filesystem access (API calls run host-side). ' +
       'Disabled by default, requires PRODUCTIVE_MCP_ENABLE_RUN=true.',
     annotations: {
       title: 'Run Script',
@@ -263,6 +261,29 @@ export const TOOLS: Tool[] = [
         },
       },
       required: ['result', 'output', '_run'],
+    },
+  },
+  {
+    name: 'run_script_search_docs',
+    description:
+      'Reference for the run_script scripting API — globals (productive, api, output, args, flags), ' +
+      'available resources, output rendering, dry_run, limits, and examples. Call with no query for the ' +
+      'full reference, or a query (e.g. "table", "api", "dry_run") to filter. Use before writing a run_script.',
+    annotations: {
+      title: 'Run Script Docs',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Optional topic/keyword filter (e.g. "table", "api", "dry_run").',
+        },
+      },
     },
   },
 ];
