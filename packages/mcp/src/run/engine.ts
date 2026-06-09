@@ -133,7 +133,9 @@ function installHostFunctions(
 ): void {
   const emit = ctx.newFunction('__emit', (handle) => {
     const raw = ctx.getString(handle);
-    state.bytes += raw.length;
+    // Count UTF-8 bytes (not UTF-16 code units) so multi-byte output can't
+    // overshoot the byte cap.
+    state.bytes += Buffer.byteLength(raw, 'utf8');
     if (state.bytes > input.limits.maxOutputBytes) {
       state.truncated = true;
       return;

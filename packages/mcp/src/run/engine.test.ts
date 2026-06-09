@@ -167,6 +167,30 @@ describe('runScript', () => {
     expect(truncated).toBe(true);
   });
 
+  it('counts output by UTF-8 bytes, not code units', async () => {
+    // 10 CJK chars = 30 UTF-8 bytes; the JSON wrapper adds ~25 ASCII bytes.
+    // Code-unit length (~35) is under the cap but the byte length (~55) is over,
+    // so only byte-accurate counting trips truncation here.
+    const { promise } = run(`output.text('中'.repeat(10)); return 'done';`, {
+      limits: { ...baseLimits, maxOutputBytes: 45 },
+    });
+    const { truncated } = await promise;
+    expect(truncated).toBe(true);
+  });
+
+  it('does not let a colliding param override routing keys', async () => {
+    const hostCall = vi.fn(async () => ({})) as HostCall;
+    await run(`await productive.tasks.update('5', { id: '9', title: 'x' }); return 1;`, {
+      hostCall,
+    }).promise;
+    expect(hostCall).toHaveBeenCalledWith('productive', {
+      resource: 'tasks',
+      action: 'update',
+      id: '5',
+      title: 'x',
+    });
+  });
+
   it('rejects when the result is not serializable', async () => {
     const { promise } = run(`const a = {}; a.self = a; return a;`);
     await expect(promise).rejects.toThrow('not serializable');

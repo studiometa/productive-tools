@@ -357,7 +357,9 @@ export type ApiWriteToolInput = z.infer<typeof ApiWriteToolInputSchema>;
  */
 export const RunScriptToolInputSchema = z.object({
   code: z.string().min(1, 'Code cannot be empty').describe('JavaScript/TypeScript source to run'),
-  args: z.array(z.string()).optional().describe('Positional arguments exposed as `args`'),
+  // Accept any array — the handler's normalizeArgs() is the single coercion
+  // point and stringifies each item, so the schema must not reject non-strings.
+  args: z.array(z.unknown()).optional().describe('Positional arguments exposed as `args`'),
   flags: z.record(z.string(), z.unknown()).optional().describe('Named values exposed as `flags`'),
   dry_run: z.boolean().optional().describe('Record mutations instead of executing them'),
 });

@@ -108,10 +108,12 @@ export function createBridge(opts: BridgeOptions): Bridge {
       throw new Error('Script execution timed out');
     }
 
-    apiCalls += 1;
-    if (apiCalls > opts.limits.maxApiCalls) {
+    // Check before incrementing so the counter never exceeds the budget and
+    // reported stats reflect only calls that actually proceeded.
+    if (apiCalls >= opts.limits.maxApiCalls) {
       throw new Error(`API call budget exceeded (max ${opts.limits.maxApiCalls})`);
     }
+    apiCalls += 1;
 
     if (opts.dryRun && isMutating(channel, payload)) {
       recorded.push({ channel, payload });

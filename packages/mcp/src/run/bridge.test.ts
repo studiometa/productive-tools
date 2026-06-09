@@ -106,7 +106,8 @@ describe('createBridge', () => {
     );
 
     expect(exec).toHaveBeenCalledTimes(3);
-    expect(bridge.getStats().apiCalls).toBe(4);
+    // Counter is not incremented for the rejected over-budget call.
+    expect(bridge.getStats().apiCalls).toBe(3);
   });
 
   it('rejects an unknown channel', async () => {

@@ -42,24 +42,26 @@ const __channel = (channel, payload) =>
 
 const __out = (type, data) => __emit(JSON.stringify({ type, data }));
 
+// Routing keys (resource/action/id/filter/path) are applied LAST so a
+// user-supplied param of the same name can never silently change routing.
 const productive = (resource, action, params = {}) =>
-  __channel('productive', Object.assign({ resource, action }, params));
+  __channel('productive', Object.assign({}, params, { resource, action }));
 
 for (const __r of ${JSON.stringify(SCRIPT_RESOURCES)}) {
   productive[__r] = {
     list: (filter = {}, opts = {}) =>
-      __channel('productive', Object.assign({ resource: __r, action: 'list', filter }, opts)),
+      __channel('productive', Object.assign({}, opts, { resource: __r, action: 'list', filter })),
     get: (id, opts = {}) =>
-      __channel('productive', Object.assign({ resource: __r, action: 'get', id }, opts)),
+      __channel('productive', Object.assign({}, opts, { resource: __r, action: 'get', id })),
     create: (params = {}) =>
-      __channel('productive', Object.assign({ resource: __r, action: 'create' }, params)),
+      __channel('productive', Object.assign({}, params, { resource: __r, action: 'create' })),
     update: (id, params = {}) =>
-      __channel('productive', Object.assign({ resource: __r, action: 'update', id }, params)),
+      __channel('productive', Object.assign({}, params, { resource: __r, action: 'update', id })),
   };
 }
 
 const api = {
-  read: (path, opts = {}) => __channel('api_read', Object.assign({ path }, opts)),
+  read: (path, opts = {}) => __channel('api_read', Object.assign({}, opts, { path })),
   write: (method, path, body) => __channel('api_write', { method, path, body, confirm: true }),
 };
 
