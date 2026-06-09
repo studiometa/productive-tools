@@ -172,6 +172,28 @@ describe('runScript', () => {
     await expect(promise).rejects.toThrow('not serializable');
   });
 
+  it('aborts when the external signal fires mid-run', async () => {
+    const controller = new AbortController();
+    const hostCall = vi.fn(async () => {
+      controller.abort();
+      return {};
+    }) as HostCall;
+    const promise = runScript({
+      code: `await productive.tasks.list(); return 'unreached';`,
+      args: [],
+      flags: {},
+      limits: baseLimits,
+      signal: controller.signal,
+      hostCall,
+    });
+    await expect(promise).rejects.toThrow('timed out');
+  });
+
+  it('reports a thrown non-Error value', async () => {
+    const { promise } = run(`throw 'just a string';`);
+    await expect(promise).rejects.toThrow('just a string');
+  });
+
   it('caches the WASM module across runs', async () => {
     const a = await getQuickJSModule();
     const b = await getQuickJSModule();

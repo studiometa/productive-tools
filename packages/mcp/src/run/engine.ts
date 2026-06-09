@@ -123,7 +123,13 @@ interface Captured {
 function installHostFunctions(
   ctx: QuickJSContext,
   input: RunScriptInput,
-  state: { output: OutputEntry[]; bytes: number; truncated: boolean; captured?: Captured },
+  state: {
+    output: OutputEntry[];
+    bytes: number;
+    truncated: boolean;
+    captured?: Captured;
+    disposed: boolean;
+  },
 ): void {
   const emit = ctx.newFunction('__emit', (handle) => {
     const raw = ctx.getString(handle);
@@ -177,11 +183,15 @@ function installHostFunctions(
       return JSON.stringify(value === undefined ? null : value);
     })().then(
       (jsonStr) => {
+        // The run may have been torn down (timeout/abort) while the host call
+        // was in flight — touching a disposed context would throw.
+        if (state.disposed) return;
         const handle = ctx.newString(jsonStr);
         deferred.resolve(handle);
         handle.dispose();
       },
       (err: unknown) => {
+        if (state.disposed) return;
         const message = err instanceof Error ? err.message : String(err);
         // Reject with a guest Error so scripts can read `e.message`.
         const handle = ctx.newError(message);
@@ -191,7 +201,9 @@ function installHostFunctions(
     );
 
     // Drive the guest microtask queue whenever this promise settles.
-    deferred.settled.then(() => ctx.runtime.executePendingJobs());
+    deferred.settled.then(() => {
+      if (!state.disposed) ctx.runtime.executePendingJobs();
+    });
     return deferred.handle;
   });
   hostCall.consume((f) => ctx.setProp(ctx.global, '__hostCall', f));
@@ -225,6 +237,7 @@ export async function runScript(input: RunScriptInput): Promise<EngineResult> {
     bytes: 0,
     truncated: false,
     captured: undefined as Captured | undefined,
+    disposed: false,
   };
   const abort = abortPromise(input.signal);
 
@@ -264,6 +277,9 @@ export async function runScript(input: RunScriptInput): Promise<EngineResult> {
   } finally {
     clearTimeout(timer);
     abort.cleanup();
+    // Mark disposed before tearing down so any in-flight host-call
+    // continuation skips touching the context.
+    state.disposed = true;
     ctx.dispose();
   }
 

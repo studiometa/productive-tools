@@ -13,7 +13,7 @@ Before your first interaction with any resource, call `action=help` with that re
 
 ## MCP Tools
 
-This server exposes one high-level tool and two low-level raw API tools.
+This server exposes one high-level tool, two low-level raw API tools, and a sandboxed scripting tool (`run_script`).
 
 ### `productive`
 
@@ -57,6 +57,59 @@ Use `action: "help"` to get detailed documentation for any resource:
 ```
 
 Returns filters, fields, includes, and examples for that resource.
+
+## Running Scripts (`run_script`)
+
+For advanced multi-step logic — fetching across resources, filtering, aggregating, or
+conditional flows — use `run_script` instead of many individual calls. It runs a
+JavaScript/TypeScript script in a sandbox and returns the value the script returns plus any
+buffered output, all in a single tool call.
+
+The sandbox has **no network or filesystem access**. Scripts reach Productive only through an
+injected client, so every call goes through the same validated, rate-limited API pipeline as
+normal tool calls.
+
+**Disabled by default** — the server operator must set `PRODUCTIVE_MCP_ENABLE_RUN=true`.
+
+### Parameters
+
+| Parameter | Type    | Description                                                          |
+| --------- | ------- | -------------------------------------------------------------------- |
+| `code`    | string  | **Required**. JavaScript/TypeScript source to run.                   |
+| `args`    | array   | Positional strings exposed to the script as `args`.                  |
+| `flags`   | object  | Named values exposed to the script as `flags`.                       |
+| `dry_run` | boolean | Record mutating calls (create/update/delete/…) instead of executing. |
+
+### Globals available inside a script
+
+- `productive(resource, action, params)` — low-level call, mirrors the `productive` tool.
+- `productive.<resource>.list(filter?, opts?)`, `.get(id, opts?)`, `.create(params)`, `.update(id, params)` — convenience accessors for data resources.
+- `api.read(path, opts?)` / `api.write(method, path, body)` — raw API access.
+- `output.json(data)`, `output.table(rows)`, `output.csv(rows)`, `output.log(...)`, `output.info/warn/error/success(msg)` — buffered output returned alongside the result.
+- `args` (string[]) and `flags` (object) — the inputs above.
+- `return <value>` to surface a result. `await` is supported.
+
+Imports/`require` are not available — use the injected globals only.
+
+### Example
+
+```json
+{
+  "name": "run_script",
+  "arguments": {
+    "code": "const projects = await productive.projects.list();\nconst tasks = await productive.tasks.list({ status: 'open' });\noutput.json({ projects: projects.length, openTasks: tasks.length });\nreturn 'summary ready';"
+  }
+}
+```
+
+Returns `{ result, output, _run: { apiCalls, dryRun } }`. With `dry_run: true`, mutating calls
+are not executed and are listed under `_run.recorded`.
+
+### Limits (operator-configurable)
+
+`PRODUCTIVE_MCP_RUN_TIMEOUT_MS` (5000), `PRODUCTIVE_MCP_RUN_MEMORY_MB` (64),
+`PRODUCTIVE_MCP_RUN_MAX_API_CALLS` (50), `PRODUCTIVE_MCP_RUN_MAX_OUTPUT_KB` (256),
+`PRODUCTIVE_MCP_RUN_MAX_CODE_KB` (128).
 
 ## Common Parameters
 
