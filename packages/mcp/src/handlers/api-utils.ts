@@ -221,6 +221,66 @@ function buildMethodExample(
   return example;
 }
 
+/** Number of documented endpoints in the catalog. */
+export function apiEndpointCount(): number {
+  return Object.keys(PRODUCTIVE_API_REFERENCE).length;
+}
+
+/** A single endpoint-catalog search match. */
+export interface EndpointSearchMatch {
+  path: string;
+  methods: string[];
+  summary?: string;
+}
+
+export interface EndpointSearchResult {
+  query: string;
+  total: number;
+  matches: EndpointSearchMatch[];
+  truncated?: boolean;
+}
+
+/** Whether a query matches anywhere in an endpoint's documented surface. */
+function endpointMatches(spec: ApiEndpointSpec, q: string): boolean {
+  if (spec.path.toLowerCase().includes(q)) return true;
+  return Object.values(spec.methods).some(
+    (method) =>
+      method?.summary?.toLowerCase().includes(q) ||
+      method?.description?.toLowerCase().includes(q) ||
+      method?.operationId?.toLowerCase().includes(q) ||
+      Object.keys(method?.filters ?? {}).some((f) => f.toLowerCase().includes(q)),
+  );
+}
+
+/**
+ * Keyword-search the documented endpoint catalog, returning matching paths
+ * (not their full specs) so an agent can drill in with `api_read describe`.
+ * Pure — reused by `api_read` search and the global `search_docs` tool.
+ */
+export function searchApiEndpoints(query: string, limit = 30): EndpointSearchResult {
+  const q = query.trim().toLowerCase();
+  const all: EndpointSearchMatch[] = [];
+
+  for (const spec of Object.values(PRODUCTIVE_API_REFERENCE)) {
+    if (!endpointMatches(spec, q)) continue;
+    const methods = Object.keys(spec.methods);
+    const summary = Object.values(spec.methods)
+      .map((m) => m?.summary)
+      .find(Boolean);
+    all.push({ path: spec.path, methods, summary });
+  }
+
+  all.sort((a, b) => a.path.localeCompare(b.path));
+  const matches = all.slice(0, limit);
+
+  return {
+    query,
+    total: all.length,
+    matches,
+    ...(all.length > matches.length ? { truncated: true } : {}),
+  };
+}
+
 export function describeApiEndpoint(path: string): Record<string, unknown> {
   const normalizedPath = normalizeApiPath(path);
   const matches = Object.values(PRODUCTIVE_API_REFERENCE).filter((spec) => {

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  apiEndpointCount,
   buildApiReadQuery,
   describeApiEndpoint,
   normalizeApiPath,
   resolveApiEndpoint,
+  searchApiEndpoints,
   serializeFilter,
   validateFilterSpec,
   validateSort,
@@ -166,5 +168,34 @@ describe('api-utils', () => {
     expect(patchMethod).toBeDefined();
     expect((patchMethod as Record<string, unknown>).example).toBeTruthy();
     expect((patchMethod as { example: Record<string, unknown> }).example.body).toBeTruthy();
+  });
+});
+
+describe('apiEndpointCount', () => {
+  it('counts the documented endpoints', () => {
+    expect(apiEndpointCount()).toBeGreaterThan(0);
+  });
+});
+
+describe('searchApiEndpoints', () => {
+  it('finds endpoints by path keyword', () => {
+    const result = searchApiEndpoints('tasks');
+    expect(result.total).toBeGreaterThan(0);
+    expect(result.matches.some((m) => m.path.includes('task'))).toBe(true);
+    expect(result.matches[0].methods.length).toBeGreaterThan(0);
+  });
+
+  it('returns zero matches for a nonsense query', () => {
+    const result = searchApiEndpoints('zzqqxx-nope');
+    expect(result.total).toBe(0);
+    expect(result.matches).toEqual([]);
+  });
+
+  it('caps results and flags truncation', () => {
+    // Every endpoint path contains "/", so this matches the whole catalog.
+    const result = searchApiEndpoints('/', 5);
+    expect(result.matches).toHaveLength(5);
+    expect(result.total).toBeGreaterThan(5);
+    expect(result.truncated).toBe(true);
   });
 });

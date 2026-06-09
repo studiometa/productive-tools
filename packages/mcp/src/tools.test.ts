@@ -12,7 +12,7 @@ describe('tools', () => {
         'api_read',
         'api_write',
         'run_script',
-        'run_script_search_docs',
+        'search_docs',
       ]);
     });
 
@@ -112,7 +112,8 @@ describe('tools', () => {
         idempotentHint: false,
         openWorldHint: true,
       });
-      expect(apiRead?.inputSchema.required).toEqual(['path']);
+      // api_read no longer requires `path` — `search` is an alternative entry point.
+      expect(apiRead?.inputSchema.required).toBeUndefined();
       expect(apiWrite?.inputSchema.required).toEqual(['method', 'path', 'confirm']);
     });
   });
@@ -140,13 +141,13 @@ describe('tools', () => {
   describe('token optimization', () => {
     it('should have reasonable tool schema size', () => {
       const totalSize = JSON.stringify(TOOLS).length;
-      expect(totalSize).toBeLessThan(8500);
+      expect(totalSize).toBeLessThan(10000);
     });
 
     it('should estimate under 1700 tokens', () => {
       const totalSize = JSON.stringify(TOOLS).length;
       const estimatedTokens = Math.ceil(totalSize / 4);
-      expect(estimatedTokens).toBeLessThan(2200);
+      expect(estimatedTokens).toBeLessThan(2600);
     });
   });
 });

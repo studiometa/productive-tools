@@ -19,6 +19,22 @@ function createHandlerContext(requestRaw: ReturnType<typeof vi.fn>): HandlerCont
 }
 
 describe('handleApiRead', () => {
+  it('searches the endpoint catalog without a path', async () => {
+    const requestRaw = vi.fn();
+    const result = await handleApiRead({ search: 'tasks' }, createHandlerContext(requestRaw));
+    expect(result.isError).toBeUndefined();
+    const body = JSON.parse((result.content[0] as { text: string }).text);
+    expect(body.total).toBeGreaterThan(0);
+    expect(body.matches.some((m: { path: string }) => m.path.includes('task'))).toBe(true);
+    expect(requestRaw).not.toHaveBeenCalled();
+  });
+
+  it('errors when neither path nor search is provided', async () => {
+    const result = await handleApiRead({}, createHandlerContext(vi.fn()));
+    expect(result.isError).toBe(true);
+    expect((result.content[0] as { text: string }).text).toContain('path');
+  });
+
   it('returns endpoint docs in describe mode', async () => {
     const result = await handleApiRead(
       { path: '/invoices', describe: true },

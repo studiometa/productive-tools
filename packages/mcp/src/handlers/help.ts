@@ -1035,6 +1035,88 @@ export function handleHelp(resource: string): ToolResult {
   });
 }
 
+/** A single cross-resource help-search match. */
+export interface HelpSearchMatch {
+  resource: string;
+  description: string;
+  /** Which parts of the resource's help matched the query. */
+  matched_in: string[];
+}
+
+/** Collect the places a query matches within one resource's help. */
+function matchResourceHelp(resource: string, help: ResourceHelp, q: string): string[] {
+  const hits: string[] = [];
+  const has = (s: string | undefined) => !!s && s.toLowerCase().includes(q);
+
+  if (resource.toLowerCase().includes(q)) hits.push('resource name');
+  if (has(help.description)) hits.push('description');
+  for (const [action, desc] of Object.entries(help.actions)) {
+    if (action.toLowerCase().includes(q) || has(desc)) hits.push(`action: ${action}`);
+  }
+  for (const [filter, desc] of Object.entries(help.filters ?? {})) {
+    if (filter.toLowerCase().includes(q) || has(desc)) hits.push(`filter: ${filter}`);
+  }
+  for (const [field, desc] of Object.entries(help.fields ?? {})) {
+    if (field.toLowerCase().includes(q) || has(desc)) hits.push(`field: ${field}`);
+  }
+  for (const include of help.includes ?? []) {
+    if (include.toLowerCase().includes(q)) hits.push(`include: ${include}`);
+  }
+  for (const example of help.examples ?? []) {
+    if (has(example.description)) hits.push(`example: ${example.description}`);
+  }
+  return hits;
+}
+
+/** All resource names that have help documentation. */
+export function helpResourceNames(): string[] {
+  return Object.keys(RESOURCE_HELP);
+}
+
+/**
+ * Search help across all resources, returning a compact ranked list of matching
+ * resources (not their full docs). Pure — reused by both the `action=help`
+ * query path and the global `search_docs` tool.
+ */
+export function searchResourceHelp(query: string): HelpSearchMatch[] {
+  const q = query.trim().toLowerCase();
+  const matches: HelpSearchMatch[] = [];
+
+  for (const [resource, help] of Object.entries(RESOURCE_HELP)) {
+    const hits = matchResourceHelp(resource, help, q);
+    if (hits.length > 0) {
+      matches.push({ resource, description: help.description, matched_in: hits.slice(0, 6) });
+    }
+  }
+
+  return matches.toSorted(
+    (a, b) => b.matched_in.length - a.matched_in.length || a.resource.localeCompare(b.resource),
+  );
+}
+
+/**
+ * `action=help` query path: cross-resource help search as a tool result, so an
+ * agent can drill into a specific resource with action="help".
+ */
+export function handleHelpSearch(query: string): ToolResult {
+  const matches = searchResourceHelp(query);
+
+  if (matches.length === 0) {
+    return jsonResult({
+      query,
+      matches: [],
+      available_resources: helpResourceNames(),
+      _tip: 'No matches. Call action="help" with a resource for its full documentation.',
+    });
+  }
+
+  return jsonResult({
+    query,
+    matches,
+    _tip: 'Call action="help" with resource="<name>" for full filters, fields, and examples.',
+  });
+}
+
 /**
  * Get help for all resources (overview)
  */
