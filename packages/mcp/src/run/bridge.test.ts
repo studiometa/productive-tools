@@ -109,6 +109,14 @@ describe('createBridge', () => {
     expect(bridge.getStats().apiCalls).toBe(4);
   });
 
+  it('rejects an unknown channel', async () => {
+    const { bridge, exec } = makeBridge();
+    await expect(
+      bridge.call('evil' as unknown as 'productive', { resource: 'x', action: 'y' }),
+    ).rejects.toThrow('Unknown bridge channel: evil');
+    expect(exec).not.toHaveBeenCalled();
+  });
+
   it('rejects calls once the signal is aborted', async () => {
     const { bridge, controller, exec } = makeBridge();
     controller.abort();

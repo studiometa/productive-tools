@@ -352,6 +352,18 @@ export const ApiWriteToolInputSchema = z.object({
 
 export type ApiWriteToolInput = z.infer<typeof ApiWriteToolInputSchema>;
 
+/**
+ * Full input schema for the sandboxed run_script tool.
+ */
+export const RunScriptToolInputSchema = z.object({
+  code: z.string().min(1, 'Code cannot be empty').describe('JavaScript/TypeScript source to run'),
+  args: z.array(z.string()).optional().describe('Positional arguments exposed as `args`'),
+  flags: z.record(z.string(), z.unknown()).optional().describe('Named values exposed as `flags`'),
+  dry_run: z.boolean().optional().describe('Record mutations instead of executing them'),
+});
+
+export type RunScriptToolInput = z.infer<typeof RunScriptToolInputSchema>;
+
 // =============================================================================
 // Validation Helpers
 // =============================================================================
@@ -376,7 +388,7 @@ export function safeValidateToolInput(input: unknown): ZodSafeParseResult<Produc
  * Format Zod validation errors for LLM consumption
  */
 export function formatValidationErrors(
-  error: ZodError<ProductiveToolInput | ApiReadToolInput | ApiWriteToolInput>,
+  error: ZodError<ProductiveToolInput | ApiReadToolInput | ApiWriteToolInput | RunScriptToolInput>,
 ): string {
   const issues = error.issues.map((issue) => {
     const path = issue.path.length > 0 ? `${issue.path.join('.')}: ` : '';

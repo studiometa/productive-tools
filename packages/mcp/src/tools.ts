@@ -196,6 +196,47 @@ export const TOOLS: Tool[] = [
       required: ['method', 'path', 'confirm'],
     },
   },
+  {
+    name: 'run_script',
+    description:
+      'Run a sandboxed JavaScript/TypeScript script for advanced multi-step logic in one call. ' +
+      'Globals: productive(resource, action, params) and productive.<resource>.list/get/create/update; ' +
+      'api.read(path, opts)/api.write(method, path, body); output.json/table/csv/log/...; args; flags. ' +
+      'Return a value to surface it as the result. dry_run=true records mutations without executing them. ' +
+      'No network/filesystem access; calls go through the same API pipeline. ' +
+      'Disabled by default, requires PRODUCTIVE_MCP_ENABLE_RUN=true.',
+    annotations: {
+      title: 'Run Script',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        code: {
+          type: 'string',
+          description: 'JavaScript/TypeScript source to execute in the sandbox.',
+        },
+        args: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Positional arguments exposed to the script as `args`.',
+        },
+        flags: {
+          type: 'object',
+          description: 'Named values exposed to the script as `flags`.',
+        },
+        dry_run: {
+          type: 'boolean',
+          description:
+            'Record mutating calls (create/update/delete/...) instead of executing them.',
+        },
+      },
+      required: ['code'],
+    },
+  },
 ];
 
 /**

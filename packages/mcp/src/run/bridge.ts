@@ -101,6 +101,9 @@ export function createBridge(opts: BridgeOptions): Bridge {
   const recorded: RecordedCall[] = [];
 
   async function call(channel: BridgeChannel, payload: Record<string, unknown>): Promise<unknown> {
+    if (channel !== 'productive' && channel !== 'api_read' && channel !== 'api_write') {
+      throw new Error(`Unknown bridge channel: ${channel}`);
+    }
     if (opts.signal.aborted) {
       throw new Error('Script execution timed out');
     }

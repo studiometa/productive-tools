@@ -17,6 +17,7 @@ import { ErrorMessages, UserInputError, isUserInputError } from '../errors.js';
 import {
   ApiReadToolInputSchema,
   ApiWriteToolInputSchema,
+  RunScriptToolInputSchema,
   formatValidationErrors,
 } from '../schema.js';
 import { handleActivities } from './activities.js';
@@ -38,6 +39,7 @@ import { runPreValidationGuards } from './pre-validation-guards.js';
 import { handleProjects } from './projects.js';
 import { handleReports } from './reports.js';
 import { type ResolvableResourceType } from './resolve.js';
+import { handleRunScript } from './run.js';
 import { handleSchema, handleSchemaOverview } from './schema.js';
 import { handleSearch } from './search.js';
 import { handleServices } from './services.js';
@@ -246,6 +248,14 @@ export async function executeToolWithCredentials(
       includeSuggestions: false,
       executor: () => execCtx,
     });
+  }
+
+  if (name === 'run_script') {
+    const parsed = RunScriptToolInputSchema.safeParse(args);
+    if (!parsed.success) {
+      return inputErrorResult(new UserInputError(formatValidationErrors(parsed.error)));
+    }
+    return handleRunScript(parsed.data, credentials, executeToolWithCredentials);
   }
 
   // Handle the single consolidated tool
