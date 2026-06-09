@@ -1,10 +1,10 @@
 /**
  * Host-side capability bridge for sandboxed scripts.
  *
- * The QuickJS sandbox has no network, filesystem, or process access. The only
- * way a script reaches Productive is through this bridge, which re-enters the
- * exact same `executeToolWithCredentials` pipeline used by every other MCP tool
- * call. That means scripts automatically inherit credential scoping, rate
+ * The QuickJS sandbox has no direct network, filesystem, or process access.
+ * The only way a script reaches the Productive API is through this bridge,
+ * which re-enters the exact same `executeToolWithCredentials` pipeline used by
+ * every other MCP tool call — the real HTTP request happens here, on the host. That means scripts automatically inherit credential scoping, rate
  * limiting, include validation, and formatting — and egress is constrained to
  * the Productive API by construction.
  *

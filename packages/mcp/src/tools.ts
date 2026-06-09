@@ -203,7 +203,8 @@ export const TOOLS: Tool[] = [
       'Globals: productive(resource, action, params) and productive.<resource>.list/get/create/update; ' +
       'api.read(path, opts)/api.write(method, path, body); output.json/table/csv/log/...; args; flags. ' +
       'Return a value to surface it as the result. dry_run=true records mutations without executing them. ' +
-      'No network/filesystem access; calls go through the same API pipeline. ' +
+      'No direct network/filesystem access (no fetch, no arbitrary URLs); Productive API access is provided ' +
+      'via the injected client, executed on the host through the same validated, rate-limited pipeline. ' +
       'Disabled by default, requires PRODUCTIVE_MCP_ENABLE_RUN=true.',
     annotations: {
       title: 'Run Script',

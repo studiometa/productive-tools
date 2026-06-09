@@ -65,9 +65,11 @@ conditional flows — use `run_script` instead of many individual calls. It runs
 JavaScript/TypeScript script in a sandbox and returns the value the script returns plus any
 buffered output, all in a single tool call.
 
-The sandbox has **no network or filesystem access**. Scripts reach Productive only through an
-injected client, so every call goes through the same validated, rate-limited API pipeline as
-normal tool calls.
+The sandbox has **no direct network or filesystem access** — scripts cannot open sockets, call
+`fetch`, reach arbitrary URLs, or read files. Productive API access **is** available: calls made
+through the injected `productive`/`api` client are executed on the host (which performs the real
+HTTP request) and go through the same validated, rate-limited pipeline as normal tool calls. This
+keeps credentials out of the sandbox and constrains egress to the Productive API.
 
 **Disabled by default** — the server operator must set `PRODUCTIVE_MCP_ENABLE_RUN=true`.
 
