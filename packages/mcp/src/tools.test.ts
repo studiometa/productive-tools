@@ -139,13 +139,13 @@ describe('tools', () => {
   describe('token optimization', () => {
     it('should have reasonable tool schema size', () => {
       const totalSize = JSON.stringify(TOOLS).length;
-      expect(totalSize).toBeLessThan(7500);
+      expect(totalSize).toBeLessThan(8500);
     });
 
     it('should estimate under 1700 tokens', () => {
       const totalSize = JSON.stringify(TOOLS).length;
       const estimatedTokens = Math.ceil(totalSize / 4);
-      expect(estimatedTokens).toBeLessThan(1900);
+      expect(estimatedTokens).toBeLessThan(2200);
     });
   });
 });

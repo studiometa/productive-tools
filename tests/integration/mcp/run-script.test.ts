@@ -11,7 +11,13 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createMcpStdioClient, type McpStdioClient } from '../helpers/mcp-client.js';
 import { startMockServer, type MockServer } from '../helpers/mock-server.js';
 
-function textOf(result: { content: Array<{ type: string; text?: string }> }): string {
+type RunResult = {
+  isError?: boolean;
+  content: Array<{ type: string; text?: string }>;
+  structuredContent?: { result?: unknown; output?: unknown; _run?: Record<string, unknown> };
+};
+
+function textOf(result: RunResult): string {
   const first = result.content[0];
   return first?.type === 'text' ? (first.text ?? '') : '';
 }
@@ -47,15 +53,17 @@ describe('MCP: run_script tool', () => {
         code: `
           const projects = await productive.projects.list();
           output.json(projects);
-          return Array.isArray(projects) ? projects.length : 'not-array';
+          return 'fetched';
         `,
       },
-    })) as { isError?: boolean; content: Array<{ type: string; text?: string }> };
+    })) as RunResult;
 
     expect(result.isError).toBeFalsy();
-    const text = textOf(result);
-    expect(text).toContain('Alpha Website');
-    expect(text).toContain('"apiCalls": 1');
+    // Markdown text block carries the rendered json output...
+    expect(textOf(result)).toContain('Alpha Website');
+    // ...and structuredContent carries the machine-readable result + stats.
+    expect(result.structuredContent?.result).toBe('fetched');
+    expect(result.structuredContent?._run?.apiCalls).toBe(1);
   });
 
   it('exposes args and flags to the script', async () => {
@@ -66,11 +74,10 @@ describe('MCP: run_script tool', () => {
         args: ['hello'],
         flags: { mine: true },
       },
-    })) as { isError?: boolean; content: Array<{ type: string; text?: string }> };
+    })) as RunResult;
 
     expect(result.isError).toBeFalsy();
-    const body = JSON.parse(textOf(result));
-    expect(body.result).toEqual({ got: ['hello'], mine: true });
+    expect(result.structuredContent?.result).toEqual({ got: ['hello'], mine: true });
   });
 
   it('records mutations in dry-run mode without calling the API', async () => {
@@ -80,20 +87,20 @@ describe('MCP: run_script tool', () => {
         code: `await productive.tasks.create({ title: 'New', project_id: '101', task_list_id: '1' }); return 'done';`,
         dry_run: true,
       },
-    })) as { isError?: boolean; content: Array<{ type: string; text?: string }> };
+    })) as RunResult;
 
     expect(result.isError).toBeFalsy();
-    const body = JSON.parse(textOf(result));
-    expect(body.result).toBe('done');
-    expect(body._run.dryRun).toBe(true);
-    expect(body._run.recorded).toHaveLength(1);
+    const sc = result.structuredContent;
+    expect(sc?.result).toBe('done');
+    expect((sc?._run as { dryRun?: boolean })?.dryRun).toBe(true);
+    expect((sc?._run as { recorded?: unknown[] })?.recorded).toHaveLength(1);
   });
 
   it('surfaces guest errors as an error result', async () => {
     const result = (await enabled.client.callTool({
       name: 'run_script',
       arguments: { code: `throw new Error('script failed');` },
-    })) as { isError?: boolean; content: Array<{ type: string; text?: string }> };
+    })) as RunResult;
 
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain('script failed');
@@ -103,7 +110,7 @@ describe('MCP: run_script tool', () => {
     const result = (await disabled.client.callTool({
       name: 'run_script',
       arguments: { code: `return 1;` },
-    })) as { isError?: boolean; content: Array<{ type: string; text?: string }> };
+    })) as RunResult;
 
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain('PRODUCTIVE_MCP_ENABLE_RUN');

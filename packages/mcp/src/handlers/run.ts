@@ -17,8 +17,9 @@ import { UserInputError } from '../errors.js';
 import { createBridge } from '../run/bridge.js';
 import { runScript, ScriptError } from '../run/engine.js';
 import { isRunScriptEnabled, resolveRunLimits } from '../run/limits.js';
+import { renderRunResult } from '../run/render.js';
 import { stripTypes } from '../run/strip.js';
-import { errorResult, inputErrorResult, jsonResult } from './utils.js';
+import { errorResult, inputErrorResult } from './utils.js';
 
 export interface RunScriptArgs {
   code?: unknown;
@@ -92,16 +93,25 @@ export async function handleRunScript(
     });
 
     const stats = bridge.getStats();
-    return jsonResult({
-      result: result.result,
-      output: result.output,
-      _run: {
-        apiCalls: stats.apiCalls,
-        dryRun,
-        ...(result.truncated ? { outputTruncated: true } : {}),
-        ...(dryRun ? { recorded: stats.recorded } : {}),
-      },
-    });
+    const run = {
+      apiCalls: stats.apiCalls,
+      dryRun,
+      ...(result.truncated ? { outputTruncated: true } : {}),
+      ...(dryRun ? { recorded: stats.recorded } : {}),
+    };
+
+    // Return both: `structuredContent` for hosts that consume structured tool
+    // output (matches the tool's declared outputSchema), and a Markdown `text`
+    // block so text-only clients see formatted tables/JSON/logs.
+    return {
+      content: [
+        {
+          type: 'text',
+          text: renderRunResult({ result: result.result, output: result.output, run }),
+        },
+      ],
+      structuredContent: { result: result.result, output: result.output, _run: run },
+    };
   } catch (error) {
     if (error instanceof ScriptError) {
       return errorResult(error.message);

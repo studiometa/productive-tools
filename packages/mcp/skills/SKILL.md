@@ -104,8 +104,12 @@ Imports/`require` are not available — use the injected globals only.
 }
 ```
 
-Returns `{ result, output, _run: { apiCalls, dryRun } }`. With `dry_run: true`, mutating calls
-are not executed and are listed under `_run.recorded`.
+The response carries both forms (per the MCP structured-output convention): machine-readable
+`structuredContent` as `{ result, output, _run: { apiCalls, dryRun } }`, and a human-readable
+Markdown rendering in the text block — `output.table(rows)` becomes a Markdown table,
+`output.csv`/`output.json` become fenced code blocks, log lines are labelled, and the returned
+value appears under **Result**. With `dry_run: true`, mutating calls are not executed and are
+listed under `_run.recorded`.
 
 ### Limits (operator-configurable)
 

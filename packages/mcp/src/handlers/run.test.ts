@@ -23,8 +23,13 @@ function jsonOk(data: unknown): ToolResult {
 }
 
 function parse(result: ToolResult): Record<string, unknown> {
+  if (result.structuredContent) return result.structuredContent as Record<string, unknown>;
+  throw new Error('expected structuredContent');
+}
+
+function text(result: ToolResult): string {
   const content = result.content[0];
-  if (content?.type === 'text') return JSON.parse(content.text);
+  if (content?.type === 'text') return content.text;
   throw new Error('unexpected result');
 }
 
@@ -79,7 +84,7 @@ describe('handleRunScript', () => {
     );
   });
 
-  it('captures buffered output', async () => {
+  it('captures buffered output in structuredContent', async () => {
     const exec = vi.fn(async () => jsonOk({})) as ToolExecutor;
     const result = await handleRunScript(
       { code: `output.json({ hello: 'world' });` },
@@ -89,6 +94,24 @@ describe('handleRunScript', () => {
     );
     const body = parse(result);
     expect(body.output).toEqual([{ type: 'json', data: { hello: 'world' } }]);
+  });
+
+  it('renders the text block as Markdown', async () => {
+    const exec = vi.fn(async () => jsonOk({})) as ToolExecutor;
+    const result = await handleRunScript(
+      {
+        code: `output.table([{ id: 1, name: 'A' }]); return 'done';`,
+      },
+      credentials,
+      exec,
+      enabledEnv,
+    );
+    const md = text(result);
+    expect(md).toContain('| id | name |');
+    expect(md).toContain('| 1 | A |');
+    expect(md).toContain('**Result:**');
+    // structuredContent still carries the raw data.
+    expect(parse(result).result).toBe('done');
   });
 
   it('records mutating calls in dry-run mode without executing them', async () => {

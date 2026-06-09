@@ -237,6 +237,33 @@ export const TOOLS: Tool[] = [
       },
       required: ['code'],
     },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        result: { description: 'The value the script returned (any JSON).' },
+        output: {
+          type: 'array',
+          description: 'Buffered output.* entries, in order.',
+          items: {
+            type: 'object',
+            properties: { type: { type: 'string' }, data: {} },
+            required: ['type'],
+          },
+        },
+        _run: {
+          type: 'object',
+          description: 'Run metadata.',
+          properties: {
+            apiCalls: { type: 'number' },
+            dryRun: { type: 'boolean' },
+            outputTruncated: { type: 'boolean' },
+            recorded: { type: 'array' },
+          },
+          required: ['apiCalls', 'dryRun'],
+        },
+      },
+      required: ['result', 'output', '_run'],
+    },
   },
 ];
 

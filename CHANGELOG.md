@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **MCP**: Add a sandboxed `run_script` tool that runs agent-authored JavaScript/TypeScript in a QuickJS WASM isolate with no direct network or filesystem access — Productive API access is provided through an injected `productive`/`api` client whose calls are executed on the host and re-enter the same validated, rate-limited tool pipeline, with `output.*` buffering, `args`/`flags` inputs, `dry_run` mutation recording, and memory/CPU/wall-clock/API-call/output limits; disabled unless `PRODUCTIVE_MCP_ENABLE_RUN=true` ([ceb3579], [#180])
+- **MCP**: Add a sandboxed `run_script` tool that runs agent-authored JavaScript/TypeScript in a QuickJS WASM isolate with no direct network or filesystem access — Productive API access is provided through an injected `productive`/`api` client whose calls are executed on the host and re-enter the same validated, rate-limited tool pipeline, with `args`/`flags` inputs, `dry_run` mutation recording, and memory/CPU/wall-clock/API-call/output limits. Results are returned as MCP `structuredContent` (with a declared `outputSchema`) plus a Markdown rendering in the text block — `output.table`/`csv`/`json` become Markdown tables and fenced code blocks. Disabled unless `PRODUCTIVE_MCP_ENABLE_RUN=true` ([ceb3579], [#180])
 
 [#180]: https://github.com/studiometa/productive-tools/pull/180
 [ceb3579]: https://github.com/studiometa/productive-tools/commit/ceb3579
