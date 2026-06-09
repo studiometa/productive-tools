@@ -30,6 +30,8 @@ export interface CreateSandboxOptions {
   orgId?: string;
   userId?: string;
   mockApiUrl: string;
+  /** Extra environment variables merged into the locked-down child env. */
+  extraEnv?: Record<string, string>;
 }
 
 /**
@@ -45,6 +47,7 @@ export async function createSandbox(options: CreateSandboxOptions): Promise<Sand
     orgId = 'test-org-456',
     userId = 'test-user-789',
     mockApiUrl,
+    extraEnv = {},
   } = options;
 
   const dir = await mkdtemp(join(tmpdir(), 'productive-test-'));
@@ -82,6 +85,7 @@ export async function createSandbox(options: CreateSandboxOptions): Promise<Sand
     NO_COLOR: '1',
     FORCE_COLOR: '0',
     NODE_NO_WARNINGS: '1',
+    ...extraEnv,
   };
 
   async function cleanup() {
