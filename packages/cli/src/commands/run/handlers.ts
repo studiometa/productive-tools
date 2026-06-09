@@ -9,12 +9,12 @@
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import type { CommandContext } from '../../context.js';
 
-import { generateWrapper } from '../../script/wrapper.js';
+import { generateResolverHooks, generateWrapper } from '../../script/wrapper.js';
 
 /**
  * Resolve the absolute path to a module entry point.
@@ -77,21 +77,47 @@ export async function scriptRun(
   const scriptPath = resolve(process.cwd(), rawScriptPath);
   const scriptUrl = pathToFileURL(scriptPath).href;
 
-  // Resolve paths for wrapper imports
-  const cliDir = dirname(fileURLToPath(import.meta.url));
-  const scriptOutputPath = resolve(cliDir, 'script.js');
-  const scriptOutputUrl = pathToFileURL(scriptOutputPath).href;
-
+  // The wrapper imports these two from the CLI's own install. Resolve them
+  // through `resolver` (import.meta.resolve) so the dist layout stays governed
+  // by package.json `exports` instead of hardcoded filenames.
   const sdkUrl = String(await resolver('@studiometa/productive-sdk'));
+  const scriptOutputUrl = String(await resolver('@studiometa/productive-cli/script'));
+
+  // Public @studiometa/* specifiers a run-script may import directly, mapped to
+  // the CLI's own installed copies so they resolve even when the script lives
+  // outside any node_modules tree (e.g. ~/Downloads). Resolution happens here,
+  // on the main thread, because `import.meta.resolve` is unavailable inside the
+  // resolver-hooks worker; the absolute URLs are embedded into the hooks module.
+  // Transitive @studiometa deps resolve on their own (the hook falls through to
+  // default resolution relative to the already-resolved parent URL), so only
+  // directly-importable packages need an entry. A specifier that does not
+  // resolve in this install layout is skipped rather than aborting the run.
+  const importMap: Record<string, string> = {
+    '@studiometa/productive-sdk': sdkUrl,
+    '@studiometa/productive-cli/script': scriptOutputUrl,
+  };
+  await Promise.all(
+    ['@studiometa/productive-cli', '@studiometa/productive-api'].map(async (specifier) => {
+      try {
+        importMap[specifier] = String(await resolver(specifier));
+      } catch {
+        // Not resolvable in this install layout — leave it to default resolution.
+      }
+    }),
+  );
 
   // Write wrapper to a temp directory
   const tmpDir = await mkdtemp(resolve(tmpdir(), 'productive-script-'));
   const wrapperPath = resolve(tmpDir, 'wrapper.mjs');
+  const hooksPath = resolve(tmpDir, 'resolver-hooks.mjs');
+  const hooksUrl = pathToFileURL(hooksPath).href;
 
   let exitCode = 0;
 
   try {
-    const wrapperContent = generateWrapper({ scriptUrl, scriptOutputUrl, sdkUrl });
+    await writeFile(hooksPath, generateResolverHooks(importMap), 'utf-8');
+
+    const wrapperContent = generateWrapper({ scriptUrl, scriptOutputUrl, sdkUrl, hooksUrl });
     await writeFile(wrapperPath, wrapperContent, 'utf-8');
 
     // Build node args — add TS stripping flags for .ts/.mts files.
