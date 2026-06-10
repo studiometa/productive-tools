@@ -27,6 +27,7 @@ const OAUTH_PROTECTED_RESOURCE_PATH = '/.well-known/oauth-protected-resource/mcp
 
 import { parseAuthHeader, type ProductiveCredentials } from './auth.js';
 import { executeToolWithCredentials } from './handlers.js';
+import { executeRunRequest } from './handlers/run-endpoint.js';
 import { INSTRUCTIONS } from './instructions.js';
 import {
   oauthMetadataHandler,
@@ -273,6 +274,29 @@ export function createHttpApp(): H3 {
     '/health',
     defineHandler(() => {
       return { status: 'ok' };
+    }),
+  );
+
+  // Runner endpoint: a front server with PRODUCTIVE_MCP_RUN_RUNNER_URL forwards
+  // run_script calls here. Only active when PRODUCTIVE_MCP_RUN_RUNNER_TOKEN is
+  // set (otherwise it reports 404). Authenticated by that shared token.
+  app.post(
+    '/run',
+    defineHandler(async (event) => {
+      let parsedBody: unknown;
+      try {
+        parsedBody = await event.req.json();
+      } catch {
+        parsedBody = undefined;
+      }
+      const result = await executeRunRequest(
+        parsedBody,
+        event.req.headers.get('authorization'),
+        executeToolWithCredentials,
+      );
+      event.res.status = result.status;
+      event.res.headers.set('Content-Type', 'application/json');
+      return result.body;
     }),
   );
 

@@ -17,6 +17,7 @@ import { UserInputError } from '../errors.js';
 import { createBridge } from '../run/bridge.js';
 import { runScript, ScriptError } from '../run/engine.js';
 import { isRunScriptEnabled, resolveRunLimits } from '../run/limits.js';
+import { resolveRunnerConfig, runScriptRemote } from '../run/remote.js';
 import { renderRunResult } from '../run/render.js';
 import { stripTypes } from '../run/strip.js';
 import { errorResult, inputErrorResult } from './utils.js';
@@ -26,6 +27,11 @@ export interface RunScriptArgs {
   args?: unknown;
   flags?: unknown;
   dry_run?: unknown;
+}
+
+/** Optional injected dependencies (for testing the remote path). */
+export interface RunScriptDeps {
+  fetch?: typeof fetch;
 }
 
 /** Coerce the `args` argument into a string array. */
@@ -50,11 +56,17 @@ export async function handleRunScript(
   credentials: ProductiveCredentials,
   exec: ToolExecutor,
   env: NodeJS.ProcessEnv = process.env,
+  deps: RunScriptDeps = {},
 ): Promise<ToolResult> {
-  if (!isRunScriptEnabled(env)) {
+  const runner = resolveRunnerConfig(env);
+
+  // A runner URL takes precedence over local execution and over the local
+  // enable flag — the front can be tiny and gated off while delegating runs to
+  // a separate, larger machine (which enforces its own PRODUCTIVE_MCP_ENABLE_RUN).
+  if (!runner.url && !isRunScriptEnabled(env)) {
     return inputErrorResult(
       new UserInputError(
-        'run_script is disabled. Set PRODUCTIVE_MCP_ENABLE_RUN=true to enable it.',
+        'run_script is disabled. Set PRODUCTIVE_MCP_ENABLE_RUN=true (or PRODUCTIVE_MCP_RUN_RUNNER_URL to delegate to a runner) to enable it.',
       ),
     );
   }
@@ -66,6 +78,21 @@ export async function handleRunScript(
         'Available globals: productive(resource, action, params), api.read/write, output.*, args, flags.',
         'Return a value to surface it as the result; use output.json(...) for additional data.',
       ]),
+    );
+  }
+
+  // Remote path: forward the call to the runner and relay its ToolResult.
+  if (runner.url) {
+    return runScriptRemote(
+      {
+        code: rawArgs.code,
+        args: normalizeArgs(rawArgs.args),
+        flags: normalizeFlags(rawArgs.flags),
+        dry_run: rawArgs.dry_run === true,
+        credentials,
+      },
+      runner,
+      deps.fetch,
     );
   }
 

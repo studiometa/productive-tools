@@ -144,6 +144,53 @@ describe('handleRunScript', () => {
     expect(body.result).toEqual({ args: ['a', '1'], flags: { mine: true } });
   });
 
+  it('forwards to the remote runner when PRODUCTIVE_MCP_RUN_RUNNER_URL is set', async () => {
+    const exec = vi.fn() as unknown as ToolExecutor;
+    const remoteResult = { content: [{ type: 'text', text: 'from runner' }] };
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify(remoteResult), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+    ) as unknown as typeof fetch;
+
+    // Note: ENABLE_RUN is NOT set — the runner URL alone enables forwarding.
+    const result = await handleRunScript(
+      { code: 'return 1;', args: ['x'], flags: { a: 1 }, dry_run: true },
+      credentials,
+      exec,
+      { PRODUCTIVE_MCP_RUN_RUNNER_URL: 'http://runner.internal/run' } as NodeJS.ProcessEnv,
+      { fetch: fetchImpl },
+    );
+
+    expect(result).toEqual(remoteResult);
+    // Did not execute locally.
+    expect(exec).not.toHaveBeenCalled();
+    const [url, init] = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(url).toBe('http://runner.internal/run');
+    expect(JSON.parse(init.body)).toMatchObject({
+      code: 'return 1;',
+      args: ['x'],
+      flags: { a: 1 },
+      dry_run: true,
+      credentials,
+    });
+  });
+
+  it('still requires code when forwarding to a runner', async () => {
+    const exec = vi.fn() as unknown as ToolExecutor;
+    const result = await handleRunScript(
+      { code: '  ' },
+      credentials,
+      exec,
+      { PRODUCTIVE_MCP_RUN_RUNNER_URL: 'http://runner.internal/run' } as NodeJS.ProcessEnv,
+      { fetch: vi.fn() as unknown as typeof fetch },
+    );
+    expect(result.isError).toBe(true);
+    expect((result.content[0] as { text: string }).text).toContain('code is required');
+  });
+
   it('returns an error result when the script throws', async () => {
     const exec = vi.fn() as unknown as ToolExecutor;
     const result = await handleRunScript(

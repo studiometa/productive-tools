@@ -128,6 +128,19 @@ listed under `_run.recorded`.
 `PRODUCTIVE_MCP_RUN_MAX_API_CALLS` (50), `PRODUCTIVE_MCP_RUN_MAX_OUTPUT_KB` (256),
 `PRODUCTIVE_MCP_RUN_MAX_CODE_KB` (128).
 
+### Remote runner (operator-configurable)
+
+To isolate script execution (memory/CPU/OOM) from the main server, the front can
+delegate `run_script` to a separate runner over one stateless HTTP POST — agents see no
+difference. Set on the **front**: `PRODUCTIVE_MCP_RUN_RUNNER_URL` (the runner's `/run`
+endpoint; its presence enables `run_script` without the local `ENABLE_RUN` flag),
+`PRODUCTIVE_MCP_RUN_RUNNER_TOKEN` (shared secret), and optionally
+`PRODUCTIVE_MCP_RUN_RUNNER_TIMEOUT_MS` (30000). On the **runner** (HTTP transport): set
+`PRODUCTIVE_MCP_RUN_RUNNER_TOKEN` (activates the `/run` endpoint) and
+`PRODUCTIVE_MCP_ENABLE_RUN=true`. The `/run` contract is stateless and must not be retried
+at the proxy layer (a non-dry-run script may mutate), so any load balancer works in front
+of a runner pool.
+
 ## Common Parameters
 
 | Parameter  | Type    | Description                                                                              |
