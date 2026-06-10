@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **MCP**: Clarify the `run_script` scripting docs (served by `search_docs`) — the injected `productive` client returns flattened records and `list` returns `{ data, meta }` (use `meta.total_count`); read field keys directly (`id`, `name`, `number`) rather than JSON:API `.type`/`.attributes`, and bound large queries with `opts` like `{ per_page: 50 }` ([#183])
+
+[#183]: https://github.com/studiometa/productive-tools/pull/183
+
 ## [0.10.16] - 2026.06.10
 
 ### Added

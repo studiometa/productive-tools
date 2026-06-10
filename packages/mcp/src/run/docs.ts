@@ -53,7 +53,11 @@ export const DOC_SECTIONS: DocSection[] = [
       '- `productive.<resource>.create(params)`',
       '- `productive.<resource>.update(id, params)`',
       '',
-      "Example: `const tasks = await productive.tasks.list({ status: 'open' });`",
+      'Results mirror the `productive` tool: `list` returns `{ data, meta }` (e.g. `meta.total_count`),',
+      'and records are flattened — read field keys directly (e.g. `id`, `name`, `number`), not JSON:API',
+      '`.type`/`.attributes`. Pass `opts` like `{ per_page: 50 }` to bound large queries.',
+      '',
+      "Example: `const { data } = await productive.tasks.list({ status: 'open' }, { per_page: 50 });`",
     ].join('\n'),
   },
   {
