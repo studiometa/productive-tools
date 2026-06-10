@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.16] - 2026.06.10
+
 ### Added
 
 - **MCP**: Allow `run_script` to be delegated to a separate runner so script execution (memory/CPU/OOM) is isolated from the main server. When `PRODUCTIVE_MCP_RUN_RUNNER_URL` is set, the front forwards a stateless `{ code, args, flags, dry_run, credentials }` POST to the runner and relays its `ToolResult`; otherwise it runs locally as before. Adds a token-gated `/run` endpoint (`PRODUCTIVE_MCP_RUN_RUNNER_TOKEN`) on the HTTP transport. The contract is infrastructure-agnostic and load-balancer-ready (stateless, must not be proxy-retried since non-dry-run scripts can mutate) ([#182])
 
+[0.10.16]: https://github.com/studiometa/productive-tools/compare/0.10.15...0.10.16
 [#182]: https://github.com/studiometa/productive-tools/pull/182
 
 ## [0.10.15] - 2026.06.10
