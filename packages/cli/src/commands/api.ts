@@ -7,8 +7,9 @@ import { runCommand, exitWithValidationError } from '../error-handler.js';
 import { ConfigError, ValidationError, ApiError } from '../errors.js';
 import { OutputFormatter, createSpinner } from '../output.js';
 import { colors } from '../utils/colors.js';
+import { readStdin } from '../utils/stdin.js';
 
-function parseFieldValue(value: string): unknown {
+async function parseFieldValue(value: string): Promise<unknown> {
   // Handle special values
   if (value === 'true') return true;
   if (value === 'false') return false;
@@ -26,8 +27,15 @@ function parseFieldValue(value: string): unknown {
   if (value.startsWith('@')) {
     const filename = value.slice(1);
     if (filename === '-') {
-      // Read from stdin - not implemented in this context
-      throw new ValidationError('Reading from stdin is not supported yet', 'field');
+      // Read from stdin
+      const content = await readStdin();
+      // Try to parse as JSON first
+      try {
+        return JSON.parse(content);
+      } catch {
+        // Return as string if not valid JSON
+        return content.trim();
+      }
     }
     try {
       const content = readFileSync(filename, 'utf-8');
@@ -47,7 +55,7 @@ function parseFieldValue(value: string): unknown {
   return value;
 }
 
-function parseFields(fields: string[]): Record<string, unknown> {
+async function parseFields(fields: string[]): Promise<Record<string, unknown>> {
   const result: Record<string, unknown> = {};
 
   for (const field of fields) {
@@ -59,7 +67,7 @@ function parseFields(fields: string[]): Record<string, unknown> {
     const key = field.slice(0, equalIndex);
     const value = field.slice(equalIndex + 1);
 
-    result[key] = parseFieldValue(value);
+    result[key] = await parseFieldValue(value);
   }
 
   return result;
@@ -284,7 +292,7 @@ export async function handleApiCommand(
     const fields = collectOption(options, 'field', 'F');
     const rawFields = collectOption(options, 'raw-field', 'f');
 
-    const parsedFields = parseFields(fields);
+    const parsedFields = await parseFields(fields);
     const parsedRawFields = parseRawFields(rawFields);
     const allFields = { ...parsedFields, ...parsedRawFields };
 
@@ -316,10 +324,7 @@ export async function handleApiCommand(
     if (options.input) {
       // Read body from file
       const inputFile = String(options.input);
-      const content =
-        inputFile === '-'
-          ? '' // stdin not implemented yet
-          : readFileSync(inputFile, 'utf-8');
+      const content = inputFile === '-' ? await readStdin() : readFileSync(inputFile, 'utf-8');
 
       try {
         body = JSON.parse(content);
