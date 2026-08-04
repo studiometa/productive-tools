@@ -1,146 +1,99 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import { handleCompaniesCommand } from './command.js';
+import { createTestContext } from '../../context.js';
+import { createCommandRouter } from '../../utils/command-router.js';
+import { companiesCommandConfig } from './command.js';
+import { companiesList, companiesGet, companiesAdd, companiesUpdate } from './handlers.js';
 
-// Mock the handlers to avoid needing real API
-vi.mock('./handlers.js', () => ({
-  companiesList: vi.fn().mockResolvedValue(undefined),
-  companiesGet: vi.fn().mockResolvedValue(undefined),
-  companiesAdd: vi.fn().mockResolvedValue(undefined),
-  companiesUpdate: vi.fn().mockResolvedValue(undefined),
-}));
+describe('companies command wiring', () => {
+  it('uses "companies" as resource name', () => {
+    expect(companiesCommandConfig.resource).toBe('companies');
+  });
 
-// Mock config to avoid file system access
-vi.mock('../../config.js', () => ({
-  getConfig: vi.fn().mockReturnValue({
-    apiToken: 'test-token',
-    organizationId: 'test-org',
-    baseUrl: 'https://api.productive.io/api/v2',
-  }),
-}));
+  it('wires list and ls to companiesList', () => {
+    expect(companiesCommandConfig.handlers.list).toBe(companiesList);
+    expect(companiesCommandConfig.handlers.ls).toBe(companiesList);
+  });
 
-// Mock cache with full interface - factory must be inline
-vi.mock('../../utils/cache.js', () => {
-  const mockCacheObj = {
-    get: vi.fn(),
-    set: vi.fn(),
-    delete: vi.fn(),
-    setOrgId: vi.fn(),
-    getCachedPeople: vi.fn(),
-    getCachedProjects: vi.fn(),
-    getCachedTaskLists: vi.fn(),
-    findCachedPersonByEmail: vi.fn(),
-    findCachedProjectByNumber: vi.fn(),
-    findCachedTaskListByName: vi.fn(),
-  };
-  return {
-    getCache: vi.fn().mockReturnValue(mockCacheObj),
-    CacheStore: vi.fn().mockImplementation(() => mockCacheObj),
-  };
+  it('wires get to companiesGet as args handler', () => {
+    expect(companiesCommandConfig.handlers.get).toEqual([companiesGet, 'args']);
+  });
+
+  it('wires add and create to companiesAdd', () => {
+    expect(companiesCommandConfig.handlers.add).toBe(companiesAdd);
+    expect(companiesCommandConfig.handlers.create).toBe(companiesAdd);
+  });
+
+  it('wires update to companiesUpdate as args handler', () => {
+    expect(companiesCommandConfig.handlers.update).toEqual([companiesUpdate, 'args']);
+  });
 });
 
 describe('companies command routing', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
+  const mockCompaniesList = vi.fn().mockResolvedValue(undefined);
+  const mockCompaniesGet = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
+  const mockCompaniesAdd = vi.fn().mockResolvedValue(undefined);
+  const mockCompaniesUpdate = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
 
-  beforeEach(async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-
-    // Reset mocks before each test
-    const handlers = await import('./handlers.js');
-    vi.mocked(handlers.companiesList).mockClear();
-    vi.mocked(handlers.companiesGet).mockClear();
-    vi.mocked(handlers.companiesAdd).mockClear();
-    vi.mocked(handlers.companiesUpdate).mockClear();
+  const router = createCommandRouter({
+    resource: 'companies',
+    handlers: {
+      list: mockCompaniesList,
+      ls: mockCompaniesList,
+      get: [mockCompaniesGet, 'args'],
+      add: mockCompaniesAdd,
+      create: mockCompaniesAdd,
+      update: [mockCompaniesUpdate, 'args'],
+    },
+    contextFactory: (options) => createTestContext({ options }),
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    mockCompaniesList.mockClear();
+    mockCompaniesGet.mockClear();
+    mockCompaniesAdd.mockClear();
+    mockCompaniesUpdate.mockClear();
   });
 
-  it('should route "list" subcommand to companiesList', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCompaniesCommand('list', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.companiesList).toHaveBeenCalled();
+  it('routes "list" subcommand to companiesList handler', async () => {
+    await router('list', [], { format: 'json' });
+    expect(mockCompaniesList).toHaveBeenCalled();
   });
 
-  it('should route "ls" alias to companiesList', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCompaniesCommand('ls', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.companiesList).toHaveBeenCalled();
+  it('routes "ls" alias to companiesList handler', async () => {
+    await router('ls', [], { format: 'json' });
+    expect(mockCompaniesList).toHaveBeenCalled();
   });
 
-  it('should route "get" subcommand to companiesGet', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCompaniesCommand('get', ['123'], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.companiesGet).toHaveBeenCalledWith(['123'], expect.anything());
+  it('routes "get" subcommand to companiesGet handler', async () => {
+    await router('get', ['123'], { format: 'json' });
+    expect(mockCompaniesGet).toHaveBeenCalledWith(['123'], expect.anything());
   });
 
-  it('should route "add" subcommand to companiesAdd', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCompaniesCommand('add', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.companiesAdd).toHaveBeenCalled();
+  it('routes "add" subcommand to companiesAdd handler', async () => {
+    await router('add', [], { format: 'json' });
+    expect(mockCompaniesAdd).toHaveBeenCalled();
   });
 
-  it('should route "create" alias to companiesAdd', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCompaniesCommand('create', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.companiesAdd).toHaveBeenCalled();
+  it('routes "create" alias to companiesAdd handler', async () => {
+    await router('create', [], { format: 'json' });
+    expect(mockCompaniesAdd).toHaveBeenCalled();
   });
 
-  it('should route "update" subcommand to companiesUpdate', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCompaniesCommand('update', ['456'], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.companiesUpdate).toHaveBeenCalledWith(['456'], expect.anything());
+  it('routes "update" subcommand to companiesUpdate handler', async () => {
+    await router('update', ['123'], { format: 'json' });
+    expect(mockCompaniesUpdate).toHaveBeenCalledWith(['123'], expect.anything());
   });
 
-  it('should exit with error for unknown subcommand', async () => {
-    await handleCompaniesCommand('unknown', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
+  it('exits with error for unknown subcommand', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+    await router('unknown', [], { format: 'json' });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Unknown companies subcommand: unknown'),
     );
   });

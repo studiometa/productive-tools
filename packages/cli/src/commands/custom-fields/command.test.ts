@@ -1,105 +1,68 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import { handleCustomFieldsCommand } from './command.js';
+import { createTestContext } from '../../context.js';
+import { createCommandRouter } from '../../utils/command-router.js';
+import { customFieldsCommandConfig } from './command.js';
+import { customFieldsGet, customFieldsList } from './handlers.js';
 
-// Mock the handlers to avoid needing real API
-vi.mock('./handlers.js', () => ({
-  customFieldsList: vi.fn().mockResolvedValue(undefined),
-  customFieldsGet: vi.fn().mockResolvedValue(undefined),
-}));
+describe('custom-fields command wiring', () => {
+  it('uses "custom-fields" as resource name', () => {
+    expect(customFieldsCommandConfig.resource).toBe('custom-fields');
+  });
 
-// Mock config to avoid file system access
-vi.mock('../../config.js', () => ({
-  getConfig: vi.fn().mockReturnValue({
-    apiToken: 'test-token',
-    organizationId: 'test-org',
-    baseUrl: 'https://api.productive.io/api/v2',
-  }),
-}));
+  it('wires list and ls to customFieldsList', () => {
+    expect(customFieldsCommandConfig.handlers.list).toBe(customFieldsList);
+    expect(customFieldsCommandConfig.handlers.ls).toBe(customFieldsList);
+  });
 
-// Mock cache with full interface
-vi.mock('../../utils/cache.js', () => {
-  const mockCacheObj = {
-    get: vi.fn(),
-    set: vi.fn(),
-    delete: vi.fn(),
-    setOrgId: vi.fn(),
-    getCachedPeople: vi.fn(),
-    getCachedProjects: vi.fn(),
-    getCachedTaskLists: vi.fn(),
-    findCachedPersonByEmail: vi.fn(),
-    findCachedProjectByNumber: vi.fn(),
-    findCachedTaskListByName: vi.fn(),
-  };
-  return {
-    getCache: vi.fn().mockReturnValue(mockCacheObj),
-    CacheStore: vi.fn().mockImplementation(() => mockCacheObj),
-  };
+  it('wires get to customFieldsGet as args handler', () => {
+    expect(customFieldsCommandConfig.handlers.get).toEqual([customFieldsGet, 'args']);
+  });
 });
 
 describe('custom-fields command routing', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
+  const mockCustomFieldsList = vi.fn().mockResolvedValue(undefined);
+  const mockCustomFieldsGet = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
 
-  beforeEach(async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-
-    const handlers = await import('./handlers.js');
-    vi.mocked(handlers.customFieldsList).mockClear();
-    vi.mocked(handlers.customFieldsGet).mockClear();
+  const router = createCommandRouter({
+    resource: 'custom-fields',
+    handlers: {
+      list: mockCustomFieldsList,
+      ls: mockCustomFieldsList,
+      get: [mockCustomFieldsGet, 'args'],
+    },
+    contextFactory: (options) => createTestContext({ options }),
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    mockCustomFieldsList.mockClear();
+    mockCustomFieldsGet.mockClear();
   });
 
-  it('should route "list" subcommand to customFieldsList', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCustomFieldsCommand('list', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.customFieldsList).toHaveBeenCalled();
+  it('routes "list" subcommand to customFieldsList handler', async () => {
+    await router('list', [], { format: 'json' });
+    expect(mockCustomFieldsList).toHaveBeenCalled();
   });
 
-  it('should route "ls" alias to customFieldsList', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCustomFieldsCommand('ls', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.customFieldsList).toHaveBeenCalled();
+  it('routes "ls" alias to customFieldsList handler', async () => {
+    await router('ls', [], { format: 'json' });
+    expect(mockCustomFieldsList).toHaveBeenCalled();
   });
 
-  it('should route "get" subcommand to customFieldsGet', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCustomFieldsCommand('get', ['42236'], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.customFieldsGet).toHaveBeenCalledWith(['42236'], expect.anything());
+  it('routes "get" subcommand to customFieldsGet handler', async () => {
+    await router('get', ['123'], { format: 'json' });
+    expect(mockCustomFieldsGet).toHaveBeenCalledWith(['123'], expect.anything());
   });
 
-  it('should exit with error for unknown subcommand', async () => {
-    await handleCustomFieldsCommand('unknown', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
+  it('exits with error for unknown subcommand', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+    await router('unknown', [], { format: 'json' });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Unknown custom-fields subcommand: unknown'),
     );
   });

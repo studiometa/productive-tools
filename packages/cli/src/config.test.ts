@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
+import type { KeychainAdapter } from './config.js';
+
 import {
   getConfig,
   setConfig,
@@ -7,24 +9,37 @@ import {
   showConfig,
   validateConfig,
   deleteConfigValue,
+  setKeychainAdapter,
 } from './config.js';
-import * as keychainStore from './utils/keychain-store.js';
 
-// Mock keychain to avoid reading real keychain values in tests
-vi.mock('./utils/keychain-store.js', () => ({
-  isKeychainAvailable: vi.fn().mockReturnValue(false),
-  getKeychainBackend: vi.fn().mockReturnValue('none'),
-  getKeychainValue: vi.fn().mockReturnValue(null),
-  setKeychainValue: vi.fn().mockReturnValue(false),
-  deleteKeychainValue: vi.fn().mockReturnValue(false),
-  isSecureKey: vi.fn().mockImplementation((key: string) => key === 'apiToken'),
-  SECURE_KEYS: ['apiToken'],
-}));
+/** Create a mock keychain adapter for testing */
+function createMockKeychain(): KeychainAdapter & {
+  getKeychainValue: ReturnType<typeof vi.fn>;
+  setKeychainValue: ReturnType<typeof vi.fn>;
+  deleteKeychainValue: ReturnType<typeof vi.fn>;
+  isKeychainAvailable: ReturnType<typeof vi.fn>;
+  getKeychainBackend: ReturnType<typeof vi.fn>;
+  isSecureKey: ReturnType<typeof vi.fn>;
+} {
+  return {
+    isKeychainAvailable: vi.fn().mockReturnValue(false),
+    getKeychainBackend: vi.fn().mockReturnValue('none'),
+    getKeychainValue: vi.fn().mockReturnValue(null),
+    setKeychainValue: vi.fn().mockReturnValue(false),
+    deleteKeychainValue: vi.fn().mockReturnValue(false),
+    isSecureKey: vi.fn().mockImplementation((key: string) => key === 'apiToken'),
+  };
+}
+
+let mockKeychain: ReturnType<typeof createMockKeychain>;
 
 describe('config', () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
+    mockKeychain = createMockKeychain();
+    setKeychainAdapter(mockKeychain);
+
     // Clear environment variables
     delete process.env.PRODUCTIVE_API_TOKEN;
     delete process.env.PRODUCTIVE_ORG_ID;
@@ -35,6 +50,7 @@ describe('config', () => {
   });
 
   afterEach(() => {
+    setKeychainAdapter();
     // Restore environment
     process.env = { ...originalEnv };
   });
@@ -151,49 +167,34 @@ describe('config with keychain available', () => {
     delete process.env.PRODUCTIVE_USER_ID;
     delete process.env.PRODUCTIVE_BASE_URL;
 
-    // Reset keychain mocks to defaults (keychain unavailable)
-    vi.mocked(keychainStore.isKeychainAvailable).mockReturnValue(false);
-    vi.mocked(keychainStore.getKeychainValue).mockReturnValue(null);
-    vi.mocked(keychainStore.setKeychainValue).mockReturnValue(false);
-    vi.mocked(keychainStore.deleteKeychainValue).mockReturnValue(false);
-    vi.mocked(keychainStore.isSecureKey).mockImplementation((key: string) => key === 'apiToken');
-    vi.mocked(keychainStore.getKeychainBackend).mockReturnValue('none');
-
-    // Clear call history after resetting implementations
-    vi.clearAllMocks();
-
-    // Re-apply implementations after clearAllMocks (which would clear them)
-    vi.mocked(keychainStore.isKeychainAvailable).mockReturnValue(false);
-    vi.mocked(keychainStore.getKeychainValue).mockReturnValue(null);
-    vi.mocked(keychainStore.setKeychainValue).mockReturnValue(false);
-    vi.mocked(keychainStore.deleteKeychainValue).mockReturnValue(false);
-    vi.mocked(keychainStore.isSecureKey).mockImplementation((key: string) => key === 'apiToken');
-    vi.mocked(keychainStore.getKeychainBackend).mockReturnValue('none');
+    mockKeychain = createMockKeychain();
+    setKeychainAdapter(mockKeychain);
 
     clearConfig();
     // Clear call history after clearConfig
-    vi.mocked(keychainStore.deleteKeychainValue).mockClear();
+    mockKeychain.deleteKeychainValue.mockClear();
   });
 
   afterEach(() => {
+    setKeychainAdapter();
     process.env = { ...originalEnv };
   });
 
   it('should save secure key to keychain when available', () => {
-    vi.mocked(keychainStore.isKeychainAvailable).mockReturnValue(true);
-    vi.mocked(keychainStore.setKeychainValue).mockReturnValue(true);
-    vi.mocked(keychainStore.getKeychainBackend).mockReturnValue('macOS Keychain');
+    mockKeychain.isKeychainAvailable.mockReturnValue(true);
+    mockKeychain.setKeychainValue.mockReturnValue(true);
+    mockKeychain.getKeychainBackend.mockReturnValue('macOS Keychain');
 
     const result = setConfig('apiToken', 'my-secret-token');
 
-    expect(keychainStore.setKeychainValue).toHaveBeenCalledWith('apiToken', 'my-secret-token');
+    expect(mockKeychain.setKeychainValue).toHaveBeenCalledWith('apiToken', 'my-secret-token');
     expect(result.stored).toBe(true);
     expect(result.location).toBe('macOS Keychain');
   });
 
   it('should fall back to config file when keychain save fails', () => {
-    vi.mocked(keychainStore.isKeychainAvailable).mockReturnValue(true);
-    vi.mocked(keychainStore.setKeychainValue).mockReturnValue(false);
+    mockKeychain.isKeychainAvailable.mockReturnValue(true);
+    mockKeychain.setKeychainValue.mockReturnValue(false);
 
     const result = setConfig('apiToken', 'my-secret-token');
 
@@ -202,13 +203,13 @@ describe('config with keychain available', () => {
 
   it('should delete existing config file value when saving to keychain succeeds', () => {
     // First, store value in config file (keychain not available)
-    vi.mocked(keychainStore.isKeychainAvailable).mockReturnValue(false);
+    mockKeychain.isKeychainAvailable.mockReturnValue(false);
     setConfig('apiToken', 'old-config-file-token');
 
     // Now enable keychain and store new value
-    vi.mocked(keychainStore.isKeychainAvailable).mockReturnValue(true);
-    vi.mocked(keychainStore.setKeychainValue).mockReturnValue(true);
-    vi.mocked(keychainStore.getKeychainBackend).mockReturnValue('macOS Keychain');
+    mockKeychain.isKeychainAvailable.mockReturnValue(true);
+    mockKeychain.setKeychainValue.mockReturnValue(true);
+    mockKeychain.getKeychainBackend.mockReturnValue('macOS Keychain');
 
     const result = setConfig('apiToken', 'new-keychain-token');
 
@@ -216,7 +217,7 @@ describe('config with keychain available', () => {
   });
 
   it('should read secure key from keychain when available', () => {
-    vi.mocked(keychainStore.getKeychainValue).mockImplementation((key: string) => {
+    mockKeychain.getKeychainValue.mockImplementation((key: string) => {
       if (key === 'apiToken') return 'keychain-token';
       return null;
     });
@@ -224,54 +225,54 @@ describe('config with keychain available', () => {
     const config = getConfig();
 
     expect(config.apiToken).toBe('keychain-token');
-    expect(keychainStore.getKeychainValue).toHaveBeenCalledWith('apiToken');
+    expect(mockKeychain.getKeychainValue).toHaveBeenCalledWith('apiToken');
   });
 
   it('should clear keychain value when clearConfig is called with keychain available', () => {
-    vi.mocked(keychainStore.isKeychainAvailable).mockReturnValue(true);
+    mockKeychain.isKeychainAvailable.mockReturnValue(true);
 
     clearConfig();
 
-    expect(keychainStore.deleteKeychainValue).toHaveBeenCalledWith('apiToken');
+    expect(mockKeychain.deleteKeychainValue).toHaveBeenCalledWith('apiToken');
   });
 
   it('should not call keychain when clearConfig is called and keychain not available', () => {
-    vi.mocked(keychainStore.isKeychainAvailable).mockReturnValue(false);
+    mockKeychain.isKeychainAvailable.mockReturnValue(false);
 
     clearConfig();
 
-    expect(keychainStore.deleteKeychainValue).not.toHaveBeenCalled();
+    expect(mockKeychain.deleteKeychainValue).not.toHaveBeenCalled();
   });
 
   it('should delete from both keychain and config file via deleteConfigValue', () => {
-    vi.mocked(keychainStore.isSecureKey).mockReturnValue(true);
+    mockKeychain.isSecureKey.mockReturnValue(true);
 
     deleteConfigValue('apiToken');
 
-    expect(keychainStore.deleteKeychainValue).toHaveBeenCalledWith('apiToken');
+    expect(mockKeychain.deleteKeychainValue).toHaveBeenCalledWith('apiToken');
   });
 
   it('should only delete from config file for non-secure keys via deleteConfigValue', () => {
-    vi.mocked(keychainStore.isSecureKey).mockReturnValue(false);
+    mockKeychain.isSecureKey.mockReturnValue(false);
 
     deleteConfigValue('organizationId');
 
-    expect(keychainStore.deleteKeychainValue).not.toHaveBeenCalled();
+    expect(mockKeychain.deleteKeychainValue).not.toHaveBeenCalled();
   });
 
   it('should use explicit useKeychain: false option to avoid keychain', () => {
-    vi.mocked(keychainStore.isKeychainAvailable).mockReturnValue(true);
-    vi.mocked(keychainStore.setKeychainValue).mockReturnValue(true);
+    mockKeychain.isKeychainAvailable.mockReturnValue(true);
+    mockKeychain.setKeychainValue.mockReturnValue(true);
 
     const result = setConfig('apiToken', 'test-token', { useKeychain: false });
 
-    expect(keychainStore.setKeychainValue).not.toHaveBeenCalled();
+    expect(mockKeychain.setKeychainValue).not.toHaveBeenCalled();
     expect(result.location).toBe('config file');
   });
 
   it('should read from config file when keychain has no value for secure key', () => {
     // Keychain returns null
-    vi.mocked(keychainStore.getKeychainValue).mockReturnValue(null);
+    mockKeychain.getKeychainValue.mockReturnValue(null);
 
     // Store in config file
     setConfig('apiToken', 'config-file-token');
@@ -283,7 +284,7 @@ describe('config with keychain available', () => {
 
   it('should prioritize CLI options over all other sources', () => {
     process.env.PRODUCTIVE_API_TOKEN = 'env-token';
-    vi.mocked(keychainStore.getKeychainValue).mockReturnValue('keychain-token');
+    mockKeychain.getKeychainValue.mockReturnValue('keychain-token');
 
     const config = getConfig({ 'api-token': 'cli-token' });
 

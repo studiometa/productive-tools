@@ -1,146 +1,99 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import { handleCommentsCommand } from './command.js';
+import { createTestContext } from '../../context.js';
+import { createCommandRouter } from '../../utils/command-router.js';
+import { commentsCommandConfig } from './command.js';
+import { commentsList, commentsGet, commentsAdd, commentsUpdate } from './handlers.js';
 
-// Mock the handlers to avoid needing real API
-vi.mock('./handlers.js', () => ({
-  commentsList: vi.fn().mockResolvedValue(undefined),
-  commentsGet: vi.fn().mockResolvedValue(undefined),
-  commentsAdd: vi.fn().mockResolvedValue(undefined),
-  commentsUpdate: vi.fn().mockResolvedValue(undefined),
-}));
+describe('comments command wiring', () => {
+  it('uses "comments" as resource name', () => {
+    expect(commentsCommandConfig.resource).toBe('comments');
+  });
 
-// Mock config to avoid file system access
-vi.mock('../../config.js', () => ({
-  getConfig: vi.fn().mockReturnValue({
-    apiToken: 'test-token',
-    organizationId: 'test-org',
-    baseUrl: 'https://api.productive.io/api/v2',
-  }),
-}));
+  it('wires list and ls to commentsList', () => {
+    expect(commentsCommandConfig.handlers.list).toBe(commentsList);
+    expect(commentsCommandConfig.handlers.ls).toBe(commentsList);
+  });
 
-// Mock cache with full interface - factory must be inline
-vi.mock('../../utils/cache.js', () => {
-  const mockCacheObj = {
-    get: vi.fn(),
-    set: vi.fn(),
-    delete: vi.fn(),
-    setOrgId: vi.fn(),
-    getCachedPeople: vi.fn(),
-    getCachedProjects: vi.fn(),
-    getCachedTaskLists: vi.fn(),
-    findCachedPersonByEmail: vi.fn(),
-    findCachedProjectByNumber: vi.fn(),
-    findCachedTaskListByName: vi.fn(),
-  };
-  return {
-    getCache: vi.fn().mockReturnValue(mockCacheObj),
-    CacheStore: vi.fn().mockImplementation(() => mockCacheObj),
-  };
+  it('wires get to commentsGet as args handler', () => {
+    expect(commentsCommandConfig.handlers.get).toEqual([commentsGet, 'args']);
+  });
+
+  it('wires add and create to commentsAdd', () => {
+    expect(commentsCommandConfig.handlers.add).toBe(commentsAdd);
+    expect(commentsCommandConfig.handlers.create).toBe(commentsAdd);
+  });
+
+  it('wires update to commentsUpdate as args handler', () => {
+    expect(commentsCommandConfig.handlers.update).toEqual([commentsUpdate, 'args']);
+  });
 });
 
 describe('comments command routing', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-  let processExitSpy: ReturnType<typeof vi.spyOn>;
+  const mockCommentsList = vi.fn().mockResolvedValue(undefined);
+  const mockCommentsGet = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
+  const mockCommentsAdd = vi.fn().mockResolvedValue(undefined);
+  const mockCommentsUpdate = vi.fn<(args: string[], ctx: unknown) => Promise<void>>().mockResolvedValue(undefined);
 
-  beforeEach(async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-
-    // Reset mocks before each test
-    const handlers = await import('./handlers.js');
-    vi.mocked(handlers.commentsList).mockClear();
-    vi.mocked(handlers.commentsGet).mockClear();
-    vi.mocked(handlers.commentsAdd).mockClear();
-    vi.mocked(handlers.commentsUpdate).mockClear();
+  const router = createCommandRouter({
+    resource: 'comments',
+    handlers: {
+      list: mockCommentsList,
+      ls: mockCommentsList,
+      get: [mockCommentsGet, 'args'],
+      add: mockCommentsAdd,
+      create: mockCommentsAdd,
+      update: [mockCommentsUpdate, 'args'],
+    },
+    contextFactory: (options) => createTestContext({ options }),
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    mockCommentsList.mockClear();
+    mockCommentsGet.mockClear();
+    mockCommentsAdd.mockClear();
+    mockCommentsUpdate.mockClear();
   });
 
-  it('should route "list" subcommand to commentsList', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCommentsCommand('list', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.commentsList).toHaveBeenCalled();
+  it('routes "list" subcommand to commentsList handler', async () => {
+    await router('list', [], { format: 'json' });
+    expect(mockCommentsList).toHaveBeenCalled();
   });
 
-  it('should route "ls" alias to commentsList', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCommentsCommand('ls', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.commentsList).toHaveBeenCalled();
+  it('routes "ls" alias to commentsList handler', async () => {
+    await router('ls', [], { format: 'json' });
+    expect(mockCommentsList).toHaveBeenCalled();
   });
 
-  it('should route "get" subcommand to commentsGet', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCommentsCommand('get', ['123'], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.commentsGet).toHaveBeenCalledWith(['123'], expect.anything());
+  it('routes "get" subcommand to commentsGet handler', async () => {
+    await router('get', ['123'], { format: 'json' });
+    expect(mockCommentsGet).toHaveBeenCalledWith(['123'], expect.anything());
   });
 
-  it('should route "add" subcommand to commentsAdd', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCommentsCommand('add', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.commentsAdd).toHaveBeenCalled();
+  it('routes "add" subcommand to commentsAdd handler', async () => {
+    await router('add', [], { format: 'json' });
+    expect(mockCommentsAdd).toHaveBeenCalled();
   });
 
-  it('should route "create" alias to commentsAdd', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCommentsCommand('create', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.commentsAdd).toHaveBeenCalled();
+  it('routes "create" alias to commentsAdd handler', async () => {
+    await router('create', [], { format: 'json' });
+    expect(mockCommentsAdd).toHaveBeenCalled();
   });
 
-  it('should route "update" subcommand to commentsUpdate', async () => {
-    const handlers = await import('./handlers.js');
-
-    await handleCommentsCommand('update', ['456'], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
-
-    expect(handlers.commentsUpdate).toHaveBeenCalledWith(['456'], expect.anything());
+  it('routes "update" subcommand to commentsUpdate handler', async () => {
+    await router('update', ['123'], { format: 'json' });
+    expect(mockCommentsUpdate).toHaveBeenCalledWith(['123'], expect.anything());
   });
 
-  it('should exit with error for unknown subcommand', async () => {
-    await handleCommentsCommand('unknown', [], {
-      format: 'json',
-      token: 'test-token',
-      'org-id': 'test-org',
-    });
+  it('exits with error for unknown subcommand', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+    await router('unknown', [], { format: 'json' });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Unknown comments subcommand: unknown'),
     );
   });

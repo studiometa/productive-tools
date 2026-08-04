@@ -8,11 +8,22 @@ import { link } from './html.js';
 
 const PRODUCTIVE_BASE_URL = 'https://app.productive.io';
 
+/** Injectable org ID resolver — defaults to reading from config */
+let orgIdResolver: () => string | undefined = () => getConfig().organizationId;
+
+/**
+ * Override the org ID resolver (for testing without vi.mock).
+ * Call with no argument to restore the default.
+ */
+export function setOrgIdResolver(resolver?: () => string | undefined): void {
+  orgIdResolver = resolver ?? (() => getConfig().organizationId);
+}
+
 /**
  * Get the organization ID for URL building
  */
 function getOrgId(): string | undefined {
-  return getConfig().organizationId;
+  return orgIdResolver();
 }
 
 /**

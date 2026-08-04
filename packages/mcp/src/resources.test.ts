@@ -4,57 +4,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
-
-// Mock ProductiveApi so we never make real HTTP calls.
-// Must use a regular function (not arrow) for `new` to work.
-vi.mock('@studiometa/productive-api', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-empty-function, unicorn/consistent-function-scoping
-  ProductiveApi: function ProductiveApi() {},
-}));
-
-// Mock fromHandlerContext so executor() returns a consistent stub.
-// We cannot reference a variable here (hoisting), so use an inline object.
-vi.mock('@studiometa/productive-core', () => ({
-  fromHandlerContext: vi.fn().mockReturnValue({ api: {}, resolver: {} }),
-}));
-
-// Mock individual resource handlers
-const mockHandleProjects = vi.fn();
-const mockHandleTasks = vi.fn();
-const mockHandlePeople = vi.fn();
-const mockHandleDeals = vi.fn();
-const mockHandleServices = vi.fn();
-const mockHandleSummaries = vi.fn();
-const mockHandleSchemaOverview = vi.fn();
-
-vi.mock('./handlers/projects.js', () => ({
-  handleProjects: (...args: unknown[]) => mockHandleProjects(...args),
-}));
-vi.mock('./handlers/tasks.js', () => ({
-  handleTasks: (...args: unknown[]) => mockHandleTasks(...args),
-}));
-vi.mock('./handlers/people.js', () => ({
-  handlePeople: (...args: unknown[]) => mockHandlePeople(...args),
-}));
-vi.mock('./handlers/deals.js', () => ({
-  handleDeals: (...args: unknown[]) => mockHandleDeals(...args),
-}));
-vi.mock('./handlers/services.js', () => ({
-  handleServices: (...args: unknown[]) => mockHandleServices(...args),
-}));
-vi.mock('./handlers/summaries.js', () => ({
-  handleSummaries: (...args: unknown[]) => mockHandleSummaries(...args),
-}));
-vi.mock('./handlers/schema.js', () => ({
-  handleSchemaOverview: () => mockHandleSchemaOverview(),
-  handleSchema: vi.fn(),
-}));
-vi.mock('./instructions.js', () => ({
-  INSTRUCTIONS: 'Test instructions content',
-}));
+import type { HandlerContext, ToolResult } from './handlers/types.js';
+import type { ResourceDeps } from './resources.js';
 
 import {
   STATIC_RESOURCES,
@@ -66,7 +17,7 @@ import {
 } from './resources.js';
 
 // ---------------------------------------------------------------------------
-// Fixtures
+// Test helpers
 // ---------------------------------------------------------------------------
 
 const credentials = {
@@ -76,26 +27,63 @@ const credentials = {
 };
 
 /** Helper: create a successful ToolResult */
-function toolSuccess(data: unknown) {
+function toolSuccess(data: unknown): ToolResult {
   return {
     content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
   };
 }
 
 /** Helper: create an error ToolResult */
-function toolError(message: string) {
+function toolError(message: string): ToolResult {
   return {
     isError: true as const,
     content: [{ type: 'text', text: message }],
   };
 }
 
-// ---------------------------------------------------------------------------
-// beforeEach
-// ---------------------------------------------------------------------------
+/** Mock handler context builder — returns a minimal HandlerContext */
+function mockBuildHandlerContext(
+  _credentials: unknown,
+  overrides?: { filter?: Record<string, string> },
+): HandlerContext {
+  return {
+    formatOptions: { compact: false },
+    filter: overrides?.filter,
+    perPage: 50,
+    includeHints: false,
+    includeSuggestions: false,
+    executor: () => ({ api: {}, resolver: {}, config: { organizationId: 'test-org' } }) as any,
+  };
+}
+
+/** Create mock deps with spy handlers */
+function createMockDeps(): Required<ResourceDeps> & {
+  handleSchemaOverview: ReturnType<typeof vi.fn>;
+  handleSummaries: ReturnType<typeof vi.fn>;
+  handleProjects: ReturnType<typeof vi.fn>;
+  handleTasks: ReturnType<typeof vi.fn>;
+  handlePeople: ReturnType<typeof vi.fn>;
+  handleDeals: ReturnType<typeof vi.fn>;
+  handleServices: ReturnType<typeof vi.fn>;
+} {
+  return {
+    buildHandlerContext: mockBuildHandlerContext,
+    handleSchemaOverview: vi.fn(),
+    handleSummaries: vi.fn(),
+    handleProjects: vi.fn(),
+    handleTasks: vi.fn(),
+    handlePeople: vi.fn(),
+    handleDeals: vi.fn(),
+    handleServices: vi.fn(),
+    instructions: 'Test instructions content',
+  };
+}
+
+let deps: ReturnType<typeof createMockDeps>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  deps = createMockDeps();
 });
 
 // ---------------------------------------------------------------------------
@@ -222,35 +210,36 @@ describe('listResourceTemplates', () => {
 describe('readResource – static resources', () => {
   it('should return schema from productive://schema', async () => {
     const schemaData = { resources: [{ resource: 'projects', actions: ['list', 'get'] }] };
-    mockHandleSchemaOverview.mockReturnValue(toolSuccess(schemaData));
+    deps.handleSchemaOverview.mockReturnValue(toolSuccess(schemaData));
 
-    const result = await readResource('productive://schema', credentials);
+    const result = await readResource('productive://schema', credentials, deps);
 
     expect(result.contents).toHaveLength(1);
     expect(result.contents[0].uri).toBe('productive://schema');
     expect(result.contents[0].mimeType).toBe('application/json');
 
-    const parsed = JSON.parse(result.contents[0].text);
+    const parsed = JSON.parse(result.contents[0].text as string);
     expect(parsed).toEqual(schemaData);
-    expect(mockHandleSchemaOverview).toHaveBeenCalledOnce();
+    expect(deps.handleSchemaOverview).toHaveBeenCalledOnce();
   });
 
   it('should return instructions from productive://instructions', async () => {
-    const result = await readResource('productive://instructions', credentials);
+    deps.handleSchemaOverview.mockReturnValue(toolSuccess({})); // not used
+    const result = await readResource('productive://instructions', credentials, deps);
 
     expect(result.contents).toHaveLength(1);
     expect(result.contents[0].uri).toBe('productive://instructions');
     expect(result.contents[0].mimeType).toBe('application/json');
 
-    const parsed = JSON.parse(result.contents[0].text);
+    const parsed = JSON.parse(result.contents[0].text as string);
     expect(parsed.instructions).toBe('Test instructions content');
   });
 
   it('should not call any API handler for schema', async () => {
-    mockHandleSchemaOverview.mockReturnValue(toolSuccess({ resources: [] }));
-    await readResource('productive://schema', credentials);
-    expect(mockHandleProjects).not.toHaveBeenCalled();
-    expect(mockHandleTasks).not.toHaveBeenCalled();
+    deps.handleSchemaOverview.mockReturnValue(toolSuccess({ resources: [] }));
+    await readResource('productive://schema', credentials, deps);
+    expect(deps.handleProjects).not.toHaveBeenCalled();
+    expect(deps.handleTasks).not.toHaveBeenCalled();
   });
 });
 
@@ -261,32 +250,32 @@ describe('readResource – static resources', () => {
 describe('readResource – dynamic resources', () => {
   it('should return my_day data from productive://summaries/my_day', async () => {
     const myDayData = { tasks: [], time: [], timers: [] };
-    mockHandleSummaries.mockResolvedValue(toolSuccess(myDayData));
+    deps.handleSummaries.mockResolvedValue(toolSuccess(myDayData));
 
-    const result = await readResource('productive://summaries/my_day', credentials);
+    const result = await readResource('productive://summaries/my_day', credentials, deps);
 
     expect(result.contents[0].uri).toBe('productive://summaries/my_day');
-    const parsed = JSON.parse(result.contents[0].text);
+    const parsed = JSON.parse(result.contents[0].text as string);
     expect(parsed).toEqual(myDayData);
-    expect(mockHandleSummaries).toHaveBeenCalledWith('my_day', {}, expect.any(Object));
+    expect(deps.handleSummaries).toHaveBeenCalledWith('my_day', {}, expect.any(Object));
   });
 
   it('should return team_pulse data from productive://summaries/team_pulse', async () => {
     const teamData = { team: { active_users: 5 }, people: [] };
-    mockHandleSummaries.mockResolvedValue(toolSuccess(teamData));
+    deps.handleSummaries.mockResolvedValue(toolSuccess(teamData));
 
-    const result = await readResource('productive://summaries/team_pulse', credentials);
+    const result = await readResource('productive://summaries/team_pulse', credentials, deps);
 
     expect(result.contents[0].uri).toBe('productive://summaries/team_pulse');
-    const parsed = JSON.parse(result.contents[0].text);
+    const parsed = JSON.parse(result.contents[0].text as string);
     expect(parsed).toEqual(teamData);
-    expect(mockHandleSummaries).toHaveBeenCalledWith('team_pulse', {}, expect.any(Object));
+    expect(deps.handleSummaries).toHaveBeenCalledWith('team_pulse', {}, expect.any(Object));
   });
 
   it('should propagate errors from summary handlers', async () => {
-    mockHandleSummaries.mockResolvedValue(toolError('Summaries failed'));
+    deps.handleSummaries.mockResolvedValue(toolError('Summaries failed'));
 
-    await expect(readResource('productive://summaries/my_day', credentials)).rejects.toThrow(
+    await expect(readResource('productive://summaries/my_day', credentials, deps)).rejects.toThrow(
       'Summaries failed',
     );
   });
@@ -299,19 +288,19 @@ describe('readResource – dynamic resources', () => {
 describe('readResource – project by ID', () => {
   it('should call handleProjects with get action', async () => {
     const projectData = { id: '42', name: 'Test Project' };
-    mockHandleProjects.mockResolvedValue(toolSuccess(projectData));
+    deps.handleProjects.mockResolvedValue(toolSuccess(projectData));
 
-    const result = await readResource('productive://projects/42', credentials);
+    const result = await readResource('productive://projects/42', credentials, deps);
 
     expect(result.contents[0].uri).toBe('productive://projects/42');
-    const parsed = JSON.parse(result.contents[0].text);
+    const parsed = JSON.parse(result.contents[0].text as string);
     expect(parsed).toEqual(projectData);
-    expect(mockHandleProjects).toHaveBeenCalledWith('get', { id: '42' }, expect.any(Object));
+    expect(deps.handleProjects).toHaveBeenCalledWith('get', { id: '42' }, expect.any(Object));
   });
 
   it('should propagate errors from project handler', async () => {
-    mockHandleProjects.mockResolvedValue(toolError('Project not found'));
-    await expect(readResource('productive://projects/999', credentials)).rejects.toThrow(
+    deps.handleProjects.mockResolvedValue(toolError('Project not found'));
+    await expect(readResource('productive://projects/999', credentials, deps)).rejects.toThrow(
       'Project not found',
     );
   });
@@ -320,29 +309,28 @@ describe('readResource – project by ID', () => {
 describe('readResource – task by ID', () => {
   it('should call handleTasks with get action', async () => {
     const taskData = { id: '10', title: 'Fix bug' };
-    mockHandleTasks.mockResolvedValue(toolSuccess(taskData));
+    deps.handleTasks.mockResolvedValue(toolSuccess(taskData));
 
-    const result = await readResource('productive://tasks/10', credentials);
+    const result = await readResource('productive://tasks/10', credentials, deps);
 
     expect(result.contents[0].uri).toBe('productive://tasks/10');
-    const parsed = JSON.parse(result.contents[0].text);
+    const parsed = JSON.parse(result.contents[0].text as string);
     expect(parsed).toEqual(taskData);
-    expect(mockHandleTasks).toHaveBeenCalledWith('get', { id: '10' }, expect.any(Object));
+    expect(deps.handleTasks).toHaveBeenCalledWith('get', { id: '10' }, expect.any(Object));
   });
 });
 
 describe('readResource – person by ID', () => {
   it('should call handlePeople with get action and credentials', async () => {
     const personData = { id: '5', name: 'Alice' };
-    mockHandlePeople.mockResolvedValue(toolSuccess(personData));
+    deps.handlePeople.mockResolvedValue(toolSuccess(personData));
 
-    const result = await readResource('productive://people/5', credentials);
+    const result = await readResource('productive://people/5', credentials, deps);
 
     expect(result.contents[0].uri).toBe('productive://people/5');
-    const parsed = JSON.parse(result.contents[0].text);
+    const parsed = JSON.parse(result.contents[0].text as string);
     expect(parsed).toEqual(personData);
-    // handlePeople receives (action, args, ctx, credentials)
-    expect(mockHandlePeople).toHaveBeenCalledWith(
+    expect(deps.handlePeople).toHaveBeenCalledWith(
       'get',
       { id: '5' },
       expect.any(Object),
@@ -354,14 +342,14 @@ describe('readResource – person by ID', () => {
 describe('readResource – deal by ID', () => {
   it('should call handleDeals with get action', async () => {
     const dealData = { id: '7', name: 'Big Deal' };
-    mockHandleDeals.mockResolvedValue(toolSuccess(dealData));
+    deps.handleDeals.mockResolvedValue(toolSuccess(dealData));
 
-    const result = await readResource('productive://deals/7', credentials);
+    const result = await readResource('productive://deals/7', credentials, deps);
 
     expect(result.contents[0].uri).toBe('productive://deals/7');
-    const parsed = JSON.parse(result.contents[0].text);
+    const parsed = JSON.parse(result.contents[0].text as string);
     expect(parsed).toEqual(dealData);
-    expect(mockHandleDeals).toHaveBeenCalledWith('get', { id: '7' }, expect.any(Object));
+    expect(deps.handleDeals).toHaveBeenCalledWith('get', { id: '7' }, expect.any(Object));
   });
 });
 
@@ -372,15 +360,15 @@ describe('readResource – deal by ID', () => {
 describe('readResource – project tasks', () => {
   it('should call handleTasks with list action and project_id filter', async () => {
     const tasksData = { data: [{ id: '1', title: 'Task A' }] };
-    mockHandleTasks.mockResolvedValue(toolSuccess(tasksData));
+    deps.handleTasks.mockResolvedValue(toolSuccess(tasksData));
 
-    const result = await readResource('productive://projects/42/tasks', credentials);
+    const result = await readResource('productive://projects/42/tasks', credentials, deps);
 
     expect(result.contents[0].uri).toBe('productive://projects/42/tasks');
-    const parsed = JSON.parse(result.contents[0].text);
+    const parsed = JSON.parse(result.contents[0].text as string);
     expect(parsed).toEqual(tasksData);
 
-    expect(mockHandleTasks).toHaveBeenCalledWith(
+    expect(deps.handleTasks).toHaveBeenCalledWith(
       'list',
       { project_id: '42' },
       expect.objectContaining({ filter: { project_id: '42' } }),
@@ -388,8 +376,8 @@ describe('readResource – project tasks', () => {
   });
 
   it('should propagate errors from tasks handler', async () => {
-    mockHandleTasks.mockResolvedValue(toolError('Tasks error'));
-    await expect(readResource('productive://projects/1/tasks', credentials)).rejects.toThrow(
+    deps.handleTasks.mockResolvedValue(toolError('Tasks error'));
+    await expect(readResource('productive://projects/1/tasks', credentials, deps)).rejects.toThrow(
       'Tasks error',
     );
   });
@@ -398,16 +386,15 @@ describe('readResource – project tasks', () => {
 describe('readResource – project services', () => {
   it('should call handleServices with list action and project_id filter', async () => {
     const servicesData = { data: [{ id: '3', name: 'Development' }] };
-    mockHandleServices.mockResolvedValue(toolSuccess(servicesData));
+    deps.handleServices.mockResolvedValue(toolSuccess(servicesData));
 
-    const result = await readResource('productive://projects/42/services', credentials);
+    const result = await readResource('productive://projects/42/services', credentials, deps);
 
     expect(result.contents[0].uri).toBe('productive://projects/42/services');
-    const parsed = JSON.parse(result.contents[0].text);
+    const parsed = JSON.parse(result.contents[0].text as string);
     expect(parsed).toEqual(servicesData);
 
-    // handleServices receives {} args (project_id is passed via ctx.filter)
-    expect(mockHandleServices).toHaveBeenCalledWith(
+    expect(deps.handleServices).toHaveBeenCalledWith(
       'list',
       {},
       expect.objectContaining({ filter: { project_id: '42' } }),
@@ -421,26 +408,26 @@ describe('readResource – project services', () => {
 
 describe('readResource – unknown URI', () => {
   it('should throw for completely unknown URI', async () => {
-    await expect(readResource('productive://unknown/resource', credentials)).rejects.toThrow(
+    await expect(readResource('productive://unknown/resource', credentials, deps)).rejects.toThrow(
       'Unknown resource URI: productive://unknown/resource',
     );
   });
 
   it('should throw for malformed productive URI', async () => {
-    await expect(readResource('productive://', credentials)).rejects.toThrow(
+    await expect(readResource('productive://', credentials, deps)).rejects.toThrow(
       'Unknown resource URI',
     );
   });
 
   it('should throw for non-productive URI', async () => {
-    await expect(readResource('https://example.com', credentials)).rejects.toThrow(
+    await expect(readResource('https://example.com', credentials, deps)).rejects.toThrow(
       'Unknown resource URI',
     );
   });
 
   it('should include available resource URIs in error message', async () => {
     try {
-      await readResource('productive://bogus', credentials);
+      await readResource('productive://bogus', credentials, deps);
       expect.fail('should have thrown');
     } catch (error) {
       const message = (error as Error).message;
@@ -457,21 +444,20 @@ describe('readResource – unknown URI', () => {
 
 describe('readResource – result format', () => {
   it('should always return exactly one content item', async () => {
-    mockHandleSchemaOverview.mockReturnValue(toolSuccess({ resources: [] }));
-    const result = await readResource('productive://schema', credentials);
+    deps.handleSchemaOverview.mockReturnValue(toolSuccess({ resources: [] }));
+    const result = await readResource('productive://schema', credentials, deps);
     expect(result.contents).toHaveLength(1);
   });
 
   it('should always set mimeType to application/json', async () => {
-    mockHandleSchemaOverview.mockReturnValue(toolSuccess({}));
-    const result = await readResource('productive://schema', credentials);
+    deps.handleSchemaOverview.mockReturnValue(toolSuccess({}));
+    const result = await readResource('productive://schema', credentials, deps);
     expect(result.contents[0].mimeType).toBe('application/json');
   });
 
   it('should pretty-print the JSON text', async () => {
-    mockHandleProjects.mockResolvedValue(toolSuccess({ id: '1', name: 'Proj' }));
-    const result = await readResource('productive://projects/1', credentials);
-    // Pretty-printed JSON contains newlines
+    deps.handleProjects.mockResolvedValue(toolSuccess({ id: '1', name: 'Proj' }));
+    const result = await readResource('productive://projects/1', credentials, deps);
     expect(result.contents[0].text).toContain('\n');
   });
 });

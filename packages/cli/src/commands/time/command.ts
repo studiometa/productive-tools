@@ -4,13 +4,15 @@
  * Handles command routing and dispatches to appropriate handlers.
  */
 
+import type { CommandRouterConfig } from '../../utils/command-router.js';
+
 import { createCommandRouter } from '../../utils/command-router.js';
 import { timeList, timeGet, timeAdd, timeUpdate, timeDelete } from './handlers.js';
 
 /**
- * Handle time command
+ * Router configuration — exported for testability
  */
-export const handleTimeCommand = createCommandRouter({
+export const timeCommandConfig: CommandRouterConfig = {
   resource: 'time',
   handlers: {
     list: timeList,
@@ -21,4 +23,9 @@ export const handleTimeCommand = createCommandRouter({
     delete: [timeDelete, 'args'],
     rm: [timeDelete, 'args'],
   },
-});
+};
+
+/**
+ * Handle time command
+ */
+export const handleTimeCommand = createCommandRouter(timeCommandConfig);
