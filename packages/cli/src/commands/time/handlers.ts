@@ -221,10 +221,7 @@ export async function timeAdd(ctx: CommandContext): Promise<void> {
 
     const format = ctx.options.format || ctx.options.f || 'human';
     if (format === 'json') {
-      ctx.formatter.output({
-        status: 'success',
-        ...formatTimeEntry(entry),
-      });
+      ctx.formatter.successWithData('Time entry created', formatTimeEntry(entry));
     } else {
       ctx.formatter.success('Time entry created');
       console.log(colors.cyan('ID:'), entry.id);
@@ -268,7 +265,7 @@ export async function timeUpdate(args: string[], ctx: CommandContext): Promise<v
 
       const format = ctx.options.format || ctx.options.f || 'human';
       if (format === 'json') {
-        ctx.formatter.output({ status: 'success', id: result.data.id });
+        ctx.formatter.successWithData(`Time entry ${id} updated`, { id: result.data.id });
       } else {
         ctx.formatter.success(`Time entry ${id} updated`);
       }
