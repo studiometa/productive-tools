@@ -1,12 +1,14 @@
 import type { OutputFormat } from './types.js';
 
 import { colors } from './utils/colors.js';
+import { extractField, formatExtractedValue } from './utils/extract-field.js';
 import { Spinner } from './utils/spinner.js';
 
 export class OutputFormatter {
   constructor(
     private format: OutputFormat = 'human',
     private noColor: boolean = false,
+    private outputField?: string,
   ) {
     if (noColor) {
       // Colors are already handled by the colors module
@@ -19,6 +21,12 @@ export class OutputFormatter {
    * Humans get 'human' format with colors and formatting
    */
   output(data: unknown): void {
+    // Handle field extraction first, if specified
+    if (this.outputField) {
+      this.outputExtractedField(data, this.outputField);
+      return;
+    }
+
     switch (this.format) {
       case 'json':
         console.log(JSON.stringify(data, null, 2));
@@ -34,6 +42,25 @@ export class OutputFormatter {
         // Human format is handled by individual commands
         console.log(data);
         break;
+    }
+  }
+
+  /**
+   * Extract and output a specific field from data.
+   * Used when --output-field is specified.
+   */
+  private outputExtractedField(data: unknown, fieldPath: string): void {
+    const extractedValue = extractField(data, fieldPath);
+
+    if (extractedValue === undefined) {
+      console.error(`Error: Field '${fieldPath}' not found in data`);
+      process.exit(1);
+    }
+
+    const formatted = formatExtractedValue(extractedValue);
+    process.stdout.write(formatted);
+    if (formatted !== null && formatted !== undefined && !formatted.endsWith('\n')) {
+      process.stdout.write('\n');
     }
   }
 
@@ -110,11 +137,15 @@ export class OutputFormatter {
 
 /**
  * Create a spinner for long-running operations
- * Returns a no-op spinner for JSON format
+ * Returns a no-op spinner for JSON format or when extracting fields
  */
-export function createSpinner(message: string, format: OutputFormat = 'human'): Spinner {
-  if (format === 'json') {
-    // No-op spinner for JSON output
+export function createSpinner(
+  message: string,
+  format: OutputFormat = 'human',
+  outputField?: string,
+): Spinner {
+  if (format === 'json' || outputField) {
+    // No-op spinner for JSON output or field extraction
     const noopSpinner = {
       start() {
         return this;
