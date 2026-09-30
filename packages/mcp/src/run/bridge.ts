@@ -13,6 +13,8 @@
  * mutating operations and recording them instead of executing.
  */
 
+import { isReadCall } from '@studiometa/productive-core';
+
 import type { ProductiveCredentials } from '../auth.js';
 import type { ToolResult } from '../handlers/types.js';
 import type { RunLimits } from './limits.js';
@@ -54,22 +56,13 @@ export interface Bridge {
   getStats(): { apiCalls: number; recorded: RecordedCall[] };
 }
 
-/** Productive actions that mutate data — intercepted in dry-run mode. */
-const MUTATING_ACTIONS = new Set([
-  'create',
-  'update',
-  'delete',
-  'start',
-  'stop',
-  'reopen',
-  'complete_task',
-  'log_day',
-]);
-
-/** Whether a call would mutate data (used for dry-run classification). */
+/**
+ * Whether a call may mutate data (used for dry-run classification). Fails
+ * closed: a `productive` call that is not a known read is recorded.
+ */
 function isMutating(channel: BridgeChannel, payload: Record<string, unknown>): boolean {
   if (channel === 'api_write') return true;
-  if (channel === 'productive') return MUTATING_ACTIONS.has(String(payload.action));
+  if (channel === 'productive') return !isReadCall(payload.resource, payload.action);
   return false;
 }
 

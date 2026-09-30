@@ -144,6 +144,29 @@ describe('createBridge', () => {
       expect(bridge.getStats().recorded).toHaveLength(1);
     });
 
+    it('records discussions resolve (a write) but executes name resolution', async () => {
+      const exec = vi.fn(async () => jsonOk([{ id: '1' }])) as ToolExecutor;
+      const { bridge } = makeBridge({ exec, dryRun: true });
+
+      await bridge.call('productive', { resource: 'discussions', action: 'resolve', id: '1' });
+      await bridge.call('productive', { resource: 'people', action: 'resolve', query: 'a@b.c' });
+
+      expect(exec).toHaveBeenCalledTimes(1);
+      expect(bridge.getStats().recorded).toHaveLength(1);
+    });
+
+    it('records calls whose action is not a known read (non-string, cased, unknown)', async () => {
+      const exec = vi.fn(async () => jsonOk([{ id: '1' }])) as ToolExecutor;
+      const { bridge } = makeBridge({ exec, dryRun: true });
+
+      await bridge.call('productive', { resource: 'time', action: ['create'] });
+      await bridge.call('productive', { resource: 'tasks', action: 'Create' });
+      await bridge.call('productive', { resource: 'tasks', action: 'unknown' });
+
+      expect(exec).not.toHaveBeenCalled();
+      expect(bridge.getStats().recorded).toHaveLength(3);
+    });
+
     it('records api_write but still executes read-only calls', async () => {
       const exec = vi.fn(async () => jsonOk([{ id: '1' }])) as ToolExecutor;
       const { bridge } = makeBridge({ exec, dryRun: true });

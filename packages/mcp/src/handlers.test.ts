@@ -1099,6 +1099,171 @@ describe('handlers', () => {
       });
     });
 
+    describe('productive_read tool', () => {
+      it('should reject a mutating action and point to the productive tool', async () => {
+        const result = await executeToolWithCredentials(
+          'productive_read',
+          { resource: 'tasks', action: 'create', title: 'T', project_id: '1', task_list_id: '2' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('"create" is not allowed on the read-only tool');
+        expect(result.content[0].text).toContain('`productive`');
+        expect(mockApi.createTask).not.toHaveBeenCalled();
+      });
+
+      it('should reject resolve on discussions (it marks the discussion resolved)', async () => {
+        const result = await executeToolWithCredentials(
+          'productive_read',
+          { resource: 'discussions', action: 'resolve', id: '1' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(mockApi.resolveDiscussion).not.toHaveBeenCalled();
+      });
+
+      it('should reject a batch that contains a write, before any operation runs', async () => {
+        const result = await executeToolWithCredentials(
+          'productive_read',
+          {
+            resource: 'batch',
+            action: 'run',
+            operations: [
+              { resource: 'projects', action: 'get', id: '123' },
+              { resource: 'time', action: 'delete', id: '9' },
+            ],
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('"delete" is not allowed');
+        expect(mockApi.getProject).not.toHaveBeenCalled();
+        expect(mockApi.deleteTimeEntry).not.toHaveBeenCalled();
+      });
+
+      it('should reject a write nested in a batch inside a batch', async () => {
+        const result = await executeToolWithCredentials(
+          'productive_read',
+          {
+            resource: 'batch',
+            action: 'run',
+            operations: [
+              {
+                resource: 'batch',
+                action: 'run',
+                operations: [{ resource: 'tasks', action: 'update', id: '1', title: 'X' }],
+              },
+            ],
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('"update" is not allowed');
+        expect(mockApi.updateTask).not.toHaveBeenCalled();
+      });
+
+      it('should reject a non-string action that would reach a custom action by key', async () => {
+        const result = await executeToolWithCredentials(
+          'productive_read',
+          { resource: 'time', action: ['create'], service_id: '1', time: 60, date: '2026-01-01' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('is not allowed on the read-only tool');
+        expect(mockApi.createTimeEntry).not.toHaveBeenCalled();
+      });
+
+      it('should reject a non-string resolve on discussions', async () => {
+        const result = await executeToolWithCredentials(
+          'productive_read',
+          { resource: 'discussions', action: ['resolve'], id: '1' },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(mockApi.resolveDiscussion).not.toHaveBeenCalled();
+      });
+
+      it.each([42, 'Create', ' create', 'unknown', undefined])(
+        'should reject action %j',
+        async (action) => {
+          const result = await executeToolWithCredentials(
+            'productive_read',
+            { resource: 'tasks', action, title: 'T', project_id: '1', task_list_id: '2' },
+            credentials,
+          );
+
+          expect(result.isError).toBe(true);
+          expect(mockApi.createTask).not.toHaveBeenCalled();
+        },
+      );
+
+      it('should reject a batch operation with a non-string action', async () => {
+        const result = await executeToolWithCredentials(
+          'productive_read',
+          {
+            resource: 'batch',
+            action: 'run',
+            operations: [{ resource: 'time', action: ['delete'], id: '9' }],
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBe(true);
+        expect(mockApi.deleteTimeEntry).not.toHaveBeenCalled();
+      });
+
+      it('should run a read action like the productive tool', async () => {
+        mockApi.getTask.mockResolvedValue({
+          data: { id: '456', type: 'tasks', attributes: { title: 'Test Task' } },
+          included: [],
+        });
+
+        const result = await executeToolWithCredentials(
+          'productive_read',
+          { resource: 'tasks', action: 'get', id: '456' },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(mockApi.getTask).toHaveBeenCalledWith('456', {
+          include: ['project', 'project.company'],
+        });
+      });
+
+      it('should run a batch of reads', async () => {
+        mockApi.getProject.mockResolvedValue({
+          data: { id: '123', type: 'projects', attributes: { name: 'Test Project' } },
+        });
+        mockApi.getTasks.mockResolvedValue({
+          data: [{ id: '1', type: 'tasks', attributes: { title: 'Task 1' } }],
+          meta: { current_page: 1, total_pages: 1 },
+        });
+
+        const result = await executeToolWithCredentials(
+          'productive_read',
+          {
+            resource: 'batch',
+            action: 'run',
+            operations: [
+              { resource: 'projects', action: 'get', id: '123' },
+              { resource: 'tasks', action: 'list', filter: { project_id: '123' } },
+            ],
+          },
+          credentials,
+        );
+
+        expect(result.isError).toBeUndefined();
+        const content = JSON.parse(result.content[0].text as string);
+        expect(content._batch).toEqual({ total: 2, succeeded: 2, failed: 0 });
+      });
+    });
+
     describe('error handling', () => {
       it('should return error for unknown tool', async () => {
         const result = await executeToolWithCredentials('unknown_tool', {}, credentials);

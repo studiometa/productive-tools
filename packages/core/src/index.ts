@@ -6,8 +6,17 @@
  */
 
 // Constants — single source of truth for resources, actions, report types
-export { RESOURCES, ACTIONS, REPORT_TYPES, VALID_REPORT_TYPES } from './constants.js';
-export type { Resource, Action, ReportType } from './constants.js';
+export {
+  RESOURCES,
+  ACTIONS,
+  MUTATING_ACTIONS,
+  READ_ACTIONS,
+  REPORT_TYPES,
+  VALID_REPORT_TYPES,
+  isMutatingCall,
+  isReadCall,
+} from './constants.js';
+export type { Resource, Action, MutatingAction, ReadAction, ReportType } from './constants.js';
 
 // Context
 export type {

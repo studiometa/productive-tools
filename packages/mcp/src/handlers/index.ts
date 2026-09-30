@@ -7,7 +7,7 @@
  */
 
 import { ProductiveApi } from '@studiometa/productive-api';
-import { fromHandlerContext, RESOURCES } from '@studiometa/productive-core';
+import { fromHandlerContext, isReadCall, RESOURCES } from '@studiometa/productive-core';
 
 import type { ProductiveCredentials } from '../auth.js';
 import type { McpFormatOptions } from '../formatters.js';
@@ -196,6 +196,26 @@ async function routeToHandler(
 }
 
 /**
+ * Find the first call in a `productive_read` request that is not a read,
+ * including the operations of a batch (recursively, since a batch operation
+ * may itself be a batch). This is an allowlist (see `isReadCall`): unknown or
+ * non-string actions are rejected too. Returns a label for the rejected
+ * action, or undefined when the whole request only reads.
+ */
+function findNonReadAction(args: Record<string, unknown>): string | undefined {
+  if (!isReadCall(args.resource, args.action)) return JSON.stringify(args.action) ?? 'undefined';
+  if (args.resource === 'batch' && Array.isArray(args.operations)) {
+    for (const op of args.operations) {
+      const found = findNonReadAction(
+        op && typeof op === 'object' ? (op as Record<string, unknown>) : {},
+      );
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
+/**
  * Execute a tool with the given credentials and arguments
  */
 export async function executeToolWithCredentials(
@@ -261,6 +281,20 @@ export async function executeToolWithCredentials(
       return inputErrorResult(new UserInputError(formatValidationErrors(parsed.error)));
     }
     return handleRunScript(parsed.data, credentials, executeToolWithCredentials);
+  }
+
+  // Read-only variant: reject mutating actions, then route like `productive`.
+  if (name === 'productive_read') {
+    const rejectedAction = findNonReadAction(args);
+    if (rejectedAction) {
+      return inputErrorResult(
+        new UserInputError(`Action ${rejectedAction} is not allowed on the read-only tool`, [
+          'productive_read only supports read actions (list, get, resolve, context, help, schema, ...)',
+          `Use the \`productive\` tool to run ${rejectedAction}`,
+        ]),
+      );
+    }
+    return executeToolWithCredentials('productive', args, credentials);
   }
 
   // Handle the single consolidated tool
