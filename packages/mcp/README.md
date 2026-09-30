@@ -9,6 +9,7 @@ MCP (Model Context Protocol) server for [Productive.io](https://productive.io). 
 ## Features
 
 - Single unified `productive` tool — minimal token overhead (~170 tokens)
+- Read-only `productive_read` sibling tool (`readOnlyHint: true`) for clients that only allow read-only tools
 - Smart ID resolution — use emails and project numbers instead of numeric IDs
 - Rich context — `action=context` fetches a resource with all related data in one call
 - Proactive suggestions — data-aware warnings (overdue tasks, long-running timers, etc.)
@@ -131,6 +132,17 @@ productive(resource, action, ...)
 | `search`      | `run`                                                                    | Cross-resource text search                               |
 
 Use `action="help"` with any resource for detailed documentation on available parameters and filters.
+
+### Read-only Tool
+
+Some MCP clients only expose tools that have the `readOnlyHint: true` annotation. For these clients, the server also exposes `productive_read`.
+
+| Tool              | Description                                                                              |
+| ----------------- | ---------------------------------------------------------------------------------------- |
+| `productive`      | All resources and actions, reads and writes                                              |
+| `productive_read` | Same routing and read parameters as `productive`, but only read actions (`readOnlyHint`) |
+
+`productive_read` rejects the actions that change data (`create`, `update`, `delete`, `start`, `stop`, `reopen`, `complete_task`, `log_day`, and `resolve` on `discussions`). It also rejects a `batch` that contains one of these actions. Use the `productive` tool for writes.
 
 ### Common Parameters
 

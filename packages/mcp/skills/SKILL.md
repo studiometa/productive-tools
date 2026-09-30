@@ -22,7 +22,7 @@ There are several ways to find docs — use whichever fits:
 
 ## MCP Tools
 
-This server exposes one high-level tool, two low-level raw API tools, a sandboxed scripting tool (`run_script`), and a documentation-discovery tool (`search_docs`).
+This server exposes one high-level tool (`productive`) with a read-only variant (`productive_read`), two low-level raw API tools, a sandboxed scripting tool (`run_script`), and a documentation-discovery tool (`search_docs`).
 
 ### `productive`
 
@@ -53,6 +53,10 @@ productive(resource, action, [parameters...])
 | `custom_fields` | `list`, `get`, `help`                                                    | Custom field definitions and option values               |
 | `reports`       | `get`, `help`                                                            | Generate reports                                         |
 | `workflows`     | `complete_task`, `log_day`, `weekly_standup`, `help`                     | Compound workflows chaining multiple operations          |
+
+### `productive_read`
+
+Read-only variant of `productive`, annotated `readOnlyHint: true`, for clients that only allow read-only tools. It has the same signature and routing, but only accepts read actions (`list`, `get`, `resolve`, `context`, `me`, `help`, `schema`, `run` for `search`/`batch`, summaries, reports, `weekly_standup`). It rejects `create`, `update`, `delete`, `start`, `stop`, `reopen`, `complete_task`, `log_day`, `resolve` on `discussions`, and any `batch` that contains one of these. Use `productive` for writes.
 
 ### Getting Help
 

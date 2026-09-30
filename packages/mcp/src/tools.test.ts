@@ -1,4 +1,10 @@
-import { RESOURCES, ACTIONS, REPORT_TYPES } from '@studiometa/productive-core';
+import {
+  RESOURCES,
+  ACTIONS,
+  MUTATING_ACTIONS,
+  READ_ACTIONS,
+  REPORT_TYPES,
+} from '@studiometa/productive-core';
 import { describe, it, expect } from 'vitest';
 
 import { TOOLS, STDIO_ONLY_TOOLS } from './tools.js';
@@ -9,6 +15,7 @@ describe('tools', () => {
       expect(Array.isArray(TOOLS)).toBe(true);
       expect(TOOLS.map((tool) => tool.name)).toEqual([
         'productive',
+        'productive_read',
         'api_read',
         'api_write',
         'run_script',
@@ -96,6 +103,72 @@ describe('tools', () => {
       }
     });
 
+    describe('productive_read', () => {
+      const productive = TOOLS.find((tool) => tool.name === 'productive')!;
+      const readTool = TOOLS.find((tool) => tool.name === 'productive_read')!;
+      const props = readTool.inputSchema.properties ?? {};
+
+      it('should be annotated as read-only', () => {
+        expect(readTool.annotations).toEqual({
+          title: 'Productive.io (read-only)',
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: true,
+        });
+      });
+
+      it('should derive action enum from READ_ACTIONS', () => {
+        const actionEnum = (props.action as { enum?: string[] }).enum;
+        expect(actionEnum).toEqual([...READ_ACTIONS]);
+        expect(actionEnum).toContain('list');
+        expect(actionEnum).toContain('get');
+        for (const action of MUTATING_ACTIONS) {
+          expect(actionEnum).not.toContain(action);
+        }
+      });
+
+      it('should require resource and action', () => {
+        expect(readTool.inputSchema.required).toEqual(['resource', 'action']);
+      });
+
+      it('should expose only read parameters', () => {
+        expect(new Set(Object.keys(props))).toEqual(
+          new Set([
+            'resource',
+            'action',
+            'id',
+            'filter',
+            'page',
+            'per_page',
+            'compact',
+            'include',
+            'query',
+            'resources',
+            'person_id',
+            'project_id',
+            'task_id',
+            'company_id',
+            'deal_id',
+            'service_id',
+            'report_type',
+            'group',
+            'from',
+            'to',
+            'operations',
+          ]),
+        );
+      });
+
+      it('should reuse the productive property definitions', () => {
+        const productiveProps = productive.inputSchema.properties ?? {};
+        for (const key of Object.keys(props)) {
+          if (key === 'action') continue;
+          expect(props[key]).toEqual(productiveProps[key]);
+        }
+      });
+    });
+
     it('should include raw API tool definitions', () => {
       const apiRead = TOOLS.find((tool) => tool.name === 'api_read');
       const apiWrite = TOOLS.find((tool) => tool.name === 'api_write');
@@ -141,13 +214,13 @@ describe('tools', () => {
   describe('token optimization', () => {
     it('should have reasonable tool schema size', () => {
       const totalSize = JSON.stringify(TOOLS).length;
-      expect(totalSize).toBeLessThan(10000);
+      expect(totalSize).toBeLessThan(12000);
     });
 
-    it('should estimate under 1700 tokens', () => {
+    it('should estimate under 3000 tokens', () => {
       const totalSize = JSON.stringify(TOOLS).length;
       const estimatedTokens = Math.ceil(totalSize / 4);
-      expect(estimatedTokens).toBeLessThan(2600);
+      expect(estimatedTokens).toBeLessThan(3000);
     });
   });
 });

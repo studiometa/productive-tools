@@ -70,6 +70,56 @@ export const ACTIONS = [
 export type Action = (typeof ACTIONS)[number];
 
 /**
+ * Actions that mutate data. Used to gate the read-only `productive_read` MCP
+ * tool and to classify calls in `run_script` dry-run mode.
+ */
+export const MUTATING_ACTIONS = [
+  'create',
+  'update',
+  'delete',
+  'start',
+  'stop',
+  'reopen',
+  'complete_task',
+  'log_day',
+] as const satisfies readonly Action[];
+
+export type MutatingAction = (typeof MUTATING_ACTIONS)[number];
+
+export type ReadAction = Exclude<Action, MutatingAction>;
+
+/**
+ * Actions that only read data (ACTIONS minus MUTATING_ACTIONS).
+ */
+export const READ_ACTIONS: readonly ReadAction[] = ACTIONS.filter(
+  (action): action is ReadAction => !(MUTATING_ACTIONS as readonly Action[]).includes(action),
+);
+
+/**
+ * Whether a resource/action call mutates data.
+ *
+ * `resolve` is a read (name → ID lookup) on every resource except
+ * `discussions`, where it marks the discussion as resolved.
+ */
+export function isMutatingCall(resource: unknown, action: unknown): boolean {
+  if (resource === 'discussions' && action === 'resolve') return true;
+  return (MUTATING_ACTIONS as readonly unknown[]).includes(action);
+}
+
+/**
+ * Whether a resource/action call only reads data. This is an allowlist: it
+ * returns false unless `resource` is a string and `action` is one of
+ * READ_ACTIONS (exact match) that is not a write on that resource. Non-string
+ * values (e.g. `['create']`, which JS turns into the key `"create"` on an
+ * object lookup) are never a read.
+ */
+export function isReadCall(resource: unknown, action: unknown): boolean {
+  if (typeof resource !== 'string' || typeof action !== 'string') return false;
+  if (!(READ_ACTIONS as readonly string[]).includes(action)) return false;
+  return !isMutatingCall(resource, action);
+}
+
+/**
  * Report types available in Productive.io
  */
 export const REPORT_TYPES = [

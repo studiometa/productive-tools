@@ -1,6 +1,6 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 
-import { RESOURCES, ACTIONS, REPORT_TYPES } from '@studiometa/productive-core';
+import { RESOURCES, ACTIONS, READ_ACTIONS, REPORT_TYPES } from '@studiometa/productive-core';
 
 /**
  * Generate the tool description dynamically from the constants.
@@ -21,6 +21,137 @@ function generateDescription(): string {
     'Rich context: action=context on tasks/projects/deals for full context in one call.',
   ].join('\n');
 }
+
+/**
+ * Input properties of the `productive` tool. Shared with `productive_read`,
+ * which exposes a read-only subset of them.
+ */
+const PRODUCTIVE_PROPERTIES = {
+  resource: {
+    type: 'string',
+    enum: [...RESOURCES],
+  },
+  action: {
+    type: 'string',
+    enum: [...ACTIONS],
+    description: 'Use "help" for resource documentation',
+  },
+  id: { type: 'string' },
+  filter: { type: 'object' },
+  page: { type: 'number' },
+  per_page: { type: 'number' },
+  compact: {
+    type: 'boolean',
+    description: 'Compact output (default: true for list, false for get)',
+  },
+  include: {
+    type: 'array',
+    items: { type: 'string' },
+    description: 'Related data to include (e.g. ["project","assignee"])',
+  },
+  query: { type: 'string', description: 'Text search for list actions' },
+  resources: {
+    type: 'array',
+    items: { type: 'string' },
+    description:
+      'Resource types to search (for resource=search). Defaults to [projects, companies, people, tasks]. Valid values: projects, companies, people, tasks, deals.',
+  },
+  // Common fields
+  person_id: { type: 'string' },
+  service_id: { type: 'string' },
+  task_id: { type: 'string' },
+  company_id: { type: 'string' },
+  time: { type: 'number' },
+  date: { type: 'string' },
+  note: { type: 'string' },
+  // Task fields
+  title: { type: 'string' },
+  project_id: { type: 'string' },
+  task_list_id: { type: 'string' },
+  description: { type: 'string' },
+  assignee_id: { type: 'string' },
+  // Company fields
+  name: { type: 'string' },
+  // Page fields
+  page_id: { type: 'string', description: 'Page ID (list pages to find)' },
+  parent_page_id: { type: 'string', description: 'Parent page ID for sub-pages' },
+  // Comment fields
+  body: { type: 'string', description: 'Comment/page body content' },
+  hidden: {
+    type: 'boolean',
+    description: 'Set to true to hide comment from client (comments only)',
+  },
+  deal_id: { type: 'string' },
+  // Attachment fields
+  comment_id: { type: 'string', description: 'Comment ID (for attachments)' },
+  // Timer fields
+  time_entry_id: { type: 'string' },
+  // Booking fields
+  started_on: { type: 'string', description: 'Booking date (YYYY-MM-DD)' },
+  ended_on: { type: 'string', description: 'Booking end date (YYYY-MM-DD)' },
+  event_id: { type: 'string' },
+  // Report fields
+  report_type: {
+    type: 'string',
+    enum: [...REPORT_TYPES],
+    description: 'Required for resource=reports action=get',
+  },
+  group: { type: 'string', description: 'Report grouping: person, project, service' },
+  from: { type: 'string', description: 'Report start (YYYY-MM-DD); filter.after for time' },
+  to: { type: 'string', description: 'Report end (YYYY-MM-DD); filter.before for time' },
+  status: { type: 'string' },
+  // Batch fields
+  operations: {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        resource: { type: 'string' },
+        action: { type: 'string' },
+      },
+      required: ['resource', 'action'],
+    },
+    maxItems: 10,
+    description:
+      'Array of operations for batch execution (max 10). Each operation needs resource, action, and any additional params.',
+  },
+} satisfies Record<string, object>;
+
+/**
+ * Properties exposed by `productive_read`: the `productive` properties minus
+ * write-only fields.
+ */
+const READ_PROPERTY_NAMES = [
+  'resource',
+  'action',
+  'id',
+  'filter',
+  'page',
+  'per_page',
+  'compact',
+  'include',
+  'query',
+  'resources',
+  'person_id',
+  'project_id',
+  'task_id',
+  'company_id',
+  'deal_id',
+  'service_id',
+  'report_type',
+  'group',
+  'from',
+  'to',
+  'operations',
+] as const satisfies readonly (keyof typeof PRODUCTIVE_PROPERTIES)[];
+
+const PRODUCTIVE_READ_PROPERTIES = {
+  ...Object.fromEntries(READ_PROPERTY_NAMES.map((key) => [key, PRODUCTIVE_PROPERTIES[key]])),
+  action: {
+    ...PRODUCTIVE_PROPERTIES.action,
+    enum: [...READ_ACTIONS],
+  },
+};
 
 /**
  * Single consolidated tool for Productive.io MCP server
@@ -50,96 +181,26 @@ export const TOOLS: Tool[] = [
     },
     inputSchema: {
       type: 'object',
-      properties: {
-        resource: {
-          type: 'string',
-          enum: [...RESOURCES],
-        },
-        action: {
-          type: 'string',
-          enum: [...ACTIONS],
-          description: 'Use "help" for resource documentation',
-        },
-        id: { type: 'string' },
-        filter: { type: 'object' },
-        page: { type: 'number' },
-        per_page: { type: 'number' },
-        compact: {
-          type: 'boolean',
-          description: 'Compact output (default: true for list, false for get)',
-        },
-        include: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Related data to include (e.g. ["project","assignee"])',
-        },
-        query: { type: 'string', description: 'Text search for list actions' },
-        resources: {
-          type: 'array',
-          items: { type: 'string' },
-          description:
-            'Resource types to search (for resource=search). Defaults to [projects, companies, people, tasks]. Valid values: projects, companies, people, tasks, deals.',
-        },
-        // Common fields
-        person_id: { type: 'string' },
-        service_id: { type: 'string' },
-        task_id: { type: 'string' },
-        company_id: { type: 'string' },
-        time: { type: 'number' },
-        date: { type: 'string' },
-        note: { type: 'string' },
-        // Task fields
-        title: { type: 'string' },
-        project_id: { type: 'string' },
-        task_list_id: { type: 'string' },
-        description: { type: 'string' },
-        assignee_id: { type: 'string' },
-        // Company fields
-        name: { type: 'string' },
-        // Page fields
-        page_id: { type: 'string', description: 'Page ID (list pages to find)' },
-        parent_page_id: { type: 'string', description: 'Parent page ID for sub-pages' },
-        // Comment fields
-        body: { type: 'string', description: 'Comment/page body content' },
-        hidden: {
-          type: 'boolean',
-          description: 'Set to true to hide comment from client (comments only)',
-        },
-        deal_id: { type: 'string' },
-        // Attachment fields
-        comment_id: { type: 'string', description: 'Comment ID (for attachments)' },
-        // Timer fields
-        time_entry_id: { type: 'string' },
-        // Booking fields
-        started_on: { type: 'string', description: 'Booking date (YYYY-MM-DD)' },
-        ended_on: { type: 'string', description: 'Booking end date (YYYY-MM-DD)' },
-        event_id: { type: 'string' },
-        // Report fields
-        report_type: {
-          type: 'string',
-          enum: [...REPORT_TYPES],
-          description: 'Required for resource=reports action=get',
-        },
-        group: { type: 'string', description: 'Report grouping: person, project, service' },
-        from: { type: 'string', description: 'Report start (YYYY-MM-DD); filter.after for time' },
-        to: { type: 'string', description: 'Report end (YYYY-MM-DD); filter.before for time' },
-        status: { type: 'string' },
-        // Batch fields
-        operations: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              resource: { type: 'string' },
-              action: { type: 'string' },
-            },
-            required: ['resource', 'action'],
-          },
-          maxItems: 10,
-          description:
-            'Array of operations for batch execution (max 10). Each operation needs resource, action, and any additional params.',
-        },
-      },
+      properties: PRODUCTIVE_PROPERTIES,
+      required: ['resource', 'action'],
+    },
+  },
+  {
+    name: 'productive_read',
+    description:
+      'Read-only variant of the `productive` tool. Same resource/action routing and parameters, ' +
+      'but only read actions (list, get, resolve, context, search, summaries, reports, help, schema, ...). ' +
+      'Batch operations must also be reads. Use the `productive` tool for writes.',
+    annotations: {
+      title: 'Productive.io (read-only)',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    inputSchema: {
+      type: 'object',
+      properties: PRODUCTIVE_READ_PROPERTIES,
       required: ['resource', 'action'],
     },
   },
