@@ -33,6 +33,6 @@ jobs:
           emit "$CR_VARS"
           emit "$CR_SECRETS"
       # The composite action checks out the repo itself (checkout: true default).
-      - uses: weareikko/code-review@0.9.3
+      - uses: weareikko/code-review@1f44c4260a773e676bab5ef6fd915bee9efa2a6f # 0.9.3
         with:
           model: ${{ vars.CODE_REVIEW_MODEL }}

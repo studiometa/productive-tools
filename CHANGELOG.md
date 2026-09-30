@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **MCP**: Record `discussions resolve` and any action that is not a known read in `run_script` dry-run mode instead of running it ([#185])
+- **CI**: Fix Semgrep security findings: pin GitHub Actions to commit SHAs and add a Renovate minimum release age ([#PR])
 
 [#185]: https://github.com/studiometa/productive-tools/pull/185
 
