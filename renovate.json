@@ -20,13 +20,15 @@
       "description": "Group dev dependencies (minor/patch)",
       "matchDepTypes": ["devDependencies"],
       "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "dev dependencies (non-major)"
+      "groupName": "dev dependencies (non-major)",
+      "minimumReleaseAge": "7 days"
     },
     {
       "description": "Group production dependencies (patch only)",
       "matchDepTypes": ["dependencies"],
       "matchUpdateTypes": ["patch"],
-      "groupName": "production dependencies (patch)"
+      "groupName": "production dependencies (patch)",
+      "minimumReleaseAge": "7 days"
     },
     {
       "description": "Group GitHub Actions updates",
@@ -38,7 +40,8 @@
       "matchDepTypes": ["devDependencies"],
       "matchUpdateTypes": ["patch"],
       "automerge": true,
-      "automergeType": "pr"
+      "automergeType": "pr",
+      "minimumReleaseAge": "7 days"
     },
     {
       "description": "Security updates - high priority",
