@@ -1,6 +1,8 @@
 import { vol } from 'memfs';
+import { EventEmitter } from 'node:events';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+import { clearStdinCache } from '../utils/stdin.js';
 import { handleApiCommand } from './api.js';
 
 // Mock fetch globally
@@ -417,6 +419,250 @@ describe('api command', () => {
           input: '/tmp/invalid.json',
         }),
       ).rejects.toThrow();
+    });
+  });
+
+  describe('stdin input', () => {
+    let mockStdin: EventEmitter;
+    let originalStdin: any;
+    let originalIsTTY: boolean;
+
+    beforeEach(() => {
+      // Clear stdin cache before each test
+      clearStdinCache();
+
+      mockStdin = new EventEmitter();
+      originalStdin = process.stdin;
+      originalIsTTY = process.stdin.isTTY;
+
+      // Mock process.stdin
+      Object.defineProperty(process, 'stdin', {
+        value: mockStdin,
+        writable: true,
+        configurable: true,
+      });
+
+      // Add required methods to mockStdin
+      (mockStdin as any).resume = vi.fn();
+      (mockStdin as any).isTTY = false;
+    });
+
+    afterEach(() => {
+      // Restore original stdin
+      Object.defineProperty(process, 'stdin', {
+        value: originalStdin,
+        writable: true,
+        configurable: true,
+      });
+      process.stdin.isTTY = originalIsTTY;
+    });
+
+    it('should read body from stdin with --input -', async () => {
+      const testData = JSON.stringify({
+        data: { type: 'test', attributes: { name: 'stdin-value' } },
+      });
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: {} }),
+      });
+
+      const commandPromise = handleApiCommand(['/test'], {
+        method: 'POST',
+        input: '-',
+      });
+
+      // Simulate stdin data
+      process.nextTick(() => {
+        mockStdin.emit('data', Buffer.from(testData));
+        mockStdin.emit('end');
+      });
+
+      await commandPromise;
+
+      const call = mockFetch.mock.calls[0];
+      const body = JSON.parse(call[1].body);
+      expect(body).toEqual({
+        data: { type: 'test', attributes: { name: 'stdin-value' } },
+      });
+    });
+
+    it('should read field value from stdin with @-', async () => {
+      const testData = '{"title": "Task from stdin"}';
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: {} }),
+      });
+
+      const commandPromise = handleApiCommand(['/test'], {
+        field: ['task_data=@-'],
+      });
+
+      // Simulate stdin data
+      process.nextTick(() => {
+        mockStdin.emit('data', Buffer.from(testData));
+        mockStdin.emit('end');
+      });
+
+      await commandPromise;
+
+      const call = mockFetch.mock.calls[0];
+      const body = JSON.parse(call[1].body);
+      expect(body).toEqual({
+        task_data: { title: 'Task from stdin' },
+      });
+    });
+
+    it('should read plain text from stdin with @- when not valid JSON', async () => {
+      const testData = 'plain text content';
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: {} }),
+      });
+
+      const commandPromise = handleApiCommand(['/test'], {
+        field: ['note=@-'],
+      });
+
+      // Simulate stdin data
+      process.nextTick(() => {
+        mockStdin.emit('data', Buffer.from(testData));
+        mockStdin.emit('end');
+      });
+
+      await commandPromise;
+
+      const call = mockFetch.mock.calls[0];
+      const body = JSON.parse(call[1].body);
+      expect(body).toEqual({
+        note: 'plain text content',
+      });
+    });
+
+    it('should handle multiple @- references sharing same stdin data', async () => {
+      const testData = '{"shared": "data"}';
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: {} }),
+      });
+
+      const commandPromise = handleApiCommand(['/test'], {
+        field: ['field1=@-', 'field2=@-'],
+      });
+
+      // Simulate stdin data - stdin is only read once and shared
+      process.nextTick(() => {
+        mockStdin.emit('data', Buffer.from(testData));
+        mockStdin.emit('end');
+      });
+
+      await commandPromise;
+
+      const call = mockFetch.mock.calls[0];
+      const body = JSON.parse(call[1].body);
+      expect(body).toEqual({
+        field1: { shared: 'data' },
+        field2: { shared: 'data' },
+      });
+    }, 10000); // Increase timeout for this test
+
+    it('should throw error when stdin is a TTY', async () => {
+      (process.stdin as any).isTTY = true;
+
+      await expect(
+        handleApiCommand(['/test'], {
+          input: '-',
+        }),
+      ).rejects.toThrow();
+    });
+
+    it('should throw error for invalid JSON from stdin with --input -', async () => {
+      const testData = 'not valid json';
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: {} }),
+      });
+
+      const commandPromise = handleApiCommand(['/test'], {
+        method: 'POST',
+        input: '-',
+      });
+
+      // Simulate stdin data
+      process.nextTick(() => {
+        mockStdin.emit('data', Buffer.from(testData));
+        mockStdin.emit('end');
+      });
+
+      await expect(commandPromise).rejects.toThrow();
+    });
+
+    it('should handle empty stdin', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: {} }),
+      });
+
+      const commandPromise = handleApiCommand(['/test'], {
+        field: ['note=@-'],
+      });
+
+      // Simulate empty stdin
+      process.nextTick(() => {
+        mockStdin.emit('end');
+      });
+
+      await commandPromise;
+
+      const call = mockFetch.mock.calls[0];
+      const body = JSON.parse(call[1].body);
+      expect(body).toEqual({
+        note: '',
+      });
+    });
+
+    it('should handle stdin errors', async () => {
+      const commandPromise = handleApiCommand(['/test'], {
+        input: '-',
+      });
+
+      // Simulate stdin error
+      process.nextTick(() => {
+        mockStdin.emit('error', new Error('Stdin error'));
+      });
+
+      await expect(commandPromise).rejects.toThrow();
+    });
+
+    it('should trim whitespace from plain text stdin content', async () => {
+      const testData = '  whitespace content  \n';
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: {} }),
+      });
+
+      const commandPromise = handleApiCommand(['/test'], {
+        field: ['note=@-'],
+      });
+
+      // Simulate stdin data
+      process.nextTick(() => {
+        mockStdin.emit('data', Buffer.from(testData));
+        mockStdin.emit('end');
+      });
+
+      await commandPromise;
+
+      const call = mockFetch.mock.calls[0];
+      const body = JSON.parse(call[1].body);
+      expect(body).toEqual({
+        note: 'whitespace content',
+      });
     });
   });
 
