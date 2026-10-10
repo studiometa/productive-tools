@@ -7,6 +7,7 @@ export class OutputFormatter {
   constructor(
     private format: OutputFormat = 'human',
     private noColor: boolean = false,
+    private quiet: boolean = false,
   ) {
     if (noColor) {
       // Colors are already handled by the colors module
@@ -38,6 +39,9 @@ export class OutputFormatter {
   }
 
   success(message: string): void {
+    if (this.quiet) {
+      return; // Suppress success messages in quiet mode
+    }
     if (this.format === 'json') {
       console.log(JSON.stringify({ status: 'success', message }));
     } else {
@@ -45,11 +49,38 @@ export class OutputFormatter {
     }
   }
 
+  /**
+   * Output successful mutation result with data.
+   * In quiet + JSON mode: output just the data
+   * In regular JSON mode: output { status: 'success', ...data }
+   * In other formats: use regular success message
+   */
+  successWithData(message: string, data: unknown): void {
+    if (this.format === 'json') {
+      if (this.quiet) {
+        // In quiet mode, output just the data without wrapper
+        console.log(JSON.stringify(data, null, 2));
+      } else {
+        // In regular JSON mode, include status wrapper
+        const result =
+          typeof data === 'object' && data !== null
+            ? { status: 'success', ...data }
+            : { status: 'success', data };
+        console.log(JSON.stringify(result, null, 2));
+      }
+    } else {
+      // For other formats, use regular success behavior
+      this.success(message);
+    }
+  }
+
   error(message: string, details?: unknown): void {
     if (this.format === 'json') {
       console.error(JSON.stringify({ status: 'error', message, details }));
     } else {
-      console.error(colors.red(`✗ ${message}`));
+      // In quiet mode, suppress emoji but still output to stderr
+      const prefix = this.quiet ? '' : '✗ ';
+      console.error(colors.red(`${prefix}${message}`));
       if (details) {
         console.error(details);
       }
@@ -57,6 +88,9 @@ export class OutputFormatter {
   }
 
   warning(message: string): void {
+    if (this.quiet) {
+      return; // Suppress warning messages in quiet mode
+    }
     if (this.format === 'json') {
       console.log(JSON.stringify({ status: 'warning', message }));
     } else {
@@ -65,6 +99,9 @@ export class OutputFormatter {
   }
 
   info(message: string): void {
+    if (this.quiet) {
+      return; // Suppress info messages in quiet mode
+    }
     if (this.format === 'json') {
       console.log(JSON.stringify({ status: 'info', message }));
     } else {
@@ -110,11 +147,15 @@ export class OutputFormatter {
 
 /**
  * Create a spinner for long-running operations
- * Returns a no-op spinner for JSON format
+ * Returns a no-op spinner for JSON format or quiet mode
  */
-export function createSpinner(message: string, format: OutputFormat = 'human'): Spinner {
-  if (format === 'json') {
-    // No-op spinner for JSON output
+export function createSpinner(
+  message: string,
+  format: OutputFormat = 'human',
+  quiet: boolean = false,
+): Spinner {
+  if (format === 'json' || quiet) {
+    // No-op spinner for JSON output or quiet mode
     const noopSpinner = {
       start() {
         return this;

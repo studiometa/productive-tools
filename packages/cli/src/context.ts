@@ -68,6 +68,8 @@ export interface CommandOptions {
   size?: string | number;
   s?: string | number;
   sort?: string;
+  quiet?: boolean;
+  q?: boolean;
 }
 
 /**
@@ -157,9 +159,10 @@ export interface CommandContext {
 export function createContext(options: CommandOptions = {}): CommandContext {
   const format = (options.format || options.f || 'human') as OutputFormat;
   const noColor = options['no-color'] === true;
+  const quiet = options.quiet === true || options.q === true;
 
   const config = getConfig(options as Record<string, string | boolean | string[]>);
-  const formatter = new OutputFormatter(format, noColor);
+  const formatter = new OutputFormatter(format, noColor, quiet);
   const api = new ProductiveApi(options as Record<string, string | boolean | string[]>);
   const cache = getCache(options['no-cache'] !== true);
 
@@ -171,7 +174,7 @@ export function createContext(options: CommandOptions = {}): CommandContext {
     options,
 
     createSpinner(message: string): Spinner {
-      return createSpinner(message, format);
+      return createSpinner(message, format, quiet);
     },
 
     getPagination(): { page: number; perPage: number } {
@@ -272,7 +275,8 @@ export function createTestContext(overrides: Partial<CommandContext> = {}): Comm
   const opts = overrides.options ?? defaultOptions;
   const format = (opts.format || opts.f || 'json') as OutputFormat;
   const noColor = opts['no-color'] !== false;
-  const formatter = overrides.formatter ?? new OutputFormatter(format, noColor);
+  const quiet = opts.quiet === true || opts.q === true;
+  const formatter = overrides.formatter ?? new OutputFormatter(format, noColor, quiet);
 
   return {
     api: overrides.api ?? mockApi,

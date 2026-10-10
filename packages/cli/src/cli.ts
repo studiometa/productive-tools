@@ -153,6 +153,7 @@ ${colors.bold('COMMANDS:')}
 
 ${colors.bold('OPTIONS:')}
   -f, --format <fmt>  Output format: json, human, csv, table (default: human)
+  -q, --quiet         Suppress non-data output (spinners, status messages)
   --no-color          Disable colored output
   --no-cache          Bypass cache for this request
   --refresh           Force refresh cached data
