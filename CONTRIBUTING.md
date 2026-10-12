@@ -65,6 +65,7 @@ productive-tools/
 │   ├── core/      # @studiometa/productive-core — Executor functions, resolvers
 │   ├── cli/       # @studiometa/productive-cli — CLI tool
 │   └── mcp/       # @studiometa/productive-mcp — MCP server (stdio + HTTP)
+├── .changelog/    # Changelog fragments, folded into CHANGELOG.md at release
 ├── CHANGELOG.md   # Single changelog for the entire monorepo
 ├── CLAUDE.md      # AI agent instructions
 └── package.json   # Root workspace config
@@ -108,34 +109,34 @@ Co-authored-by: Claude <claude@anthropic.com>
 
 ## Versioning
 
-Version is managed at the root level and synced across all packages:
+All packages share one version. Maintainers release with the `Release` workflow (`.github/workflows/publish.yml`), which tests, bumps the version, folds the changelog fragments into `CHANGELOG.md`, tags (no `v` prefix), publishes to npm and creates the GitHub release:
 
 ```bash
-npm run version:patch    # 0.8.5 → 0.8.6
-npm run version:minor    # 0.8.5 → 0.9.0
-npm run version:major    # 0.8.5 → 1.0.0
+gh workflow run publish.yml -f bump=patch   # or minor / major
 ```
-
-Tags use no `v` prefix (e.g. `0.8.5`, not `v0.8.5`). GitHub releases are created automatically by CI when a tag is pushed.
 
 ## Changelog
 
-A single `CHANGELOG.md` at the root covers all packages. Prefix entries with the package name when relevant:
+Do not edit `CHANGELOG.md`. Add a fragment in `.changelog/<slug>.md`, where the slug is your branch name without its prefix. Use `###` Keep a Changelog sections and prefix entries with the package name when relevant:
 
 ```markdown
-## 0.9.0
+### Added
 
 - **CLI**: Add bookings command
+
+### Fixed
+
 - **MCP**: Fix OAuth token refresh
-- **Core**: Add reports executor
 ```
+
+Do not write the pull request number: the release adds it. A pull request that changes `packages/` needs a fragment, unless it has the `no-changelog` label. See [`weareikko/changelog`](https://github.com/weareikko/changelog) for the format.
 
 ## Pull Request Process
 
 1. Create a feature branch
 2. Make changes and add tests
 3. Run checks: `npm run typecheck && npm run lint && npm test && npm run build`
-4. Update `CHANGELOG.md`
+4. Add a fragment in `.changelog/`
 5. Open a pull request with a clear description
 
 ## License

@@ -1,14 +1,28 @@
-name: Publish
+# Release and publish in one run. The npm publish step stays in this file
+# because npm trusted publishing is bound to the workflow file name. A tag
+# pushed with GITHUB_TOKEN does not start other workflows, so the publish job
+# runs here, after the release job.
+name: Release
 
 on:
-  push:
-    tags:
-      - '*.*.*'
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump'
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+concurrency: release
+
+permissions:
+  contents: read
 
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -33,15 +47,77 @@ jobs:
       - name: Test
         run: npm run test:ci
 
+  release:
+    name: Bump version and changelog
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    env:
+      # `npm ci` installs the Husky git hooks; the release commit skips them.
+      HUSKY: '0'
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      body: ${{ steps.changelog.outputs.body }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # The changelog action reads the commit that added each fragment.
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bump version
+        id: version
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          npm run "version:$BUMP"
+          echo "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+
+      - name: Fold changelog fragments
+        id: changelog
+        uses: weareikko/changelog@cb24219df8d46e3549a6fe5c10e06f9b01e5011e # 1.0.1
+        with:
+          command: release
+          version: ${{ steps.version.outputs.version }}
+
+      - name: Fail when there is nothing to release
+        if: steps.changelog.outputs.changed != 'true'
+        run: |
+          echo "::error::No fragment in .changelog/: nothing to release."
+          exit 1
+
+      - name: Commit, tag and push
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md .changelog package.json package-lock.json packages/*/package.json
+          git commit -m "Release $VERSION"
+          git tag "$VERSION"
+          git push origin HEAD:main "$VERSION"
+
   publish:
     name: Publish to npm
-    needs: test
+    needs: release
     runs-on: ubuntu-latest
     permissions:
       contents: write
       id-token: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ needs.release.outputs.version }}
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -56,50 +132,35 @@ jobs:
       - name: Build all packages
         run: npm run build
 
-      - name: Determine npm tag and version
-        run: |
-          VERSION=${GITHUB_REF_NAME}
-          NPM_TAG='latest'
-          IS_PRERELEASE=false
-
-          if [[ $VERSION =~ (alpha|beta|rc) ]]; then
-            NPM_TAG='next'
-            IS_PRERELEASE=true
-          fi
-
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "NPM_TAG=$NPM_TAG" >> $GITHUB_ENV
-          echo "IS_PRERELEASE=$IS_PRERELEASE" >> $GITHUB_ENV
-
       - name: Sync inter-package versions
         run: node scripts/sync-versions.js
 
       - name: Publish @studiometa/productive-api
-        run: npm publish --provenance --access public --tag ${{ env.NPM_TAG }}
+        run: npm publish --provenance --access public
         working-directory: packages/api
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @studiometa/productive-core
-        run: npm publish --provenance --access public --tag ${{ env.NPM_TAG }}
+        run: npm publish --provenance --access public
         working-directory: packages/core
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @studiometa/productive-sdk
-        run: npm publish --provenance --access public --tag ${{ env.NPM_TAG }}
+        run: npm publish --provenance --access public
         working-directory: packages/sdk
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @studiometa/productive-cli
-        run: npm publish --provenance --access public --tag ${{ env.NPM_TAG }}
+        run: npm publish --provenance --access public
         working-directory: packages/cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @studiometa/productive-mcp
-        run: npm publish --provenance --access public --tag ${{ env.NPM_TAG }}
+        run: npm publish --provenance --access public
         working-directory: packages/mcp
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -107,9 +168,6 @@ jobs:
       - name: Create GitHub Release
         uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
         with:
-          tag: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          body: |
-            Please refer to [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md) for details.
-          draft: false
-          prerelease: ${{ env.IS_PRERELEASE }}
+          tag: ${{ needs.release.outputs.version }}
+          name: ${{ needs.release.outputs.version }}
+          body: ${{ needs.release.outputs.body }}
