@@ -8,27 +8,23 @@ Instructions for AI agents contributing to this codebase.
      .husky/commit-msg → scripts/check-commit-msg.sh
      .husky/pre-push   → rejects v-prefixed tags -->
 
-- **Releases**: Do NOT create GitHub releases manually — they are created automatically by GitHub Actions when a tag is pushed
+- **Releases**: Do NOT tag or create GitHub releases manually — run the `Release` workflow (see Versioning)
 
 ## Changelog
 
-- **Single changelog** at root (`CHANGELOG.md`) for the entire monorepo
-- Prefix entries with package name when relevant: `**CLI**: ...`, `**MCP**: ...`, `**API**: ...`, `**Core**: ...`
-- Use `[hash]` format for commit references (not bare hashes)
-- Use `[#N]` format for PR references (GitHub style, not `!N` GitLab style)
-- Add link definitions at the end of each release section (not in a shared footer):
-  - Version: `[X.Y.Z]: https://github.com/studiometa/productive-tools/compare/prev...X.Y.Z`
-  - Commits: `[hash]: https://github.com/studiometa/productive-tools/commit/hash`
-  - PRs: `[#N]: https://github.com/studiometa/productive-tools/pull/N`
-- Keep entries concise, single line with references at the end
+- **Never edit `CHANGELOG.md` directly.** Each PR adds a fragment `.changelog/<slug>.md` (slug = branch name without its prefix, e.g. `feature/ssh-sync` → `ssh-sync.md`)
+- A fragment only contains `### Added|Changed|Deprecated|Removed|Fixed|Security|Dependencies` headings, each followed by its entries — no `#`/`##` heading
+- **Do not write the PR number**: the `Release` workflow appends `[[#N]]` and the link definition from the merged PR that added the fragment
+- Prefix entries with package name when relevant: `**CLI**: ...`, `**MCP**: ...`, `**API**: ...`, `**Core**: ...`, `**SDK**: ...`
+- Commit references are optional: `[hash]` in the entry plus its `[hash]: https://github.com/studiometa/productive-tools/commit/hash` link definition in the fragment
+- Keep entries concise, single line
+- The `Changelog` check fails when a PR changes `packages/**` without a fragment; set the `no-changelog` label for changes users do not see (tests, refactors, tooling)
+- Format and tooling: [`weareikko/changelog`](https://github.com/weareikko/changelog)
 
 ## Versioning
 
-- Use root npm scripts to bump version across all packages:
-  - `npm run version:patch` — bump patch (e.g., 0.8.5 → 0.8.6)
-  - `npm run version:minor` — bump minor (e.g., 0.8.5 → 0.9.0)
-  - `npm run version:major` — bump major (e.g., 0.8.5 → 1.0.0)
-- These scripts update version in root and all workspace packages simultaneously
+- Release with the `Release` workflow (`.github/workflows/publish.yml`): `gh workflow run publish.yml -f bump=patch` (or `minor` / `major`). It tests, bumps all packages, folds `.changelog/` into `CHANGELOG.md`, commits `Release <version>`, tags (no `v` prefix), then publishes to npm and creates the GitHub release
+- The root npm scripts `version:patch|minor|major` bump the root and all workspace packages; the workflow uses them
 - Version is injected at build time from package.json (no manual sync needed)
 - All 5 packages share the same version (synced by `scripts/sync-versions.js` at publish time)
 
@@ -265,9 +261,6 @@ npm run typecheck          # TypeScript check (all workspaces)
 npm run check              # All static checks: lint + format + typecheck + test colocation
 npm run check:tests        # Report source files missing colocated .test.ts
 npm run semgrep            # Security/quality scan
-npm run version:patch      # Bump patch version across all packages
-npm run version:minor      # Bump minor version
-npm run version:major      # Bump major version
 ```
 
 ### Git Hooks (via Husky)
