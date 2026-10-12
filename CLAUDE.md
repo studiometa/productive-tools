@@ -23,8 +23,10 @@ Instructions for AI agents contributing to this codebase.
 
 ## Versioning
 
-- Release with the `Release` workflow (`.github/workflows/publish.yml`): `gh workflow run publish.yml -f bump=patch` (or `minor` / `major`). It tests, bumps all packages, folds `.changelog/` into `CHANGELOG.md`, commits `Release <version>`, tags (no `v` prefix), then publishes to npm and creates the GitHub release
-- The root npm scripts `version:patch|minor|major` bump the root and all workspace packages; the workflow uses them
+- Release with the `Release` workflow (`.github/workflows/publish.yml`): `gh workflow run publish.yml -f bump=patch` (or `minor` / `major`). It tests, bumps the root and all workspace packages, folds `.changelog/` into `CHANGELOG.md`, commits `Release <version>`, tags (no `v` prefix), then publishes to npm and creates the GitHub release
+- **Prereleases**: `gh workflow run publish.yml -f bump=prerelease -f preid=beta` (or `prepatch` / `preminor` / `premajor`; `preid` is `alpha`, `beta` or `rc`). A version with a prerelease part (`-`) goes to the `next` npm dist-tag and is a GitHub prerelease; any other version goes to `latest`. Promoting a prerelease to a stable version (e.g. `1.0.0-rc.1` → `1.0.0` with `bump=patch`) can have no fragment: the release body is then `Stable release of <prerelease>.`
+- npm trusted publishing (OIDC, no npm token) is configured for `publish.yml`: keep the publish job in that file, never call it from another workflow
+- Each publish step skips a version that npm already has: when a publish fails, use "Re-run failed jobs" on the run to publish the missing packages
 - Version is injected at build time from package.json (no manual sync needed)
 - All 5 packages share the same version (synced by `scripts/sync-versions.js` at publish time)
 

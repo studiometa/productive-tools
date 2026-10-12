@@ -1,17 +1,25 @@
-# Release and publish in one run. The npm publish step stays in this file
-# because npm trusted publishing is bound to the workflow file name. A tag
-# pushed with GITHUB_TOKEN does not start other workflows, so the publish job
-# runs here, after the release job.
+# Release and publish in one run. The npm publish steps stay in this file
+# because npm trusted publishing (OIDC, no npm token) is bound to the workflow
+# file name. A tag pushed with GITHUB_TOKEN does not start other workflows, so
+# the publish job runs here, after the release job.
+#
+# Each publish step skips a version that npm already has, so "Re-run failed
+# jobs" on the publish job publishes the packages that a failed run missed.
 name: Release
 
 on:
   workflow_dispatch:
     inputs:
       bump:
-        description: 'Version bump'
+        description: 'Version bump (the pre* bumps create a prerelease)'
         type: choice
-        options: [patch, minor, major]
+        options: [patch, minor, major, prepatch, preminor, premajor, prerelease]
         default: patch
+      preid:
+        description: 'Prerelease identifier, used by the pre* bumps only'
+        type: choice
+        options: [alpha, beta, rc]
+        default: alpha
 
 concurrency: release
 
@@ -59,7 +67,10 @@ jobs:
       HUSKY: '0'
     outputs:
       version: ${{ steps.version.outputs.version }}
-      body: ${{ steps.changelog.outputs.body }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      tag: ${{ steps.version.outputs.tag }}
+      # Promoting a prerelease to a stable version can have no fragment.
+      body: ${{ steps.changelog.outputs.changed == 'true' && steps.changelog.outputs.body || format('Stable release of {0}.', steps.version.outputs.previous) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -75,13 +86,35 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Bump the root and every workspace package, and keep package-lock.json
+      # in sync. A version with a prerelease part (`-`) goes to the `next`
+      # dist-tag, any other version to `latest`.
       - name: Bump version
         id: version
         env:
           BUMP: ${{ inputs.bump }}
+          PREID: ${{ inputs.preid }}
         run: |
-          npm run "version:$BUMP"
-          echo "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+          PREVIOUS=$(node -p 'require("./package.json").version')
+          npm version "$BUMP" --preid "$PREID" --workspaces --include-workspace-root --no-git-tag-version
+          VERSION=$(node -p 'require("./package.json").version')
+          {
+            echo "previous=$PREVIOUS"
+            echo "version=$VERSION"
+            if [[ $VERSION == *-* ]]; then
+              echo "prerelease=true"
+              echo "tag=next"
+            else
+              echo "prerelease=false"
+              echo "tag=latest"
+            fi
+            # A stable version after a prerelease promotes it.
+            if [[ $PREVIOUS == *-* && $VERSION != *-* ]]; then
+              echo "promotion=true"
+            else
+              echo "promotion=false"
+            fi
+          } >> "$GITHUB_OUTPUT"
 
       - name: Fold changelog fragments
         id: changelog
@@ -90,8 +123,10 @@ jobs:
           command: release
           version: ${{ steps.version.outputs.version }}
 
+      # Promoting a prerelease (1.0.0-rc.1 → 1.0.0) can have no fragment: the
+      # changelog then gets no new section.
       - name: Fail when there is nothing to release
-        if: steps.changelog.outputs.changed != 'true'
+        if: steps.changelog.outputs.changed != 'true' && steps.version.outputs.promotion != 'true'
         run: |
           echo "::error::No fragment in .changelog/: nothing to release."
           exit 1
@@ -124,7 +159,6 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
-          registry-url: https://registry.npmjs.org/
 
       - name: Install dependencies
         run: npm ci
@@ -135,35 +169,48 @@ jobs:
       - name: Sync inter-package versions
         run: node scripts/sync-versions.js
 
+      # Trusted publishing (OIDC): no npm token. Each step skips a version that
+      # npm already has. The steps run `npm publish --ignore-scripts`: no
+      # package has publish lifecycle scripts, the build above makes `dist/`.
       - name: Publish @studiometa/productive-api
-        run: npm publish --provenance --access public
-        working-directory: packages/api
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        uses: JS-DevTools/npm-publish@0fd2f4369c5d6bcfcde6091a7c527d810b9b5c3f # v4.1.5
+        with:
+          package: packages/api
+          access: public
+          provenance: true
+          tag: ${{ needs.release.outputs.tag }}
 
       - name: Publish @studiometa/productive-core
-        run: npm publish --provenance --access public
-        working-directory: packages/core
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        uses: JS-DevTools/npm-publish@0fd2f4369c5d6bcfcde6091a7c527d810b9b5c3f # v4.1.5
+        with:
+          package: packages/core
+          access: public
+          provenance: true
+          tag: ${{ needs.release.outputs.tag }}
 
       - name: Publish @studiometa/productive-sdk
-        run: npm publish --provenance --access public
-        working-directory: packages/sdk
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        uses: JS-DevTools/npm-publish@0fd2f4369c5d6bcfcde6091a7c527d810b9b5c3f # v4.1.5
+        with:
+          package: packages/sdk
+          access: public
+          provenance: true
+          tag: ${{ needs.release.outputs.tag }}
 
       - name: Publish @studiometa/productive-cli
-        run: npm publish --provenance --access public
-        working-directory: packages/cli
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        uses: JS-DevTools/npm-publish@0fd2f4369c5d6bcfcde6091a7c527d810b9b5c3f # v4.1.5
+        with:
+          package: packages/cli
+          access: public
+          provenance: true
+          tag: ${{ needs.release.outputs.tag }}
 
       - name: Publish @studiometa/productive-mcp
-        run: npm publish --provenance --access public
-        working-directory: packages/mcp
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        uses: JS-DevTools/npm-publish@0fd2f4369c5d6bcfcde6091a7c527d810b9b5c3f # v4.1.5
+        with:
+          package: packages/mcp
+          access: public
+          provenance: true
+          tag: ${{ needs.release.outputs.tag }}
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
@@ -171,3 +218,7 @@ jobs:
           tag: ${{ needs.release.outputs.version }}
           name: ${{ needs.release.outputs.version }}
           body: ${{ needs.release.outputs.body }}
+          prerelease: ${{ needs.release.outputs.prerelease }}
+          makeLatest: ${{ needs.release.outputs.prerelease == 'true' && 'false' || 'legacy' }}
+          # A replay updates the release when a previous run created it.
+          allowUpdates: true

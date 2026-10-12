@@ -115,6 +115,16 @@ All packages share one version. Maintainers release with the `Release` workflow 
 gh workflow run publish.yml -f bump=patch   # or minor / major
 ```
 
+To release a prerelease, use a `pre*` bump with a `preid` (`alpha`, `beta` or `rc`). A version with a prerelease part (`-`) goes to the `next` npm dist-tag and is a GitHub prerelease; any other version goes to `latest`:
+
+```bash
+gh workflow run publish.yml -f bump=prerelease -f preid=beta   # or prepatch / preminor / premajor
+```
+
+Promoting a prerelease to a stable version (for example `1.0.0-rc.1` → `1.0.0` with `bump=patch`) can have no changelog fragment.
+
+The workflow publishes with npm trusted publishing (OIDC), without an npm token. Each publish step skips a version that npm already has: when a publish fails, use "Re-run failed jobs" on the run to publish the missing packages.
+
 ## Changelog
 
 Do not edit `CHANGELOG.md`. Add a fragment in `.changelog/<slug>.md`, where the slug is your branch name without its prefix. Use `###` Keep a Changelog sections and prefix entries with the package name when relevant:
