@@ -8,13 +8,13 @@ Instructions for AI agents contributing to this codebase.
      .husky/commit-msg → scripts/check-commit-msg.sh
      .husky/pre-push   → rejects v-prefixed tags -->
 
-- **Releases**: Do NOT tag or create GitHub releases manually — run the `Release` workflow (see Versioning)
+- **Releases**: Do NOT tag or create GitHub releases manually — each merge into `main` releases (see Versioning)
 
 ## Changelog
 
 - **Never edit `CHANGELOG.md` directly.** Each PR adds a fragment `.changelog/<slug>.md` (slug = branch name without its prefix, e.g. `feature/ssh-sync` → `ssh-sync.md`)
 - A fragment only contains `### Added|Changed|Deprecated|Removed|Fixed|Security|Dependencies` headings, each followed by its entries — no `#`/`##` heading
-- **Do not write the PR number**: the `Release` workflow appends `[[#N]]` and the link definition from the merged PR that added the fragment
+- **Do not write the PR number**: the `Release` workflow appends `([#N])` and the link definition from the merged PR that added the fragment
 - Prefix entries with package name when relevant: `**CLI**: ...`, `**MCP**: ...`, `**API**: ...`, `**Core**: ...`, `**SDK**: ...`
 - Commit references are optional: `[hash]` in the entry plus its `[hash]: https://github.com/studiometa/productive-tools/commit/hash` link definition in the fragment
 - Keep entries concise, single line
@@ -23,8 +23,11 @@ Instructions for AI agents contributing to this codebase.
 
 ## Versioning
 
-- Release with the `Release` workflow (`.github/workflows/publish.yml`): `gh workflow run publish.yml -f bump=patch` (or `minor` / `major`). It tests, bumps all packages, folds `.changelog/` into `CHANGELOG.md`, commits `Release <version>`, tags (no `v` prefix), then publishes to npm and creates the GitHub release
-- The root npm scripts `version:patch|minor|major` bump the root and all workspace packages; the workflow uses them
+- Each merge into `main` releases with the `Release` workflow (`.github/workflows/publish.yml`): it tests, then [`weareikko/changelog`](https://github.com/weareikko/changelog#release-1) gets the version from the fragments (on 0.x, a breaking entry gives a minor bump, any other entry a patch), folds `.changelog/` into `CHANGELOG.md`, bumps the root and all workspace packages (and `package-lock.json`), commits `Release <version>`, tags (no `v` prefix), pushes and creates the GitHub release; then the workflow publishes to npm. A merge without a fragment releases nothing
+- To force a bump: `gh workflow run publish.yml -f version=major` (or `patch` / `minor`)
+- **Prereleases**: a PR adds `.changelog/prerelease` with one identifier (`alpha`, `beta` or `rc`); then each merge with fragments releases a prerelease, which goes to the `next` npm dist-tag and is a GitHub prerelease. The merge of a PR that deletes the file releases the stable version. See [Prereleases](https://github.com/weareikko/changelog#prereleases)
+- npm trusted publishing (OIDC, no npm token) is configured for `publish.yml`: keep the publish job in that file, never call it from another workflow
+- Each publish step skips a version that npm already has: when a publish fails, use "Re-run failed jobs" on the run to publish the missing packages
 - Version is injected at build time from package.json (no manual sync needed)
 - All 5 packages share the same version (synced by `scripts/sync-versions.js` at publish time)
 
