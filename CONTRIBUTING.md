@@ -109,19 +109,15 @@ Co-authored-by: Claude <claude@anthropic.com>
 
 ## Versioning
 
-All packages share one version. Maintainers release with the `Release` workflow (`.github/workflows/publish.yml`), which tests, bumps the version, folds the changelog fragments into `CHANGELOG.md`, tags (no `v` prefix), publishes to npm and creates the GitHub release:
+All packages share one version. Each merge into `main` releases with the `Release` workflow (`.github/workflows/publish.yml`): it tests, gets the version from the changelog fragments, folds them into `CHANGELOG.md`, bumps the version, tags (no `v` prefix), creates the GitHub release and publishes to npm. A merge without a fragment releases nothing. On 0.x, a breaking entry gives a minor version and any other entry a patch version.
+
+To force a bump, maintainers run the workflow by hand:
 
 ```bash
-gh workflow run publish.yml -f bump=patch   # or minor / major
+gh workflow run publish.yml -f version=major   # or patch / minor
 ```
 
-To release a prerelease, use a `pre*` bump with a `preid` (`alpha`, `beta` or `rc`). A version with a prerelease part (`-`) goes to the `next` npm dist-tag and is a GitHub prerelease; any other version goes to `latest`:
-
-```bash
-gh workflow run publish.yml -f bump=prerelease -f preid=beta   # or prepatch / preminor / premajor
-```
-
-Promoting a prerelease to a stable version (for example `1.0.0-rc.1` → `1.0.0` with `bump=patch`) can have no changelog fragment.
+To release prereleases, a pull request adds `.changelog/prerelease` with one identifier (`alpha`, `beta` or `rc`). Then each merge with fragments releases a prerelease, which goes to the `next` npm dist-tag and is a GitHub prerelease. The merge of a pull request that deletes the file releases the stable version. See [Prereleases](https://github.com/weareikko/changelog#prereleases).
 
 The workflow publishes with npm trusted publishing (OIDC), without an npm token. Each publish step skips a version that npm already has: when a publish fails, use "Re-run failed jobs" on the run to publish the missing packages.
 

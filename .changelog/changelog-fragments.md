@@ -1,3 +1,3 @@
 ### Changed
 
-- **CI**: Replace the `## [Unreleased]` section with `.changelog/` fragments checked on pull requests by `weareikko/changelog`, and release from a dispatched `Release` workflow that bumps the version, folds the fragments into `CHANGELOG.md`, tags and publishes
+- **CI**: Replace the `## [Unreleased]` section with `.changelog/` fragments checked on pull requests by `weareikko/changelog`, and release each merge into `main` with a `Release` workflow that bumps the version from the fragments, folds them into `CHANGELOG.md`, tags and publishes
